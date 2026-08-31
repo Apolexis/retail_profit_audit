@@ -1,0 +1,20 @@
+<slide id="committee_decision">
+  <background color="paper"/>
+  <shape id="top-rule" type="line" x="80" y="43" width="1120" height="0" stroke="brand" stroke-width="2"/>
+  <text id="slide-title" x="80" y="64" width="1120" height="42" font="heading" size="32" color="ink" wrap="false">Решение инвесткомитета и контрольные точки</text>
+  <text id="slide-number" x="80" y="678" width="40" height="18" font="caption" size="12" color="muted">15</text>
+  <text id="slide-source" x="750" y="678" width="450" height="18" font="caption" size="12" color="muted" align="right">Источник: учет2026.xlsm | Факт янв–авг 2026</text>
+  <shape id="recommendation-bg" type="rect" x="80" y="132" width="1120" height="102" fill="brand"/>
+  <text id="recommendation" x="108" y="157" width="1060" height="56" font="body" size="24" color="paper" line-height="1.25"><p><strong>Рекомендация:</strong> утвердить 45-дневную программу оздоровления пяти приоритетных точек и параллельное масштабирование практик ПОРТ, КИР1 и А2.</p></text>
+  <shape id="left-panel" type="rect" x="80" y="280" width="350" height="220" fill="mist"/>
+  <text id="conditions" x="106" y="304" width="300" height="168" font="body" size="18" color="ink" line-height="1.42"><p font="heading" size="22" color="brand">Условия контроля</p><p><strong color="jade">01</strong> Подтвердить августовское закрытие.</p><p><strong color="jade">02</strong> Назначить владельца по каждой убыточной точке.</p><p><strong color="jade">03</strong> Запустить weekly P&amp;L-контур.</p></text>
+  <table id="milestone-table" x="475" y="280" width="725" height="220" columns="5,2,4" rows="40,45,45,45,45" font="body" size="16" color="ink" padding="7 10" header-fill="brand" border-h="1 solid hairline" header-border="2 brand">
+    <tr color="#F6F1E8"><td>Контрольная точка</td><td align="right">Срок</td><td>Требуемый результат</td></tr>
+    <tr><td>Подтверждение августа</td><td align="right">10 дней</td><td>Полнота начислений, объяснение +11,6 п.п.</td></tr>
+    <tr fill="mist"><td>Диагностика 11 убыточных</td><td align="right">20 дней</td><td>План ФОТ, аренды, списаний, трафика</td></tr>
+    <tr><td>Решение по МОЛ и С2</td><td align="right">45 дней</td><td>Закрытие, релокация или путь к безубыточности</td></tr>
+    <tr fill="mist"><td>Первая волна тиражирования</td><td align="right">60 дней</td><td>Измеримое улучшение маржи целевых точек</td></tr>
+  </table>
+  <shape id="final-box" type="rect" x="80" y="552" width="1120" height="70" fill="#F2DDD9"/>
+  <text id="final-thesis" x="106" y="574" width="1068" height="34" font="body" size="20" color="ink"><strong color="bordeaux">Финальный тезис:</strong> формулы модели корректны; управленческий риск сосредоточен в экономике 11 магазинов, августовской аномалии маржи и отсутствии фактических данных IV квартала.</text>
+</slide>

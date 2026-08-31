@@ -1,0 +1,23 @@
+<slide id="network_dashboard">
+  <background color="paper"/>
+  <shape id="top-rule" type="line" x="80" y="43" width="1120" height="0" stroke="brand" stroke-width="2"/>
+  <text id="slide-title" x="80" y="64" width="1020" height="42" font="heading" size="32" color="ink" wrap="false">Главный дашборд сети</text>
+  <text id="slide-number" x="80" y="678" width="40" height="18" font="caption" size="12" color="muted">04</text>
+  <text id="slide-source" x="750" y="678" width="450" height="18" font="caption" size="12" color="muted" align="right">Источник: учет2026.xlsm | Факт янв–авг 2026</text>
+  <shape id="metric1-bg" type="rect" x="80" y="132" width="245" height="85" fill="mist"/>
+  <text id="metric1" x="98" y="148" width="210" height="54" font="body" size="16" color="ink"><p>Выручка</p><p><strong size="27" color="brand">648,1 млн</strong></p></text>
+  <shape id="metric2-bg" type="rect" x="342" y="132" width="245" height="85" fill="mist"/>
+  <text id="metric2" x="360" y="148" width="210" height="54" font="body" size="16" color="ink"><p>Валовая прибыль</p><p><strong size="27" color="brand">166,3 млн</strong></p></text>
+  <shape id="metric3-bg" type="rect" x="604" y="132" width="245" height="85" fill="#E0EEE9"/>
+  <text id="metric3" x="622" y="148" width="210" height="54" font="body" size="16" color="ink"><p>Чистая прибыль</p><p><strong size="27" color="jade">34,4 млн</strong></p></text>
+  <shape id="metric4-bg" type="rect" x="866" y="132" width="245" height="85" fill="mist"/>
+  <text id="metric4" x="884" y="148" width="210" height="54" font="body" size="16" color="ink"><p>Чистая маржа</p><p><strong size="27" color="brand">5,3%</strong></p></text>
+  <text id="bridge-label" x="80" y="242" width="500" height="26" font="body" size="18" color="ink">Финансовый мост: от продаж к чистой прибыли, млн руб.</text>
+  <chart id="cost-bridge" type="column" x="80" y="276" width="790" height="300" font="caption" categories="Выручка,Закупки,ФОТ,Аренда,Налоги,Эквайринг,Прочее,Чистая прибыль" color="brand,bordeaux,bordeaux,bordeaux,bordeaux,bordeaux,#B7A88A,jade" legend="none" y-format="thousands" gridlines="h" gap-width="55" data-labels="true">
+    <series values="648.1,481.8,58.4,20.6,20.0,11.3,21.6,34.4" label-expr="{value:.1f}"/>
+  </chart>
+  <shape id="insight-box" type="rect" x="910" y="276" width="290" height="300" fill="mist"/>
+  <text id="insight-head" x="934" y="306" width="240" height="34" font="heading" size="21" color="brand">Экономика сети</text>
+  <text id="insight-body" x="934" y="360" width="238" height="182" font="body" size="18" color="ink" line-height="1.35"><p>Валовая маржа: <strong color="brand">25,7%</strong></p><p>Закупочная себестоимость: <strong>74,3%</strong> выручки</p><p>ФОТ и налоги: <strong>9,0%</strong> выручки</p><p>Аренда: <strong>3,2%</strong> выручки</p></text>
+  <text id="bottom-note" x="80" y="604" width="1100" height="34" font="caption" size="15" color="muted">После закупочной себестоимости крупнейший управляемый рычаг — ФОТ: 58,4 млн руб. Снижение расходов требует адресной, а не равномерной программы по точкам.</text>
+</slide>

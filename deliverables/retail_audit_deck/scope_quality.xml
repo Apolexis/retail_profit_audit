@@ -1,0 +1,16 @@
+<slide id="scope_quality">
+  <background color="paper"/>
+  <shape id="top-rule" type="line" x="80" y="43" width="1120" height="0" stroke="brand" stroke-width="2"/>
+  <text id="slide-title" x="80" y="64" width="1020" height="42" font="heading" size="32" color="ink" wrap="false">Масштаб, охват и качество модели</text>
+  <text id="slide-number" x="80" y="678" width="40" height="18" font="caption" size="12" color="muted">03</text>
+  <text id="slide-source" x="750" y="678" width="450" height="18" font="caption" size="12" color="muted" align="right">Источник: учет2026.xlsm | Факт янв–авг 2026</text>
+  <text id="intro" x="80" y="132" width="1030" height="28" font="body" size="19" color="muted">Анализ начинается строго с 4-го листа; первые три листа книги классифицированы как технические и исключены из расчета сети.</text>
+  <shape id="scope-col" type="rect" x="80" y="190" width="346" height="322" fill="mist"/>
+  <text id="scope-col-text" x="105" y="218" width="295" height="260" font="body" size="19" color="ink" line-height="1.35"><p font="heading" size="22" color="brand">Охват</p><p><strong size="36" color="brand">43</strong> листа-магазина</p><p><strong size="36" color="brand">36</strong> листов с продажами</p><p><strong size="36" color="brand">35</strong> сопоставимых точек с выручкой ≥ 1,0 млн руб.</p></text>
+  <shape id="quality-col" type="rect" x="467" y="190" width="346" height="322" fill="#E0EEE9"/>
+  <text id="quality-col-text" x="492" y="218" width="295" height="260" font="body" size="19" color="ink" line-height="1.35"><p font="heading" size="22" color="jade">Контроль расчетов</p><p><strong size="36" color="jade">516</strong> P&amp;L-блоков</p><p><strong size="36" color="jade">310 723</strong> формульные ячейки</p><p><strong size="36" color="jade">0</strong> ошибок и расхождений &gt; 0,15 руб.</p></text>
+  <shape id="boundary-col" type="rect" x="854" y="190" width="346" height="322" fill="#F2DDD9"/>
+  <text id="boundary-col-text" x="879" y="218" width="295" height="260" font="body" size="19" color="ink" line-height="1.35"><p font="heading" size="22" color="bordeaux">Граница вывода</p><p>Сентябрь–декабрь содержат нули по всем листам.</p><p>Аудит подтверждает формулы, но не заменяет проверку первички, договоров и начислений.</p></text>
+  <shape id="conclusion-line" type="line" x="80" y="550" width="1120" height="0" stroke="hairline" stroke-width="1"/>
+  <text id="conclusion" x="80" y="576" width="1100" height="42" font="body" size="21" color="ink"><strong color="jade">Вывод:</strong> арифметическая и формульная целостность магазинных P&amp;L подтверждена; главный риск расположен в экономике точек, а не в механике формул.</text>
+</slide>

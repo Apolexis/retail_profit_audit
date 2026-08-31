@@ -1,0 +1,11 @@
+<slide id="cover">
+  <background color="paper"/>
+  <shape id="cover-rule" type="rect" x="80" y="92" width="16" height="474" fill="brand"/>
+  <text id="cover-eyebrow" x="130" y="96" width="560" height="26" font="caption" size="16" color="bordeaux" wrap="false">УПРАВЛЕНЧЕСКИЙ И ИНВЕСТОРСКИЙ ПАКЕТ</text>
+  <text id="cover-title" x="130" y="152" width="840" height="160" font="display" size="58" color="ink" line-height="1.05"><p>Аудит прибыли</p><p>магазинов — 2026</p></text>
+  <shape id="cover-divider" type="line" x="130" y="348" width="690" height="0" stroke="hairline" stroke-width="2"/>
+  <text id="cover-subtitle" x="130" y="376" width="650" height="62" font="body" size="23" color="brand" line-height="1.25">Супер-отчет по финансовой эффективности розничной сети</text>
+  <text id="cover-period" x="130" y="500" width="600" height="42" font="body" size="18" color="ink">Источник: «учет2026.xlsm» · Листы 4–46 · Факт: январь–август 2026</text>
+  <text id="cover-caveat" x="130" y="590" width="920" height="46" font="caption" size="15" color="muted" line-height="1.25">В исходной книге сентябрь–декабрь содержат нулевые продажи и нулевую прибыль; показатели в отчете не являются полным календарным годом.</text>
+  <text id="cover-prepared" x="130" y="652" width="330" height="20" font="caption" size="14" color="muted">Подготовлено: Manus AI</text>
+</slide>

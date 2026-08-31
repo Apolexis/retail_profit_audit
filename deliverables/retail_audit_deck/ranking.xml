@@ -1,0 +1,26 @@
+<slide id="ranking">
+  <background color="paper"/>
+  <shape id="top-rule" type="line" x="80" y="43" width="1120" height="0" stroke="brand" stroke-width="2"/>
+  <text id="slide-title" x="80" y="64" width="1020" height="42" font="heading" size="32" color="ink" wrap="false">Портфель магазинов: лидеры и антирейтинг</text>
+  <text id="slide-number" x="80" y="678" width="40" height="18" font="caption" size="12" color="muted">07</text>
+  <text id="slide-source" x="750" y="678" width="450" height="18" font="caption" size="12" color="muted" align="right">Источник: учет2026.xlsm | Факт янв–авг 2026</text>
+  <text id="leaders-label" x="80" y="132" width="350" height="28" font="heading" size="23" color="jade">ТОП-3 ПО ЧИСТОЙ ПРИБЫЛИ</text>
+  <text id="bottom-label" x="680" y="132" width="350" height="28" font="heading" size="23" color="bordeaux">ТОП-3 АНТИРЕЙТИНГ</text>
+  <shape id="center-divider" type="line" x="640" y="132" width="0" height="365" stroke="hairline" stroke-width="1"/>
+  <table id="leaders-table" x="80" y="176" width="520" height="270" columns="2,3,3,2" rows="42,76,76,76" font="body" size="17" color="ink" padding="8 10" header-fill="brand" border-h="1 solid hairline" header-border="2 brand">
+    <tr color="#F6F1E8"><td>Магазин</td><td align="right">Выручка</td><td align="right">Чистая прибыль</td><td align="right">Маржа</td></tr>
+    <tr><td><strong>ПОРТ</strong></td><td align="right">100,3</td><td align="right"><strong color="jade">9,2</strong></td><td align="right">9,2%</td></tr>
+    <tr fill="mist"><td><strong>КИР1</strong></td><td align="right">45,8</td><td align="right"><strong color="jade">4,9</strong></td><td align="right">10,7%</td></tr>
+    <tr><td><strong>А2</strong></td><td align="right">42,7</td><td align="right"><strong color="jade">4,6</strong></td><td align="right">10,9%</td></tr>
+  </table>
+  <text id="leaders-caption" x="80" y="466" width="520" height="28" font="caption" size="14" color="muted">Все цифры в млн руб., кроме маржи</text>
+  <table id="bottom-table" x="680" y="176" width="520" height="270" columns="2,3,3,2" rows="42,76,76,76" font="body" size="17" color="ink" padding="8 10" header-fill="bordeaux" border-h="1 solid hairline" header-border="2 bordeaux">
+    <tr color="#F6F1E8"><td>Магазин</td><td align="right">Выручка</td><td align="right">Чистая прибыль</td><td align="right">Маржа</td></tr>
+    <tr><td><strong>Н95</strong></td><td align="right">13,1</td><td align="right"><strong color="bordeaux">(0,8)</strong></td><td align="right">(6,5%)</td></tr>
+    <tr fill="mist"><td><strong>НИК</strong></td><td align="right">9,5</td><td align="right"><strong color="bordeaux">(0,7)</strong></td><td align="right">(6,9%)</td></tr>
+    <tr><td><strong>КА1</strong></td><td align="right">6,9</td><td align="right"><strong color="bordeaux">(0,5)</strong></td><td align="right">(6,9%)</td></tr>
+  </table>
+  <text id="bottom-caption" x="680" y="466" width="520" height="28" font="caption" size="14" color="muted">Все цифры в млн руб., кроме маржи</text>
+  <shape id="portfolio-box" type="rect" x="80" y="536" width="1120" height="86" fill="mist"/>
+  <text id="portfolio-text" x="104" y="558" width="1070" height="45" font="body" size="21" color="ink"><strong color="brand">Концентрация:</strong> ПОРТ, КИР1 и А2 создают 18,8 млн руб. чистой прибыли — <strong color="jade">54,6%</strong> результата сети. Управление портфелем не может игнорировать ни зависимость от лидеров, ни потери худших точек.</text>
+</slide>

@@ -1,0 +1,15 @@
+<design>
+  <size width="1280" height="720"></size>
+  <color name="brand" value="#135B44"/>
+  <color name="ink" value="#2C2C2C"/>
+  <color name="muted" value="#595959"/>
+  <color name="paper" value="#F6F1E8"/>
+  <color name="mist" value="#EAE3D5"/>
+  <color name="hairline" value="#D4CBB8"/>
+  <color name="bordeaux" value="#8B2635"/>
+  <color name="jade" value="#2A9D8F"/>
+  <font name="display" family="Inter" size="52"/>
+  <font name="heading" family="Inter" size="32"/>
+  <font name="body" family="Inter" size="18"/>
+  <font name="caption" family="Inter" size="14"/>
+</design>

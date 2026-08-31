@@ -1,0 +1,22 @@
+<slide id="cost_structure">
+  <background color="paper"/>
+  <shape id="top-rule" type="line" x="80" y="43" width="1120" height="0" stroke="brand" stroke-width="2"/>
+  <text id="slide-title" x="80" y="64" width="1020" height="42" font="heading" size="32" color="ink" wrap="false">Структура затрат: где лежит основной рычаг</text>
+  <text id="slide-number" x="80" y="678" width="40" height="18" font="caption" size="12" color="muted">06</text>
+  <text id="slide-source" x="750" y="678" width="450" height="18" font="caption" size="12" color="muted" align="right">Источник: учет2026.xlsm | Факт янв–авг 2026</text>
+  <text id="donut-label" x="80" y="132" width="410" height="25" font="caption" size="15" color="muted">Доля выручки: основные статьи затрат</text>
+  <chart id="cost-donut" type="donut" x="80" y="164" width="420" height="350" font="caption" categories="Закупки,ФОТ,Аренда,Налог,Эквайринг,Прочее" color="brand,#B7A88A,#8B2635,#827D65,#2A9D8F,#D4CBB8" legend="bottom" data-labels="true" hole-size="0.62">
+    <series values="481.8,58.4,20.6,20.0,11.3,36.3" label-expr="{value:.1f}"/>
+  </chart>
+  <table id="cost-table" x="560" y="164" width="640" height="330" columns="5,2,2" rows="42,48,48,48,48,48,48" font="body" size="17" color="ink" padding="8 12" header-fill="brand" border-h="1 solid hairline" header-border="2 brand">
+    <tr color="#F6F1E8"><td>Статья</td><td align="right">млн руб.</td><td align="right">% выручки</td></tr>
+    <tr><td>Закупочная себестоимость</td><td align="right">481,8</td><td align="right">74,3%</td></tr>
+    <tr fill="mist"><td><strong>ФОТ и налоги на персонал</strong></td><td align="right"><strong color="bordeaux">58,4</strong></td><td align="right"><strong color="bordeaux">9,0%</strong></td></tr>
+    <tr><td>Аренда</td><td align="right">20,6</td><td align="right">3,2%</td></tr>
+    <tr><td>Налог с валовой прибыли</td><td align="right">20,0</td><td align="right">3,1%</td></tr>
+    <tr><td>Банковская комиссия</td><td align="right">11,3</td><td align="right">1,7%</td></tr>
+    <tr><td>Списания</td><td align="right">7,1</td><td align="right">1,1%</td></tr>
+  </table>
+  <shape id="focus-box" type="rect" x="80" y="554" width="1120" height="72" fill="#E0EEE9"/>
+  <text id="focus-text" x="104" y="574" width="1072" height="35" font="body" size="20" color="ink"><strong color="jade">Управляемый фокус:</strong> после закупочной себестоимости крупнейший рычаг — ФОТ в размере 58,4 млн руб. (9,0% выручки); у 7 из 11 убыточных точек он является главным избыточным драйвером.</text>
+</slide>

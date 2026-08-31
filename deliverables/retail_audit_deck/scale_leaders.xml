@@ -1,0 +1,19 @@
+<slide id="scale_leaders">
+  <background color="paper"/>
+  <shape id="top-rule" type="line" x="80" y="43" width="1120" height="0" stroke="brand" stroke-width="2"/>
+  <text id="slide-title" x="80" y="64" width="1080" height="42" font="heading" size="32" color="ink" wrap="false">Масштабирование лидеров: что переносить</text>
+  <text id="slide-number" x="80" y="678" width="40" height="18" font="caption" size="12" color="muted">12</text>
+  <text id="slide-source" x="750" y="678" width="450" height="18" font="caption" size="12" color="muted" align="right">Источник: учет2026.xlsm | Факт янв–авг 2026</text>
+  <shape id="headline-box" type="rect" x="80" y="132" width="1120" height="88" fill="#E0EEE9"/>
+  <text id="headline" x="106" y="153" width="1060" height="48" font="body" size="22" color="ink"><strong color="brand">ПОРТ, КИР1 и А2</strong> сформировали <strong color="jade">18,8 млн руб.</strong> чистой прибыли — <strong color="jade">54,6%</strong> результата сети. Их чистая маржа — 9,2–10,9% против 5,3% по сети.</text>
+  <shape id="stage1" type="rect" x="80" y="286" width="310" height="216" fill="mist"/>
+  <text id="stage1-text" x="106" y="310" width="260" height="164" font="body" size="18" color="ink" line-height="1.35"><p font="heading" size="22" color="brand">1. Разобрать лидеров</p><p>SKU-матрица</p><p>Закупочные условия</p><p>Доля списаний</p><p>Штатные часы и аренда</p></text>
+  <shape id="arrow1" type="arrow" x="408" y="372" width="52" height="36" fill="brand" head-ratio="0.35"/>
+  <shape id="stage2" type="rect" x="485" y="286" width="310" height="216" fill="mist"/>
+  <text id="stage2-text" x="511" y="310" width="260" height="164" font="body" size="18" color="ink" line-height="1.35"><p font="heading" size="22" color="brand">2. Сопоставить форматы</p><p>Сформировать пары с близкой выручкой и форматом.</p><p>Каждой убыточной точке назначить конкретный эталон.</p></text>
+  <shape id="arrow2" type="arrow" x="813" y="372" width="52" height="36" fill="brand" head-ratio="0.35"/>
+  <shape id="stage3" type="rect" x="890" y="286" width="310" height="216" fill="#E0EEE9"/>
+  <text id="stage3-text" x="916" y="310" width="260" height="164" font="body" size="18" color="ink" line-height="1.35"><p font="heading" size="22" color="jade">3. Внедрить и измерить</p><p>Weekly P&amp;L: продажи, валовая маржа, ФОТ/выручка, списания/выручка, прибыль.</p></text>
+  <shape id="success-line" type="line" x="80" y="552" width="1120" height="0" stroke="hairline" stroke-width="1"/>
+  <text id="success-text" x="80" y="579" width="1110" height="38" font="body" size="20" color="ink"><strong color="jade">Критерий успеха:</strong> каждая убыточная точка получает индивидуальную траекторию до безубыточности, а не единый процент сокращения затрат.</text>
+</slide>

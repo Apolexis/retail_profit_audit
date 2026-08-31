@@ -1,0 +1,15 @@
+<slide id="data_caveat">
+  <background color="paper"/>
+  <shape id="top-rule" type="line" x="80" y="43" width="1120" height="0" stroke="brand" stroke-width="2"/>
+  <text id="slide-title" x="80" y="64" width="1120" height="42" font="heading" size="32" color="ink" wrap="false">Август и неполный год: что нельзя делать инвестору</text>
+  <text id="slide-number" x="80" y="678" width="40" height="18" font="caption" size="12" color="muted">14</text>
+  <text id="slide-source" x="750" y="678" width="450" height="18" font="caption" size="12" color="muted" align="right">Источник: учет2026.xlsm | Факт янв–авг 2026</text>
+  <shape id="warning-bg" type="rect" x="80" y="140" width="1120" height="128" fill="#F2DDD9"/>
+  <text id="warning" x="108" y="167" width="1058" height="82" font="heading" size="27" color="bordeaux" line-height="1.22"><p>Нельзя годизировать августовскую маржу 13,2%</p><p>или использовать ее как базовый прогноз инвестора.</p></text>
+  <shape id="metric1-bg" type="rect" x="80" y="312" width="510" height="146" fill="mist"/>
+  <text id="metric1" x="110" y="337" width="440" height="96" font="body" size="20" color="ink"><p>Август: чистая прибыль</p><p><strong size="43" color="brand">7,6 млн руб.</strong></p><p size="16">при минимальной выручке 58,0 млн руб.</p></text>
+  <shape id="metric2-bg" type="rect" x="650" y="312" width="550" height="146" fill="mist"/>
+  <text id="metric2" x="680" y="337" width="490" height="96" font="body" size="20" color="ink"><p>Разрыв с июлем по чистой марже</p><p><strong size="43" color="bordeaux">+11,6 п.п.</strong></p><p size="16">вопреки сокращению выручки</p></text>
+  <shape id="check-bg" type="rect" x="80" y="520" width="1120" height="106" fill="mist"/>
+  <text id="check-text" x="106" y="542" width="1070" height="64" font="body" size="19" color="ink" line-height="1.35"><p><strong color="brand">Перед инвесторским использованием:</strong> подтвердить начисления ФОТ, аренды, налогов, эквайринга и разовых операций за август.</p><p><strong color="bordeaux">Важное ограничение:</strong> в сентябре–декабре нули по всем точкам; прогноз IV квартала в исходной книге отсутствует.</p></text>
+</slide>

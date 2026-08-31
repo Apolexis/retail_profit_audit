@@ -1,0 +1,177 @@
+{
+  "project_info": {
+    "title": "Аудит прибыли магазинов — 2026",
+    "created": 1788173115.998,
+    "last_updated": 1788173393.053,
+    "total_slides": 15
+  },
+  "slides": [
+    {
+      "id": "cover",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "executive_decision",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "scope_quality",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "network_dashboard",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "seasonality",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "cost_structure",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "ranking",
+      "state": "edited",
+      "pageNum": 7
+    },
+    {
+      "id": "loss_cluster",
+      "state": "edited",
+      "pageNum": 8
+    },
+    {
+      "id": "revenue_traps",
+      "state": "edited",
+      "pageNum": 9
+    },
+    {
+      "id": "hidden_hero",
+      "state": "edited",
+      "pageNum": 10
+    },
+    {
+      "id": "action_45_days",
+      "state": "edited",
+      "pageNum": 11
+    },
+    {
+      "id": "scale_leaders",
+      "state": "edited",
+      "pageNum": 12
+    },
+    {
+      "id": "seasonal_defense",
+      "state": "edited",
+      "pageNum": 13
+    },
+    {
+      "id": "data_caveat",
+      "state": "edited",
+      "pageNum": 14
+    },
+    {
+      "id": "committee_decision",
+      "state": "edited",
+      "pageNum": 15
+    }
+  ],
+  "outline": [
+    {
+      "id": "cover",
+      "title": "Аудит прибыли магазинов — 2026",
+      "summary": "Титульный слайд: управленческий и инвесторский пакет, источник и ограничение периода.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "executive_decision",
+      "title": "Решение руководства в одной фразе",
+      "summary": "Ключевые KPI, концентрация прибыли и управленческий тезис.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "scope_quality",
+      "title": "Масштаб, охват и качество модели",
+      "summary": "Охват листов, проверка формул и границы аудита.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "network_dashboard",
+      "title": "Главный дашборд сети",
+      "summary": "Выручка, прибыль, маржинальность и визуальная cost bridge.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "seasonality",
+      "title": "Сезонная динамика: прибыль не повторяет продажи",
+      "summary": "Помесячные выручка и прибыль за январь–август, пиковые и проблемные периоды.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "cost_structure",
+      "title": "Структура затрат: где лежит основной рычаг",
+      "summary": "Состав расходов и выделение ФОТ, аренды, списаний.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "ranking",
+      "title": "Портфель магазинов: лидеры и антирейтинг",
+      "summary": "Топ-3 и худшие 3 точки с сравнением чистой прибыли и маржи.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "loss_cluster",
+      "title": "Убыточный кластер: проблема не в одной точке",
+      "summary": "Одиннадцать убыточных магазинов, убытки и главные резервы.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "revenue_traps",
+      "title": "Ловушки выручки: продажи без отдачи",
+      "summary": "П.ЗОР и МОН: причины низкой маржинальности и первоочередные действия.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "hidden_hero",
+      "title": "Скрытый герой: Л76",
+      "summary": "Магазин с выручкой ниже медианы и маржей верхней трети распределения.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "action_45_days",
+      "title": "Карта действий: 0–45 дней",
+      "summary": "Пять приоритетных точек, решения, экономические цели и владельцы.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "scale_leaders",
+      "title": "Масштабирование лидеров: что переносить",
+      "summary": "План переноса практик ПОРТ, КИР1 и А2 на проблемные точки.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "seasonal_defense",
+      "title": "Антикризисная защита сезонного провала",
+      "summary": "Меры на 6 недель до мая–июля, меры внутри периода и weekly P&L-контроль.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "data_caveat",
+      "title": "Август и неполный год: что нельзя делать инвестору",
+      "summary": "Контроль августовской маржи и невозможность годизации неполного периода.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "committee_decision",
+      "title": "Решение инвесткомитета и контрольные точки",
+      "summary": "Рекомендованная программа, сроки и измеримые результаты.",
+      "image_plan": "Use a suitable image if needed"
+    }
+  ]
+}

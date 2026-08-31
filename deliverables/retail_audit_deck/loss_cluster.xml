@@ -1,0 +1,19 @@
+<slide id="loss_cluster">
+  <background color="paper"/>
+  <shape id="top-rule" type="line" x="80" y="43" width="1120" height="0" stroke="brand" stroke-width="2"/>
+  <text id="slide-title" x="80" y="64" width="1050" height="42" font="heading" size="32" color="ink" wrap="false">Убыточный кластер: проблема не в одной точке</text>
+  <text id="slide-number" x="80" y="678" width="40" height="18" font="caption" size="12" color="muted">08</text>
+  <text id="slide-source" x="750" y="678" width="450" height="18" font="caption" size="12" color="muted" align="right">Источник: учет2026.xlsm | Факт янв–авг 2026</text>
+  <text id="cluster-thesis" x="80" y="130" width="1120" height="38" font="body" size="23" color="ink"><strong color="bordeaux">11 убыточных точек</strong> сформировали 3,9 млн руб. потерь; главная повторяющаяся причина — избыток ФОТ и налогов на персонал.</text>
+  <table id="loss-table" x="80" y="198" width="1120" height="276" columns="2,2,2,2,4" rows="42,39,39,39,39,39,39" font="body" size="16" color="ink" padding="7 10" header-fill="bordeaux" border-h="1 solid hairline" header-border="2 bordeaux">
+    <tr color="#F6F1E8"><td>Магазин</td><td align="right">Убыток, тыс.</td><td align="right">Убыточных мес.</td><td align="right">Резерв, тыс.</td><td>Главный резерв к медиане сети</td></tr>
+    <tr><td><strong>Н95</strong></td><td align="right"><strong color="bordeaux">(845)</strong></td><td align="right">7</td><td align="right">1 091</td><td>ФОТ и налоги на персонал</td></tr>
+    <tr fill="mist"><td><strong>НИК</strong></td><td align="right"><strong color="bordeaux">(658)</strong></td><td align="right">7</td><td align="right">434</td><td>ФОТ и налоги на персонал</td></tr>
+    <tr><td><strong>КА1</strong></td><td align="right"><strong color="bordeaux">(475)</strong></td><td align="right">3</td><td align="right">715</td><td>ФОТ и налоги на персонал</td></tr>
+    <tr fill="mist"><td><strong>С3</strong></td><td align="right"><strong color="bordeaux">(447)</strong></td><td align="right">6</td><td align="right">526</td><td>ФОТ и налоги на персонал</td></tr>
+    <tr><td><strong>МОЛ</strong></td><td align="right"><strong color="bordeaux">(419)</strong></td><td align="right">3</td><td align="right">207</td><td>ФОТ и налоги на персонал</td></tr>
+    <tr fill="mist"><td><strong>УМБА</strong></td><td align="right"><strong color="bordeaux">(411)</strong></td><td align="right">6</td><td align="right">502</td><td>ФОТ и налоги на персонал</td></tr>
+  </table>
+  <shape id="tail-box" type="rect" x="80" y="518" width="1120" height="108" fill="mist"/>
+  <text id="tail-text" x="104" y="540" width="1068" height="64" font="body" size="18" color="ink" line-height="1.35"><p>Оставшиеся убыточные точки: МАК (278 тыс. руб.), П.ЗОР (128 тыс.), МИРА (116 тыс.), С2 (73 тыс.) и ПЗ1 (51 тыс.).</p><p><strong color="bordeaux">Управленческое правило:</strong> у 7 из 11 точек первым шагом является перерасчет штатных часов и ФОТ к медианной доле выручки.</p></text>
+</slide>

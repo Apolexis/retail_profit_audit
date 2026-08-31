@@ -1,0 +1,20 @@
+<slide id="seasonality">
+  <background color="paper"/>
+  <shape id="top-rule" type="line" x="80" y="43" width="1120" height="0" stroke="brand" stroke-width="2"/>
+  <text id="slide-title" x="80" y="64" width="1060" height="42" font="heading" size="32" color="ink" wrap="false">Сезонная динамика: прибыль не повторяет продажи</text>
+  <text id="slide-number" x="80" y="678" width="40" height="18" font="caption" size="12" color="muted">05</text>
+  <text id="slide-source" x="750" y="678" width="450" height="18" font="caption" size="12" color="muted" align="right">Источник: учет2026.xlsm | Факт янв–авг 2026</text>
+  <text id="chart-caption" x="80" y="126" width="670" height="24" font="caption" size="15" color="muted">Выручка и чистая прибыль, млн руб. | Январь–август 2026</text>
+  <chart id="seasonality-chart" type="column" x="80" y="156" width="755" height="370" font="caption" categories="Янв,Фев,Мар,Апр,Май,Июн,Июл,Авг" color="brand,bordeaux" legend="bottom" y-format="thousands" y2-format="thousands" y2-title="Чистая прибыль" gridlines="h" gap-width="80">
+    <series name="Выручка" values="79.7,88.0,98.4,92.6,78.1,76.0,77.2,58.0"/>
+    <series name="Чистая прибыль" values="5.4,5.5,6.8,4.3,1.1,2.5,1.2,7.6" type="line" axis="secondary" color="bordeaux"/>
+  </chart>
+  <shape id="peak-bg" type="rect" x="875" y="156" width="325" height="100" fill="#E0EEE9"/>
+  <text id="peak-text" x="897" y="174" width="278" height="65" font="body" size="17" color="ink"><p>ПИК ПРИБЫЛИ</p><p><strong size="29" color="jade">Август · 7,6 млн</strong></p><p size="15">Маржа 13,2%</p></text>
+  <shape id="trough-bg" type="rect" x="875" y="276" width="325" height="100" fill="#F2DDD9"/>
+  <text id="trough-text" x="897" y="294" width="278" height="65" font="body" size="17" color="ink"><p>ПРОВАЛ ПРИБЫЛИ</p><p><strong size="29" color="bordeaux">Май · 1,1 млн</strong></p><p size="15">Маржа 1,4%</p></text>
+  <shape id="risk-bg" type="rect" x="875" y="396" width="325" height="130" fill="mist"/>
+  <text id="risk-text" x="897" y="416" width="278" height="92" font="body" size="16" color="ink" line-height="1.28"><p><strong color="bordeaux">RED FLAG</strong></p><p>Августовская маржа на 11,6 п.п. выше июля при минимальной выручке. Подтвердить полноту начислений.</p></text>
+  <shape id="bottom-line" type="line" x="80" y="564" width="1120" height="0" stroke="hairline" stroke-width="1"/>
+  <text id="bottom-conclusion" x="80" y="589" width="1100" height="40" font="body" size="20" color="ink">От марта к маю выручка снизилась на <strong color="bordeaux">20,3 млн руб.</strong>, а чистая прибыль — на <strong color="bordeaux">5,8 млн руб.</strong>; май–июль требуют отдельного антикризисного сценария.</text>
+</slide>
