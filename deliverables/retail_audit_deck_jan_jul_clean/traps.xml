@@ -1,0 +1,16 @@
+<slide id="traps">
+  <background color="paper"/>
+  <shape id="top-rule" type="line" x="64" y="100" width="1152" height="0" stroke="hairline" stroke-width="1"/>
+  <text id="title" x="64" y="48" width="1000" height="40" font="heading" size="32" color="ink" wrap="false">Ловушки выручки требуют адресных мер</text>
+  <text id="slide-number" x="64" y="678" width="44" height="16" font="mono" size="12" color="spruce">06</text>
+  <text id="classification" x="948" y="678" width="268" height="16" font="mono" size="12" color="spruce" align="right">CONFIDENTIAL / ЯНВ–ИЮЛ 2026</text>
+  <text id="summary" x="64" y="130" width="1100" height="38" font="body" size="21" color="ink">Ловушка выручки: выручка не ниже медианы сопоставимых точек при чистой марже ниже 2,0%. В очищенной базе — три таких магазина.</text>
+  <table id="traps-table" x="64" y="194" width="1152" height="296" columns="2,3,3,2,4,5" rows="42,84,84,86" font="body" size="16" color="ink" padding="8 10" header-fill="spruce" header-border="2 spruce" border-h="1 solid hairline">
+    <tr color="#F4F3EE"><td>№</td><td>Точка</td><td align="right">Выручка, млн</td><td align="right">Маржа</td><td>Диагноз</td><td>Первое действие</td></tr>
+    <tr fill="#F2DED9"><td>1</td><td><strong>П.ЗОР</strong></td><td align="right">13,8</td><td align="right"><strong color="cinnabar">(0,9%)</strong></td><td>Избыток наличных операционных трат: 435 тыс. руб.</td><td>Стоп нецелевых трат, сверка первички и месячные лимиты.</td></tr>
+    <tr><td>2</td><td><strong>МОН</strong></td><td align="right">13,1</td><td align="right"><strong color="cinnabar">1,9%</strong></td><td>Избыток ФОТ и налогов: 252 тыс. руб.</td><td>Пересобрать график смен и нормировать часы к трафику.</td></tr>
+    <tr fill="mist"><td>3</td><td><strong>ГС1</strong></td><td align="right">14,3</td><td align="right"><strong color="cinnabar">2,0%</strong></td><td>Маржа ниже сети; подтвердить расходы и ассортиментный микс.</td><td>Weekly P&amp;L и план улучшения валовой маржи.</td></tr>
+  </table>
+  <shape id="bottom-rule" type="line" x="64" y="552" width="1152" height="0" stroke="cinnabar" stroke-width="2"/>
+  <text id="bottom-note" x="64" y="578" width="1110" height="36" font="body" size="20" color="ink"><strong color="spruce">Критерий закрытия:</strong> точка должна показать путь к сетевой чистой марже 4,6% или получить решение о релокации/закрытии.</text>
+</slide>

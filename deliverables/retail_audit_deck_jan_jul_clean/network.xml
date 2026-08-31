@@ -1,0 +1,22 @@
+<slide id="network">
+  <background color="paper"/>
+  <shape id="top-rule" type="line" x="64" y="100" width="1152" height="0" stroke="hairline" stroke-width="1"/>
+  <text id="title" x="64" y="48" width="900" height="40" font="heading" size="32" color="ink" wrap="false">Очищенная сеть: финансовый итог</text>
+  <text id="slide-number" x="64" y="678" width="44" height="16" font="mono" size="12" color="spruce">01</text>
+  <text id="classification" x="948" y="678" width="268" height="16" font="mono" size="12" color="spruce" align="right">CONFIDENTIAL / ЯНВ–ИЮЛ 2026</text>
+  <shape id="kpi1-bg" type="rect" x="64" y="160" width="270" height="176" fill="mist"/>
+  <shape id="kpi2-bg" type="rect" x="358" y="160" width="270" height="176" fill="mist"/>
+  <shape id="kpi3-bg" type="rect" x="652" y="160" width="270" height="176" fill="mist"/>
+  <shape id="kpi4-bg" type="rect" x="946" y="160" width="270" height="176" fill="#F2DED9"/>
+  <text id="kpi1" x="86" y="185" width="226" height="120" font="body" size="17" color="ink"><p color="spruce">ВЫРУЧКА</p><p><strong font="mono" size="31">579,1 млн</strong></p><p size="14">рублей</p></text>
+  <text id="kpi2" x="380" y="185" width="226" height="120" font="body" size="17" color="ink"><p color="spruce">ВАЛОВАЯ ПРИБЫЛЬ</p><p><strong font="mono" size="31">149,3 млн</strong></p><p size="14">маржа 25,8%</p></text>
+  <text id="kpi3" x="674" y="185" width="226" height="120" font="body" size="17" color="ink"><p color="spruce">ЧИСТАЯ ПРИБЫЛЬ</p><p><strong font="mono" size="31">26,9 млн</strong></p><p size="14">маржа 4,6%</p></text>
+  <text id="kpi4" x="968" y="185" width="226" height="120" font="body" size="17" color="ink"><p color="cinnabar">УБЫТОЧНЫЙ КЛАСТЕР</p><p><strong font="mono" size="31" color="cinnabar">12 / 34</strong></p><p size="14">потери 4,7 млн руб.</p></text>
+  <table id="scope-table" x="64" y="390" width="820" height="118" columns="4,3,6" rows="38,40,40" font="body" size="16" color="ink" padding="7 12" header-fill="spruce" header-border="2 spruce" border-h="1 solid hairline">
+    <tr color="#F4F3EE"><td>Параметр</td><td align="right">Значение</td><td>Трактовка</td></tr>
+    <tr><td>Операционные точки</td><td align="right"><strong>34</strong></td><td>Выручка ≥ 1,0 млн руб. за период</td></tr>
+    <tr fill="mist"><td>Исключено листов</td><td align="right"><strong>9</strong></td><td>РЕЗ*, АЛА и С2 по поручению пользователя</td></tr>
+  </table>
+  <shape id="verdict-rule" type="line" x="64" y="550" width="1152" height="0" stroke="spruce" stroke-width="2"/>
+  <text id="verdict" x="64" y="574" width="1110" height="40" font="body" size="22" color="ink"><strong color="spruce">Вердикт:</strong> сеть прибыльна, но уровень чистой маржи 4,6% уязвим из-за 12 убыточных точек и сезонного снижения валовой маржи.</text>
+</slide>

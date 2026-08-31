@@ -1,0 +1,17 @@
+<slide id="decision">
+  <background color="paper"/>
+  <shape id="top-rule" type="line" x="64" y="100" width="1152" height="0" stroke="hairline" stroke-width="1"/>
+  <text id="title" x="64" y="48" width="1000" height="40" font="heading" size="32" color="ink" wrap="false">Решение инвесткомитета</text>
+  <text id="slide-number" x="64" y="678" width="44" height="16" font="mono" size="12" color="spruce">12</text>
+  <text id="classification" x="948" y="678" width="268" height="16" font="mono" size="12" color="spruce" align="right">CONFIDENTIAL / ЯНВ–ИЮЛ 2026</text>
+  <shape id="mandate-bg" type="rect" x="64" y="132" width="1152" height="104" fill="spruce"/>
+  <text id="mandate" x="92" y="158" width="1090" height="56" font="body" size="25" color="paper" line-height="1.23"><p><strong>Утвердить:</strong> 45-дневную программу оздоровления приоритетных точек и перенос проверенных практик лидеров на сопоставимые форматы.</p></text>
+  <table id="decision-table" x="64" y="290" width="1152" height="220" columns="4,2,3,5" rows="40,60,60,60" font="body" size="17" color="ink" padding="9 12" header-fill="spruce" header-border="2 spruce" border-h="1 solid hairline">
+    <tr color="#F4F3EE"><td>Контрольная точка</td><td align="right">Срок</td><td>Владелец</td><td>Требуемый результат</td></tr>
+    <tr><td>Подтверждение программы по ФОТ</td><td align="right">20 дней</td><td>Операции, HR</td><td>Индивидуальные планы Н95, НИК, С3, КА1, УМБА.</td></tr>
+    <tr fill="mist"><td>Сверка расходов П.ЗОР</td><td align="right">10 дней</td><td>Финансы, розница</td><td>Первичка и месячные лимиты по наличным тратам.</td></tr>
+    <tr><td>Решение по МОЛ и ПЗ1</td><td align="right">45 дней</td><td>Развитие, коммерция</td><td>Безубыточность, релокация или закрытие с подтверждаемой экономикой.</td></tr>
+  </table>
+  <shape id="bottom-rule" type="line" x="64" y="552" width="1152" height="0" stroke="cinnabar" stroke-width="2"/>
+  <text id="final-verdict" x="64" y="578" width="1110" height="36" font="body" size="20" color="ink"><strong color="cinnabar">Критерий качества решения:</strong> утверждать только меры с владельцем, сроком, денежным эффектом и Weekly P&amp;L-проверкой исполнения.</text>
+</slide>

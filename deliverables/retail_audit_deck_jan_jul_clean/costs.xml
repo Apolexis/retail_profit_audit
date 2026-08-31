@@ -1,0 +1,23 @@
+<slide id="costs">
+  <background color="paper"/>
+  <shape id="top-rule" type="line" x="64" y="100" width="1152" height="0" stroke="hairline" stroke-width="1"/>
+  <text id="title" x="64" y="48" width="900" height="40" font="heading" size="32" color="ink" wrap="false">Закупки и ФОТ определяют экономику</text>
+  <text id="slide-number" x="64" y="678" width="44" height="16" font="mono" size="12" color="spruce">03</text>
+  <text id="classification" x="948" y="678" width="268" height="16" font="mono" size="12" color="spruce" align="right">CONFIDENTIAL / ЯНВ–ИЮЛ 2026</text>
+  <text id="summary" x="64" y="130" width="1100" height="40" font="body" size="22" color="ink">Закупочная себестоимость составляет <strong color="spruce">74,2%</strong> выручки. После нее главный контролируемый рычаг — <strong color="cinnabar">ФОТ и налоги: 54,8 млн руб. / 9,5% выручки.</strong></text>
+  <chart id="cost-bars" type="bar" x="64" y="198" width="626" height="330" font="caption" categories="Закупки,ФОТ,Аренда,Налог,Комиссия,Коммунальные,Наличные,Списания" color="spruce,cinnabar" legend="none" gridlines="v" gridline-color="hairline" y-format="thousands" x-title="млн руб." gap-width="72">
+    <series name="Расходы" values="429.8,54.8,19.0,17.9,9.9,6.5,6.4,6.2" color="spruce"/>
+  </chart>
+  <table id="cost-table" x="744" y="198" width="472" height="330" columns="5,3,2" rows="38,41,41,41,41,41,41,45" font="body" size="16" color="ink" padding="7 10" header-fill="spruce" header-border="2 spruce" border-h="1 solid hairline">
+    <tr color="#F4F3EE"><td>Статья</td><td align="right">млн руб.</td><td align="right">% выручки</td></tr>
+    <tr><td>Закупки</td><td align="right">429,8</td><td align="right">74,2%</td></tr>
+    <tr fill="#F2DED9"><td><strong>ФОТ и налоги</strong></td><td align="right"><strong color="cinnabar">54,8</strong></td><td align="right"><strong color="cinnabar">9,5%</strong></td></tr>
+    <tr><td>Аренда</td><td align="right">19,0</td><td align="right">3,3%</td></tr>
+    <tr fill="mist"><td>Налог с валовой прибыли</td><td align="right">17,9</td><td align="right">3,1%</td></tr>
+    <tr><td>Банковская комиссия</td><td align="right">9,9</td><td align="right">1,7%</td></tr>
+    <tr fill="mist"><td>Коммунальные + наличные</td><td align="right">12,9</td><td align="right">2,2%</td></tr>
+    <tr><td>Списания + уценка</td><td align="right">7,1</td><td align="right">1,2%</td></tr>
+  </table>
+  <shape id="bottom-rule" type="line" x="64" y="552" width="1152" height="0" stroke="cinnabar" stroke-width="2"/>
+  <text id="bottom-note" x="64" y="578" width="1110" height="36" font="body" size="20" color="ink"><strong color="cinnabar">Повторяемость риска:</strong> у 7 из 12 убыточных точек основным резервом относительно медианы сети является ФОТ и связанные налоги.</text>
+</slide>

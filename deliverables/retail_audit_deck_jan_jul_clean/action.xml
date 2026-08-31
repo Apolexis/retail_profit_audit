@@ -1,0 +1,17 @@
+<slide id="action">
+  <background color="paper"/>
+  <shape id="top-rule" type="line" x="64" y="100" width="1152" height="0" stroke="hairline" stroke-width="1"/>
+  <text id="title" x="64" y="48" width="1000" height="40" font="heading" size="32" color="ink" wrap="false">Первые 45 дней: вернуть управляемость</text>
+  <text id="slide-number" x="64" y="678" width="44" height="16" font="mono" size="12" color="spruce">08</text>
+  <text id="classification" x="948" y="678" width="268" height="16" font="mono" size="12" color="spruce" align="right">CONFIDENTIAL / ЯНВ–ИЮЛ 2026</text>
+  <text id="summary" x="64" y="130" width="1120" height="38" font="body" size="22" color="ink">Программа должна доказать достижимость безубыточности — либо обеспечить решение о релокации/закрытии на основании экономики точки.</text>
+  <table id="action-table" x="64" y="194" width="1152" height="314" columns="2,2,5,3,3,2" rows="42,68,68,68,68" font="body" size="15" color="ink" padding="8 10" header-fill="spruce" header-border="2 spruce" border-h="1 solid hairline">
+    <tr color="#F4F3EE"><td>№</td><td>Точка</td><td>Действие</td><td align="right">Резерв, тыс.</td><td>Владелец</td><td>Срок</td></tr>
+    <tr fill="#F2DED9"><td>1</td><td><strong>Н95</strong></td><td>Переразвернуть смены и роли; привязать ФОТ к трафику.</td><td align="right"><strong color="cinnabar">1 038</strong></td><td>Операции, HR</td><td>20 дней</td></tr>
+    <tr><td>2</td><td><strong>КА1</strong></td><td>Нормировать штатные часы и подтвердить экономику формата.</td><td align="right"><strong color="spruce">684</strong></td><td>Операции, HR</td><td>30 дней</td></tr>
+    <tr fill="mist"><td>3</td><td><strong>ПЗ1</strong></td><td>Переговоры по аренде; при отказе — релокационный сценарий.</td><td align="right"><strong color="spruce">333</strong></td><td>Развитие, коммерция</td><td>45 дней</td></tr>
+    <tr><td>4</td><td><strong>П.ЗОР</strong></td><td>Сверка наличных трат с первичкой; жесткие месячные лимиты.</td><td align="right"><strong color="spruce">435</strong></td><td>Финансы, розница</td><td>10 дней</td></tr>
+  </table>
+  <shape id="bottom-rule" type="line" x="64" y="552" width="1152" height="0" stroke="cinnabar" stroke-width="2"/>
+  <text id="bottom-note" x="64" y="578" width="1110" height="36" font="body" size="20" color="ink"><strong color="cinnabar">Эскалация:</strong> если точка не показывает подтвержденный путь к безубыточности по драйверам P&amp;L, решение не продлевается без ограничений.</text>
+</slide>

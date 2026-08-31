@@ -1,0 +1,15 @@
+<design>
+  <size width="1280" height="720"></size>
+  <color name="paper" value="#F4F3EE"/>
+  <color name="ink" value="#1C1B1A"/>
+  <color name="spruce" value="#145B44"/>
+  <color name="cinnabar" value="#B74835"/>
+  <color name="jade" value="#389065"/>
+  <color name="hairline" value="#DCD8D0"/>
+  <color name="mist" value="#EBE9E4"/>
+  <font name="display" family="Inter" size="56"/>
+  <font name="heading" family="Inter" size="32"/>
+  <font name="body" family="Inter" size="18"/>
+  <font name="caption" family="Inter" size="12"/>
+  <font name="mono" family="Roboto Mono" size="16"/>
+</design>

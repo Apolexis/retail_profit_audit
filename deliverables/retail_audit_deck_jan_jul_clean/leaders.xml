@@ -1,0 +1,16 @@
+<slide id="leaders">
+  <background color="paper"/>
+  <shape id="top-rule" type="line" x="64" y="100" width="1152" height="0" stroke="hairline" stroke-width="1"/>
+  <text id="title" x="64" y="48" width="1000" height="40" font="heading" size="32" color="ink" wrap="false">Три лидера создают 59,6% прибыли</text>
+  <text id="slide-number" x="64" y="678" width="44" height="16" font="mono" size="12" color="spruce">04</text>
+  <text id="classification" x="948" y="678" width="268" height="16" font="mono" size="12" color="spruce" align="right">CONFIDENTIAL / ЯНВ–ИЮЛ 2026</text>
+  <text id="summary" x="64" y="130" width="1080" height="40" font="body" size="23" color="ink">ПОРТ, КИР1 и А2 сформировали <strong color="spruce">16,0 млн руб.</strong> чистой прибыли — <strong color="spruce">59,6%</strong> результата очищенной сети.</text>
+  <shape id="port-bg" type="rect" x="64" y="220" width="312" height="280" fill="mist"/>
+  <shape id="kir-bg" type="rect" x="452" y="220" width="312" height="280" fill="mist"/>
+  <shape id="a2-bg" type="rect" x="840" y="220" width="312" height="280" fill="mist"/>
+  <text id="port" x="92" y="250" width="250" height="210" font="body" size="18" color="ink"><p font="heading" size="30">ПОРТ</p><p color="spruce">ЧИСТАЯ ПРИБЫЛЬ</p><p><strong font="mono" size="35" color="spruce">7,5 млн</strong></p><p>Выручка 87,8 млн руб.</p><p>Чистая маржа <strong>8,5%</strong></p></text>
+  <text id="kir" x="480" y="250" width="250" height="210" font="body" size="18" color="ink"><p font="heading" size="30">КИР1</p><p color="spruce">ЧИСТАЯ ПРИБЫЛЬ</p><p><strong font="mono" size="35" color="spruce">4,3 млн</strong></p><p>Выручка 42,4 млн руб.</p><p>Чистая маржа <strong>10,2%</strong></p></text>
+  <text id="a2" x="868" y="250" width="250" height="210" font="body" size="18" color="ink"><p font="heading" size="30">А2</p><p color="spruce">ЧИСТАЯ ПРИБЫЛЬ</p><p><strong font="mono" size="35" color="spruce">4,2 млн</strong></p><p>Выручка 39,2 млн руб.</p><p>Чистая маржа <strong>10,6%</strong></p></text>
+  <shape id="bottom-rule" type="line" x="64" y="552" width="1152" height="0" stroke="spruce" stroke-width="2"/>
+  <text id="bottom-note" x="64" y="578" width="1110" height="36" font="body" size="20" color="ink"><strong color="spruce">Практика для переноса:</strong> сравнить SKU-матрицу, закупочные условия, списания, штатные часы и аренду лидеров с магазинами того же диапазона выручки.</text>
+</slide>

@@ -1,0 +1,10 @@
+<slide id="cover">
+  <background color="paper"/>
+  <shape id="cover-top-rule" type="line" x="64" y="100" width="1152" height="0" stroke="spruce" stroke-width="2"/>
+  <text id="cover-kicker" x="64" y="128" width="600" height="24" font="mono" size="14" color="cinnabar" wrap="false">РИТЕЙЛ-СЕТЬ / АУДИТ P&amp;L / ОЧИЩЕННАЯ БАЗА</text>
+  <text id="cover-title" x="64" y="178" width="820" height="182" font="display" size="64" color="ink" line-height="0.98"><p>Супер-отчет:</p><p>прибыль магазинов</p></text>
+  <text id="cover-verdict" x="64" y="388" width="800" height="42" font="heading" size="31" color="cinnabar" wrap="false">Январь–июль 2026</text>
+  <shape id="cover-meta-frame" type="rect" x="64" y="562" width="630" height="82" fill="mist"/>
+  <text id="cover-meta" x="88" y="582" width="570" height="45" font="body" size="18" color="ink" line-height="1.25"><p><strong>База анализа:</strong> 34 операционные точки</p><p><strong>Исключены:</strong> РЕЗ*, АЛА и С2</p></text>
+  <text id="cover-classification" x="944" y="620" width="272" height="18" font="mono" size="12" color="spruce" align="right" wrap="false">CONFIDENTIAL / 2026</text>
+</slide>

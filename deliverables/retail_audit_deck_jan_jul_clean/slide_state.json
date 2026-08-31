@@ -1,0 +1,155 @@
+{
+  "project_info": {
+    "title": "Супер-отчет: аудит прибыли магазинов",
+    "created": 1788178213.184,
+    "last_updated": 1788178477.047,
+    "total_slides": 13
+  },
+  "slides": [
+    {
+      "id": "cover",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "network",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "seasonality",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "costs",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "leaders",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "losses",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "traps",
+      "state": "edited",
+      "pageNum": 7
+    },
+    {
+      "id": "hero",
+      "state": "edited",
+      "pageNum": 8
+    },
+    {
+      "id": "action",
+      "state": "edited",
+      "pageNum": 9
+    },
+    {
+      "id": "mol",
+      "state": "edited",
+      "pageNum": 10
+    },
+    {
+      "id": "defense",
+      "state": "edited",
+      "pageNum": 11
+    },
+    {
+      "id": "formula",
+      "state": "edited",
+      "pageNum": 12
+    },
+    {
+      "id": "decision",
+      "state": "edited",
+      "pageNum": 13
+    }
+  ],
+  "outline": [
+    {
+      "id": "cover",
+      "title": "Супер-отчет: аудит прибыли магазинов",
+      "summary": "Обложка: очищенная база января–июля 2026 без РЕЗ*, АЛА и С2.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "network",
+      "title": "Очищенная сеть: финансовый итог",
+      "summary": "Выручка, валовая и чистая прибыль, маржинальность и состав базы.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "seasonality",
+      "title": "Март — пик; июль — зона риска",
+      "summary": "Помесячная динамика выручки и чистой прибыли за январь–июль.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "costs",
+      "title": "Закупки и ФОТ определяют экономику",
+      "summary": "Структура затрат и контролируемые рычаги.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "leaders",
+      "title": "Три лидера создают 59,6% прибыли",
+      "summary": "ПОРТ, КИР1 и А2: концентрация результата и маржа.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "losses",
+      "title": "12 точек создали 4,7 млн руб. потерь",
+      "summary": "Кластер хронических убытков и повторяющиеся драйверы.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "traps",
+      "title": "Ловушки выручки требуют адресных мер",
+      "summary": "П.ЗОР, МОН и ГС1: слабая конвертация выручки в прибыль.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "hero",
+      "title": "Скрытый герой — А3",
+      "summary": "Экономика точки с низкой выручкой и высокой относительной маржой.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "action",
+      "title": "Первые 45 дней: вернуть управляемость",
+      "summary": "Адресные меры по Н95, КА1, ПЗ1 и П.ЗОР.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "mol",
+      "title": "МОЛ: отдельная развилка",
+      "summary": "Критерии решения о закрытии или релокации.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "defense",
+      "title": "Защитить май–июль заранее",
+      "summary": "Антикризисная программа и weekly P&L-контроль.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "formula",
+      "title": "Формулы корректны, риск — в экономике",
+      "summary": "Покрытие проверки формул и ограничения нового среза.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "decision",
+      "title": "Решение инвесткомитета",
+      "summary": "Рекомендация, сроки и проверяемые контрольные точки.",
+      "image_plan": "Use a suitable image if needed"
+    }
+  ]
+}

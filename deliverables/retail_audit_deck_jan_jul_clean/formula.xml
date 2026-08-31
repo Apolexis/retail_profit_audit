@@ -1,0 +1,16 @@
+<slide id="formula">
+  <background color="paper"/>
+  <shape id="top-rule" type="line" x="64" y="100" width="1152" height="0" stroke="hairline" stroke-width="1"/>
+  <text id="title" x="64" y="48" width="1000" height="40" font="heading" size="32" color="ink" wrap="false">Формулы корректны, риск — в экономике</text>
+  <text id="slide-number" x="64" y="678" width="44" height="16" font="mono" size="12" color="spruce">11</text>
+  <text id="classification" x="948" y="678" width="268" height="16" font="mono" size="12" color="spruce" align="right">CONFIDENTIAL / ЯНВ–ИЮЛ 2026</text>
+  <text id="verdict" x="64" y="130" width="1110" height="42" font="body" size="24" color="ink"><strong color="jade">Заключение:</strong> арифметические связи и формулы исходной книги прошли проверку; ошибок и расхождений свыше 0,15 руб. не выявлено.</text>
+  <shape id="check1-bg" type="rect" x="64" y="226" width="312" height="214" fill="mist"/>
+  <shape id="check2-bg" type="rect" x="452" y="226" width="312" height="214" fill="mist"/>
+  <shape id="check3-bg" type="rect" x="840" y="226" width="376" height="214" fill="mist"/>
+  <text id="check1" x="90" y="256" width="260" height="142" font="body" size="18" color="ink"><p color="spruce">ЛИСТЫ-МАГАЗИНЫ</p><p><strong font="mono" size="45" color="jade">43</strong></p><p>Первые 3 листа исключены как технические.</p></text>
+  <text id="check2" x="478" y="256" width="260" height="142" font="body" size="18" color="ink"><p color="spruce">P&amp;L-БЛОКИ</p><p><strong font="mono" size="45" color="jade">516</strong></p><p>12 повторяющихся блоков на каждом листе.</p></text>
+  <text id="check3" x="866" y="256" width="320" height="142" font="body" size="18" color="ink"><p color="spruce">ФОРМУЛЬНЫЕ ЯЧЕЙКИ</p><p><strong font="mono" size="45" color="jade">310 723</strong></p><p>Сверка с независимым пересчетом.</p></text>
+  <shape id="limit-bg" type="rect" x="64" y="520" width="1152" height="106" fill="#F2DED9"/>
+  <text id="limit-text" x="90" y="544" width="1100" height="60" font="body" size="20" color="ink" line-height="1.3"><p><strong color="cinnabar">Граница текущей версии:</strong> все выводы отражают только январь–июль 2026.</p><p>РЕЗ*, АЛА и С2 исключены из всех сетевых агрегатов, рейтингов, аномалий и управленческих мер.</p></text>
+</slide>

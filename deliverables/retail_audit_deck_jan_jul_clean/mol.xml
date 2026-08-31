@@ -1,0 +1,18 @@
+<slide id="mol">
+  <background color="paper"/>
+  <shape id="top-rule" type="line" x="64" y="100" width="1152" height="0" stroke="hairline" stroke-width="1"/>
+  <text id="title" x="64" y="48" width="1000" height="40" font="heading" size="32" color="ink" wrap="false">МОЛ: отдельная развилка</text>
+  <text id="slide-number" x="64" y="678" width="44" height="16" font="mono" size="12" color="spruce">09</text>
+  <text id="classification" x="948" y="678" width="268" height="16" font="mono" size="12" color="spruce" align="right">CONFIDENTIAL / ЯНВ–ИЮЛ 2026</text>
+  <text id="summary" x="64" y="130" width="1120" height="38" font="body" size="22" color="ink">Точка имеет самую слабую экономику в очищенной базе. Ее судьба должна быть решена по факту достижимости безубыточности, а не по инерции.</text>
+  <shape id="mol-box" type="rect" x="64" y="236" width="300" height="202" fill="#F2DED9"/>
+  <text id="mol-text" x="90" y="260" width="250" height="154" font="body" size="18" color="ink"><p font="heading" size="28" color="cinnabar">МОЛ</p><p>Выручка <strong>1,4 млн руб.</strong></p><p>Убыток <strong color="cinnabar">(419 тыс. руб.)</strong></p><p>Чистая маржа <strong color="cinnabar">(30,6%)</strong></p></text>
+  <shape id="connector-up" type="elbow" x="364" y="337" width="150" height="-104" stroke="spruce" stroke-width="2" arrow-end="arrow"/>
+  <shape id="connector-down" type="elbow" x="364" y="337" width="150" height="161" stroke="cinnabar" stroke-width="2" arrow-end="arrow"/>
+  <shape id="save-box" type="rect" x="544" y="184" width="600" height="152" fill="#E2EEE8"/>
+  <text id="save-text" x="574" y="208" width="540" height="106" font="body" size="19" color="ink"><p font="heading" size="24" color="jade">ВЕТВЬ A / ОЗДОРОВЛЕНИЕ</p><p>Подтвержденный план устранения не менее <strong>419 тыс. руб.</strong> годовой-периодной нагрузки: трафик, ФОТ, аренда, ассортимент.</p></text>
+  <shape id="exit-box" type="rect" x="544" y="394" width="600" height="152" fill="mist"/>
+  <text id="exit-text" x="574" y="418" width="540" height="106" font="body" size="19" color="ink"><p font="heading" size="24" color="cinnabar">ВЕТВЬ B / ВЫХОД</p><p>Если путь к безубыточности не доказан: закрытие или релокация, с фиксацией высвобождаемой потери и проверкой альтернативной локации.</p></text>
+  <shape id="bottom-rule" type="line" x="64" y="590" width="1152" height="0" stroke="hairline" stroke-width="1"/>
+  <text id="bottom-note" x="64" y="612" width="1110" height="24" font="body" size="18" color="ink"><strong>Срок решения:</strong> 45 дней; доказательства должны быть основаны на трафике, договорных условиях и поквартальном P&amp;L-эффекте.</text>
+</slide>

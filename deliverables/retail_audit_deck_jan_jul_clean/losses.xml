@@ -1,0 +1,19 @@
+<slide id="losses">
+  <background color="paper"/>
+  <shape id="top-rule" type="line" x="64" y="100" width="1152" height="0" stroke="hairline" stroke-width="1"/>
+  <text id="title" x="64" y="48" width="1000" height="40" font="heading" size="32" color="ink" wrap="false">12 точек создали 4,7 млн руб. потерь</text>
+  <text id="slide-number" x="64" y="678" width="44" height="16" font="mono" size="12" color="spruce">05</text>
+  <text id="classification" x="948" y="678" width="268" height="16" font="mono" size="12" color="spruce" align="right">CONFIDENTIAL / ЯНВ–ИЮЛ 2026</text>
+  <text id="summary" x="64" y="130" width="1100" height="38" font="body" size="22" color="ink"><strong color="cinnabar">Хронические убытки:</strong> Н95 и НИК убыточны каждый месяц периода; у С3, УМБА и ПЗ1 — шесть убыточных месяцев из семи.</text>
+  <table id="loss-table" x="64" y="196" width="1152" height="300" columns="2,3,3,2,3,4" rows="42,43,43,43,43,43,43" font="body" size="16" color="ink" padding="7 10" header-fill="spruce" header-border="2 spruce" border-h="1 solid hairline">
+    <tr color="#F4F3EE"><td>№</td><td>Магазин</td><td align="right">Убыток, тыс.</td><td align="right">Убыт. мес.</td><td align="right">Резерв, тыс.</td><td>Главный резерв</td></tr>
+    <tr fill="#F2DED9"><td>1</td><td><strong>Н95</strong></td><td align="right"><strong color="cinnabar">(981)</strong></td><td align="right">7</td><td align="right">1 038</td><td>ФОТ и налоги</td></tr>
+    <tr><td>2</td><td><strong>НИК</strong></td><td align="right"><strong color="cinnabar">(688)</strong></td><td align="right">7</td><td align="right">374</td><td>ФОТ и налоги</td></tr>
+    <tr fill="mist"><td>3</td><td><strong>С3</strong></td><td align="right"><strong color="cinnabar">(481)</strong></td><td align="right">6</td><td align="right">491</td><td>ФОТ и налоги</td></tr>
+    <tr><td>4</td><td><strong>КА1</strong></td><td align="right"><strong color="cinnabar">(475)</strong></td><td align="right">3</td><td align="right">684</td><td>ФОТ и налоги</td></tr>
+    <tr fill="mist"><td>5</td><td><strong>УМБА</strong></td><td align="right"><strong color="cinnabar">(461)</strong></td><td align="right">6</td><td align="right">441</td><td>ФОТ и налоги</td></tr>
+    <tr><td>6</td><td><strong>МОЛ</strong></td><td align="right"><strong color="cinnabar">(419)</strong></td><td align="right">3</td><td align="right">201</td><td>ФОТ и налоги</td></tr>
+  </table>
+  <shape id="bottom-rule" type="line" x="64" y="552" width="1152" height="0" stroke="cinnabar" stroke-width="2"/>
+  <text id="bottom-note" x="64" y="578" width="1100" height="36" font="body" size="20" color="ink">Оставшиеся шесть убыточных точек — МАК, ПЗ1, П.ЗОР, МИРА, РОС и КИР2. Для 7 из 12 точек первым действием является пересчет штатных часов и ФОТ.</text>
+</slide>

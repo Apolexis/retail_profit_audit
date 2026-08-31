@@ -14,8 +14,8 @@ from openpyxl.worksheet.datavalidation import DataValidation
 
 
 ROOT = Path("/home/ubuntu/retail_profit_audit_2026")
-WORK = ROOT / "audit_work"
-OUT = ROOT / "deliverables" / "Супер_отчет_аудит_прибыли_2026.xlsx"
+WORK = ROOT / "audit_work_jan_jul_excl_rez"
+OUT = ROOT / "deliverables" / "Супер_отчет_аудит_прибыли_2026_янв_июл_без_РЕЗ_АЛА_С2.xlsx"
 OUT.parent.mkdir(parents=True, exist_ok=True)
 
 DARK_GREEN = "135B44"
@@ -153,7 +153,7 @@ def set_print_area(ws):
 
 analysis = json.loads((WORK / "analysis_data.json").read_text(encoding="utf-8"))
 annual = pd.read_csv(WORK / "store_profiles_enriched.csv", encoding="utf-8-sig")
-monthly = pd.read_csv(WORK / "store_monthly.csv", encoding="utf-8-sig")
+monthly = pd.read_csv(WORK / "store_monthly_jan_jul_excl_rez.csv", encoding="utf-8-sig")
 annual = annual.where(pd.notnull(annual), None)
 monthly = monthly.where(pd.notnull(monthly), None)
 
@@ -165,14 +165,15 @@ ws = wb.create_sheet("00_Главный_дашборд")
 apply_layout(
     ws,
     "Супер-отчет: аудит прибыли розничной сети",
-    "Управленческий и инвесторский пакет по данным «учет2026.xlsm» | Фактические данные: январь–август 2026",
+    "Управленческий и инвесторский пакет по данным «учет2026.xlsm» | Фактические данные: январь–июль 2026 | Исключены РЕЗ*, АЛА и С2",
 )
 add_section(ws, 8, "Главный вывод")
 ws.merge_cells("C9:K10")
 ws["C9"] = (
-    "Сеть сформировала чистую прибыль 34,4 млн руб. при выручке 648,1 млн руб. и чистой марже 5,3%. "
-    "Однако 11 из 35 сопоставимых магазинов убыточны и аккумулируют 3,9 млн руб. убытка. "
-    "Сентябрь–декабрь заполнены нулями на всех листах, поэтому годовой итог в настоящем пакете отражает только январь–август."
+    f"Сеть сформировала чистую прибыль {analysis['network_dashboard']['net_profit'] / 1_000_000:.1f} млн руб. при выручке "
+    f"{analysis['network_dashboard']['revenue'] / 1_000_000:.1f} млн руб. и чистой марже {analysis['network_dashboard']['net_margin']:.1%}. "
+    f"{analysis['network_dashboard']['loss_making_comparable_stores']} из {analysis['reporting_scope']['comparable_operating_stores_revenue_ge_1m']} сопоставимых магазинов убыточны и аккумулируют "
+    f"{analysis['network_dashboard']['total_comparable_losses'] / 1_000_000:.1f} млн руб. убытка. Расчеты ограничены январем–июлем; РЕЗ*, АЛА и С2 исключены из базы."
 )
 ws["C9"].alignment = Alignment(wrap_text=True, vertical="top")
 ws["C9"].font = Font(name="Aptos", size=11, color=GRAPHITE)
@@ -197,7 +198,7 @@ for idx, (label, value, fmt) in enumerate(kpis):
     cell = ws.cell(row + 1, col, value)
     style_number(cell, fmt, input_value=True, bold=True)
     cell.font = Font(name="Aptos", size=15, bold=True, color=BLUE)
-    cell.comment = Comment("Источник: учет2026.xlsm, агрегировано по листам-магазинам с 4-го листа. Период: январь–август 2026.", "Manus AI")
+    cell.comment = Comment("Источник: учет2026.xlsm, агрегировано по листам-магазинам с 4-го листа. Период: январь–июль 2026; РЕЗ*, АЛА и С2 исключены.", "Manus AI")
     for r in (row, row + 1):
         for c in range(col, col + 2):
             ws.cell(r, c).fill = PatternFill("solid", fgColor=PAPER)
@@ -259,7 +260,7 @@ autofit(ws)
 
 # 01 — monthly network P&L
 ws = wb.create_sheet("01_Сеть_месяцы")
-apply_layout(ws, "Помесячная динамика сети", "Фактическая динамика продаж, валовой и чистой прибыли | Сентябрь–декабрь: нулевые значения в исходной книге")
+apply_layout(ws, "Помесячная динамика сети", "Фактическая динамика продаж, валовой и чистой прибыли | Период анализа: январь–июль 2026 | Исключены РЕЗ*, АЛА и С2")
 add_section(ws, 8, "Консолидированная динамика")
 headers = ["Месяц", "Выручка", "Валовая прибыль", "Валовая маржа", "Расходы", "Чистая прибыль", "Чистая маржа", "Статус данных"]
 for col, header in enumerate(headers, start=3):
@@ -281,13 +282,13 @@ for idx, record in enumerate(analysis["monthly_network"], start=10):
     if not record["data_available"]:
         for col in range(3, 11):
             ws.cell(idx, col).fill = PatternFill("solid", fgColor=LIGHT_GRAY)
-apply_total_border(ws, 17, 3, 10)
+apply_total_border(ws, 9 + len(analysis["monthly_network"]), 3, 10)
 
 add_section(ws, 22, "Сезонные сигналы и контроль закрытия")
 signals = [
-    ("Пик прибыли", "Август", analysis["network_dashboard"]["profit_peak_month"]["net_profit"], "Чистая маржа 13,2% при самой низкой выручке периода — подтвердить полноту начислений и разовые эффекты."),
-    ("Провал прибыли", "Май", analysis["network_dashboard"]["profit_trough_month"]["net_profit"], "Чистая маржа 1,4%; от марта прибыль сократилась на 5,8 млн руб. при падении выручки на 20,3 млн руб."),
-    ("Снижение валовой маржи", "Июль", analysis["seasonality"]["july_gross_margin"], "Валовая маржа 23,9% против 26,7% в марте: приоритет — закупочная цена, уценка и ассортиментная матрица."),
+    ("Пик прибыли", analysis["network_dashboard"]["profit_peak_month"]["month"], analysis["network_dashboard"]["profit_peak_month"]["net_profit"], f"Чистая маржа {analysis['network_dashboard']['profit_peak_month']['net_margin']:.1%}; самый сильный месяц очищенного периода."),
+    ("Провал прибыли", analysis["network_dashboard"]["profit_trough_month"]["month"], analysis["network_dashboard"]["profit_trough_month"]["net_profit"], f"Чистая маржа {analysis['network_dashboard']['profit_trough_month']['net_margin']:.1%}; требуется усиленный контроль закупочной маржи и переменных расходов."),
+    ("Снижение валовой маржи", "Июль", analysis["seasonality"]["july_gross_margin"], "Валовая маржа 23,9% против 26,6% в марте: приоритет — закупочная цена, уценка и ассортиментная матрица."),
 ]
 for col, header in enumerate(["Сигнал", "Месяц", "Значение", "Управленческий вывод"], start=3):
     ws.cell(23, col, header)
@@ -299,13 +300,13 @@ for row, (signal, month, value, note) in enumerate(signals, start=24):
     ws.cell(row, 6, note); style_label(ws.cell(row, 6))
     ws.cell(row, 6).alignment = Alignment(wrap_text=True, vertical="top")
     ws.row_dimensions[row].height = 38
-add_profit_chart(ws, 10, 17, 3, 8, "L9", "Чистая прибыль по месяцам")
+add_profit_chart(ws, 10, 9 + len(analysis["monthly_network"]), 3, 8, "L9", "Чистая прибыль по месяцам")
 set_print_area(ws)
 autofit(ws)
 
 # 02 — full ranking
 ws = wb.create_sheet("02_Рейтинг_магазинов")
-apply_layout(ws, "Рейтинг магазинов по чистой прибыли", "Сопоставимый рейтинг: листы с выручкой от 1,0 млн руб. | Отдельно отмечены неоперационные/резервные листы")
+apply_layout(ws, "Рейтинг магазинов по чистой прибыли", "Сопоставимый рейтинг: январь–июль 2026 | Исключены РЕЗ*, АЛА и С2 по поручению пользователя")
 add_section(ws, 8, "Сопоставимые магазины")
 ranked = annual[annual["revenue"] >= 1_000_000].sort_values("net_profit", ascending=False).copy()
 ranked["rank"] = range(1, len(ranked) + 1)
@@ -330,14 +331,14 @@ for row_num, (_, item) in enumerate(ranked.iterrows(), start=10):
     elif item["net_margin"] >= analysis["network_dashboard"]["net_margin"]:
         ws.cell(row_num, 8).fill = PatternFill("solid", fgColor=PALE_GREEN)
 ws.conditional_formatting.add(f"G10:G{9 + len(ranked)}", CellIsRule(operator="lessThan", formula=["0"], fill=PatternFill("solid", fgColor=PALE_RED)))
-add_section(ws, 47, "Неоперационные и резервные листы")
+add_section(ws, 47, "Листы, исключенные из расчетной базы")
 for col, header in enumerate(["Лист", "Выручка", "Статус"], start=3):
     ws.cell(48, col, header)
 style_header(ws, 48, 3, 5)
-for row_num, item in enumerate(analysis["reporting_scope"]["non_operating_or_placeholder_sheets"], start=49):
-    ws.cell(row_num, 3, item["store"]); style_label(ws.cell(row_num, 3))
-    ws.cell(row_num, 4, item["revenue"]); style_number(ws.cell(row_num, 4), CURRENCY, input_value=True)
-    ws.cell(row_num, 5, "Нулевые продажи в источнике"); style_label(ws.cell(row_num, 5))
+for row_num, store in enumerate(analysis["reporting_scope"]["excluded_stores"], start=49):
+    ws.cell(row_num, 3, store); style_label(ws.cell(row_num, 3))
+    ws.cell(row_num, 4, "—"); style_label(ws.cell(row_num, 4))
+    ws.cell(row_num, 5, "Исключен по поручению пользователя"); style_label(ws.cell(row_num, 5))
 set_print_area(ws)
 autofit(ws)
 
@@ -359,7 +360,7 @@ for row, item in enumerate(traps, start=10):
             style_number(cell, PERCENT if col == 6 else CURRENCY, input_value=True, bold=col == 5)
         else:
             style_label(cell)
-    ws.cell(row, 5).fill = PatternFill("solid", fgColor=PALE_RED)
+    ws.cell(row, 12).fill = PatternFill("solid", fgColor=PALE_RED)
     ws.row_dimensions[row].height = 32
 
 add_section(ws, 14, "Скрытые герои")
@@ -528,23 +529,23 @@ for _, item in annual.sort_values("store").iterrows():
     sheet_name = f"М_{store}"[:31]
     ws = wb.create_sheet(sheet_name)
     title_status = "операционная точка" if item["revenue"] and item["revenue"] > 0 else "нулевые продажи / резервный лист"
-    apply_layout(ws, f"Профиль магазина: {store}", f"{title_status} | Данные по листу «{store}» исходной книги | январь–август 2026")
+    apply_layout(ws, f"Профиль магазина: {store}", f"{title_status} | Данные по листу «{store}» исходной книги | январь–июль 2026")
     add_section(ws, 8, "Финансовый результат")
     for row, (label, field, fmt) in enumerate(display_metrics, start=9):
         ws.cell(row, 3, label); style_label(ws.cell(row, 3), bold=label in {"Выручка", "Валовая прибыль", "Чистая прибыль"}, italic="маржа" in label.lower())
         formula = None
         if field == "revenue":
-            formula = "=SUM(D24:D35)"
+            formula = "=SUM(D24:D31)"
         elif field == "purchases":
-            formula = "=SUM(E24:E35)"
+            formula = "=SUM(E24:E31)"
         elif field == "gross_profit":
-            formula = "=SUM(F24:F35)"
+            formula = "=SUM(F24:F31)"
         elif field == "gross_margin":
             formula = "=IFERROR(D11/D9,0)"
         elif field == "expenses":
             formula = "=D9-D14"
         elif field == "net_profit":
-            formula = "=SUM(H24:H35)"
+            formula = "=SUM(H24:H31)"
         elif field == "net_margin":
             formula = "=IFERROR(D14/D9,0)"
         ws.cell(row, 4, formula)
@@ -571,7 +572,7 @@ for _, item in annual.sort_values("store").iterrows():
     style_header(ws, 24, 3, 13)
     frame = monthly_lookup.get(store, pd.DataFrame())
     record_by_month = {record["month"]: record for _, record in frame.iterrows()}
-    for row_index, month in enumerate(["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"], start=25):
+    for row_index, month in enumerate(["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль"], start=25):
         record = record_by_month.get(month)
         ws.cell(row_index, 3, month); style_label(ws.cell(row_index, 3))
         if record is None:
@@ -590,17 +591,14 @@ for _, item in annual.sort_values("store").iterrows():
             ws.cell(row_index, col, values[field])
             style_number(ws.cell(row_index, col), fmt, input_value=True)
             ws.cell(row_index, col).comment = source_comment(store, month, total_row, monthly_metrics[col - 3][0])
-        if month in {"Сентябрь", "Октябрь", "Ноябрь", "Декабрь"}:
-            for col in range(3, 14):
-                ws.cell(row_index, col).fill = PatternFill("solid", fgColor=LIGHT_GRAY)
-    apply_total_border(ws, 36, 3, 13)
-    ws.cell(36, 3, "Итого факт (янв–авг)")
-    style_label(ws.cell(36, 3), bold=True)
+    apply_total_border(ws, 32, 3, 13)
+    ws.cell(32, 3, "Итого факт (янв–июл)")
+    style_label(ws.cell(32, 3), bold=True)
     for col in [4, 5, 6, 8, 10, 11, 12, 13]:
-        ws.cell(36, col, f"=SUM({get_column_letter(col)}25:{get_column_letter(col)}32)")
-        style_number(ws.cell(36, col), CURRENCY, input_value=False, bold=True)
-    ws.cell(36, 7, "=IFERROR(F36/D36,0)"); style_number(ws.cell(36, 7), PERCENT, input_value=False, bold=True)
-    ws.cell(36, 9, "=IFERROR(H36/D36,0)"); style_number(ws.cell(36, 9), PERCENT, input_value=False, bold=True)
+        ws.cell(32, col, f"=SUM({get_column_letter(col)}25:{get_column_letter(col)}31)")
+        style_number(ws.cell(32, col), CURRENCY, input_value=False, bold=True)
+    ws.cell(32, 7, "=IFERROR(F32/D32,0)"); style_number(ws.cell(32, 7), PERCENT, input_value=False, bold=True)
+    ws.cell(32, 9, "=IFERROR(H32/D32,0)"); style_number(ws.cell(32, 9), PERCENT, input_value=False, bold=True)
 
     add_section(ws, 39, "Контроль формул исходного листа")
     ws.merge_cells("C40:K41")
@@ -612,7 +610,7 @@ for _, item in annual.sort_values("store").iterrows():
     ws["C40"].alignment = Alignment(wrap_text=True, vertical="top")
     ws["C40"].fill = PatternFill("solid", fgColor=PALE_GREEN)
     ws["C40"].font = Font(name="Aptos", size=10, color=JADE)
-    add_profit_chart(ws, 25, 32, 3, 8, "M24", "Чистая прибыль по фактическим месяцам")
+    add_profit_chart(ws, 25, 31, 3, 8, "M24", "Чистая прибыль по фактическим месяцам")
     ws.freeze_panes = "C24"
     set_print_area(ws)
     autofit(ws, max_width=30)
