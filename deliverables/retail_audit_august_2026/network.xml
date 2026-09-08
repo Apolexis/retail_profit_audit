@@ -1,0 +1,24 @@
+<slide id="network">
+  <background color="paper"/>
+  <shape id="top-rule" type="line" x="40" y="64" width="1200" height="0" stroke="hairline" stroke-width="1"/>
+  <text id="title" x="40" y="108" width="940" height="44" font="heading" size="33" color="ink">Очищенная сеть: финансовый итог</text>
+  <text id="scope" x="40" y="162" width="1000" height="27" font="body" size="18" color="muted">Январь–август 2026 · 33 магазина · без КА1, АЛА, МОЛ и РЕЗ*</text>
+  <shape id="metric-top" type="line" x="40" y="212" width="1200" height="0" stroke="spruce" stroke-width="2"/>
+  <shape id="metric-v1" type="line" x="340" y="212" width="0" height="194" stroke="hairline" stroke-width="1"/>
+  <shape id="metric-v2" type="line" x="640" y="212" width="0" height="194" stroke="hairline" stroke-width="1"/>
+  <shape id="metric-v3" type="line" x="940" y="212" width="0" height="194" stroke="hairline" stroke-width="1"/>
+  <shape id="metric-bottom" type="line" x="40" y="406" width="1200" height="0" stroke="hairline" stroke-width="1"/>
+  <text id="revenue" x="64" y="238" width="250" height="126" font="body" size="17" color="ink"><p color="muted">ВЫРУЧКА</p><p><strong font="heading" size="37" color="spruce">666,1 млн</strong></p><p size="15">рублей</p></text>
+  <text id="gross" x="364" y="238" width="250" height="126" font="body" size="17" color="ink"><p color="muted">ВАЛОВАЯ ПРИБЫЛЬ</p><p><strong font="heading" size="37" color="spruce">170,7 млн</strong></p><p size="15">маржа 25,6%</p></text>
+  <text id="net" x="664" y="238" width="250" height="126" font="body" size="17" color="ink"><p color="muted">ЧИСТАЯ ПРИБЫЛЬ</p><p><strong font="heading" size="37" color="spruce">31,7 млн</strong></p><p size="15">маржа 4,8%</p></text>
+  <text id="losses" x="964" y="238" width="250" height="126" font="body" size="17" color="ink"><p color="cinnabar">УБЫТОЧНЫЕ ТОЧКИ</p><p><strong font="heading" size="37" color="cinnabar">11 / 33</strong></p><p size="15">потери 4,3 млн руб.</p></text>
+  <table id="portfolio-table" x="40" y="465" width="1200" height="70" columns="3,3,3,3" rows="35,35" font="body" size="16" color="ink" padding="7 12" border-h="1 solid hairline" border-v="1 solid hairline" header-fill="mist" header-border="1 hairline">
+    <tr><td>Портфель</td><td>Прибыльные точки</td><td>Убыточные точки</td><td>Средняя маржа точки</td></tr>
+    <tr><td><strong>33 магазина</strong></td><td><strong color="spruce">22</strong></td><td><strong color="cinnabar">11</strong></td><td><strong>2,3%</strong></td></tr>
+  </table>
+  <shape id="finding-rule" type="line" x="40" y="568" width="1200" height="0" stroke="cinnabar" stroke-width="2"/>
+  <text id="finding" x="40" y="590" width="1140" height="28" font="body" size="19" color="ink"><strong color="cinnabar">Вывод:</strong> прибыль сети положительна, но 57,3% результата формируют три магазина — концентрация результата требует защиты лидеров и адресной программы для убыточного кластера.</text>
+  <shape id="bottom-rule" type="line" x="40" y="652" width="1200" height="0" stroke="hairline" stroke-width="1"/>
+  <text id="foot" x="40" y="672" width="360" height="18" font="caption" size="12" color="muted">AUDITLINE / СВОДНЫЙ ДАШБОРД</text>
+  <text id="page" x="1190" y="672" width="50" height="18" font="caption" size="12" color="spruce" align="right">02</text>
+</slide>

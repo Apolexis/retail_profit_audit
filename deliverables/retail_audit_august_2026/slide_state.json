@@ -1,0 +1,383 @@
+{
+  "project_info": {
+    "title": "Супер-отчет: аудит прибыли магазинов",
+    "created": 1788882196.946,
+    "last_updated": 1788882699.699,
+    "total_slides": 16
+  },
+  "slides": [
+    {
+      "id": "cover",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "network",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "monthly",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "costs",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "inventory",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "leaders",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "losses",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "traps",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "heroes",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "action",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "store_port",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_a2",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_kir1",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_ole",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_a1",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_pol",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_kov",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_kir3",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_ka2",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_zap",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_knip",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_gs2",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_s1",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_k49",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_l76",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_pz2",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_snezh",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_gs1",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_k80",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_a3",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_p_zor",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_pz1",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_kir2",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_zaо",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_s2",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_um",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_mon",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_mira",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_mak",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_ros",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_s3",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_nik",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_n95",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "profiles_1",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "profiles_2",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "profiles_3",
+      "state": "edited",
+      "pageNum": 7
+    },
+    {
+      "id": "profiles_4",
+      "state": "edited",
+      "pageNum": 8
+    },
+    {
+      "id": "profiles_5",
+      "state": "edited",
+      "pageNum": 9
+    },
+    {
+      "id": "profiles_6",
+      "state": "edited",
+      "pageNum": 10
+    },
+    {
+      "id": "profiles_7",
+      "state": "edited",
+      "pageNum": 11
+    },
+    {
+      "id": "profiles_8",
+      "state": "edited",
+      "pageNum": 12
+    },
+    {
+      "id": "profiles_9",
+      "state": "edited",
+      "pageNum": 13
+    },
+    {
+      "id": "profiles_10",
+      "state": "edited",
+      "pageNum": 14
+    },
+    {
+      "id": "profiles_11",
+      "state": "edited",
+      "pageNum": 15
+    },
+    {
+      "id": "formula",
+      "state": "edited",
+      "pageNum": 16
+    }
+  ],
+  "outline": [
+    {
+      "id": "cover",
+      "title": "Супер-отчет: аудит прибыли магазинов",
+      "summary": "Обложка: январь–август 2026, исправленная книга, исключения КА1, АЛА, МОЛ и РЕЗ*.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "network",
+      "title": "Очищенная сеть: финансовый итог",
+      "summary": "Выручка, валовая прибыль, чистая прибыль, маржа и число убыточных точек.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "monthly",
+      "title": "Динамика прибыли: март — пик, июль — провал",
+      "summary": "Помесячная динамика выручки, прибыли и маржи за январь–август.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "action",
+      "title": "Action Plan: 45 дней на восстановление",
+      "summary": "Меры, денежные резервы и контроль исполнения по проблемным точкам.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "profiles_1",
+      "title": "Профили магазинов 1–3: лидеры",
+      "summary": "ПОРТ, А2 и КИР1: полный P&L, сезонность, драйверы и товарный остаток.",
+      "image_plan": "Изображения не требуются; используются строгие таблицы и финансовые метрики."
+    },
+    {
+      "id": "profiles_2",
+      "title": "Профили магазинов 4–6",
+      "summary": "ОЛЕ, А1 и ПОЛ: полный P&L, сезонность, драйверы и товарный остаток.",
+      "image_plan": "Изображения не требуются; используются строгие таблицы и финансовые метрики."
+    },
+    {
+      "id": "profiles_3",
+      "title": "Профили магазинов 7–9",
+      "summary": "КОВ, КИР3 и КА2: полный P&L, сезонность, драйверы и товарный остаток.",
+      "image_plan": "Изображения не требуются; используются строгие таблицы и финансовые метрики."
+    },
+    {
+      "id": "profiles_4",
+      "title": "Профили магазинов 10–12",
+      "summary": "ЗАП, КНИП и ГС2: полный P&L, сезонность, драйверы и товарный остаток.",
+      "image_plan": "Изображения не требуются; используются строгие таблицы и финансовые метрики."
+    },
+    {
+      "id": "profiles_5",
+      "title": "Профили магазинов 13–15",
+      "summary": "С1, К49 и Л76: полный P&L, сезонность, драйверы и товарный остаток.",
+      "image_plan": "Изображения не требуются; используются строгие таблицы и финансовые метрики."
+    },
+    {
+      "id": "profiles_6",
+      "title": "Профили магазинов 16–18",
+      "summary": "А3, СНЕЖ и ГС1: полный P&L, сезонность, драйверы и товарный остаток.",
+      "image_plan": "Изображения не требуются; используются строгие таблицы и финансовые метрики."
+    },
+    {
+      "id": "profiles_7",
+      "title": "Профили магазинов 19–21",
+      "summary": "К80, ЗАО и ПЗ2: полный P&L, сезонность, драйверы и товарный остаток.",
+      "image_plan": "Изображения не требуются; используются строгие таблицы и финансовые метрики."
+    },
+    {
+      "id": "profiles_8",
+      "title": "Профили магазинов 22–24",
+      "summary": "КИР2, С2 и РОС: полный P&L, сезонность, драйверы и товарный остаток.",
+      "image_plan": "Изображения не требуются; используются строгие таблицы и финансовые метрики."
+    },
+    {
+      "id": "profiles_9",
+      "title": "Профили магазинов 25–27",
+      "summary": "ПЗ1, МОН и МИРА: полный P&L, сезонность, драйверы и товарный остаток.",
+      "image_plan": "Изображения не требуются; используются строгие таблицы и финансовые метрики."
+    },
+    {
+      "id": "profiles_10",
+      "title": "Профили магазинов 28–30",
+      "summary": "П.ЗОР, УМБА и МАК: полный P&L, сезонность, драйверы и товарный остаток.",
+      "image_plan": "Изображения не требуются; используются строгие таблицы и финансовые метрики."
+    },
+    {
+      "id": "profiles_11",
+      "title": "Профили магазинов 31–33: красная зона",
+      "summary": "С3, НИК и Н95: полный P&L, сезонность, драйверы и товарный остаток.",
+      "image_plan": "Изображения не требуются; используются строгие таблицы и финансовые метрики."
+    },
+    {
+      "id": "formula",
+      "title": "Формулы прошли независимую проверку",
+      "summary": "Охват аудита формул, проверка независимым пересчетом и вывод о качестве данных.",
+      "image_plan": "Use a suitable image if needed"
+    }
+  ]
+}

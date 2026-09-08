@@ -1,0 +1,13 @@
+<slide id="monthly">
+<background color="paper"/>
+<shape id="top" type="line" x="40" y="64" width="1200" height="0" stroke="hairline" stroke-width="1"/>
+<text id="title" x="40" y="108" width="1100" height="42" font="heading" size="33" color="ink">Март — пик; июль — провал прибыли</text>
+<text id="sub" x="40" y="161" width="1060" height="26" font="body" size="18" color="muted">Восстановление в августе не отменяет июльский минимум маржи 1,1%.</text>
+<chart id="profit" type="column" x="40" y="214" width="695" height="300" font="caption" categories="Янв,Фев,Мар,Апр,Май,Июн,Июл,Авг" color="spruce" legend="none" gridlines="h" gridline-color="hairline" y-format="thousands" data-labels="true"><series name="Чистая прибыль, млн руб." values="5.47,5.63,6.93,4.31,1.18,2.58,0.87,4.77" label-expr="{value:.1f}"/></chart>
+<table id="costs" x="770" y="214" width="470" height="142" columns="5,3,2" rows="35,36,36,35" font="body" size="15" color="ink" padding="7 10" header-fill="mist" border-h="1 solid hairline"><tr><td>Ключевые затраты</td><td align="right">млн руб.</td><td align="right">% выручки</td></tr><tr><td>Закупки</td><td align="right">495,4</td><td align="right">74,4%</td></tr><tr><td>ФОТ и налоги</td><td align="right">60,7</td><td align="right">9,1%</td></tr><tr><td>Аренда</td><td align="right">23,8</td><td align="right">3,6%</td></tr></table>
+<table id="stock" x="770" y="382" width="470" height="132" columns="6,4" rows="33,33,33,33" font="body" size="15" color="ink" padding="7 10" header-fill="mist" border-h="1 solid hairline"><tr><td>Товарный остаток</td><td align="right">млн руб.</td></tr><tr><td>Перемещения, нетто</td><td align="right" color="cinnabar">(0,20)</td></tr><tr><td>Уценка / переоценка</td><td align="right">(0,89) / 0,91</td></tr><tr><td><strong>Чистый эффект на остаток</strong></td><td align="right"><strong color="cinnabar">(0,19)</strong></td></tr></table>
+<shape id="risk-rule" type="line" x="40" y="552" width="1200" height="0" stroke="cinnabar" stroke-width="2"/>
+<text id="finding" x="40" y="575" width="1160" height="29" font="body" size="19" color="ink"><strong color="cinnabar">Пик / провал:</strong> март — 6,93 млн руб. и 7,2% маржи; июль — 0,87 млн руб. и 1,1%. Перемещения, уценки и переоценки не включены в P&amp;L, если не входят в формулу AQ.</text>
+<shape id="bottom" type="line" x="40" y="652" width="1200" height="0" stroke="hairline" stroke-width="1"/>
+<text id="foot" x="40" y="672" width="400" height="18" font="caption" size="12" color="muted">AUDITLINE / СЕЗОННОСТЬ И ОСТАТОК</text><text id="page" x="1190" y="672" width="50" height="18" font="caption" size="12" color="spruce" align="right">03</text>
+</slide>

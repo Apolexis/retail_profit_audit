@@ -1,0 +1,14 @@
+<design>
+  <size width="1280" height="720"></size>
+  <color name="paper" value="#F4F3EE"/>
+  <color name="ink" value="#1A1A1A"/>
+  <color name="spruce" value="#1E4D3B"/>
+  <color name="cinnabar" value="#D93829"/>
+  <color name="mist" value="#EAE7DF"/>
+  <color name="hairline" value="#D1CDC2"/>
+  <color name="muted" value="#666666"/>
+  <font name="display" family="IBM Plex Sans" size="48"/>
+  <font name="heading" family="IBM Plex Sans" size="32"/>
+  <font name="body" family="IBM Plex Sans" size="18"/>
+  <font name="caption" family="IBM Plex Sans" size="12"/>
+</design>
