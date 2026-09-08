@@ -1,0 +1,427 @@
+{
+  "project_info": {
+    "title": "Расширенный аудит прибыли магазинов",
+    "created": 1788883826.543,
+    "last_updated": 1788884626.98,
+    "total_slides": 35
+  },
+  "slides": [
+    {
+      "id": "cover",
+      "state": "edited",
+      "pageNum": 1
+    },
+    {
+      "id": "network",
+      "state": "edited",
+      "pageNum": 2
+    },
+    {
+      "id": "monthly",
+      "state": "edited",
+      "pageNum": 3
+    },
+    {
+      "id": "scatter",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "costs",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "inventory",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "anomalies",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "action",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "formula",
+      "state": "deleted",
+      "pageNum": -1
+    },
+    {
+      "id": "store_port",
+      "state": "edited",
+      "pageNum": 4
+    },
+    {
+      "id": "store_a2",
+      "state": "edited",
+      "pageNum": 5
+    },
+    {
+      "id": "store_kir1",
+      "state": "edited",
+      "pageNum": 6
+    },
+    {
+      "id": "store_ole",
+      "state": "edited",
+      "pageNum": 7
+    },
+    {
+      "id": "store_a1",
+      "state": "edited",
+      "pageNum": 8
+    },
+    {
+      "id": "store_pol",
+      "state": "edited",
+      "pageNum": 9
+    },
+    {
+      "id": "store_kov",
+      "state": "edited",
+      "pageNum": 10
+    },
+    {
+      "id": "store_kir3",
+      "state": "edited",
+      "pageNum": 11
+    },
+    {
+      "id": "store_ka2",
+      "state": "edited",
+      "pageNum": 12
+    },
+    {
+      "id": "store_zap",
+      "state": "edited",
+      "pageNum": 13
+    },
+    {
+      "id": "store_knip",
+      "state": "edited",
+      "pageNum": 14
+    },
+    {
+      "id": "store_gs2",
+      "state": "edited",
+      "pageNum": 15
+    },
+    {
+      "id": "store_s1",
+      "state": "edited",
+      "pageNum": 16
+    },
+    {
+      "id": "store_k49",
+      "state": "edited",
+      "pageNum": 17
+    },
+    {
+      "id": "store_l76",
+      "state": "edited",
+      "pageNum": 18
+    },
+    {
+      "id": "store_a3",
+      "state": "edited",
+      "pageNum": 19
+    },
+    {
+      "id": "store_snezh",
+      "state": "edited",
+      "pageNum": 20
+    },
+    {
+      "id": "store_gs1",
+      "state": "edited",
+      "pageNum": 21
+    },
+    {
+      "id": "store_k80",
+      "state": "edited",
+      "pageNum": 22
+    },
+    {
+      "id": "store_zao",
+      "state": "edited",
+      "pageNum": 23
+    },
+    {
+      "id": "store_pz2",
+      "state": "edited",
+      "pageNum": 24
+    },
+    {
+      "id": "store_kir2",
+      "state": "edited",
+      "pageNum": 25
+    },
+    {
+      "id": "store_ros",
+      "state": "edited",
+      "pageNum": 26
+    },
+    {
+      "id": "store_pz1",
+      "state": "edited",
+      "pageNum": 27
+    },
+    {
+      "id": "store_mon",
+      "state": "edited",
+      "pageNum": 28
+    },
+    {
+      "id": "store_mira",
+      "state": "edited",
+      "pageNum": 29
+    },
+    {
+      "id": "store_pzor",
+      "state": "edited",
+      "pageNum": 30
+    },
+    {
+      "id": "store_umba",
+      "state": "edited",
+      "pageNum": 31
+    },
+    {
+      "id": "store_mak",
+      "state": "edited",
+      "pageNum": 32
+    },
+    {
+      "id": "store_s3",
+      "state": "edited",
+      "pageNum": 33
+    },
+    {
+      "id": "store_nik",
+      "state": "edited",
+      "pageNum": 34
+    },
+    {
+      "id": "store_n95",
+      "state": "edited",
+      "pageNum": 35
+    }
+  ],
+  "outline": [
+    {
+      "id": "cover",
+      "title": "Расширенный аудит прибыли магазинов",
+      "summary": "Обложка расширенного отчета: январь–август 2026, 32 магазина, исключения.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "network",
+      "title": "Сеть: P&L и концентрация прибыли",
+      "summary": "Консолидированные показатели, доходность, количество убыточных точек и концентрация результата.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "monthly",
+      "title": "Сезонность прибыли: восемь месяцев",
+      "summary": "Графики выручки, чистой прибыли и чистой маржи по месяцам.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_port",
+      "title": "ПОРТ — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_a2",
+      "title": "А2 — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_kir1",
+      "title": "КИР1 — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_ole",
+      "title": "ОЛЕ — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_a1",
+      "title": "А1 — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_pol",
+      "title": "ПОЛ — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_kov",
+      "title": "КОВ — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_kir3",
+      "title": "КИР3 — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_ka2",
+      "title": "КА2 — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_zap",
+      "title": "ЗАП — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_knip",
+      "title": "КНИП — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_gs2",
+      "title": "ГС2 — сравнительный профиль",
+      "summary": "P&L, месяная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_s1",
+      "title": "С1 — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_k49",
+      "title": "К49 — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_l76",
+      "title": "Л76 — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_a3",
+      "title": "А3 — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_snezh",
+      "title": "СНЕЖ — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_gs1",
+      "title": "ГС1 — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_k80",
+      "title": "К80 — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_zao",
+      "title": "ЗАО — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_pz2",
+      "title": "ПЗ2 — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_kir2",
+      "title": "КИР2 — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_ros",
+      "title": "РОС — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_pz1",
+      "title": "ПЗ1 — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_mon",
+      "title": "МОН — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_mira",
+      "title": "МИРА — сравнительный профиль",
+      "summary": "P&L, месяная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_pzor",
+      "title": "П.ЗОР — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_umba",
+      "title": "УМБА — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_mak",
+      "title": "МАК — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_s3",
+      "title": "С3 — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_nik",
+      "title": "НИК — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    },
+    {
+      "id": "store_n95",
+      "title": "Н95 — сравнительный профиль",
+      "summary": "P&L, месячная динамика, сравнение с сетью, драйверы и остаток.",
+      "image_plan": "Use a suitable image if needed"
+    }
+  ]
+}

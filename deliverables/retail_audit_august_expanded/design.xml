@@ -1,0 +1,14 @@
+<design>
+  <size width="1280" height="720"></size>
+  <color name="paper" value="#F5F2EB"/>
+  <color name="ink" value="#1A1A1A"/>
+  <color name="muted" value="#737373"/>
+  <color name="spruce" value="#235C45"/>
+  <color name="cinnabar" value="#E34234"/>
+  <color name="grid" value="#D1CDC5"/>
+  <color name="mist" value="#EBE7DF"/>
+  <font name="display" family="PT Serif" size="48"/>
+  <font name="heading" family="PT Serif" size="30"/>
+  <font name="body" family="Inter" size="18"/>
+  <font name="caption" family="Inter" size="12"/>
+</design>

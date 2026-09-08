@@ -7,8 +7,11 @@ import pandas as pd
 
 
 ROOT = Path("/home/ubuntu/retail_profit_audit_2026")
-WORK = ROOT / "audit_2026" / "audit_august_clean"
+SOURCE = ROOT / "audit_2026" / "audit_august_clean"
+WORK = ROOT / "audit_2026" / "audit_august_clean_excl_s2"
+WORK.mkdir(exist_ok=True)
 MONTHS = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август"]
+EXCLUDED_STORE = "С2"
 
 
 def records(frame):
@@ -53,8 +56,10 @@ def action_for(row):
     return action
 
 
-monthly = pd.read_csv(WORK / "store_monthly.csv", encoding="utf-8-sig")
-annual = pd.read_csv(WORK / "store_annual.csv", encoding="utf-8-sig")
+monthly = pd.read_csv(SOURCE / "store_monthly.csv", encoding="utf-8-sig")
+annual = pd.read_csv(SOURCE / "store_annual.csv", encoding="utf-8-sig")
+monthly = monthly[monthly["store"] != EXCLUDED_STORE].copy()
+annual = annual[annual["store"] != EXCLUDED_STORE].copy()
 for frame in (monthly, annual):
     for col in frame.columns:
         if col not in {"store", "month", "net_profit_cell", "best_month", "worst_month"}:
@@ -152,8 +157,8 @@ inventory_bridge = pd.DataFrame({
 inventory_outliers = annual.reindex(annual["inventory_net_effect"].abs().sort_values(ascending=False).index).head(5).copy()
 inventory_outliers["inventory_net_effect_ratio"] = inventory_outliers["inventory_net_effect"] / inventory_outliers["revenue"]
 
-formula = json.loads((WORK / "audit_summary.json").read_text(encoding="utf-8"))
-recalc = json.loads((WORK / "recalculation_summary.json").read_text(encoding="utf-8"))
+formula = json.loads((SOURCE / "audit_summary.json").read_text(encoding="utf-8"))
+recalc = json.loads((SOURCE / "recalculation_summary.json").read_text(encoding="utf-8"))
 peak = monthly_network.nlargest(1, "net_profit")
 trough = monthly_network.nsmallest(1, "net_profit")
 turnaround = loss_makers.copy()
@@ -163,7 +168,7 @@ turnaround["recommended_action"] = turnaround.apply(action_for, axis=1)
 output = {
     "reporting_scope": {
         "year": 2026, "file_name": "2026.xlsx", "analysis_period": "Январь–август 2026",
-        "excluded_stores": formula["excluded_store_names"], "store_sheets_scanned": 43,
+        "excluded_stores": formula["excluded_store_names"] + [EXCLUDED_STORE], "store_sheets_scanned": 43,
         "stores_included": int(len(annual)), "comparable_operating_stores": int(len(comparable)),
         "reported_months": MONTHS,
         "inventory_treatment": "Перемещения, уценки и переоценки анализируются как драйверы изменения товарного остатка. Они не включены в чистую прибыль, если не входят в исходную формулу AQ.",
@@ -184,11 +189,13 @@ output = {
     "revenue_traps": records(traps[["store", "revenue", "net_profit", "net_margin", "rent", "payroll_total", "excess_cost_driver", "excess_cost_amount", "narrative"]]),
     "hidden_heroes": records(heroes[["store", "revenue", "net_profit", "net_margin", "gross_margin", "rent", "payroll_total", "narrative"]]),
     "turnaround_priorities": records(turnaround[["store", "revenue", "net_profit", "net_margin", "loss_months", "loss_month_names", "payroll_total", "rent", "excess_cost_driver", "excess_cost_amount", "break_even_reduction", "recommended_action"]]),
-    "formula_audit": {"pnl_formula_issues": formula["issues_total"], "monthly_records_checked": formula["monthly_records"], "formula_cells_compared": recalc["formula_cells_compared"], "recalculation_errors": recalc["recalculation_errors"], "differences_above_tolerance": recalc["output_differences_above_tolerance"], "conclusion": "Формулы 43 исходных листов прошли tie-out и независимый пересчет: ошибок и расхождений свыше 0,15 руб. не выявлено."},
+    "formula_audit": {"pnl_formula_issues": formula["issues_total"], "monthly_records_checked": int(len(monthly)), "formula_cells_compared": recalc["formula_cells_compared"], "recalculation_errors": recalc["recalculation_errors"], "differences_above_tolerance": recalc["output_differences_above_tolerance"], "conclusion": "Формулы 43 исходных листов прошли tie-out и независимый пересчет: ошибок и расхождений свыше 0,15 руб. не выявлено. С2 исключен из управленческой базы по поручению пользователя."},
     "benchmarks": {"median_revenue": median_revenue, "upper_third_net_margin": upper_margin, "network_net_margin": network_net_margin, "baseline_cost_ratios": benchmarks}
 }
 
 (WORK / "analysis_data.json").write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding="utf-8")
+monthly.to_csv(WORK / "store_monthly.csv", index=False, encoding="utf-8-sig")
+annual.to_csv(WORK / "store_annual.csv", index=False, encoding="utf-8-sig")
 annual.sort_values("net_profit", ascending=False).to_csv(WORK / "store_profiles_enriched.csv", index=False, encoding="utf-8-sig")
 monthly_network.to_csv(WORK / "network_monthly.csv", index=False, encoding="utf-8-sig")
 cost_bridge.to_csv(WORK / "cost_bridge.csv", index=False, encoding="utf-8-sig")

@@ -1,42 +1,42 @@
 /** AuditLine: corrected Jan–Aug 2026 base; warm-paper investment-committee report. */
 
-export type StoreProfile = { store:string; revenue:number; netProfit:number; netMargin:number; grossMargin:number; bestMonth:string; worstMonth:string; lossMonths:number; reserve:string; reserveAmount:number; inventoryEffect:number; narrative:string; };
+export type StoreProfile = { store:string; revenue:number; netProfit:number; netMargin:number; grossMargin:number; bestMonth:string; worstMonth:string; lossMonths:number; reserve:string; reserveAmount:number; inventoryEffect:number; narrative:string; profitRank:number; monthlyProfit:{month:string;profit:number}[]; };
 
 export const monthlyData = [
   {
     "month": "Янв",
-    "revenue": 78.0,
-    "profit": 5.47,
-    "margin": 7.0
+    "revenue": 76.1,
+    "profit": 5.42,
+    "margin": 7.1
   },
   {
     "month": "Фев",
-    "revenue": 86.2,
-    "profit": 5.63,
+    "revenue": 83.7,
+    "profit": 5.44,
     "margin": 6.5
   },
   {
     "month": "Мар",
-    "revenue": 96.5,
-    "profit": 6.93,
+    "revenue": 94.2,
+    "profit": 6.82,
     "margin": 7.2
   },
   {
     "month": "Апр",
-    "revenue": 91.4,
-    "profit": 4.31,
-    "margin": 4.7
+    "revenue": 89.5,
+    "profit": 4.52,
+    "margin": 5.1
   },
   {
     "month": "Май",
-    "revenue": 77.1,
-    "profit": 1.18,
-    "margin": 1.5
+    "revenue": 75.1,
+    "profit": 1.43,
+    "margin": 1.9
   },
   {
     "month": "Июн",
-    "revenue": 75.5,
-    "profit": 2.58,
+    "revenue": 75.1,
+    "profit": 2.53,
     "margin": 3.4
   },
   {
@@ -56,27 +56,27 @@ export const monthlyData = [
 export const costData = [
   {
     "name": "Закупочная себестоимость",
-    "value": 495.4,
+    "value": 487.4,
     "color": "#1e4d3b"
   },
   {
     "name": "ФОТ и налоги",
-    "value": 60.7,
+    "value": 60.0,
     "color": "#3f7663"
   },
   {
     "name": "Аренда",
-    "value": 23.8,
+    "value": 22.2,
     "color": "#7fa89b"
   },
   {
     "name": "Налог с валовой прибыли",
-    "value": 20.5,
+    "value": 20.1,
     "color": "#b8995c"
   },
   {
     "name": "Банковская комиссия",
-    "value": 11.3,
+    "value": 11.1,
     "color": "#a5594e"
   },
   {
@@ -91,7 +91,7 @@ export const costData = [
   },
   {
     "name": "Наличные операционные траты",
-    "value": 7.0,
+    "value": 6.9,
     "color": "#d8d2c5"
   }
 ];
@@ -103,7 +103,7 @@ export const inventoryData = [
   },
   {
     "name": "Перемещения: выбытия",
-    "value": -1.23
+    "value": -0.32
   },
   {
     "name": "Уценка (уменьшение остатка)",
@@ -111,11 +111,11 @@ export const inventoryData = [
   },
   {
     "name": "Переоценка (увеличение остатка)",
-    "value": 0.91
+    "value": 0.87
   },
   {
     "name": "Чистый эффект на остаток",
-    "value": -0.19
+    "value": 0.69
   }
 ];
 
@@ -130,9 +130,44 @@ export const stores: StoreProfile[] = [
     "worstMonth": "Январь",
     "lossMonths": 0,
     "reserve": "Банковская комиссия",
-    "reserveAmount": 0.07,
+    "reserveAmount": 0.071,
     "inventoryEffect": -0.075,
-    "narrative": "Маржа 8.8% не ниже сети (4.8%); валовая маржа 22.1% поддерживает положительный результат."
+    "narrative": "Маржа 8.8% не ниже сети (4.9%); валовая маржа 22.1% поддерживает положительный результат.",
+    "profitRank": 1,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": 0.76
+      },
+      {
+        "month": "Фев",
+        "profit": 0.93
+      },
+      {
+        "month": "Мар",
+        "profit": 0.99
+      },
+      {
+        "month": "Апр",
+        "profit": 0.98
+      },
+      {
+        "month": "Май",
+        "profit": 0.8
+      },
+      {
+        "month": "Июн",
+        "profit": 1.34
+      },
+      {
+        "month": "Июл",
+        "profit": 1.71
+      },
+      {
+        "month": "Авг",
+        "profit": 1.75
+      }
+    ]
   },
   {
     "store": "А2",
@@ -146,7 +181,42 @@ export const stores: StoreProfile[] = [
     "reserve": "Налог с валовой прибыли",
     "reserveAmount": 0.027,
     "inventoryEffect": 0.018,
-    "narrative": "Маржа 10.2% не ниже сети (4.8%); валовая маржа 26.6% поддерживает положительный результат."
+    "narrative": "Маржа 10.2% не ниже сети (4.9%); валовая маржа 26.6% поддерживает положительный результат.",
+    "profitRank": 2,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": 0.6
+      },
+      {
+        "month": "Фев",
+        "profit": 0.69
+      },
+      {
+        "month": "Мар",
+        "profit": 0.77
+      },
+      {
+        "month": "Апр",
+        "profit": 0.72
+      },
+      {
+        "month": "Май",
+        "profit": 0.56
+      },
+      {
+        "month": "Июн",
+        "profit": 0.53
+      },
+      {
+        "month": "Июл",
+        "profit": 0.3
+      },
+      {
+        "month": "Авг",
+        "profit": 0.42
+      }
+    ]
   },
   {
     "store": "КИР1",
@@ -160,7 +230,42 @@ export const stores: StoreProfile[] = [
     "reserve": "ФОТ и налоги",
     "reserveAmount": 0.0,
     "inventoryEffect": 0.099,
-    "narrative": "Маржа 9.1% не ниже сети (4.8%); валовая маржа 25.9% поддерживает положительный результат."
+    "narrative": "Маржа 9.1% не ниже сети (4.9%); валовая маржа 25.9% поддерживает положительный результат.",
+    "profitRank": 3,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": 0.69
+      },
+      {
+        "month": "Фев",
+        "profit": 0.66
+      },
+      {
+        "month": "Мар",
+        "profit": 0.98
+      },
+      {
+        "month": "Апр",
+        "profit": 1.13
+      },
+      {
+        "month": "Май",
+        "profit": 0.29
+      },
+      {
+        "month": "Июн",
+        "profit": -0.02
+      },
+      {
+        "month": "Июл",
+        "profit": 0.16
+      },
+      {
+        "month": "Авг",
+        "profit": 0.45
+      }
+    ]
   },
   {
     "store": "ОЛЕ",
@@ -172,9 +277,44 @@ export const stores: StoreProfile[] = [
     "worstMonth": "Июль",
     "lossMonths": 0,
     "reserve": "Наличные операционные траты",
-    "reserveAmount": 0.192,
+    "reserveAmount": 0.186,
     "inventoryEffect": -0.004,
-    "narrative": "Маржа 8.9% не ниже сети (4.8%); валовая маржа 26.5% поддерживает положительный результат."
+    "narrative": "Маржа 8.9% не ниже сети (4.9%); валовая маржа 26.5% поддерживает положительный результат.",
+    "profitRank": 4,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": 0.33
+      },
+      {
+        "month": "Фев",
+        "profit": 0.5
+      },
+      {
+        "month": "Мар",
+        "profit": 0.39
+      },
+      {
+        "month": "Апр",
+        "profit": 0.24
+      },
+      {
+        "month": "Май",
+        "profit": 0.14
+      },
+      {
+        "month": "Июн",
+        "profit": 0.36
+      },
+      {
+        "month": "Июл",
+        "profit": 0.05
+      },
+      {
+        "month": "Авг",
+        "profit": 0.42
+      }
+    ]
   },
   {
     "store": "А1",
@@ -185,10 +325,45 @@ export const stores: StoreProfile[] = [
     "bestMonth": "Март",
     "worstMonth": "Август",
     "lossMonths": 0,
-    "reserve": "Наличные операционные траты",
+    "reserve": "Аренда",
     "reserveAmount": 0.092,
     "inventoryEffect": 0.016,
-    "narrative": "Маржа 7.0% не ниже сети (4.8%); валовая маржа 27.2% поддерживает положительный результат."
+    "narrative": "Маржа 7.0% не ниже сети (4.9%); валовая маржа 27.2% поддерживает положительный результат.",
+    "profitRank": 5,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": 0.28
+      },
+      {
+        "month": "Фев",
+        "profit": 0.36
+      },
+      {
+        "month": "Мар",
+        "profit": 0.52
+      },
+      {
+        "month": "Апр",
+        "profit": 0.28
+      },
+      {
+        "month": "Май",
+        "profit": 0.16
+      },
+      {
+        "month": "Июн",
+        "profit": 0.28
+      },
+      {
+        "month": "Июл",
+        "profit": 0.07
+      },
+      {
+        "month": "Авг",
+        "profit": 0.03
+      }
+    ]
   },
   {
     "store": "ПОЛ",
@@ -200,9 +375,44 @@ export const stores: StoreProfile[] = [
     "worstMonth": "Июль",
     "lossMonths": 1,
     "reserve": "Списания",
-    "reserveAmount": 0.201,
+    "reserveAmount": 0.2,
     "inventoryEffect": -0.025,
-    "narrative": "Маржа 9.2% не ниже сети (4.8%); валовая маржа 27.1% поддерживает положительный результат."
+    "narrative": "Маржа 9.2% не ниже сети (4.9%); валовая маржа 27.1% поддерживает положительный результат.",
+    "profitRank": 6,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": 0.29
+      },
+      {
+        "month": "Фев",
+        "profit": 0.21
+      },
+      {
+        "month": "Мар",
+        "profit": 0.41
+      },
+      {
+        "month": "Апр",
+        "profit": 0.17
+      },
+      {
+        "month": "Май",
+        "profit": 0.16
+      },
+      {
+        "month": "Июн",
+        "profit": 0.12
+      },
+      {
+        "month": "Июл",
+        "profit": -0.02
+      },
+      {
+        "month": "Авг",
+        "profit": 0.18
+      }
+    ]
   },
   {
     "store": "КОВ",
@@ -214,9 +424,44 @@ export const stores: StoreProfile[] = [
     "worstMonth": "Июль",
     "lossMonths": 1,
     "reserve": "Аренда",
-    "reserveAmount": 0.518,
+    "reserveAmount": 0.548,
     "inventoryEffect": -0.02,
-    "narrative": "Маржа 5.6% не ниже сети (4.8%); валовая маржа 27.8% поддерживает положительный результат."
+    "narrative": "Маржа 5.6% не ниже сети (4.9%); валовая маржа 27.8% поддерживает положительный результат.",
+    "profitRank": 7,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": 0.26
+      },
+      {
+        "month": "Фев",
+        "profit": 0.3
+      },
+      {
+        "month": "Мар",
+        "profit": 0.38
+      },
+      {
+        "month": "Апр",
+        "profit": 0.32
+      },
+      {
+        "month": "Май",
+        "profit": 0.06
+      },
+      {
+        "month": "Июн",
+        "profit": 0.06
+      },
+      {
+        "month": "Июл",
+        "profit": -0.03
+      },
+      {
+        "month": "Авг",
+        "profit": 0.15
+      }
+    ]
   },
   {
     "store": "КИР3",
@@ -230,7 +475,42 @@ export const stores: StoreProfile[] = [
     "reserve": "Банковская комиссия",
     "reserveAmount": 0.014,
     "inventoryEffect": -0.14,
-    "narrative": "Маржа 8.7% не ниже сети (4.8%); валовая маржа 26.1% поддерживает положительный результат."
+    "narrative": "Маржа 8.7% не ниже сети (4.9%); валовая маржа 26.1% поддерживает положительный результат.",
+    "profitRank": 8,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": 0.22
+      },
+      {
+        "month": "Фев",
+        "profit": 0.29
+      },
+      {
+        "month": "Мар",
+        "profit": 0.44
+      },
+      {
+        "month": "Апр",
+        "profit": 0.45
+      },
+      {
+        "month": "Май",
+        "profit": -0.01
+      },
+      {
+        "month": "Июн",
+        "profit": 0.07
+      },
+      {
+        "month": "Июл",
+        "profit": 0.01
+      },
+      {
+        "month": "Авг",
+        "profit": 0.0
+      }
+    ]
   },
   {
     "store": "КА2",
@@ -244,7 +524,42 @@ export const stores: StoreProfile[] = [
     "reserve": "Налог с валовой прибыли",
     "reserveAmount": 0.056,
     "inventoryEffect": 0.334,
-    "narrative": "Маржа 9.9% не ниже сети (4.8%); валовая маржа 29.3% поддерживает положительный результат."
+    "narrative": "Маржа 9.9% не ниже сети (4.9%); валовая маржа 29.3% поддерживает положительный результат.",
+    "profitRank": 9,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": 0.23
+      },
+      {
+        "month": "Фев",
+        "profit": 0.23
+      },
+      {
+        "month": "Мар",
+        "profit": 0.26
+      },
+      {
+        "month": "Апр",
+        "profit": 0.21
+      },
+      {
+        "month": "Май",
+        "profit": 0.14
+      },
+      {
+        "month": "Июн",
+        "profit": 0.07
+      },
+      {
+        "month": "Июл",
+        "profit": 0.03
+      },
+      {
+        "month": "Авг",
+        "profit": 0.25
+      }
+    ]
   },
   {
     "store": "ЗАП",
@@ -256,9 +571,44 @@ export const stores: StoreProfile[] = [
     "worstMonth": "Июнь",
     "lossMonths": 1,
     "reserve": "Списания",
-    "reserveAmount": 0.079,
+    "reserveAmount": 0.077,
     "inventoryEffect": 0.012,
-    "narrative": "Маржа 6.4% не ниже сети (4.8%); валовая маржа 26.0% поддерживает положительный результат."
+    "narrative": "Маржа 6.4% не ниже сети (4.9%); валовая маржа 26.0% поддерживает положительный результат.",
+    "profitRank": 10,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": 0.23
+      },
+      {
+        "month": "Фев",
+        "profit": 0.21
+      },
+      {
+        "month": "Мар",
+        "profit": 0.13
+      },
+      {
+        "month": "Апр",
+        "profit": 0.26
+      },
+      {
+        "month": "Май",
+        "profit": 0.19
+      },
+      {
+        "month": "Июн",
+        "profit": -0.02
+      },
+      {
+        "month": "Июл",
+        "profit": 0.19
+      },
+      {
+        "month": "Авг",
+        "profit": 0.25
+      }
+    ]
   },
   {
     "store": "КНИП",
@@ -269,10 +619,45 @@ export const stores: StoreProfile[] = [
     "bestMonth": "Февраль",
     "worstMonth": "Июнь",
     "lossMonths": 2,
-    "reserve": "Списания",
-    "reserveAmount": 0.342,
+    "reserve": "Аренда",
+    "reserveAmount": 0.359,
     "inventoryEffect": 0.029,
-    "narrative": "Маржа 3.7% ниже сети (4.8%); основной резерв — Списания 341,518 руб."
+    "narrative": "Маржа 3.7% ниже сети (4.9%); основной резерв — Аренда 358,715 руб.",
+    "profitRank": 11,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": 0.29
+      },
+      {
+        "month": "Фев",
+        "profit": 0.3
+      },
+      {
+        "month": "Мар",
+        "profit": 0.21
+      },
+      {
+        "month": "Апр",
+        "profit": -0.05
+      },
+      {
+        "month": "Май",
+        "profit": 0.13
+      },
+      {
+        "month": "Июн",
+        "profit": -0.12
+      },
+      {
+        "month": "Июл",
+        "profit": 0.1
+      },
+      {
+        "month": "Авг",
+        "profit": 0.28
+      }
+    ]
   },
   {
     "store": "ГС2",
@@ -284,9 +669,44 @@ export const stores: StoreProfile[] = [
     "worstMonth": "Июль",
     "lossMonths": 1,
     "reserve": "Коммунальные платежи",
-    "reserveAmount": 0.15,
+    "reserveAmount": 0.139,
     "inventoryEffect": 0.008,
-    "narrative": "Маржа 5.5% не ниже сети (4.8%); валовая маржа 25.7% поддерживает положительный результат."
+    "narrative": "Маржа 5.5% не ниже сети (4.9%); валовая маржа 25.7% поддерживает положительный результат.",
+    "profitRank": 12,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": 0.05
+      },
+      {
+        "month": "Фев",
+        "profit": 0.13
+      },
+      {
+        "month": "Мар",
+        "profit": 0.26
+      },
+      {
+        "month": "Апр",
+        "profit": 0.02
+      },
+      {
+        "month": "Май",
+        "profit": 0.14
+      },
+      {
+        "month": "Июн",
+        "profit": 0.18
+      },
+      {
+        "month": "Июл",
+        "profit": -0.04
+      },
+      {
+        "month": "Авг",
+        "profit": 0.17
+      }
+    ]
   },
   {
     "store": "С1",
@@ -297,10 +717,45 @@ export const stores: StoreProfile[] = [
     "bestMonth": "Июнь",
     "worstMonth": "Август",
     "lossMonths": 1,
-    "reserve": "ФОТ и налоги",
-    "reserveAmount": 0.267,
+    "reserve": "Списания",
+    "reserveAmount": 0.238,
     "inventoryEffect": 0.309,
-    "narrative": "Маржа 3.5% ниже сети (4.8%); основной резерв — ФОТ и налоги 266,546 руб."
+    "narrative": "Маржа 3.5% ниже сети (4.9%); основной резерв — Списания 238,099 руб.",
+    "profitRank": 13,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": 0.1
+      },
+      {
+        "month": "Фев",
+        "profit": 0.18
+      },
+      {
+        "month": "Мар",
+        "profit": 0.15
+      },
+      {
+        "month": "Апр",
+        "profit": 0.09
+      },
+      {
+        "month": "Май",
+        "profit": 0.12
+      },
+      {
+        "month": "Июн",
+        "profit": 0.24
+      },
+      {
+        "month": "Июл",
+        "profit": 0.04
+      },
+      {
+        "month": "Авг",
+        "profit": -0.07
+      }
+    ]
   },
   {
     "store": "К49",
@@ -312,9 +767,44 @@ export const stores: StoreProfile[] = [
     "worstMonth": "Июль",
     "lossMonths": 2,
     "reserve": "Аренда",
-    "reserveAmount": 0.241,
+    "reserveAmount": 0.26,
     "inventoryEffect": -0.005,
-    "narrative": "Маржа 3.8% ниже сети (4.8%); основной резерв — Аренда 241,059 руб."
+    "narrative": "Маржа 3.8% ниже сети (4.9%); основной резерв — Аренда 260,303 руб.",
+    "profitRank": 14,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": 0.22
+      },
+      {
+        "month": "Фев",
+        "profit": 0.17
+      },
+      {
+        "month": "Мар",
+        "profit": 0.2
+      },
+      {
+        "month": "Апр",
+        "profit": 0.09
+      },
+      {
+        "month": "Май",
+        "profit": 0.08
+      },
+      {
+        "month": "Июн",
+        "profit": -0.09
+      },
+      {
+        "month": "Июл",
+        "profit": -0.1
+      },
+      {
+        "month": "Авг",
+        "profit": 0.08
+      }
+    ]
   },
   {
     "store": "Л76",
@@ -326,9 +816,44 @@ export const stores: StoreProfile[] = [
     "worstMonth": "Май",
     "lossMonths": 2,
     "reserve": "Списания",
-    "reserveAmount": 0.151,
+    "reserveAmount": 0.15,
     "inventoryEffect": -0.005,
-    "narrative": "Маржа 4.6% ниже сети (4.8%); основной резерв — Списания 151,083 руб."
+    "narrative": "Маржа 4.6% ниже сети (4.9%); основной резерв — Списания 149,958 руб.",
+    "profitRank": 15,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": 0.15
+      },
+      {
+        "month": "Фев",
+        "profit": -0.01
+      },
+      {
+        "month": "Мар",
+        "profit": 0.14
+      },
+      {
+        "month": "Апр",
+        "profit": 0.03
+      },
+      {
+        "month": "Май",
+        "profit": -0.03
+      },
+      {
+        "month": "Июн",
+        "profit": 0.06
+      },
+      {
+        "month": "Июл",
+        "profit": 0.06
+      },
+      {
+        "month": "Авг",
+        "profit": 0.21
+      }
+    ]
   },
   {
     "store": "А3",
@@ -340,9 +865,44 @@ export const stores: StoreProfile[] = [
     "worstMonth": "Май",
     "lossMonths": 1,
     "reserve": "Аренда",
-    "reserveAmount": 0.314,
+    "reserveAmount": 0.329,
     "inventoryEffect": -0.013,
-    "narrative": "Маржа 4.2% ниже сети (4.8%); основной резерв — Аренда 314,123 руб."
+    "narrative": "Маржа 4.2% ниже сети (4.9%); основной резерв — Аренда 329,313 руб.",
+    "profitRank": 16,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": 0.04
+      },
+      {
+        "month": "Фев",
+        "profit": 0.05
+      },
+      {
+        "month": "Мар",
+        "profit": 0.11
+      },
+      {
+        "month": "Апр",
+        "profit": 0.12
+      },
+      {
+        "month": "Май",
+        "profit": -0.0
+      },
+      {
+        "month": "Июн",
+        "profit": 0.12
+      },
+      {
+        "month": "Июл",
+        "profit": 0.02
+      },
+      {
+        "month": "Авг",
+        "profit": 0.12
+      }
+    ]
   },
   {
     "store": "СНЕЖ",
@@ -354,9 +914,44 @@ export const stores: StoreProfile[] = [
     "worstMonth": "Май",
     "lossMonths": 1,
     "reserve": "ФОТ и налоги",
-    "reserveAmount": 0.191,
+    "reserveAmount": 0.125,
     "inventoryEffect": 0.024,
-    "narrative": "Маржа 4.5% ниже сети (4.8%); основной резерв — ФОТ и налоги 190,539 руб."
+    "narrative": "Маржа 4.5% ниже сети (4.9%); основной резерв — ФОТ и налоги 124,806 руб.",
+    "profitRank": 17,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": 0.2
+      },
+      {
+        "month": "Фев",
+        "profit": 0.14
+      },
+      {
+        "month": "Мар",
+        "profit": 0.1
+      },
+      {
+        "month": "Апр",
+        "profit": 0.04
+      },
+      {
+        "month": "Май",
+        "profit": -0.11
+      },
+      {
+        "month": "Июн",
+        "profit": 0.07
+      },
+      {
+        "month": "Июл",
+        "profit": 0.01
+      },
+      {
+        "month": "Авг",
+        "profit": 0.09
+      }
+    ]
   },
   {
     "store": "ГС1",
@@ -368,9 +963,44 @@ export const stores: StoreProfile[] = [
     "worstMonth": "Июль",
     "lossMonths": 1,
     "reserve": "ФОТ и налоги",
-    "reserveAmount": 0.594,
+    "reserveAmount": 0.498,
     "inventoryEffect": -0.001,
-    "narrative": "Маржа 1.9% ниже сети (4.8%); основной резерв — ФОТ и налоги 593,648 руб."
+    "narrative": "Маржа 1.9% ниже сети (4.9%); основной резерв — ФОТ и налоги 497,699 руб.",
+    "profitRank": 18,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": 0.08
+      },
+      {
+        "month": "Фев",
+        "profit": 0.17
+      },
+      {
+        "month": "Мар",
+        "profit": 0.03
+      },
+      {
+        "month": "Апр",
+        "profit": 0.04
+      },
+      {
+        "month": "Май",
+        "profit": 0.05
+      },
+      {
+        "month": "Июн",
+        "profit": 0.05
+      },
+      {
+        "month": "Июл",
+        "profit": -0.15
+      },
+      {
+        "month": "Авг",
+        "profit": 0.08
+      }
+    ]
   },
   {
     "store": "К80",
@@ -382,9 +1012,44 @@ export const stores: StoreProfile[] = [
     "worstMonth": "Июнь",
     "lossMonths": 3,
     "reserve": "Списания",
-    "reserveAmount": 0.491,
+    "reserveAmount": 0.49,
     "inventoryEffect": -0.022,
-    "narrative": "Маржа 2.2% ниже сети (4.8%); основной резерв — Списания 490,950 руб."
+    "narrative": "Маржа 2.2% ниже сети (4.9%); основной резерв — Списания 489,942 руб.",
+    "profitRank": 19,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": 0.13
+      },
+      {
+        "month": "Фев",
+        "profit": 0.03
+      },
+      {
+        "month": "Мар",
+        "profit": 0.11
+      },
+      {
+        "month": "Апр",
+        "profit": 0.04
+      },
+      {
+        "month": "Май",
+        "profit": 0.02
+      },
+      {
+        "month": "Июн",
+        "profit": -0.05
+      },
+      {
+        "month": "Июл",
+        "profit": -0.02
+      },
+      {
+        "month": "Авг",
+        "profit": -0.01
+      }
+    ]
   },
   {
     "store": "ЗАО",
@@ -396,9 +1061,44 @@ export const stores: StoreProfile[] = [
     "worstMonth": "Июль",
     "lossMonths": 3,
     "reserve": "ФОТ и налоги",
-    "reserveAmount": 0.591,
+    "reserveAmount": 0.532,
     "inventoryEffect": -0.005,
-    "narrative": "Маржа 1.0% ниже сети (4.8%); основной резерв — ФОТ и налоги 590,893 руб."
+    "narrative": "Маржа 1.0% ниже сети (4.9%); основной резерв — ФОТ и налоги 532,133 руб.",
+    "profitRank": 20,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": 0.09
+      },
+      {
+        "month": "Фев",
+        "profit": 0.07
+      },
+      {
+        "month": "Мар",
+        "profit": 0.1
+      },
+      {
+        "month": "Апр",
+        "profit": 0.04
+      },
+      {
+        "month": "Май",
+        "profit": -0.09
+      },
+      {
+        "month": "Июн",
+        "profit": -0.03
+      },
+      {
+        "month": "Июл",
+        "profit": -0.12
+      },
+      {
+        "month": "Авг",
+        "profit": 0.06
+      }
+    ]
   },
   {
     "store": "ПЗ2",
@@ -410,9 +1110,44 @@ export const stores: StoreProfile[] = [
     "worstMonth": "Май",
     "lossMonths": 4,
     "reserve": "Аренда",
-    "reserveAmount": 0.319,
+    "reserveAmount": 0.332,
     "inventoryEffect": -0.016,
-    "narrative": "Маржа 0.7% ниже сети (4.8%); основной резерв — Аренда 318,596 руб."
+    "narrative": "Маржа 0.7% ниже сети (4.9%); основной резерв — Аренда 332,242 руб.",
+    "profitRank": 21,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": 0.09
+      },
+      {
+        "month": "Фев",
+        "profit": 0.13
+      },
+      {
+        "month": "Мар",
+        "profit": 0.03
+      },
+      {
+        "month": "Апр",
+        "profit": -0.09
+      },
+      {
+        "month": "Май",
+        "profit": -0.09
+      },
+      {
+        "month": "Июн",
+        "profit": -0.03
+      },
+      {
+        "month": "Июл",
+        "profit": -0.01
+      },
+      {
+        "month": "Авг",
+        "profit": 0.06
+      }
+    ]
   },
   {
     "store": "КИР2",
@@ -424,23 +1159,44 @@ export const stores: StoreProfile[] = [
     "worstMonth": "Июль",
     "lossMonths": 3,
     "reserve": "ФОТ и налоги",
-    "reserveAmount": 0.441,
+    "reserveAmount": 0.378,
     "inventoryEffect": -0.014,
-    "narrative": "Маржа 0.1% ниже сети (4.8%); основной резерв — ФОТ и налоги 441,199 руб."
-  },
-  {
-    "store": "С2",
-    "revenue": 10.991,
-    "netProfit": -0.073,
-    "netMargin": -0.7,
-    "grossMargin": 27.2,
-    "bestMonth": "Февраль",
-    "worstMonth": "Май",
-    "lossMonths": 2,
-    "reserve": "Аренда",
-    "reserveAmount": 1.174,
-    "inventoryEffect": -0.882,
-    "narrative": "Убыток 73,382 руб. при марже -0.7%; главный резерв — Аренда 1,174,300 руб. сверх медианной доли сети."
+    "narrative": "Маржа 0.1% ниже сети (4.9%); основной резерв — ФОТ и налоги 378,057 руб.",
+    "profitRank": 22,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": 0.03
+      },
+      {
+        "month": "Фев",
+        "profit": 0.04
+      },
+      {
+        "month": "Мар",
+        "profit": 0.11
+      },
+      {
+        "month": "Апр",
+        "profit": -0.07
+      },
+      {
+        "month": "Май",
+        "profit": 0.05
+      },
+      {
+        "month": "Июн",
+        "profit": -0.01
+      },
+      {
+        "month": "Июл",
+        "profit": -0.17
+      },
+      {
+        "month": "Авг",
+        "profit": 0.03
+      }
+    ]
   },
   {
     "store": "РОС",
@@ -452,9 +1208,44 @@ export const stores: StoreProfile[] = [
     "worstMonth": "Май",
     "lossMonths": 4,
     "reserve": "Коммунальные платежи",
-    "reserveAmount": 0.312,
+    "reserveAmount": 0.306,
     "inventoryEffect": -0.013,
-    "narrative": "Убыток 113,873 руб. при марже -1.1%; главный резерв — Коммунальные платежи 312,072 руб. сверх медианной доли сети."
+    "narrative": "Убыток 113,873 руб. при марже -1.1%; главный резерв — Коммунальные платежи 305,685 руб. сверх медианной доли сети.",
+    "profitRank": 23,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": 0.03
+      },
+      {
+        "month": "Фев",
+        "profit": 0.06
+      },
+      {
+        "month": "Мар",
+        "profit": 0.08
+      },
+      {
+        "month": "Апр",
+        "profit": -0.03
+      },
+      {
+        "month": "Май",
+        "profit": -0.17
+      },
+      {
+        "month": "Июн",
+        "profit": -0.0
+      },
+      {
+        "month": "Июл",
+        "profit": -0.09
+      },
+      {
+        "month": "Авг",
+        "profit": 0.0
+      }
+    ]
   },
   {
     "store": "ПЗ1",
@@ -466,9 +1257,44 @@ export const stores: StoreProfile[] = [
     "worstMonth": "Июль",
     "lossMonths": 6,
     "reserve": "Аренда",
-    "reserveAmount": 0.336,
+    "reserveAmount": 0.348,
     "inventoryEffect": -0.027,
-    "narrative": "Убыток 139,244 руб. при марже -1.3%; главный резерв — Аренда 336,138 руб. сверх медианной доли сети."
+    "narrative": "Убыток 139,244 руб. при марже -1.3%; главный резерв — Аренда 348,153 руб. сверх медианной доли сети.",
+    "profitRank": 24,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": -0.05
+      },
+      {
+        "month": "Фев",
+        "profit": -0.05
+      },
+      {
+        "month": "Мар",
+        "profit": 0.07
+      },
+      {
+        "month": "Апр",
+        "profit": -0.02
+      },
+      {
+        "month": "Май",
+        "profit": -0.0
+      },
+      {
+        "month": "Июн",
+        "profit": -0.01
+      },
+      {
+        "month": "Июл",
+        "profit": -0.2
+      },
+      {
+        "month": "Авг",
+        "profit": 0.13
+      }
+    ]
   },
   {
     "store": "МОН",
@@ -479,10 +1305,45 @@ export const stores: StoreProfile[] = [
     "bestMonth": "Апрель",
     "worstMonth": "Июль",
     "lossMonths": 5,
-    "reserve": "ФОТ и налоги",
-    "reserveAmount": 0.461,
+    "reserve": "Коммунальные платежи",
+    "reserveAmount": 0.406,
     "inventoryEffect": -0.008,
-    "narrative": "Убыток 181,407 руб. при марже -1.1%; главный резерв — ФОТ и налоги 461,134 руб. сверх медианной доли сети."
+    "narrative": "Убыток 181,407 руб. при марже -1.1%; главный резерв — Коммунальные платежи 406,157 руб. сверх медианной доли сети.",
+    "profitRank": 25,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": 0.11
+      },
+      {
+        "month": "Фев",
+        "profit": -0.0
+      },
+      {
+        "month": "Мар",
+        "profit": -0.12
+      },
+      {
+        "month": "Апр",
+        "profit": 0.14
+      },
+      {
+        "month": "Май",
+        "profit": -0.07
+      },
+      {
+        "month": "Июн",
+        "profit": -0.02
+      },
+      {
+        "month": "Июл",
+        "profit": -0.22
+      },
+      {
+        "month": "Авг",
+        "profit": 0.01
+      }
+    ]
   },
   {
     "store": "МИРА",
@@ -494,9 +1355,44 @@ export const stores: StoreProfile[] = [
     "worstMonth": "Май",
     "lossMonths": 4,
     "reserve": "ФОТ и налоги",
-    "reserveAmount": 0.512,
+    "reserveAmount": 0.464,
     "inventoryEffect": -0.041,
-    "narrative": "Убыток 182,336 руб. при марже -2.1%; главный резерв — ФОТ и налоги 511,948 руб. сверх медианной доли сети."
+    "narrative": "Убыток 182,336 руб. при марже -2.1%; главный резерв — ФОТ и налоги 464,035 руб. сверх медианной доли сети.",
+    "profitRank": 26,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": 0.04
+      },
+      {
+        "month": "Фев",
+        "profit": 0.02
+      },
+      {
+        "month": "Мар",
+        "profit": 0.06
+      },
+      {
+        "month": "Апр",
+        "profit": -0.09
+      },
+      {
+        "month": "Май",
+        "profit": -0.18
+      },
+      {
+        "month": "Июн",
+        "profit": -0.03
+      },
+      {
+        "month": "Июл",
+        "profit": -0.03
+      },
+      {
+        "month": "Авг",
+        "profit": 0.04
+      }
+    ]
   },
   {
     "store": "П.ЗОР",
@@ -508,9 +1404,44 @@ export const stores: StoreProfile[] = [
     "worstMonth": "Май",
     "lossMonths": 3,
     "reserve": "Наличные операционные траты",
-    "reserveAmount": 0.483,
+    "reserveAmount": 0.479,
     "inventoryEffect": 0.043,
-    "narrative": "Убыток 252,262 руб. при марже -1.5%; главный резерв — Наличные операционные траты 482,947 руб. сверх медианной доли сети."
+    "narrative": "Убыток 252,262 руб. при марже -1.5%; главный резерв — Наличные операционные траты 479,181 руб. сверх медианной доли сети.",
+    "profitRank": 27,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": 0.09
+      },
+      {
+        "month": "Фев",
+        "profit": 0.12
+      },
+      {
+        "month": "Мар",
+        "profit": 0.04
+      },
+      {
+        "month": "Апр",
+        "profit": -0.15
+      },
+      {
+        "month": "Май",
+        "profit": -0.22
+      },
+      {
+        "month": "Июн",
+        "profit": -0.18
+      },
+      {
+        "month": "Июл",
+        "profit": 0.03
+      },
+      {
+        "month": "Авг",
+        "profit": 0.01
+      }
+    ]
   },
   {
     "store": "УМБА",
@@ -522,9 +1453,44 @@ export const stores: StoreProfile[] = [
     "worstMonth": "Май",
     "lossMonths": 6,
     "reserve": "ФОТ и налоги",
-    "reserveAmount": 0.519,
+    "reserveAmount": 0.473,
     "inventoryEffect": -0.001,
-    "narrative": "Убыток 354,900 руб. при марже -4.2%; главный резерв — ФОТ и налоги 518,628 руб. сверх медианной доли сети."
+    "narrative": "Убыток 354,900 руб. при марже -4.2%; главный резерв — ФОТ и налоги 473,063 руб. сверх медианной доли сети.",
+    "profitRank": 28,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": -0.06
+      },
+      {
+        "month": "Фев",
+        "profit": -0.11
+      },
+      {
+        "month": "Мар",
+        "profit": -0.09
+      },
+      {
+        "month": "Апр",
+        "profit": -0.04
+      },
+      {
+        "month": "Май",
+        "profit": -0.17
+      },
+      {
+        "month": "Июн",
+        "profit": 0.04
+      },
+      {
+        "month": "Июл",
+        "profit": -0.04
+      },
+      {
+        "month": "Авг",
+        "profit": 0.11
+      }
+    ]
   },
   {
     "store": "МАК",
@@ -536,9 +1502,44 @@ export const stores: StoreProfile[] = [
     "worstMonth": "Июль",
     "lossMonths": 6,
     "reserve": "ФОТ и налоги",
-    "reserveAmount": 0.688,
+    "reserveAmount": 0.645,
     "inventoryEffect": -0.001,
-    "narrative": "Убыток 546,371 руб. при марже -6.8%; главный резерв — ФОТ и налоги 687,842 руб. сверх медианной доли сети."
+    "narrative": "Убыток 546,371 руб. при марже -6.8%; главный резерв — ФОТ и налоги 644,521 руб. сверх медианной доли сети.",
+    "profitRank": 29,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": -0.01
+      },
+      {
+        "month": "Фев",
+        "profit": 0.01
+      },
+      {
+        "month": "Мар",
+        "profit": 0.06
+      },
+      {
+        "month": "Апр",
+        "profit": -0.03
+      },
+      {
+        "month": "Май",
+        "profit": -0.03
+      },
+      {
+        "month": "Июн",
+        "profit": -0.1
+      },
+      {
+        "month": "Июл",
+        "profit": -0.23
+      },
+      {
+        "month": "Авг",
+        "profit": -0.21
+      }
+    ]
   },
   {
     "store": "С3",
@@ -550,9 +1551,44 @@ export const stores: StoreProfile[] = [
     "worstMonth": "Июль",
     "lossMonths": 7,
     "reserve": "ФОТ и налоги",
-    "reserveAmount": 0.646,
+    "reserveAmount": 0.602,
     "inventoryEffect": 0.298,
-    "narrative": "Убыток 563,496 руб. при марже -6.9%; главный резерв — ФОТ и налоги 646,032 руб. сверх медианной доли сети."
+    "narrative": "Убыток 563,496 руб. при марже -6.9%; главный резерв — ФОТ и налоги 601,780 руб. сверх медианной доли сети.",
+    "profitRank": 30,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": -0.04
+      },
+      {
+        "month": "Фев",
+        "profit": -0.09
+      },
+      {
+        "month": "Мар",
+        "profit": 0.0
+      },
+      {
+        "month": "Апр",
+        "profit": -0.07
+      },
+      {
+        "month": "Май",
+        "profit": -0.02
+      },
+      {
+        "month": "Июн",
+        "profit": -0.07
+      },
+      {
+        "month": "Июл",
+        "profit": -0.2
+      },
+      {
+        "month": "Авг",
+        "profit": -0.08
+      }
+    ]
   },
   {
     "store": "НИК",
@@ -564,9 +1600,44 @@ export const stores: StoreProfile[] = [
     "worstMonth": "Апрель",
     "lossMonths": 8,
     "reserve": "ФОТ и налоги",
-    "reserveAmount": 0.554,
+    "reserveAmount": 0.5,
     "inventoryEffect": -0.041,
-    "narrative": "Убыток 805,364 руб. при марже -8.1%; главный резерв — ФОТ и налоги 554,377 руб. сверх медианной доли сети."
+    "narrative": "Убыток 805,364 руб. при марже -8.1%; главный резерв — ФОТ и налоги 500,385 руб. сверх медианной доли сети.",
+    "profitRank": 31,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": -0.0
+      },
+      {
+        "month": "Фев",
+        "profit": -0.03
+      },
+      {
+        "month": "Мар",
+        "profit": -0.08
+      },
+      {
+        "month": "Апр",
+        "profit": -0.2
+      },
+      {
+        "month": "Май",
+        "profit": -0.2
+      },
+      {
+        "month": "Июн",
+        "profit": -0.07
+      },
+      {
+        "month": "Июл",
+        "profit": -0.11
+      },
+      {
+        "month": "Авг",
+        "profit": -0.12
+      }
+    ]
   },
   {
     "store": "Н95",
@@ -578,9 +1649,44 @@ export const stores: StoreProfile[] = [
     "worstMonth": "Февраль",
     "lossMonths": 8,
     "reserve": "ФОТ и налоги",
-    "reserveAmount": 1.274,
+    "reserveAmount": 1.199,
     "inventoryEffect": -0.022,
-    "narrative": "Убыток 1,101,325 руб. при марже -8.0%; главный резерв — ФОТ и налоги 1,273,825 руб. сверх медианной доли сети."
+    "narrative": "Убыток 1,101,325 руб. при марже -8.0%; главный резерв — ФОТ и налоги 1,199,248 руб. сверх медианной доли сети.",
+    "profitRank": 32,
+    "monthlyProfit": [
+      {
+        "month": "Янв",
+        "profit": -0.06
+      },
+      {
+        "month": "Фев",
+        "profit": -0.26
+      },
+      {
+        "month": "Мар",
+        "profit": -0.02
+      },
+      {
+        "month": "Апр",
+        "profit": -0.06
+      },
+      {
+        "month": "Май",
+        "profit": -0.24
+      },
+      {
+        "month": "Июн",
+        "profit": -0.19
+      },
+      {
+        "month": "Июл",
+        "profit": -0.16
+      },
+      {
+        "month": "Авг",
+        "profit": -0.12
+      }
+    ]
   }
 ];
 
@@ -589,35 +1695,35 @@ export const actionPlan = [
     "point": "Н95",
     "target": "1.10 млн ₽",
     "reserve": "ФОТ и налоги",
-    "reserveAmount": "1.27 млн ₽",
+    "reserveAmount": "1.20 млн ₽",
     "action": "Нормировать штатные часы и график к фактическому трафику; лимитировать сверхсмены."
   },
   {
     "point": "НИК",
     "target": "0.81 млн ₽",
     "reserve": "ФОТ и налоги",
-    "reserveAmount": "0.55 млн ₽",
+    "reserveAmount": "0.50 млн ₽",
     "action": "Нормировать штатные часы и график к фактическому трафику; лимитировать сверхсмены."
   },
   {
     "point": "С3",
     "target": "0.56 млн ₽",
     "reserve": "ФОТ и налоги",
-    "reserveAmount": "0.65 млн ₽",
+    "reserveAmount": "0.60 млн ₽",
     "action": "Нормировать штатные часы и график к фактическому трафику; лимитировать сверхсмены."
   },
   {
     "point": "МАК",
     "target": "0.55 млн ₽",
     "reserve": "ФОТ и налоги",
-    "reserveAmount": "0.69 млн ₽",
+    "reserveAmount": "0.64 млн ₽",
     "action": "Нормировать штатные часы и график к фактическому трафику; лимитировать сверхсмены."
   },
   {
     "point": "УМБА",
     "target": "0.35 млн ₽",
     "reserve": "ФОТ и налоги",
-    "reserveAmount": "0.52 млн ₽",
+    "reserveAmount": "0.47 млн ₽",
     "action": "Нормировать штатные часы и график к фактическому трафику; лимитировать сверхсмены."
   },
   {
@@ -631,21 +1737,21 @@ export const actionPlan = [
     "point": "МИРА",
     "target": "0.18 млн ₽",
     "reserve": "ФОТ и налоги",
-    "reserveAmount": "0.51 млн ₽",
+    "reserveAmount": "0.46 млн ₽",
     "action": "Нормировать штатные часы и график к фактическому трафику; лимитировать сверхсмены."
   },
   {
     "point": "МОН",
     "target": "0.18 млн ₽",
-    "reserve": "ФОТ и налоги",
-    "reserveAmount": "0.46 млн ₽",
-    "action": "Нормировать штатные часы и график к фактическому трафику; лимитировать сверхсмены."
+    "reserve": "Коммунальные платежи",
+    "reserveAmount": "0.41 млн ₽",
+    "action": "Разобрать отклонение по статье, закрепить владельца и еженедельный контроль P&L."
   },
   {
     "point": "ПЗ1",
     "target": "0.14 млн ₽",
     "reserve": "Аренда",
-    "reserveAmount": "0.34 млн ₽",
+    "reserveAmount": "0.35 млн ₽",
     "action": "Переговоры по ставке и релокационный сценарий; решение — только при подтвержденной окупаемости."
   },
   {
@@ -654,25 +1760,18 @@ export const actionPlan = [
     "reserve": "Коммунальные платежи",
     "reserveAmount": "0.31 млн ₽",
     "action": "Разобрать отклонение по статье, закрепить владельца и еженедельный контроль P&L."
-  },
-  {
-    "point": "С2",
-    "target": "0.07 млн ₽",
-    "reserve": "Аренда",
-    "reserveAmount": "1.17 млн ₽",
-    "action": "Переговоры по ставке и релокационный сценарий; решение — только при подтвержденной окупаемости."
   }
 ];
 
 export const network = {
-  "revenue": 666.1,
-  "grossProfit": 170.7,
-  "netProfit": 31.7,
-  "netMargin": 4.8,
-  "lossCount": 11,
-  "storeCount": 33,
-  "losses": 4.3,
-  "topShare": 57.3,
+  "revenue": 655.1,
+  "grossProfit": 167.7,
+  "netProfit": 31.8,
+  "netMargin": 4.9,
+  "lossCount": 10,
+  "storeCount": 32,
+  "losses": 4.2,
+  "topShare": 57.2,
   "top3": [
     {
       "store": "ПОРТ",
@@ -715,9 +1814,9 @@ export const network = {
   ],
   "peak": {
     "month": "Март",
-    "revenue": 96523806.0,
-    "net_profit": 6925444.3,
-    "net_margin": 0.07174856221479704
+    "revenue": 94204544.0,
+    "net_profit": 6815837.0,
+    "net_margin": 0.07235146746212157
   },
   "trough": {
     "month": "Июль",
@@ -727,4 +1826,4 @@ export const network = {
   }
 } as const;
 
-export const auditChecks = [["Исходных листов-магазинов", "43"], ["Включено в срез", "33"], ["P&L-блоков", "264"], ["Формульных ячеек", "310 723"], ["Расхождений > 0,15 руб.", "0"]] as const;
+export const auditChecks = [["Исходных листов-магазинов", "43"], ["Включено в срез", "32"], ["P&L-блоков в срезе", "256"], ["Формульных ячеек", "310 723"], ["Расхождений > 0,15 руб.", "0"]] as const;
