@@ -16,45 +16,15 @@ import Portfolio from "./pages/Portfolio";
 import Pilot from "./pages/Pilot";
 import ImportData from "./pages/ImportData";
 import ManageData from "./pages/ManageData";
+import Login from "./pages/Login";
+import Profile from "./pages/Profile";
+import AccessAdmin from "./pages/AccessAdmin";
+import ChangeLog from "./pages/ChangeLog";
+import { trpc } from "./lib/trpc";
+import "./access.css";
 
-function Router() {
-  // make sure to consider if you need authentication for certain routes
-  return (
-    <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/months"} component={MonthlyComparison} />
-      <Route path={"/pricing"} component={Pricing} />
-      <Route path={"/expenses"} component={Expenses} />
-      <Route path={"/inventory"} component={Inventory} />
-      <Route path={"/stores"} component={Stores} />
-      <Route path={"/compare"} component={CompareStores} />
-      <Route path={"/portfolio"} component={Portfolio} />
-      <Route path={"/pilot"} component={Pilot} />
-      <Route path={"/import"} component={ImportData} />
-      <Route path={"/manage"} component={ManageData} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
-    </Switch>
-  );
-}
+function Router(){return <Switch><Route path="/" component={Home}/><Route path="/months" component={MonthlyComparison}/><Route path="/pricing" component={Pricing}/><Route path="/expenses" component={Expenses}/><Route path="/inventory" component={Inventory}/><Route path="/stores" component={Stores}/><Route path="/compare" component={CompareStores}/><Route path="/portfolio" component={Portfolio}/><Route path="/pilot" component={Pilot}/><Route path="/import" component={ImportData}/><Route path="/manage" component={ManageData}/><Route path="/profile" component={Profile}/><Route path="/access" component={AccessAdmin}/><Route path="/history" component={ChangeLog}/><Route path="/404" component={NotFound}/><Route component={NotFound}/></Switch>}
 
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
+function LocalAccessGate(){const session=trpc.localAuth.me.useQuery(undefined,{retry:false});if(session.isLoading)return <div className="app-loading">Проверяем доступ…</div>;if(!session.data)return <Login/>;return <Router/>}
 
-function App() {
-  return (
-    <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
-        <AuditProvider><TooltipProvider><Toaster /><Router /></TooltipProvider></AuditProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
-  );
-}
-
-export default App;
+export default function App(){return <ErrorBoundary><ThemeProvider defaultTheme="light"><AuditProvider><TooltipProvider><Toaster/><LocalAccessGate/></TooltipProvider></AuditProvider></ThemeProvider></ErrorBoundary>}

@@ -1,0 +1,12 @@
+.date-popover [data-slot="calendar"] .rdp-range_middle{background:#7d245733!important;color:#ffeef4!important;border-radius:0!important}
+.date-popover [data-slot="calendar"] .rdp-range_middle button,.date-popover [data-slot="calendar"] button[data-range-middle="true"]{background:transparent!important;color:#f7d8e3!important;border-radius:0!important}
+.date-popover [data-slot="calendar"] .rdp-range_start{background:linear-gradient(90deg,#b9234f,#8c285e)!important;border-radius:9px 0 0 9px!important}
+.date-popover [data-slot="calendar"] .rdp-range_end{background:linear-gradient(90deg,#8c285e,#b9234f)!important;border-radius:0 9px 9px 0!important}
+.date-popover [data-slot="calendar"] button[data-range-start="true"],.date-popover [data-slot="calendar"] button[data-range-end="true"]{background:transparent!important;color:#ffffff!important;font-weight:850!important;box-shadow:inset 0 0 0 1px #ffb2c7,0 0 0 2px #b9234f40}
+.date-popover [data-slot="calendar"] .rdp-day:has(button[data-range-middle="true"]){background:#7d245733}
+.date-popover [data-slot="calendar"] .rdp-day:has(button[data-range-start="true"]){background:linear-gradient(90deg,#b9234f,#7d245733);border-radius:9px 0 0 9px}
+.date-popover [data-slot="calendar"] .rdp-day:has(button[data-range-end="true"]){background:linear-gradient(90deg,#7d245733,#b9234f);border-radius:0 9px 9px 0}
+html[data-audit-theme="light"] .date-popover [data-slot="calendar"] .rdp-range_middle,html[data-audit-theme="light"] .date-popover [data-slot="calendar"] .rdp-day:has(button[data-range-middle="true"]){background:#a72a5b22!important;color:#58213e!important}
+html[data-audit-theme="light"] .date-popover [data-slot="calendar"] .rdp-range_middle button,html[data-audit-theme="light"] .date-popover [data-slot="calendar"] button[data-range-middle="true"]{color:#58213e!important}
+html[data-audit-theme="light"] .date-popover [data-slot="calendar"] .rdp-range_start,html[data-audit-theme="light"] .date-popover [data-slot="calendar"] .rdp-range_end{background:#8d2857!important}
+html[data-audit-theme="light"] .date-popover [data-slot="calendar"] button[data-range-start="true"],html[data-audit-theme="light"] .date-popover [data-slot="calendar"] button[data-range-end="true"]{color:#fff!important;box-shadow:inset 0 0 0 1px #fff,0 0 0 2px #8d28572b}

@@ -1,4 +1,4 @@
-import { boolean, decimal, int, mysqlEnum, mysqlTable, text, timestamp, unique, varchar } from "drizzle-orm/mysql-core";
+import { boolean, decimal, int, json, mysqlEnum, mysqlTable, text, timestamp, unique, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -63,3 +63,39 @@ export const metrics = mysqlTable("audit_metrics", {
 export type AuditStore = typeof stores.$inferSelect;
 export type AuditPeriod = typeof periods.$inferSelect;
 export type AuditMetric = typeof metrics.$inferSelect;
+
+export const localAccounts = mysqlTable("audit_local_accounts", {
+  id: int("id").autoincrement().primaryKey(),
+  username: varchar("username", { length: 64 }).notNull().unique(),
+  displayName: varchar("displayName", { length: 128 }).notNull(),
+  passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
+  role: mysqlEnum("role", ["admin", "analyst", "viewer"]).default("viewer").notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  lastLoginAt: timestamp("lastLoginAt"),
+});
+
+export const localSessions = mysqlTable("audit_local_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  accountId: int("accountId").notNull(),
+  tokenHash: varchar("tokenHash", { length: 128 }).notNull().unique(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const auditChangeLog = mysqlTable("audit_change_log", {
+  id: int("id").autoincrement().primaryKey(),
+  actorId: int("actorId"),
+  action: varchar("action", { length: 64 }).notNull(),
+  entityType: varchar("entityType", { length: 64 }).notNull(),
+  entityId: varchar("entityId", { length: 128 }).notNull(),
+  beforeState: json("beforeState"),
+  afterState: json("afterState"),
+  rollbackOf: int("rollbackOf"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type LocalAccount = typeof localAccounts.$inferSelect;
+export type LocalSession = typeof localSessions.$inferSelect;
+export type AuditChangeLog = typeof auditChangeLog.$inferSelect;

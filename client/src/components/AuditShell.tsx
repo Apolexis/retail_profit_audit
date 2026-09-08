@@ -1,15 +1,17 @@
 /** AuditLine shell: modern app navigation with an accessible mobile drawer. */
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { ArrowUp, Menu, Moon, Sun, X } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAudit } from "@/contexts/AuditContext";
+import { stores } from "@/data/deepAuditData";
 import "@/audit.css";
+import "@/mobile-nav.css";
 
 const logoImage = "/manus-storage/auditline-logo_846ed825.png";
 const nav = [
   ["/", "00", "Сводка"], ["/months", "01", "Месяцы"], ["/pricing", "02", "Цены"],
   ["/expenses", "03", "Расходы"], ["/inventory", "04", "Остатки"], ["/stores", "05", "Магазины"],
-  ["/compare", "06", "Сравнить"], ["/portfolio", "07", "Портфель"], ["/pilot", "08", "Пилот"], ["/import", "09", "Импорт"], ["/manage", "10", "База"],
+  ["/compare", "06", "Сравнить"], ["/portfolio", "07", "Портфель"], ["/pilot", "08", "Пилот"], ["/import", "09", "Импорт"], ["/manage", "10", "База"], ["/profile", "11", "Профиль"], ["/access", "12", "Доступ"], ["/history", "13", "Журнал"],
 ] as const;
 
 const recommendations: Record<string, { title:string; text:string; action:string }> = {
@@ -24,10 +26,15 @@ const recommendations: Record<string, { title:string; text:string; action:string
 };
 
 export function AuditShell({ title, kicker, children }: { title: string; kicker: string; children: ReactNode }) {
-  const [location] = useLocation();
-  const {theme,toggleTheme,rangeLabel}=useAudit();
+  const [location,setLocation] = useLocation();
+  const {theme,toggleTheme,rangeLabel,setSelectedStore}=useAudit();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [storeSearch,setStoreSearch]=useState("");
+  const gestureStart=useRef<number|null>(null);
   const closeMenu = () => setMenuOpen(false);
+  const activeNav=nav.find(([href])=>href===location)??nav[0];
+  const matches=storeSearch.trim()?stores.filter(store=>store.store.toLowerCase().includes(storeSearch.trim().toLowerCase())).slice(0,6):[];
+  const chooseStore=(store:string)=>{setSelectedStore(store);setStoreSearch("");closeMenu();setLocation("/stores")};
   const guidance=recommendations[kicker.slice(0,2)] ?? recommendations["00"];
-  return <div className="packet"><aside className="packet-spine"><Link href="/" className="packet-mark"><img src={logoImage} alt="AuditLine"/><span>Audit</span><strong>LINE / 2026</strong></Link><div className="spine-caption">ОПЕРАЦИОННЫЙ<br/>АНАЛИЗ</div><nav className="packet-nav-list" aria-label="Разделы отчета">{nav.map(([href,number,label])=><Link key={href} href={href} className={location===href?"packet-nav active":"packet-nav"}><b>{number}</b><span>{label}</span></Link>)}</nav><div className="packet-period"><span>АКТИВНЫЙ СРЕЗ</span><strong>{rangeLabel}</strong></div></aside><header className="packet-top"><div><span className="packet-kicker">{kicker}</span><h1>{title}</h1></div><div className="packet-actions"><button className="theme-button" aria-label="Переключить тему" onClick={toggleTheme}>{theme==="dark"?<Sun size={17}/>:<Moon size={17}/>}</button><button className="packet-mobile menu-button" aria-label={menuOpen?"Закрыть меню":"Открыть меню"} aria-expanded={menuOpen} onClick={()=>setMenuOpen(value=>!value)}>{menuOpen?<X size={20}/>:<Menu size={20}/>}</button></div></header>{menuOpen&&<button className="mobile-backdrop" aria-label="Закрыть меню" onClick={closeMenu}/>}<nav className={menuOpen?"mobile-drawer open":"mobile-drawer"} aria-label="Мобильная навигация"><div className="drawer-top"><span>НАВИГАЦИЯ</span><button aria-label="Закрыть меню" onClick={closeMenu}><X size={20}/></button></div><div className="drawer-scroll">{nav.map(([href,number,label])=><Link key={href} href={href} onClick={closeMenu} className={location===href?"drawer-link active":"drawer-link"}><b>{number}</b><span>{label}</span></Link>)}<div className="drawer-period">Активный срез: <strong>{rangeLabel}</strong></div></div></nav><main className="packet-main">{children}<aside className="section-recommendation"><span>УПРАВЛЕНЧЕСКИЙ ФОКУС</span><div><h3>{guidance.title}</h3><p>{guidance.text}</p></div><strong>{guidance.action}</strong></aside></main><button className="scroll-top" aria-label="Вернуться к началу страницы" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}><ArrowUp size={18}/><span>Наверх</span></button></div>;
+  return <div className="packet"><aside className="packet-spine"><Link href="/" className="packet-mark"><img src={logoImage} alt="AuditLine"/><span>Audit</span><strong>LINE / 2026</strong></Link><div className="spine-caption">ОПЕРАЦИОННЫЙ<br/>АНАЛИЗ</div><nav className="packet-nav-list" aria-label="Разделы отчета">{nav.map(([href,number,label])=><Link key={href} href={href} className={location===href?"packet-nav active":"packet-nav"}><b>{number}</b><span>{label}</span></Link>)}</nav><div className="packet-period"><span>АКТИВНЫЙ СРЕЗ</span><strong>{rangeLabel}</strong></div></aside><header className="packet-top"><div><span className="packet-kicker">{kicker}</span><h1>{title}</h1></div><div className="packet-actions"><button className="theme-button" aria-label="Переключить тему" onClick={toggleTheme}>{theme==="dark"?<Sun size={17}/>:<Moon size={17}/>}</button><button className="packet-mobile menu-button" aria-label={menuOpen?"Закрыть меню":"Открыть меню"} aria-expanded={menuOpen} onClick={()=>setMenuOpen(value=>!value)}>{menuOpen?<X size={18}/>:<Menu size={18}/>}<span>{activeNav[2]}</span></button></div></header>{menuOpen&&<button className="mobile-backdrop" aria-label="Закрыть меню" onClick={closeMenu}/>}<nav className={menuOpen?"mobile-drawer open":"mobile-drawer"} aria-label="Мобильная навигация" onPointerDown={event=>{gestureStart.current=event.clientX}} onPointerUp={event=>{if(gestureStart.current!==null&&event.clientX-gestureStart.current>60)closeMenu();gestureStart.current=null}}><div className="drawer-top"><span>НАВИГАЦИЯ</span><button aria-label="Закрыть меню" onClick={closeMenu}><X size={20}/></button></div><div className="drawer-search"><input value={storeSearch} onChange={event=>setStoreSearch(event.target.value)} placeholder="Найти магазин…"/>{matches.length>0&&<div>{matches.map(store=><button key={store.store} onClick={()=>chooseStore(store.store)}>{store.store}</button>)}</div>}</div><div className="drawer-scroll">{nav.map(([href,number,label])=><Link key={href} href={href} onClick={closeMenu} className={location===href?"drawer-link active":"drawer-link"}><b>{number}</b><span>{label}</span></Link>)}<div className="drawer-period">Активный срез: <strong>{rangeLabel}</strong></div></div></nav><main className="packet-main">{children}<aside className="section-recommendation"><span>УПРАВЛЕНЧЕСКИЙ ФОКУС</span><div><h3>{guidance.title}</h3><p>{guidance.text}</p></div><strong>{guidance.action}</strong></aside></main><button className="scroll-top" aria-label="Вернуться к началу страницы" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}><ArrowUp size={18}/><span>Наверх</span></button></div>;
 }
