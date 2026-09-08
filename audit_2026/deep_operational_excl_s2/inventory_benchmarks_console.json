@@ -1,0 +1,23 @@
+{
+  "network": {
+    "stock_open": 32560432.0,
+    "stock_close": 32517827.0,
+    "stock_change": -42605.0,
+    "movement": 709831.0,
+    "discount": 888564.0,
+    "revaluation": 870908.0,
+    "writeoff_smoked": 5354487.0,
+    "writeoff_frozen": 1710358.0,
+    "stock_to_revenue": 0.049639224356233094,
+    "stock_cover_days": 12.062331518564642
+  },
+  "medians": {
+    "stock_to_revenue": 0.05728850597564232,
+    "stock_cover_days": 13.921106952081082,
+    "stock_change_to_revenue": -0.0006158102944135417,
+    "writeoff_frozen_share": 0.0009394056688200889,
+    "writeoff_smoked_share": 0.006644235889397056,
+    "writeoff_total_to_revenue": 0.010598654282524368
+  },
+  "high_stock": []
+}
