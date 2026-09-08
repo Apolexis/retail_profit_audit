@@ -1,0 +1,25 @@
+{
+  "stores": 32,
+  "network": {
+    "revenue": 655083302.0,
+    "gross_profit": 167720258.0,
+    "net_profit": 31806529.900000002,
+    "net_margin": 0.048553412677278106,
+    "gross_margin": 0.25602890119156174,
+    "stores": 32,
+    "loss_stores": 10,
+    "loss_amount": 4240579.26,
+    "frozen_markup": 0.45358507172894924,
+    "smoked_markup": 0.2620278090442939,
+    "frozen_sales_share": 0.46354959296459064,
+    "frozen_share_net_margin_correlation": 0.02472423111881067,
+    "frozen_share_gross_margin_correlation": 0.9353996412002794
+  },
+  "top_costs": [
+    "Аренда",
+    "Налог с валовой прибыли",
+    "Зарплата (наличные)",
+    "Зарплата (безнал)",
+    "Банковская комиссия"
+  ]
+}
