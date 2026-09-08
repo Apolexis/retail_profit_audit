@@ -8,6 +8,7 @@ const logoImage = "/manus-storage/auditline-logo_846ed825.png";
 const nav = [
   ["/", "00", "Сводка"], ["/months", "01", "Месяцы"], ["/pricing", "02", "Цены"],
   ["/expenses", "03", "Расходы"], ["/inventory", "04", "Остатки"], ["/stores", "05", "Магазины"],
+  ["/compare", "06", "Сравнить"], ["/portfolio", "07", "Портфель"],
 ] as const;
 
 export function AuditShell({ title, kicker, children }: { title: string; kicker: string; children: ReactNode }) {

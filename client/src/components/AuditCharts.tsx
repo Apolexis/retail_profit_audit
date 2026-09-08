@@ -1,5 +1,6 @@
-/** Shared visual language for the CFO reporting packet: adaptive units for operational figures. */
-import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+/** Shared visual language for the CFO reporting packet: adaptive units and interactive series controls. */
+import { useState } from "react";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 export const formatK = (value:number, digits=0) => {
   const absolute = Math.abs(value);
@@ -19,6 +20,8 @@ export function TinyTooltip({ active, payload, label, mode="amount" }: { active?
 }
 
 export function MetricLineChart({ data, lines, percent=false, unit="k" }: { data: readonly Record<string, unknown>[]; lines: {key:string;name:string;color:string}[]; percent?:boolean; unit?:"k"|"m" }) {
+  const [hidden, setHidden] = useState<string[]>([]);
   const mode:TooltipMode = percent ? "percent" : unit === "m" ? "million" : "amount";
-  return <ResponsiveContainer width="100%" height={300}><LineChart data={[...data]} margin={{top:12,right:12,left:-18,bottom:0}}><CartesianGrid vertical={false} stroke="#dfd7c8"/><XAxis dataKey="month" axisLine={false} tickLine={false}/><YAxis axisLine={false} tickLine={false} tickFormatter={(v)=>chartTick(v,mode)}/><Tooltip content={<TinyTooltip mode={mode}/>}/><Legend iconType="circle" wrapperStyle={{fontSize:11}}/>{lines.map((line)=><Line key={line.key} type="monotone" dataKey={line.key} name={line.name} stroke={line.color} strokeWidth={2.5} dot={{r:3}}/>)}</LineChart></ResponsiveContainer>;
+  const toggle = (key:string) => setHidden(current=>current.includes(key) ? current.filter(value=>value!==key) : [...current,key]);
+  return <div className="metric-chart"><div className="chart-series-control" aria-label="Управление рядами графика">{lines.map(line=>{const muted=hidden.includes(line.key);return <button type="button" aria-pressed={!muted} key={line.key} onClick={()=>toggle(line.key)} className={muted?"series-toggle muted":"series-toggle"}><i style={{background:line.color}}/>{line.name}</button>})}</div><ResponsiveContainer width="100%" height={285}><LineChart data={[...data]} margin={{top:12,right:26,left:16,bottom:2}}><CartesianGrid vertical={false} stroke="#263142"/><XAxis dataKey="month" axisLine={false} tickLine={false} stroke="#748096"/><YAxis axisLine={false} tickLine={false} width={62} stroke="#748096" tickFormatter={(v)=>chartTick(v,mode)}/><Tooltip content={<TinyTooltip mode={mode}/>}/>{lines.filter(line=>!hidden.includes(line.key)).map((line)=><Line key={line.key} type="monotone" dataKey={line.key} name={line.name} stroke={line.color} strokeWidth={2.5} dot={{r:3}} activeDot={{r:5}} isAnimationActive animationDuration={720} animationEasing="ease-out"/>)}</LineChart></ResponsiveContainer></div>;
 }

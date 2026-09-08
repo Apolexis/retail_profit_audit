@@ -10,6 +10,8 @@ import Pricing from "./pages/Pricing";
 import Expenses from "./pages/Expenses";
 import Inventory from "./pages/Inventory";
 import Stores from "./pages/Stores";
+import CompareStores from "./pages/CompareStores";
+import Portfolio from "./pages/Portfolio";
 
 
 function Router() {
@@ -21,6 +23,8 @@ function Router() {
       <Route path={"/expenses"} component={Expenses} />
       <Route path={"/inventory"} component={Inventory} />
       <Route path={"/stores"} component={Stores} />
+      <Route path={"/compare"} component={CompareStores} />
+      <Route path={"/portfolio"} component={Portfolio} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

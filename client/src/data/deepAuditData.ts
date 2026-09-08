@@ -82,7 +82,7 @@ export const expenseCategories = [
     "color": "#E34234"
   },
   {
-    "label": "НДФЛ",
+    "label": "НДФЛ 22%",
     "field": "personal_income_tax",
     "amount": 5.956,
     "share": 0.9,
@@ -426,7 +426,7 @@ export const stores = [
         "gap": -1.01
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.636,
         "share": 0.6,
@@ -759,7 +759,7 @@ export const stores = [
         "gap": -0.251
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.312,
         "share": 0.7,
@@ -1092,7 +1092,7 @@ export const stores = [
         "gap": -0.284
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.645,
         "share": 1.3,
@@ -1425,7 +1425,7 @@ export const stores = [
         "gap": -0.064
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.153,
         "share": 0.6,
@@ -1758,7 +1758,7 @@ export const stores = [
         "gap": -0.076
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.247,
         "share": 0.9,
@@ -2091,7 +2091,7 @@ export const stores = [
         "gap": 0.126
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.131,
         "share": 0.8,
@@ -2424,7 +2424,7 @@ export const stores = [
         "gap": 0.285
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.199,
         "share": 0.7,
@@ -2757,7 +2757,7 @@ export const stores = [
         "gap": 0.01
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.166,
         "share": 1.0,
@@ -3090,7 +3090,7 @@ export const stores = [
         "gap": 0.007
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.055,
         "share": 0.4,
@@ -3423,7 +3423,7 @@ export const stores = [
         "gap": 0.088
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.158,
         "share": 0.7,
@@ -3756,7 +3756,7 @@ export const stores = [
         "gap": -0.221
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.323,
         "share": 1.1,
@@ -4089,7 +4089,7 @@ export const stores = [
         "gap": -0.075
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.158,
         "share": 0.9,
@@ -4422,7 +4422,7 @@ export const stores = [
         "gap": -0.07
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.314,
         "share": 1.3,
@@ -4755,7 +4755,7 @@ export const stores = [
         "gap": -0.082
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.072,
         "share": 0.4,
@@ -5088,7 +5088,7 @@ export const stores = [
         "gap": -0.036
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.115,
         "share": 0.9,
@@ -5421,7 +5421,7 @@ export const stores = [
         "gap": 0.077
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.173,
         "share": 1.3,
@@ -5754,7 +5754,7 @@ export const stores = [
         "gap": 0.172
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.055,
         "share": 0.5,
@@ -6087,7 +6087,7 @@ export const stores = [
         "gap": -0.083
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.22,
         "share": 1.2,
@@ -6420,7 +6420,7 @@ export const stores = [
         "gap": -0.022
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.119,
         "share": 1.0,
@@ -6753,7 +6753,7 @@ export const stores = [
         "gap": 0.173
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.047,
         "share": 0.4,
@@ -7086,7 +7086,7 @@ export const stores = [
         "gap": -0.028
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.144,
         "share": 1.2,
@@ -7419,7 +7419,7 @@ export const stores = [
         "gap": 0.101
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.093,
         "share": 0.8,
@@ -7752,7 +7752,7 @@ export const stores = [
         "gap": -0.005
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.085,
         "share": 0.8,
@@ -8085,7 +8085,7 @@ export const stores = [
         "gap": -0.012
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.067,
         "share": 0.6,
@@ -8418,7 +8418,7 @@ export const stores = [
         "gap": 0.05
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.171,
         "share": 1.0,
@@ -8751,7 +8751,7 @@ export const stores = [
         "gap": 0.011
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.072,
         "share": 0.8,
@@ -9084,7 +9084,7 @@ export const stores = [
         "gap": 0.526
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.235,
         "share": 1.4,
@@ -9417,7 +9417,7 @@ export const stores = [
         "gap": 0.071
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.044,
         "share": 0.5,
@@ -9750,7 +9750,7 @@ export const stores = [
         "gap": 0.02
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.153,
         "share": 1.9,
@@ -10083,7 +10083,7 @@ export const stores = [
         "gap": 0.094
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.19,
         "share": 2.3,
@@ -10416,7 +10416,7 @@ export const stores = [
         "gap": 0.183
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.064,
         "share": 0.6,
@@ -10749,7 +10749,7 @@ export const stores = [
         "gap": -0.041
       },
       {
-        "label": "НДФЛ",
+        "label": "НДФЛ 22%",
         "field": "personal_income_tax",
         "amount": 0.338,
         "share": 2.5,
