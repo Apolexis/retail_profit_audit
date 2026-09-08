@@ -4,6 +4,7 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { AuditProvider } from "./contexts/AuditContext";
 import Home from "./pages/Home";
 import MonthlyComparison from "./pages/MonthlyComparison";
 import Pricing from "./pages/Pricing";
@@ -12,6 +13,7 @@ import Inventory from "./pages/Inventory";
 import Stores from "./pages/Stores";
 import CompareStores from "./pages/CompareStores";
 import Portfolio from "./pages/Portfolio";
+import Pilot from "./pages/Pilot";
 
 
 function Router() {
@@ -25,6 +27,7 @@ function Router() {
       <Route path={"/stores"} component={Stores} />
       <Route path={"/compare"} component={CompareStores} />
       <Route path={"/portfolio"} component={Portfolio} />
+      <Route path={"/pilot"} component={Pilot} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
@@ -44,10 +47,7 @@ function App() {
         defaultTheme="light"
         // switchable
       >
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+        <AuditProvider><TooltipProvider><Toaster /><Router /></TooltipProvider></AuditProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

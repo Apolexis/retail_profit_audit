@@ -1,0 +1,10 @@
+/** Global audit controls: one store/portfolio, reporting window and visual theme. */
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useLocation } from "wouter";
+
+export type PeriodKey="jan_aug"|"jan_apr"|"may_aug";
+type AuditState={selectedStore:string;setSelectedStore:(value:string)=>void;period:PeriodKey;setPeriod:(value:PeriodKey)=>void;theme:"dark"|"light";toggleTheme:()=>void;periodLabel:string;months:string[]};
+const periodMap:Record<PeriodKey,{label:string;months:string[]}>={jan_aug:{label:"Январь–август",months:["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август"]},jan_apr:{label:"Январь–апрель",months:["Январь","Февраль","Март","Апрель"]},may_aug:{label:"Май–август",months:["Май","Июнь","Июль","Август"]}};
+const AuditContext=createContext<AuditState|null>(null);
+export function AuditProvider({children}:{children:ReactNode}){const [selectedStore,setSelectedStore]=useState(()=>localStorage.getItem("audit-store")??"__all__");const [period,setPeriod]=useState<PeriodKey>(()=>(localStorage.getItem("audit-period") as PeriodKey)??"jan_aug");const [theme,setTheme]=useState<"dark"|"light">(()=>(localStorage.getItem("audit-theme") as "dark"|"light")??"dark");const [location]=useLocation();useEffect(()=>{localStorage.setItem("audit-store",selectedStore)},[selectedStore]);useEffect(()=>{localStorage.setItem("audit-period",period)},[period]);useEffect(()=>{localStorage.setItem("audit-theme",theme);document.documentElement.dataset.auditTheme=theme},[theme]);useEffect(()=>{window.scrollTo({top:0,left:0,behavior:"auto"})},[location]);const value=useMemo(()=>({selectedStore,setSelectedStore,period,setPeriod,theme,toggleTheme:()=>setTheme(value=>value==="dark"?"light":"dark"),periodLabel:periodMap[period].label,months:periodMap[period].months}),[selectedStore,period,theme]);return <AuditContext.Provider value={value}>{children}</AuditContext.Provider>}
+export function useAudit(){const context=useContext(AuditContext);if(!context)throw new Error("useAudit must be inside AuditProvider");return context}
