@@ -1,0 +1,7 @@
+import { useMemo } from "react";
+import { trpc } from "@/lib/trpc";
+export type ImportedPeriod={storeId:number;store:string;isHidden:boolean;monthDate:string;metrics:Record<string,number>};
+const monthLabels=["Янв","Фев","Мар","Апр","Май","Июн","Июл","Авг","Сен","Окт","Ноя","Дек"];
+export const monthLabel=(monthDate:string)=>monthLabels[Math.max(0,Math.min(11,Number(monthDate.slice(5,7))-1))]??monthDate;
+export const enrich=(period:ImportedPeriod):Record<string,number|string>=>{const revenue=Number(period.metrics.revenue??0),gross=Number(period.metrics.gross_profit??0),net=Number(period.metrics.net_profit??0);return {...period.metrics,gross_margin_pct:revenue?gross/revenue:0,net_margin_pct:revenue?net/revenue:0,month:monthLabel(period.monthDate)}};
+export function useImportedAudit(){const query=trpc.audit.dashboard.useQuery(undefined,{retry:false});const data=query.data;const periods=useMemo(()=>data?.periods?.filter(row=>!row.isHidden)??[],[data]);const storeNames=useMemo(()=>Array.from(new Set(periods.map(row=>row.store))).sort(),[periods]);return {available:periods.length>0,periods,storeNames,loading:query.isLoading,error:query.error}}

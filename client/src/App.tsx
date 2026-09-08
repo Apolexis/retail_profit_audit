@@ -14,9 +14,11 @@ import Stores from "./pages/Stores";
 import CompareStores from "./pages/CompareStores";
 import Portfolio from "./pages/Portfolio";
 import Pilot from "./pages/Pilot";
-
+import ImportData from "./pages/ImportData";
+import ManageData from "./pages/ManageData";
 
 function Router() {
+  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       <Route path={"/"} component={Home} />
@@ -28,6 +30,8 @@ function Router() {
       <Route path={"/compare"} component={CompareStores} />
       <Route path={"/portfolio"} component={Portfolio} />
       <Route path={"/pilot"} component={Pilot} />
+      <Route path={"/import"} component={ImportData} />
+      <Route path={"/manage"} component={ManageData} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
