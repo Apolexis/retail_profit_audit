@@ -47,9 +47,10 @@ export const periods = mysqlTable("audit_periods", {
   storeId: int("storeId").notNull(),
   importId: int("importId"),
   monthDate: varchar("monthDate", { length: 7 }).notNull(),
+  entryDate: varchar("entryDate", { length: 10 }).notNull().default("1970-01-01"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-}, table => [unique("audit_period_store_month_uq").on(table.storeId, table.monthDate)]);
+}, table => [unique("audit_period_store_entry_uq").on(table.storeId, table.entryDate)]);
 
 export const metrics = mysqlTable("audit_metrics", {
   id: int("id").autoincrement().primaryKey(),
