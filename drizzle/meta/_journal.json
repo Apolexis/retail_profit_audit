@@ -85,6 +85,20 @@
       "when": 1788956918227,
       "tag": "0011_elite_bloodstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1788961905219,
+      "tag": "0012_boring_zuras",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "5",
+      "when": 1788964678006,
+      "tag": "0013_watery_ikaris",
+      "breakpoints": true
     }
   ]
 }

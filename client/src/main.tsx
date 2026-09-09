@@ -78,7 +78,21 @@ const trpcClient = trpc.createClient({
   ],
 });
 
-createRoot(document.getElementById("root")!).render(
+const preserveMetricAbbreviation = /\b[А-ЯЁ]\.\s*$/;
+const normalizeVisibleHeadings = () => {
+  document.querySelectorAll<HTMLHeadingElement>("#root h1, #root h2, #root h3").forEach(heading => {
+    const text = heading.textContent?.trim() ?? "";
+    if (!text || preserveMetricAbbreviation.test(text)) return;
+    const normalized = text.replace(/[.!?…]+$/, "");
+    if (normalized !== text) heading.textContent = normalized;
+  });
+};
+
+const appRoot = document.getElementById("root")!;
+const headingObserver = new MutationObserver(() => requestAnimationFrame(normalizeVisibleHeadings));
+headingObserver.observe(appRoot, { childList: true, subtree: true, characterData: true });
+
+createRoot(appRoot).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
     <QueryClientProvider client={queryClient}>
       <App />

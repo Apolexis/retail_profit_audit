@@ -30,4 +30,10 @@ describe("buildOperationalCadence", () => {
     expect(weekWithCash?.cashExpenses).toBe(600);
     expect(weekWithCash?.cashTaxes).toBe(132);
   });
+
+  it("сохраняет дополнительные статьи для полного селектора показателей", () => {
+    const result = buildOperationalCadence([{ monthDate: "2026-09", entryDate: "2026-09-07", importId: 3, metrics: { purchase_smoked: 11_000, purchase_frozen: 9_000, rent: -2_000, salary_cashless: -3_000, driver_cashless: -400, writeoff_frozen: -250 } }], { from: "2026-09-07", to: "2026-09-07" });
+    expect(result.daily[0]).toMatchObject({ purchaseSmoked: 11_000, purchaseFrozen: 9_000, rent: 2_000, salaryCashless: 3_000, driverCashless: 400, writeoffFrozen: -250 });
+    expect(result.daily[0].expenses).toBe(5_400);
+  });
 });

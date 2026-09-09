@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Check, Eye, KeyRound, PenLine, ShieldCheck, Trash2, UserRoundX } from "lucide-react";
+import { toast } from "sonner";
 import { AuditShell } from "@/components/AuditShell";
 import { ConfirmDangerDialog } from "@/components/ConfirmDangerDialog";
 import { PhoneInput } from "@/components/PhoneInput";
@@ -51,6 +52,7 @@ export default function AccessAdmin() {
       setResetPassword("");
       utils.localAuth.list.invalidate();
       utils.audit.changes.invalidate();
+      toast.success("Пароль успешно изменен", { description: "Все активные сессии этой учетной записи завершены." });
     },
   });
   const saveAccess = trpc.localAuth.replaceStoreAccess.useMutation({

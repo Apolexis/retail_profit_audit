@@ -6,9 +6,11 @@ import { adminResetLocalPassword, authenticateLocalAccount, changeLocalPassword,
 import { listAccountStoreAccess, replaceAccountStoreAccess } from "../accessControl";
 import { listAuditStores } from "../audit";
 import { getPushStatus, listMyNotifications, markNotificationRead, removePushSubscription, savePushSubscription } from "../notifications";
+import { PASSKEY_ATTEMPT_COOKIE, beginPasskeyAuthentication, beginPasskeyRegistration, deleteAccountPasskey, finishPasskeyAuthentication, finishPasskeyRegistration, listAccountPasskeys } from "../passkeys";
 
 const password = z.string().min(10, "Пароль должен содержать не менее 10 символов").max(128);
 const role = z.enum(["admin", "analyst"]);
+const passkeyResponse = z.any();
 
 async function localAccountFromContext(openId?: string | null) {
   const account = await getLocalAccountByOpenId(openId);
@@ -34,6 +36,32 @@ export const localAuthRouter = router({
     ctx.res.clearCookie(LOCAL_SESSION_COOKIE, { ...getSessionCookieOptions(ctx.req), sameSite: "lax", maxAge: -1 });
     if (account) await recordChange({ actorId: account.id, action: "account.logout", entityType: "account", entityId: String(account.id) });
     return { success: true };
+  }),
+  passkeys: protectedProcedure.query(async ({ ctx }) => listAccountPasskeys((await localAccountFromContext(ctx.user?.openId)).id)),
+  beginPasskeyRegistration: protectedProcedure.mutation(async ({ ctx }) => {
+    const account = await localAccountFromContext(ctx.user?.openId);
+    const result = await beginPasskeyRegistration(account, ctx.req);
+    ctx.res.cookie(PASSKEY_ATTEMPT_COOKIE, result.attempt, { ...getSessionCookieOptions(ctx.req), sameSite: "lax", maxAge: result.expiresAt.getTime() - Date.now() });
+    return result.options;
+  }),
+  finishPasskeyRegistration: protectedProcedure.input(z.object({ response: passkeyResponse })).mutation(async ({ input, ctx }) => {
+    const account = await localAccountFromContext(ctx.user?.openId);
+    const result = await finishPasskeyRegistration(account, input.response, ctx.req.headers.cookie);
+    ctx.res.clearCookie(PASSKEY_ATTEMPT_COOKIE, { ...getSessionCookieOptions(ctx.req), sameSite: "lax", maxAge: -1 });
+    return result;
+  }),
+  deletePasskey: protectedProcedure.input(z.object({ id: z.number().int() })).mutation(async ({ input, ctx }) => deleteAccountPasskey((await localAccountFromContext(ctx.user?.openId)).id, input.id)),
+  beginPasskeyLogin: publicProcedure.input(z.object({ phone: z.string().min(1).max(64) })).mutation(async ({ input, ctx }) => {
+    const result = await beginPasskeyAuthentication(input.phone, ctx.req);
+    ctx.res.cookie(PASSKEY_ATTEMPT_COOKIE, result.attempt, { ...getSessionCookieOptions(ctx.req), sameSite: "lax", maxAge: result.expiresAt.getTime() - Date.now() });
+    return { options: result.options };
+  }),
+  finishPasskeyLogin: publicProcedure.input(z.object({ phone: z.string().min(1).max(64), response: passkeyResponse })).mutation(async ({ input, ctx }) => {
+    const account = await finishPasskeyAuthentication(input.phone, input.response, ctx.req.headers.cookie);
+    const session = await createLocalSession(account.id);
+    ctx.res.clearCookie(PASSKEY_ATTEMPT_COOKIE, { ...getSessionCookieOptions(ctx.req), sameSite: "lax", maxAge: -1 });
+    ctx.res.cookie(LOCAL_SESSION_COOKIE, session.token, { ...getSessionCookieOptions(ctx.req), sameSite: "lax", maxAge: session.expiresAt.getTime() - Date.now() });
+    return { id: account.id, phone: formatRussianPhone(account.username), displayName: account.displayName, role: account.role };
   }),
   changePassword: protectedProcedure.input(z.object({ currentPassword: z.string().min(1), nextPassword: password })).mutation(async ({ input, ctx }) => {
     const account = await localAccountFromContext(ctx.user?.openId);

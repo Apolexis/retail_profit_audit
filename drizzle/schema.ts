@@ -98,6 +98,33 @@ export const localSessions = mysqlTable("audit_local_sessions", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
+/** Public-key credentials only: Face ID and other biometric templates never leave the device. */
+export const localPasskeys = mysqlTable("audit_local_passkeys", {
+  id: int("id").autoincrement().primaryKey(),
+  accountId: int("accountId").notNull(),
+  credentialId: varchar("credentialId", { length: 512 }).notNull().unique(),
+  publicKey: text("publicKey").notNull(),
+  counter: int("counter").default(0).notNull(),
+  transports: json("transports"),
+  deviceType: varchar("deviceType", { length: 32 }).notNull(),
+  backedUp: boolean("backedUp").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  lastUsedAt: timestamp("lastUsedAt"),
+});
+
+/** Short-lived server-side ceremony state; consumed before passkey verification to prevent replay. */
+export const localPasskeyChallenges = mysqlTable("audit_local_passkey_challenges", {
+  id: int("id").autoincrement().primaryKey(),
+  attemptHash: varchar("attemptHash", { length: 128 }).notNull().unique(),
+  accountId: int("accountId").notNull(),
+  ceremony: mysqlEnum("ceremony", ["registration", "authentication"]).notNull(),
+  challenge: varchar("challenge", { length: 512 }).notNull(),
+  origin: varchar("origin", { length: 512 }).notNull(),
+  rpId: varchar("rpId", { length: 255 }).notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
 export const auditChangeLog = mysqlTable("audit_change_log", {
   id: int("id").autoincrement().primaryKey(),
   actorId: int("actorId"),
@@ -141,6 +168,19 @@ export const auditPushSubscriptions = mysqlTable("audit_push_subscriptions", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => [unique("audit_push_subscription_endpoint_hash_uq").on(table.endpointHash)]);
 
+/** Administrator-adjustable alert rules evaluated on the latest imported or edited facts. */
+export const auditAlertThresholds = mysqlTable("audit_alert_thresholds", {
+  id: int("id").autoincrement().primaryKey(),
+  ruleKey: varchar("ruleKey", { length: 64 }).notNull().unique(),
+  metricCode: varchar("metricCode", { length: 64 }).notNull(),
+  comparison: mysqlEnum("comparison", ["gte", "lte"]).notNull(),
+  threshold: decimal("threshold", { precision: 18, scale: 2 }).notNull(),
+  severity: mysqlEnum("severity", ["critical", "warning"]).default("warning").notNull(),
+  isEnabled: boolean("isEnabled").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 export const executiveReportSchedules = mysqlTable("audit_executive_report_schedules", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 64 }).notNull().unique(),
@@ -165,9 +205,11 @@ export const weeklyExecutiveReports = mysqlTable("audit_weekly_executive_reports
 
 export type LocalAccount = typeof localAccounts.$inferSelect;
 export type LocalSession = typeof localSessions.$inferSelect;
+export type LocalPasskey = typeof localPasskeys.$inferSelect;
 export type AuditChangeLog = typeof auditChangeLog.$inferSelect;
 export type StoreAccess = typeof storeAccess.$inferSelect;
 export type AuditNotification = typeof auditNotifications.$inferSelect;
 export type AuditPushSubscription = typeof auditPushSubscriptions.$inferSelect;
+export type AuditAlertThreshold = typeof auditAlertThresholds.$inferSelect;
 export type ExecutiveReportSchedule = typeof executiveReportSchedules.$inferSelect;
 export type WeeklyExecutiveReport = typeof weeklyExecutiveReports.$inferSelect;

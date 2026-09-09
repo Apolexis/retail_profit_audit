@@ -1,8 +1,11 @@
-import { monthBounds } from "./dateAllocation";
+export type CadenceMetric =
+  | "revenue" | "grossProfit" | "netProfit" | "purchases" | "purchaseSmoked" | "purchaseFrozen" | "salesSmoked" | "salesFrozen"
+  | "expenses" | "cashExpenses" | "cashTaxes" | "household" | "delivery" | "cleaning" | "bonus" | "seniority" | "supplement" | "driverCash" | "utilitiesCash" | "operatingCosts"
+  | "cashlessOperatingCosts" | "driverCashless" | "utilitiesCashless" | "rent" | "bankFee" | "grossProfitTax" | "salaryCashless" | "payrollTax" | "vacationCashless" | "vacationTax" | "salaryCash" | "vacationCash"
+  | "writeoffSmoked" | "writeoffFrozen" | "movement" | "discount";
 
-export type CadenceMetric = "revenue" | "grossProfit" | "netProfit" | "purchases" | "salesSmoked" | "salesFrozen" | "expenses" | "cashExpenses" | "cashTaxes" | "writeoffSmoked" | "writeoffFrozen" | "movement" | "discount";
 export type CadenceSource = { monthDate: string; entryDate: string; importId: number | null; metrics: Record<string, unknown> };
-export type CadencePoint = { date: string; month: string; revenue: number; grossProfit: number; netProfit: number; purchases: number; salesSmoked: number; salesFrozen: number; expenses: number; cashExpenses: number; cashTaxes: number; household: number; delivery: number; cleaning: number; bonus: number; seniority: number; supplement: number; driverCash: number; utilitiesCash: number; operatingCosts: number; writeoffSmoked: number; writeoffFrozen: number; movement: number; discount: number };
+export type CadencePoint = { date: string; month: string } & Record<CadenceMetric, number>;
 export type CadenceResult = { daily: CadencePoint[]; weekly: CadencePoint[]; monthlySources: number; manualRows: number };
 
 const DAY_MS = 86_400_000;
@@ -13,8 +16,19 @@ const toUtc = (value: string) => Date.parse(`${value}T00:00:00Z`);
 const dateString = (timestamp: number) => { const date = new Date(timestamp); return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`; };
 const dateLabel = (value: string) => value.slice(8, 10) + "." + value.slice(5, 7);
 const metricNumber = (metrics: Record<string, unknown>, key: string) => Number(metrics[key] ?? 0);
+const expenseAmount = (metrics: Record<string, unknown>, key: string) => Math.abs(metricNumber(metrics, key));
+
 type CadenceValues = Omit<CadencePoint, "date" | "month">;
-const valuesFor = (metrics: Record<string, unknown>): CadenceValues => ({ revenue: metricNumber(metrics, "revenue"), grossProfit: metricNumber(metrics, "gross_profit"), netProfit: metricNumber(metrics, "net_profit"), purchases: metricNumber(metrics, "purchases"), salesSmoked: metricNumber(metrics, "sales_smoked"), salesFrozen: metricNumber(metrics, "sales_frozen"), expenses: expenseCodes.reduce((total, key) => total + Math.abs(metricNumber(metrics, key)), 0), cashExpenses: cashCodes.reduce((total, key) => total + Math.abs(metricNumber(metrics, key)), 0), cashTaxes: Math.abs(metricNumber(metrics, "personal_income_tax_22")), household: Math.abs(metricNumber(metrics, "household")), delivery: Math.abs(metricNumber(metrics, "delivery")), cleaning: Math.abs(metricNumber(metrics, "cleaning")), bonus: Math.abs(metricNumber(metrics, "bonus")), seniority: Math.abs(metricNumber(metrics, "seniority")), supplement: Math.abs(metricNumber(metrics, "supplement")), driverCash: Math.abs(metricNumber(metrics, "driver_cash")), utilitiesCash: Math.abs(metricNumber(metrics, "utilities_cash")), operatingCosts: Math.abs(metricNumber(metrics, "operating_costs")), writeoffSmoked: metricNumber(metrics, "writeoff_smoked"), writeoffFrozen: metricNumber(metrics, "writeoff_frozen"), movement: metricNumber(metrics, "movement"), discount: metricNumber(metrics, "discount") });
+const valuesFor = (metrics: Record<string, unknown>): CadenceValues => ({
+  revenue: metricNumber(metrics, "revenue"), grossProfit: metricNumber(metrics, "gross_profit"), netProfit: metricNumber(metrics, "net_profit"), purchases: metricNumber(metrics, "purchases"), purchaseSmoked: metricNumber(metrics, "purchase_smoked"), purchaseFrozen: metricNumber(metrics, "purchase_frozen"), salesSmoked: metricNumber(metrics, "sales_smoked"), salesFrozen: metricNumber(metrics, "sales_frozen"),
+  expenses: expenseCodes.reduce((total, key) => total + expenseAmount(metrics, key), 0), cashExpenses: cashCodes.reduce((total, key) => total + expenseAmount(metrics, key), 0), cashTaxes: expenseAmount(metrics, "personal_income_tax_22"), household: expenseAmount(metrics, "household"), delivery: expenseAmount(metrics, "delivery"), cleaning: expenseAmount(metrics, "cleaning"), bonus: expenseAmount(metrics, "bonus"), seniority: expenseAmount(metrics, "seniority"), supplement: expenseAmount(metrics, "supplement"), driverCash: expenseAmount(metrics, "driver_cash"), utilitiesCash: expenseAmount(metrics, "utilities_cash"), operatingCosts: expenseAmount(metrics, "operating_costs"),
+  cashlessOperatingCosts: expenseAmount(metrics, "cashless_operating_costs"), driverCashless: expenseAmount(metrics, "driver_cashless"), utilitiesCashless: expenseAmount(metrics, "utilities_cashless"), rent: expenseAmount(metrics, "rent"), bankFee: expenseAmount(metrics, "bank_fee"), grossProfitTax: expenseAmount(metrics, "gross_profit_tax"), salaryCashless: expenseAmount(metrics, "salary_cashless"), payrollTax: expenseAmount(metrics, "payroll_tax"), vacationCashless: expenseAmount(metrics, "vacation_cashless"), vacationTax: expenseAmount(metrics, "vacation_tax"), salaryCash: expenseAmount(metrics, "salary_cash"), vacationCash: expenseAmount(metrics, "vacation_cash"),
+  writeoffSmoked: metricNumber(metrics, "writeoff_smoked"), writeoffFrozen: metricNumber(metrics, "writeoff_frozen"), movement: metricNumber(metrics, "movement"), discount: metricNumber(metrics, "discount"),
+});
+
+const cadenceKeys: CadenceMetric[] = ["revenue", "grossProfit", "netProfit", "purchases", "purchaseSmoked", "purchaseFrozen", "salesSmoked", "salesFrozen", "expenses", "cashExpenses", "cashTaxes", "household", "delivery", "cleaning", "bonus", "seniority", "supplement", "driverCash", "utilitiesCash", "operatingCosts", "cashlessOperatingCosts", "driverCashless", "utilitiesCashless", "rent", "bankFee", "grossProfitTax", "salaryCashless", "payrollTax", "vacationCashless", "vacationTax", "salaryCash", "vacationCash", "writeoffSmoked", "writeoffFrozen", "movement", "discount"];
+const blank = (date: string): CadencePoint => { const values = {} as Record<CadenceMetric, number>; cadenceKeys.forEach(key => { values[key] = 0; }); return { date, month: dateLabel(date), ...values }; };
+const add = (target: CadencePoint, source: CadenceValues) => { cadenceKeys.forEach(key => { target[key] += source[key]; }); };
 
 const isoWeek = (value: string) => {
   const date = new Date(`${value}T00:00:00Z`);
@@ -25,11 +39,7 @@ const isoWeek = (value: string) => {
   return { key: `${year}-${String(week).padStart(2, "0")}`, label: `Нед. ${week} · ${year}` };
 };
 
-const cadenceKeys: Array<keyof CadenceValues> = ["revenue", "grossProfit", "netProfit", "purchases", "salesSmoked", "salesFrozen", "expenses", "cashExpenses", "cashTaxes", "household", "delivery", "cleaning", "bonus", "seniority", "supplement", "driverCash", "utilitiesCash", "operatingCosts", "writeoffSmoked", "writeoffFrozen", "movement", "discount"];
-const blank = (date: string): CadencePoint => ({ date, month: dateLabel(date), revenue: 0, grossProfit: 0, netProfit: 0, purchases: 0, salesSmoked: 0, salesFrozen: 0, expenses: 0, cashExpenses: 0, cashTaxes: 0, household: 0, delivery: 0, cleaning: 0, bonus: 0, seniority: 0, supplement: 0, driverCash: 0, utilitiesCash: 0, operatingCosts: 0, writeoffSmoked: 0, writeoffFrozen: 0, movement: 0, discount: 0 });
-const add = (target: CadencePoint, source: CadenceValues) => { cadenceKeys.forEach(key => { target[key] += source[key]; }); };
-
-/** Aggregates already prepared primary daily rows; stock snapshots are intentionally excluded. */
+/** Aggregates prepared daily facts. Stock snapshots remain intentionally outside the operating cadence. */
 export function buildOperationalCadence(rows: CadenceSource[], range: { from: string; to: string }): CadenceResult {
   const dailyByDate = new Map<string, CadencePoint>();
   for (let timestamp = toUtc(range.from); timestamp <= toUtc(range.to); timestamp += DAY_MS) { const date = dateString(timestamp); dailyByDate.set(date, blank(date)); }
