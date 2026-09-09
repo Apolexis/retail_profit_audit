@@ -1,0 +1,2 @@
+ALTER TABLE `audit_executive_report_schedules` ADD `weekday` int DEFAULT 1 NOT NULL;--> statement-breakpoint
+ALTER TABLE `audit_executive_report_schedules` ADD `reportTime` varchar(5) DEFAULT '09:00' NOT NULL;

@@ -3,9 +3,8 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { useLocation } from "wouter";
 
 export type DateRangeValue={from:string;to:string};
-const monthLong=["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
 const defaultRange={from:"2026-01-01",to:"2026-12-31"};
-const pretty=(date:string)=>`${monthLong[Math.max(0,Math.min(11,Number(date.slice(5,7))-1))]??date} ${date.slice(0,4)}`;
+const pretty=(date:string)=>date.split("-").reverse().join(".");
 const normalizeRange=(value:DateRangeValue):DateRangeValue=>value.from<=value.to?value:{from:value.to,to:value.from};
 type AuditState={selectedStore:string;setSelectedStore:(value:string)=>void;range:DateRangeValue;setRange:(value:DateRangeValue)=>void;theme:"dark"|"light";toggleTheme:()=>void;rangeLabel:string;months:string[];includesMonth:(value:string)=>boolean};
 const AuditContext=createContext<AuditState|null>(null);

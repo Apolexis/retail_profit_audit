@@ -57,6 +57,13 @@
       "when": 1788917701316,
       "tag": "0007_many_sabretooth",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1788919592256,
+      "tag": "0008_supreme_shotgun",
+      "breakpoints": true
     }
   ]
 }

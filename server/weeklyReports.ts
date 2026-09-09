@@ -5,14 +5,17 @@ import { getDb } from "./db";
 import { createNotifications } from "./notifications";
 
 export const WEEKLY_REPORT_NAME="weekly-executive-report";
-export const WEEKLY_REPORT_CRON="0 0 6 * * 1";
+export const WEEKLY_REPORT_CRON="0 * * * * *";
 export type WeeklySummary={periodStart:string;periodEnd:string;snapshotMonth:string|null;revenue:number;netProfit:number;margin:number;stores:number;lossStores:number;changeCount:number;topProfit:Array<{store:string;value:number}>;riskStores:Array<{store:string;reason:string;value:number}>;methodology:string};
 const iso=(date:Date)=>date.toISOString().slice(0,10);
 const fmt=(value:number)=>Math.round(value).toLocaleString("ru-RU");
 
-export function previousCalendarWeek(now=new Date()){const day=now.getUTCDay()||7;const monday=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()-day+1));const end=new Date(monday);end.setUTCDate(end.getUTCDate()-1);const start=new Date(end);start.setUTCDate(start.getUTCDate()-6);return {periodStart:iso(start),periodEnd:iso(end)}}
+export function previousCalendarWeek(now=new Date()){const moscow=new Date(now.getTime()+3*60*60*1000);const day=moscow.getUTCDay()||7;const monday=new Date(Date.UTC(moscow.getUTCFullYear(),moscow.getUTCMonth(),moscow.getUTCDate()-day+1));const end=new Date(monday);end.setUTCDate(end.getUTCDate()-1);const start=new Date(end);start.setUTCDate(start.getUTCDate()-6);return {periodStart:iso(start),periodEnd:iso(end)}}
 
 export async function ensureWeeklyReportSchedule(){const db=await getDb();if(!db)throw new Error("База данных недоступна");await db.insert(executiveReportSchedules).values({name:WEEKLY_REPORT_NAME,cronExpression:WEEKLY_REPORT_CRON,isEnabled:true}).onDuplicateKeyUpdate({set:{cronExpression:WEEKLY_REPORT_CRON,isEnabled:true}});return (await db.select().from(executiveReportSchedules).where(eq(executiveReportSchedules.name,WEEKLY_REPORT_NAME)).limit(1))[0];}
+export async function getWeeklyReportSchedule(){return ensureWeeklyReportSchedule()}
+export async function updateWeeklyReportSchedule(input:{weekday:number;reportTime:string}){if(!Number.isInteger(input.weekday)||input.weekday<1||input.weekday>7)throw new Error("Выберите день недели");if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(input.reportTime))throw new Error("Укажите время в формате ЧЧ:ММ");const db=await getDb();if(!db)throw new Error("База данных недоступна");const schedule=await ensureWeeklyReportSchedule();await db.update(executiveReportSchedules).set({weekday:input.weekday,reportTime:input.reportTime,cronExpression:WEEKLY_REPORT_CRON,isEnabled:true}).where(eq(executiveReportSchedules.id,schedule.id));return (await db.select().from(executiveReportSchedules).where(eq(executiveReportSchedules.id,schedule.id)).limit(1))[0]}
+export function isWeeklyReportDue(schedule:{weekday:number;reportTime:string},now=new Date()){const parts=new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/Moscow",weekday:"short",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(now);const pick=(type:string)=>parts.find(part=>part.type===type)?.value??"";const weekday:Record<string,number>={Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6,Sun:7};return weekday[pick("weekday")]===schedule.weekday&&`${pick("hour")}:${pick("minute")}`===schedule.reportTime}
 export async function findWeeklyScheduleByTaskUid(taskUid:string){const db=await getDb();if(!db)return null;return (await db.select().from(executiveReportSchedules).where(and(eq(executiveReportSchedules.scheduleCronTaskUid,taskUid),eq(executiveReportSchedules.isEnabled,true))).limit(1))[0]??null;}
 export async function attachWeeklyScheduleTask(taskUid:string){const db=await getDb();if(!db)throw new Error("База данных недоступна");const schedule=await ensureWeeklyReportSchedule();await db.update(executiveReportSchedules).set({scheduleCronTaskUid:taskUid}).where(eq(executiveReportSchedules.id,schedule.id));return taskUid;}
 

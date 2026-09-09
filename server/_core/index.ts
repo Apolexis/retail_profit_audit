@@ -9,7 +9,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { sdk } from "./sdk";
 import { serveStatic, setupVite } from "./vite";
-import { createWeeklyExecutiveReport, findWeeklyScheduleByTaskUid } from "../weeklyReports";
+import { createWeeklyExecutiveReport, findWeeklyScheduleByTaskUid, isWeeklyReportDue } from "../weeklyReports";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -52,6 +52,7 @@ async function startServer() {
       if (!user.isCron || !user.taskUid) return res.status(403).json({ error: "cron-only" });
       const schedule = await findWeeklyScheduleByTaskUid(user.taskUid);
       if (!schedule) return res.json({ ok: true, skipped: "orphan-or-disabled" });
+      if (!isWeeklyReportDue(schedule)) return res.json({ ok: true, skipped: "not-scheduled-time" });
       const result = await createWeeklyExecutiveReport();
       return res.json({ ok: true, created: result.created, reportId: result.report.id });
     } catch (error) {

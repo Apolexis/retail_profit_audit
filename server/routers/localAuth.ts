@@ -4,6 +4,7 @@ import { getSessionCookieOptions } from "../_core/cookies";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { authenticateLocalAccount, changeLocalPassword, createLocalAccount, createLocalSession, deleteLocalSessionFromCookie, formatRussianPhone, getLocalAccountByOpenId, getLocalSessionFromCookie, listLocalAccounts, LOCAL_SESSION_COOKIE, recordChange, updateLocalAccount } from "../localAuth";
 import { listAccountStoreAccess, replaceAccountStoreAccess } from "../accessControl";
+import { listAuditStores } from "../audit";
 import { listMyNotifications, markNotificationRead } from "../notifications";
 
 const password = z.string().min(10, "Пароль должен содержать не менее 10 символов").max(128);
@@ -57,7 +58,11 @@ export const localAuthRouter = router({
   replaceStoreAccess: adminProcedure.input(z.object({ accountId: z.number().int(), grants: z.array(z.object({ storeId: z.number().int(), accessLevel: z.enum(["view", "edit"]) })).max(500) })).mutation(async ({ input, ctx }) => {
     const actor = await localAccountFromContext(ctx.user?.openId);
     const result = await replaceAccountStoreAccess(input.accountId, input.grants);
-    await recordChange({ actorId: actor.id, action: "store_access.replace", entityType: "account", entityId: String(input.accountId), beforeState: result.before, afterState: result.after });
+    const [accounts, stores] = await Promise.all([listLocalAccounts(), listAuditStores()]);
+    const target = accounts.find(account => account.id === input.accountId);
+    const names = new Map(stores.map(store => [store.id, store.name]));
+    const describe = (grant: { storeId: number; accessLevel: "view" | "edit" }) => ({ storeId: grant.storeId, storeName: names.get(grant.storeId) ?? `Магазин #${grant.storeId}`, accessLevel: grant.accessLevel, accessLabel: grant.accessLevel === "edit" ? "редактирование" : "просмотр" });
+    await recordChange({ actorId: actor.id, action: "store_access.replace", entityType: "account", entityId: String(input.accountId), beforeState: { accountId: input.accountId, account: target?.displayName ?? `Пользователь #${input.accountId}`, grants: result.before.map(describe) }, afterState: { accountId: input.accountId, account: target?.displayName ?? `Пользователь #${input.accountId}`, grants: result.after.map(describe) } });
     return { success: true };
   }),
   notifications: protectedProcedure.query(async ({ ctx }) => {

@@ -123,6 +123,8 @@ export const executiveReportSchedules = mysqlTable("audit_executive_report_sched
   name: varchar("name", { length: 64 }).notNull().unique(),
   cronExpression: varchar("cronExpression", { length: 64 }).notNull(),
   scheduleCronTaskUid: varchar("schedule_cron_task_uid", { length: 65 }).unique(),
+  weekday: int("weekday").notNull().default(1),
+  reportTime: varchar("reportTime", { length: 5 }).notNull().default("09:00"),
   isEnabled: boolean("isEnabled").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
