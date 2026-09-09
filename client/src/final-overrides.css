@@ -1,0 +1,189 @@
+/* Последний тематический слой: намеренно подключается после всех исторических CSS. */
+
+:root {
+  --audit-hover-ease: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Кнопка «Наверх»: заметна после прокрутки, не конфликтует с нижней зоной жестов. */
+.packet .scroll-top {
+  position: fixed !important;
+  z-index: 80 !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 44px !important;
+  height: 44px !important;
+  padding: 0 !important;
+  border: 1px solid #ff937f !important;
+  border-radius: 13px !important;
+  background: #26131ded !important;
+  color: #fff3f6 !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(255, 118, 95, 0.14) !important;
+  backdrop-filter: blur(14px);
+  transition: transform 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease), border-color 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease) !important;
+}
+
+.packet .scroll-top:hover {
+  transform: translateY(-2px) !important;
+  border-color: #ffd1c5 !important;
+  background: #3b1927 !important;
+  box-shadow: 0 0 0 2px rgba(255, 118, 95, 0.22), 0 15px 32px rgba(0, 0, 0, 0.46) !important;
+}
+
+.packet .scroll-top:active { transform: scale(0.95) !important; }
+
+@media (max-width: 720px) {
+  .packet .scroll-top {
+    left: max(18px, calc(env(safe-area-inset-left, 0px) + 18px)) !important;
+    right: auto !important;
+    bottom: max(68px, calc(env(safe-area-inset-bottom, 0px) + 48px)) !important;
+  }
+}
+
+/* Dark: coral hover, never the legacy cold-blue outline. */
+html[data-audit-theme="dark"] .packet .packet-link,
+html[data-audit-theme="dark"] .packet .packet-link.compact {
+  background: #26131d !important;
+  border-color: #a85b72 !important;
+  color: #ffe8ef !important;
+  box-shadow: 0 7px 18px rgba(0, 0, 0, 0.22) !important;
+  transition: transform 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease), border-color 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease) !important;
+}
+
+html[data-audit-theme="dark"] .packet .packet-link:hover,
+html[data-audit-theme="dark"] .packet .packet-link.compact:hover {
+  transform: translateY(-2px) !important;
+  background: linear-gradient(135deg, #482033, #2c1724) !important;
+  border-color: #ff9179 !important;
+  color: #fff7f9 !important;
+  box-shadow: 0 0 0 2px rgba(255, 118, 95, 0.2), 0 11px 22px rgba(0, 0, 0, 0.24) !important;
+}
+
+/* Light: not blue and not washed-pink. The shared accent is deep cinnabar. */
+html[data-audit-theme="light"] .packet {
+  --cyan: #b13b32;
+  --violet: #8f4b13;
+  --blue: #b13b32;
+  --yellow: #8c5a00;
+  --rose: #c3343c;
+}
+
+html[data-audit-theme="light"] .packet .packet-kicker,
+html[data-audit-theme="light"] .packet .card-eyebrow,
+html[data-audit-theme="light"] .packet .page-lede > div > span,
+html[data-audit-theme="light"] .packet .card-title > div > span,
+html[data-audit-theme="light"] .packet .section-recommendation > span,
+html[data-audit-theme="light"] .packet .accent-marker,
+html[data-audit-theme="light"] .packet .accent-line {
+  color: #b13b32 !important;
+}
+
+html[data-audit-theme="light"] .packet .packet-link,
+html[data-audit-theme="light"] .packet .packet-link.compact {
+  background: #fffdfc !important;
+  border-color: #c46b61 !important;
+  color: #8f302d !important;
+  box-shadow: 0 6px 15px rgba(111, 45, 39, 0.1) !important;
+  transition: transform 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease), border-color 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease) !important;
+}
+
+html[data-audit-theme="light"] .packet .packet-link:hover,
+html[data-audit-theme="light"] .packet .packet-link.compact:hover {
+  transform: translateY(-2px) !important;
+  background: #fff1e9 !important;
+  border-color: #c3433d !important;
+  color: #7a2426 !important;
+  box-shadow: 0 0 0 2px rgba(195, 67, 61, 0.14), 0 10px 20px rgba(111, 45, 39, 0.12) !important;
+}
+
+/* «Пилот» в светлой теме: нейтральный текст и красно-янтарный ползунок вместо темно-розовых остатков. */
+html[data-audit-theme="light"] .packet .pilot-knob > span { color: #242a33 !important; }
+html[data-audit-theme="light"] .packet .pilot-knob > span b { background: #fff1d9 !important; color: #995000 !important; }
+html[data-audit-theme="light"] .packet .pilot-knob input[type="range"] { background: #e7d8c7 !important; accent-color: #c85a17 !important; }
+html[data-audit-theme="light"] .packet .pilot-knob input[type="range"]::-webkit-slider-thumb { border-color: #fffdf8 !important; background: #c85a17 !important; box-shadow: 0 2px 7px rgba(153, 80, 0, 0.28) !important; }
+html[data-audit-theme="light"] .packet .pilot-knob small { color: #5e6672 !important; }
+html[data-audit-theme="light"] .packet .pilot-knob small i { background: #d9dee5 !important; }
+
+html[data-audit-theme="light"] .packet .scenario-card > span,
+html[data-audit-theme="light"] .packet .scenario-card .card-eyebrow,
+html[data-audit-theme="light"] .packet .scenario-card [class*="eyebrow"] {
+  color: #b13b32 !important;
+}
+
+/* Права: hover есть только у варианта, который еще можно выбрать. */
+.packet .access-switch button {
+  transition: transform 150ms var(--audit-hover-ease), border-color 150ms var(--audit-hover-ease), box-shadow 150ms var(--audit-hover-ease) !important;
+}
+.packet .access-switch button:not(.active):hover {
+  transform: translateY(-1px) !important;
+  border-color: #ff937f !important;
+  background: transparent !important;
+  box-shadow: 0 0 0 2px rgba(255, 118, 95, 0.16) !important;
+}
+.packet .access-switch button.active:hover,
+.packet .access-switch button.active.edit:hover {
+  transform: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+html[data-audit-theme="light"] .packet .access-switch button:not(.active):hover {
+  border-color: #b13b32 !important;
+  background: transparent !important;
+  box-shadow: 0 0 0 2px rgba(177, 59, 50, 0.14) !important;
+}
+html[data-audit-theme="light"] .packet .access-switch button.active:hover,
+html[data-audit-theme="light"] .packet .access-switch button.active.edit:hover { background: inherit !important; }
+
+/* Журнал: фактическое изменение читается в одну строку, без технических идентификаторов. */
+.packet .audit-entry { padding: 13px 21px !important; }
+.packet .audit-entry header { align-items: center !important; }
+.packet .audit-entry-title { display: flex !important; align-items: center; flex-wrap: wrap; gap: 7px !important; }
+.packet .audit-entry-title > span { margin: 0 !important; padding: 2px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-2); font-size: 10px !important; }
+.packet .audit-actor { margin: 6px 0 0 !important; }
+.packet .audit-change-summary { margin-top: 7px !important; gap: 6px !important; }
+.packet .audit-change-line { min-height: 30px; padding: 4px 7px !important; }
+.packet .audit-change-value { gap: 4px; padding: 4px 6px !important; white-space: nowrap; }
+.packet .audit-change-value i { opacity: .72; font-size: 8px; font-style: normal; font-weight: 800; letter-spacing: .03em; text-decoration: none; }
+.packet .audit-change-value.before { text-decoration: none !important; }
+.packet .audit-change-value.before i { text-decoration: line-through; text-decoration-thickness: 1px; }
+.packet .audit-change-line.grants { gap: 6px !important; }
+@media (max-width: 720px) { .packet .audit-entry { padding: 12px 14px !important; } .packet .audit-entry header { align-items: flex-start !important; } .packet .audit-change-value { white-space: normal; } }
+
+/* Семантика показателей не зависит от старого желтого декоративного цвета. */
+html[data-audit-theme="dark"] .packet .positive,
+html[data-audit-theme="dark"] .packet .money-positive,
+html[data-audit-theme="dark"] .packet .positive-text,
+html[data-audit-theme="dark"] .packet .data-table .positive { color: #61d9b5 !important; }
+html[data-audit-theme="dark"] .packet .negative,
+html[data-audit-theme="dark"] .packet .money-negative,
+html[data-audit-theme="dark"] .packet .risk-text,
+html[data-audit-theme="dark"] .packet .data-table .negative { color: #ff8ba4 !important; }
+html[data-audit-theme="light"] .packet .positive,
+html[data-audit-theme="light"] .packet .money-positive,
+html[data-audit-theme="light"] .packet .positive-text,
+html[data-audit-theme="light"] .packet .data-table .positive { color: #08745d !important; }
+html[data-audit-theme="light"] .packet .negative,
+html[data-audit-theme="light"] .packet .money-negative,
+html[data-audit-theme="light"] .packet .risk-text,
+html[data-audit-theme="light"] .packet .data-table .negative { color: #be3340 !important; }
+html[data-audit-theme="light"] .packet .warning,
+html[data-audit-theme="light"] .packet .warning svg { color: #8c5a00 !important; }
+
+html[data-audit-theme="light"] .packet .scroll-top {
+  background: #fff9f7ee !important;
+  border-color: #d86b68 !important;
+  color: #9f253b !important;
+  box-shadow: 0 12px 28px rgba(117, 43, 55, 0.16), 0 0 0 1px rgba(214, 72, 78, 0.08) !important;
+}
+html[data-audit-theme="light"] .packet .scroll-top:hover {
+  background: #fff0ea !important;
+  border-color: #c73d48 !important;
+  box-shadow: 0 0 0 2px rgba(199, 61, 72, 0.14), 0 15px 30px rgba(117, 43, 55, 0.18) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .packet .scroll-top,
+  .packet .packet-link,
+  .packet .packet-link.compact,
+  .packet .access-switch button { transition: none !important; }
+}

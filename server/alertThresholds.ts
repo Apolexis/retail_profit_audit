@@ -13,10 +13,16 @@ export const ALERT_THRESHOLD_DEFAULTS: AlertThresholdDefinition[] = [
   { ruleKey: "stock_high", metricCode: "stock_close", comparison: "gte", threshold: 300_000, severity: "warning", label: "Высокий остаток", description: "конечный остаток на дату", unit: "₽" },
   { ruleKey: "negative_profit", metricCode: "net_profit", comparison: "lte", threshold: 0, severity: "critical", label: "Отрицательная чистая прибыль", description: "чистая прибыль за день", unit: "₽" },
   { ruleKey: "frozen_writeoff_daily", metricCode: "writeoff_frozen", comparison: "gte", threshold: 50_000, severity: "warning", label: "Списания М.", description: "списания мороженой продукции за день", unit: "₽" },
+  { ruleKey: "low_revenue_daily", metricCode: "revenue", comparison: "lte", threshold: 30_000, severity: "warning", label: "Низкая выручка", description: "выручка за день", unit: "₽" },
+  { ruleKey: "gross_profit_nonpositive", metricCode: "gross_profit", comparison: "lte", threshold: 0, severity: "critical", label: "Неваловая прибыль", description: "валовая прибыль не выше нуля за день", unit: "₽" },
+  { ruleKey: "cashless_expense_daily", metricCode: "cashless_operating_costs", comparison: "gte", threshold: 20_000, severity: "warning", label: "Расходы безнал", description: "безналичные операционные расходы за день", unit: "₽" },
+  { ruleKey: "payroll_cost_daily", metricCode: "payroll_costs", comparison: "gte", threshold: 35_000, severity: "warning", label: "ФОТ и отпускные", description: "зарплата, налоги и отпускные за день", unit: "₽" },
 ];
 
 export const CASH_OPERATING_COMPONENT_CODES = ["household", "delivery", "cleaning", "bonus", "seniority", "supplement", "driver_cash", "utilities_cash", "operating_costs"] as const;
 const cashOperatingComponentSet = new Set<string>(CASH_OPERATING_COMPONENT_CODES);
+export const PAYROLL_COMPONENT_CODES = ["salary_cashless", "salary_cash", "payroll_tax", "vacation_cashless", "vacation_tax", "vacation_cash"] as const;
+const payrollComponentSet = new Set<string>(PAYROLL_COMPONENT_CODES);
 
 export type AlertThreshold = AlertThresholdDefinition & { id?: number; isEnabled: boolean };
 
@@ -60,19 +66,23 @@ export type ThresholdBreach = ThresholdCandidate & { rule: AlertThreshold };
 /** Converts the mutually independent cash articles into one controllable daily cash-expense candidate. */
 export function withDerivedCashOperatingCostCandidates(candidates: ThresholdCandidate[]) {
   const passthrough: ThresholdCandidate[] = [];
-  const grouped = new Map<string, { storeId: number; store: string; entryDate: string; componentTotal: number; directAmount?: number }>();
+  const grouped = new Map<string, { storeId: number; store: string; entryDate: string; cashTotal: number; payrollTotal: number; directCashAmount?: number }>();
   for (const candidate of candidates) {
-    if (candidate.metricCode !== "cash_operating_costs" && !cashOperatingComponentSet.has(candidate.metricCode)) {
+    if (candidate.metricCode !== "cash_operating_costs" && !cashOperatingComponentSet.has(candidate.metricCode) && !payrollComponentSet.has(candidate.metricCode)) {
       passthrough.push(candidate);
       continue;
     }
     const key = `${candidate.storeId}:${candidate.entryDate}`;
-    const current = grouped.get(key) ?? { storeId: candidate.storeId, store: candidate.store, entryDate: candidate.entryDate, componentTotal: 0 };
-    if (candidate.metricCode === "cash_operating_costs") current.directAmount = Math.abs(candidate.amount);
-    else current.componentTotal += Math.abs(candidate.amount);
+    const current = grouped.get(key) ?? { storeId: candidate.storeId, store: candidate.store, entryDate: candidate.entryDate, cashTotal: 0, payrollTotal: 0 };
+    if (candidate.metricCode === "cash_operating_costs") current.directCashAmount = Math.abs(candidate.amount);
+    else if (cashOperatingComponentSet.has(candidate.metricCode)) current.cashTotal += Math.abs(candidate.amount);
+    else current.payrollTotal += Math.abs(candidate.amount);
     grouped.set(key, current);
   }
-  return [...passthrough, ...Array.from(grouped.values()).map(item => ({ storeId: item.storeId, store: item.store, entryDate: item.entryDate, metricCode: "cash_operating_costs", amount: item.componentTotal || item.directAmount || 0 }))];
+  return [...passthrough, ...Array.from(grouped.values()).flatMap(item => [
+    { storeId: item.storeId, store: item.store, entryDate: item.entryDate, metricCode: "cash_operating_costs", amount: item.cashTotal || item.directCashAmount || 0 },
+    { storeId: item.storeId, store: item.store, entryDate: item.entryDate, metricCode: "payroll_costs", amount: item.payrollTotal },
+  ])];
 }
 
 export function collectThresholdBreaches(candidates: ThresholdCandidate[], thresholds: AlertThreshold[]) {

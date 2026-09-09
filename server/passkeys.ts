@@ -15,6 +15,16 @@ const headerValue = (value: string | string[] | undefined) => Array.isArray(valu
 const tokenHash = (token: string) => createHash("sha256").update(token).digest("hex");
 
 export function passkeyRelyingParty(req: RequestLike) {
+  const browserOrigin = headerValue(req.headers.origin);
+  if (browserOrigin) {
+    try {
+      const url = new URL(browserOrigin);
+      const rpId = url.hostname;
+      if (rpId) return { rpId, origin: url.origin };
+    } catch {
+      // Для невалидного Origin используем проверенный прокси-заголовок ниже.
+    }
+  }
   const forwardedHost = headerValue(req.headers["x-forwarded-host"]);
   const rawHost = (forwardedHost ?? headerValue(req.headers.host) ?? "").split(",")[0].trim();
   if (!rawHost) throw new Error("Не удалось определить адрес приложения для passkey");
@@ -61,7 +71,7 @@ export async function beginPasskeyRegistration(account: { id: number; username: 
   const { rpId } = passkeyRelyingParty(req);
   const existing = await db.select().from(localPasskeys).where(eq(localPasskeys.accountId, account.id));
   const options = await generateRegistrationOptions({
-    rpName: "Аналитика Магазинов",
+    rpName: "Аналитика «Рыбный»",
     rpID: rpId,
     userID: new TextEncoder().encode(`audit:${account.id}`),
     userName: account.username,
@@ -69,7 +79,6 @@ export async function beginPasskeyRegistration(account: { id: number; username: 
     attestationType: "none",
     excludeCredentials: existing.map(item => ({ id: item.credentialId, transports: Array.isArray(item.transports) ? item.transports.map(String) : undefined })),
     authenticatorSelection: { residentKey: "required", userVerification: "required" },
-    preferredAuthenticatorType: "localDevice",
   });
   const ceremony = await saveChallenge(account.id, "registration", options.challenge, req);
   return { options, ...ceremony };
@@ -103,7 +112,7 @@ export async function beginPasskeyAuthentication(phone: string, req: RequestLike
   const { rpId } = passkeyRelyingParty(req);
   const credentials = await db.select().from(localPasskeys).where(eq(localPasskeys.accountId, account.id));
   if (!credentials.length) throw new Error("На этом номере еще не настроен быстрый вход");
-  const options = await generateAuthenticationOptions({ rpID: rpId, userVerification: "required", allowCredentials: credentials.map(item => ({ id: item.credentialId, transports: Array.isArray(item.transports) ? item.transports.map(String) : undefined })) });
+  const options = await generateAuthenticationOptions({ rpID: rpId, userVerification: "required" });
   const ceremony = await saveChallenge(account.id, "authentication", options.challenge, req);
   return { accountId: account.id, options, ...ceremony };
 }

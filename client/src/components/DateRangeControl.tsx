@@ -26,7 +26,7 @@ export function DateRangeControl({compact=false,value,onChange,title="ПЕРИО
   const savedRange=!draft?selected:undefined;
   const draftStart=draft?.from;const previewEnd=preview?.to??draft?.to;const mobilePreview=dateRangePreview(draftStart,previewEnd,selected);
   const label=draft?.from?(draft.to?`${format(draft.from,"d MMMM yyyy",{locale:ru})} — ${format(draft.to,"d MMMM yyyy",{locale:ru})}`:`Начало: ${format(draft.from,"d MMMM yyyy",{locale:ru})} · выберите конец`):labelFor(current);
-  return <Popover open={open} onOpenChange={next=>{if(next){setDraft(undefined);setHovered(undefined)}setOpen(next)}}>
+  return <Popover open={open} onOpenChange={next=>{if(next){setDraft(undefined);setHovered(undefined);setShowStandard(false)}setOpen(next)}}>
     <PopoverTrigger asChild><button className={compact?"date-range-control compact":"date-range-control"} aria-label={ariaLabel}><CalendarDays size={15}/><span>{labelFor(current)}</span><ChevronDown size={13}/></button></PopoverTrigger>
     <PopoverContent className="date-popover" align="end" sideOffset={10}>
       <div className="date-popover-head"><span>{title}</span><b>{label}</b>{draftStart&&<button type="button" className="date-reset" onClick={()=>{setDraft(undefined);setHovered(undefined)}}><RotateCcw size={13}/>Начать заново</button>}</div>

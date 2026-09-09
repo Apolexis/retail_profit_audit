@@ -1,5 +1,5 @@
-const CACHE_NAME = "audit-shell-v2";
-const APP_SHELL = ["/", "/manifest.webmanifest", "/manus-storage/retail-audit-pwa-192_b20e7f41.png", "/manus-storage/retail-audit-pwa-512_47bd74d4.png"];
+const CACHE_NAME = "rybny-analytics-shell-v1";
+const APP_SHELL = ["/", "/manifest.webmanifest", "/manus-storage/rybny_analytics_app_icon_909727b4.png"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
@@ -17,11 +17,11 @@ self.addEventListener("fetch", event => {
 });
 
 self.addEventListener("push", event => {
-  const payload = event.data?.json?.() || { title: "Аналитика Магазинов", body: "Новое уведомление" };
-  event.waitUntil(self.registration.showNotification(payload.title || "Аналитика Магазинов", {
+  const payload = event.data?.json?.() || { title: "Аналитика «Рыбный»", body: "Новое уведомление" };
+  event.waitUntil(self.registration.showNotification(payload.title || "Аналитика «Рыбный»", {
     body: payload.body || "Новое уведомление",
-    icon: payload.icon || "/manus-storage/retail-audit-pwa-192_b20e7f41.png",
-    badge: payload.badge || "/manus-storage/retail-audit-pwa-192_b20e7f41.png",
+    icon: payload.icon || "/manus-storage/rybny_analytics_app_icon_909727b4.png",
+    badge: payload.badge || "/manus-storage/rybny_analytics_app_icon_909727b4.png",
     data: payload.data || { url: "/notifications" },
   }));
 });

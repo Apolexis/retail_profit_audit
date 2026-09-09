@@ -32,6 +32,7 @@ import "./access.css";
 import "./theme-refresh.css";
 import "./ios-light-theme.css";
 import "./design-system.css";
+import "./final-overrides.css";
 
 function Router(){return <Switch><Route path="/" component={Home}/><Route path="/months" component={MonthlyComparison}/><Route path="/pricing" component={Pricing}/><Route path="/expenses" component={Expenses}/><Route path="/inventory" component={Inventory}/><Route path="/stores" component={Stores}/><Route path="/compare" component={CompareStores}/><Route path="/portfolio" component={Portfolio}/><Route path="/pilot" component={Pilot}/><Route path="/control" component={ControlCenter}/><Route path="/cadence" component={OperationalCadence}/><Route path="/planfact" component={PlanFact}/><Route path="/import" component={ImportData}/><Route path="/manage" component={ManageData}/><Route path="/profile" component={Profile}/><Route path="/access" component={AccessAdmin}/><Route path="/history" component={ChangeLog}/><Route path="/notifications" component={Notifications}/><Route path="/reports" component={WeeklyReports}/><Route path="/404" component={NotFound}/><Route component={NotFound}/></Switch>}
 

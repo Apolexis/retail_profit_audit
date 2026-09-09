@@ -34,4 +34,13 @@ describe("операционные пороги уведомлений", () => {
     expect(candidates).toContainEqual(expect.objectContaining({ metricCode: "cash_operating_costs", amount: 10_600 }));
     expect(collectThresholdBreaches(candidates, thresholds).find(item => item.rule.ruleKey === "cash")?.amount).toBe(10_600);
   });
+
+  it("суммируют зарплату, налоги и отпускные в отдельный кандидат ФОТ", () => {
+    const candidates = withDerivedCashOperatingCostCandidates([
+      { storeId: 7, store: "ПОРТ", entryDate: "2026-09-02", metricCode: "salary_cashless", amount: 12_000 },
+      { storeId: 7, store: "ПОРТ", entryDate: "2026-09-02", metricCode: "salary_cash", amount: 8_000 },
+      { storeId: 7, store: "ПОРТ", entryDate: "2026-09-02", metricCode: "payroll_tax", amount: 4_000 },
+    ]);
+    expect(candidates).toContainEqual(expect.objectContaining({ metricCode: "payroll_costs", amount: 24_000 }));
+  });
 });
