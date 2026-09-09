@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { commitWorkbookForDateRange } from "../server/audit.ts";
+import { commitWorkbookForDateRangeFast as commitWorkbookForDateRange } from "../server/audit.ts";
 
 const fileName = process.argv[2];
 const year = Number(process.argv[3]);

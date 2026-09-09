@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { adminProcedure, protectedProcedure, router } from "../_core/trpc";
-import { commitWorkbookForDateRange, deleteAuditImport, deleteFactsByDateRange, deleteMetricValue, getAuditDashboard, listAuditImports, listAuditStores, listStoreEntries, listStoreMetrics, mergeAuditStores, previewDateRangeDeletion, previewWorkbook, renameAuditStore, renameMetricValue, setMetricVisibility, setStoreVisibility, updateMetricValue } from "../audit";
+import { commitWorkbookForDateRangeFast as commitWorkbookForDateRange, deleteAuditImport, deleteFactsByDateRange, deleteMetricValue, getAuditDashboard, listAuditImports, listAuditStores, listStoreEntries, listStoreMetrics, mergeAuditStores, previewDateRangeDeletion, previewWorkbook, renameAuditStore, renameMetricValue, setMetricVisibility, setStoreVisibility, updateMetricValue } from "../audit";
 import { listChanges, recordChange, rollbackMetricChange } from "../localAuth";
 import { getAccessibleStoreIds, getCurrentLocalAccount, hasStoreAccess } from "../accessControl";
 import { createStoreEventNotifications, evaluateMetricAlert } from "../notifications";
@@ -35,7 +35,7 @@ export const auditRouter=router({
   changes:adminProcedure.query(()=>listChanges()),
   rollbackChange:adminProcedure.input(z.object({changeId:z.number().int()})).mutation(async({input,ctx})=>{const actor=await getCurrentLocalAccount(ctx.user.openId);if(!actor)throw new TRPCError({code:"UNAUTHORIZED"});return rollbackMetricChange(input.changeId,actor.id)}),
   weeklyReports:adminProcedure.query(()=>listWeeklyExecutiveReports()),
-  generateWeeklyReport:adminProcedure.mutation(()=>createWeeklyExecutiveReport()),
+  generateWeeklyReport:adminProcedure.mutation(async()=>{const schedule=await getWeeklyReportSchedule();return createWeeklyExecutiveReport(schedule.reportPeriod as "week"|"month")}),
   weeklyReportSchedule:adminProcedure.query(()=>getWeeklyReportSchedule()),
-  updateWeeklyReportSchedule:adminProcedure.input(z.object({weekday:z.number().int().min(1).max(7),reportTime:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)})).mutation(async({input,ctx})=>{const actor=await getCurrentLocalAccount(ctx.user.openId);if(!actor)throw new TRPCError({code:"UNAUTHORIZED"});const before=await getWeeklyReportSchedule();const after=await updateWeeklyReportSchedule(input);await recordChange({actorId:actor.id,action:"weekly_report.schedule.update",entityType:"weekly_report_schedule",entityId:String(after.id),beforeState:{weekday:before.weekday,reportTime:before.reportTime,isEnabled:before.isEnabled},afterState:{weekday:after.weekday,reportTime:after.reportTime,isEnabled:after.isEnabled}});return after}),
+  updateWeeklyReportSchedule:adminProcedure.input(z.object({weekday:z.number().int().min(1).max(7),reportTime:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),reportPeriod:z.enum(["week","month"]),isEnabled:z.boolean()})).mutation(async({input,ctx})=>{const actor=await getCurrentLocalAccount(ctx.user.openId);if(!actor)throw new TRPCError({code:"UNAUTHORIZED"});const before=await getWeeklyReportSchedule();const after=await updateWeeklyReportSchedule(input);await recordChange({actorId:actor.id,action:"weekly_report.schedule.update",entityType:"weekly_report_schedule",entityId:String(after.id),beforeState:{weekday:before.weekday,reportTime:before.reportTime,reportPeriod:before.reportPeriod,isEnabled:before.isEnabled},afterState:{weekday:after.weekday,reportTime:after.reportTime,reportPeriod:after.reportPeriod,isEnabled:after.isEnabled}});return after}),
 });

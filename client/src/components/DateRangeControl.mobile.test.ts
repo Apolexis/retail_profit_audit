@@ -15,4 +15,9 @@ describe("мобильный контракт календаря", () => {
     expect(styles).toContain(".mobile-range-preview{display:none}");
     expect(styles).toMatch(/@media\(max-width:560px\)\{\.mobile-range-preview\{display:grid/);
   });
+
+  it("использует один месяц в компактной ширине и поддерживает обратный выбор", () => {
+    expect(component).toContain("numberOfMonths={compactCalendar?1:2}");
+    expect(component).toContain("day<draft.from?[day,draft.from]:[draft.from,day]");
+  });
 });

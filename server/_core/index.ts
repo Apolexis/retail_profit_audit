@@ -9,7 +9,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { sdk } from "./sdk";
 import { serveStatic, setupVite } from "./vite";
-import { createWeeklyExecutiveReport, findWeeklyScheduleByTaskUid, isWeeklyReportDue } from "../weeklyReports";
+import { createScheduledExecutiveReport, findWeeklyScheduleByTaskUid, isWeeklyReportDue } from "../weeklyReports";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -53,7 +53,7 @@ async function startServer() {
       const schedule = await findWeeklyScheduleByTaskUid(user.taskUid);
       if (!schedule) return res.json({ ok: true, skipped: "orphan-or-disabled" });
       if (!isWeeklyReportDue(schedule)) return res.json({ ok: true, skipped: "not-scheduled-time" });
-      const result = await createWeeklyExecutiveReport();
+      const result = await createScheduledExecutiveReport();
       return res.json({ ok: true, created: result.created, reportId: result.report.id });
     } catch (error) {
       const detail = error instanceof Error ? { message: error.message, stack: error.stack } : { message: String(error) };

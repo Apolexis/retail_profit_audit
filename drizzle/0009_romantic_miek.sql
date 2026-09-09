@@ -1,0 +1,1 @@
+ALTER TABLE `audit_executive_report_schedules` ADD `reportPeriod` varchar(8) DEFAULT 'week' NOT NULL;
