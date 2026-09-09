@@ -20,11 +20,9 @@
   .packet a.packet-link:hover,
   .packet a.alert-link:hover,
   .login-gate button:not(:disabled):hover {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
     border-color: var(--button-accent) !important;
-    background: var(--button-hover-surface) !important;
-    color: #fff !important;
-    box-shadow: 0 12px 26px color-mix(in srgb, var(--button-accent) 28%, transparent) !important;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--button-accent) 28%, transparent), 0 10px 22px color-mix(in srgb, var(--button-accent) 12%, transparent) !important;
     filter: none !important;
   }
   .packet button:not(:disabled):active,
@@ -139,3 +137,76 @@ html[data-audit-theme="light"] .login-gate .login-submit:hover {
   background: linear-gradient(135deg, #0a84ff, #5e5ce6) !important;
   color: #fff !important;
 }
+
+/* Shared controls — a visible but calm contour; hover never replaces the original button surface. */
+.packet .packet-actions button:hover,
+.packet .alert-link:hover,
+.packet .subtle-action:hover,
+.packet .row-edit:hover,
+.packet .visibility:hover,
+.packet .store-manage-list button:hover,
+.packet .date-reset:hover,
+.packet .date-shortcut-toggle button:hover,
+.packet .date-shortcuts button:hover,
+.packet .compare-presets button:hover,
+.packet .chart-control select:hover,
+.packet .page-controls select:hover,
+.packet .edit-controls select:hover,
+.packet .edit-controls input:hover {
+  border-color: #c24a6c !important;
+  box-shadow: 0 0 0 2px rgba(194, 74, 108, .22) !important;
+}
+.packet .packet-actions button:hover { background: #121823 !important; color: #e8eff9 !important; }
+.packet .alert-link:hover { background: #17111b !important; color: #ffd7e3 !important; }
+.packet .packet-card:hover,.packet .packet-kpi:hover { border-color: #70344c !important; box-shadow: 0 15px 32px rgba(117, 43, 70, .16) !important; }
+.packet .packet-link.compact { min-height: 38px; margin-top: 0 !important; padding: 8px 12px !important; white-space: nowrap; }
+.packet .subtle-action,.packet .row-edit,.packet .visibility,.packet .row-delete {
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:8px 11px;border:1px solid #5b3244;border-radius:9px;background:#17101a;color:#ffd8e3;font:800 11px Manrope,Arial,sans-serif;white-space:nowrap;
+}
+.packet .row-edit { border-color:#5b3244 !important;background:#17101a !important;color:#ffd8e3 !important; }
+.packet .visibility { border-color:#765b35;background:#1d1812;color:#ffdc9b; }
+.packet .visibility.active { border-color:#6b3848;background:#27131c;color:#ffb4c7; }
+.packet .row-delete { border-color:#7a3549;background:#2a121b;color:#ffb2c4; }
+.packet .row-delete:hover { border-color:#ff7294 !important;box-shadow:0 0 0 2px rgba(255,114,148,.20) !important;background:#2a121b !important;color:#ffd9e4 !important; }
+.packet .chart-control select,.packet .page-controls select,.packet .edit-controls select,.packet .edit-controls input {
+  border-color:#4c3040;background-color:#14101a;color:#f7e8ed;box-shadow:inset 0 1px 0 rgba(255,255,255,.025);outline:none;
+}
+.packet .chart-control select:focus,.packet .page-controls select:focus,.packet .edit-controls select:focus,.packet .edit-controls input:focus { border-color:#d65a7d;box-shadow:0 0 0 3px rgba(214,90,125,.22); }
+.packet .chart-control select option,.packet .page-controls select option,.packet .edit-controls select option { background:#17111b;color:#f8e8ee; }
+.packet .cadence-kpis { margin: 22px 0 2px !important; }
+.packet .cadence-primary-kpi { padding: 20px 19px !important; min-height: 132px; }
+.packet .store-manage-list .store-action { display:grid;place-items:center;width:35px;height:35px;padding:0;border:1px solid #593446;border-radius:9px;background:#17101a;color:#f4c4d2; }
+.packet .store-manage-list .store-action.active { border-color:#c04a6b;background:#2b1420;color:#fff0f4;box-shadow:0 0 0 2px rgba(192,74,107,.16); }
+.packet .store-rename-toggle { flex:0 0 auto; }
+.packet .store-rename-save { width:auto!important;align-self:start; }
+.packet .account-delete { min-width:104px; }
+
+/* Comparison screen: the two periods, switcher and result cards form one aligned operational panel. */
+.packet .comparison-periods { display:grid;grid-template-columns:minmax(0,1fr) 56px minmax(0,1fr) auto;align-items:stretch;gap:14px;margin:0 0 22px;padding:16px;border:1px solid #593446;border-radius:16px;background:linear-gradient(135deg,#160f17,#111018); }
+.packet .comparison-periods article { display:grid;align-content:center;gap:8px;min-width:0;padding:13px;border:1px solid #3f2a37;border-radius:12px;background:#15111a; }
+.packet .comparison-periods article>span { color:#b992a0;font:9px "IBM Plex Mono",monospace;letter-spacing:.11em; }
+.packet .comparison-periods article small { overflow:hidden;color:#c5a8b1;text-overflow:ellipsis;white-space:nowrap;font-size:11px; }
+.packet .comparison-periods .date-range-control { width:100%;justify-content:space-between; }
+.packet .compare-divider { display:grid;place-content:center;gap:4px;color:#de91a7;text-align:center;font:10px "IBM Plex Mono",monospace;letter-spacing:.06em; }
+.packet .compare-presets { display:grid;align-content:center;gap:8px;min-width:142px; }
+.packet .compare-presets button { min-height:37px;padding:8px 10px;border:1px solid #4e3040;border-radius:9px;background:#18111a;color:#e9cbd5;font:800 10px Manrope,Arial,sans-serif; }
+.packet .compare-presets button.active { border-color:#b74668;background:#331525;color:#fff0f4;box-shadow:inset 0 0 0 1px rgba(255,194,213,.08); }
+.packet .control-kpis { margin-top:0 !important; }
+
+html[data-audit-theme="light"] .packet .subtle-action,html[data-audit-theme="light"] .packet .row-edit { background:#f8fbff !important;border-color:#cbd9ee !important;color:#0a63c8 !important; }
+html[data-audit-theme="light"] .packet .visibility { background:#fff9ec;border-color:#ead59c;color:#88600a; }
+html[data-audit-theme="light"] .packet .visibility.active,html[data-audit-theme="light"] .packet .row-delete { background:#fff5f7;border-color:#ffc7d0;color:#d70036; }
+html[data-audit-theme="light"] .packet .chart-control select,html[data-audit-theme="light"] .packet .page-controls select,html[data-audit-theme="light"] .packet .edit-controls select,html[data-audit-theme="light"] .packet .edit-controls input { background-color:#fff;color:#17171b;border-color:#d8dce5; }
+html[data-audit-theme="light"] .packet .chart-control select option,html[data-audit-theme="light"] .packet .page-controls select option,html[data-audit-theme="light"] .packet .edit-controls select option { background:#fff;color:#17171b; }
+html[data-audit-theme="light"] .packet .subtle-action:hover,html[data-audit-theme="light"] .packet .row-edit:hover,html[data-audit-theme="light"] .packet .visibility:hover,html[data-audit-theme="light"] .packet .chart-control select:hover,html[data-audit-theme="light"] .packet .page-controls select:hover,html[data-audit-theme="light"] .packet .edit-controls select:hover,html[data-audit-theme="light"] .packet .edit-controls input:hover { border-color:#0a84ff !important;box-shadow:0 0 0 2px rgba(10,132,255,.18) !important; }
+html[data-audit-theme="light"] .packet .comparison-periods { background:#fff;border-color:#d9dde6; }
+html[data-audit-theme="light"] .packet .store-manage-list .store-action { background:#f8fbff;border-color:#cbd9ee;color:#075bb5; }
+html[data-audit-theme="light"] .packet .store-manage-list .store-action.active { background:#0a84ff;border-color:#0a84ff;color:#fff;box-shadow:0 0 0 2px rgba(10,132,255,.16); }
+html[data-audit-theme="light"] .packet .comparison-periods article { background:#fbfcfe;border-color:#dce1e9; }
+html[data-audit-theme="light"] .packet .comparison-periods article>span { color:#6a7891; }
+html[data-audit-theme="light"] .packet .comparison-periods article small { color:#5d6a7e; }
+html[data-audit-theme="light"] .packet .compare-divider { color:#5e5ce6; }
+html[data-audit-theme="light"] .packet .compare-presets button { background:#f8fbff;border-color:#cbd9ee;color:#075bb5; }
+html[data-audit-theme="light"] .packet .compare-presets button.active { background:#0a84ff;border-color:#0a84ff;color:#fff; }
+
+@media(max-width:860px){.packet .comparison-periods{grid-template-columns:1fr;gap:10px}.packet .compare-divider{grid-template-columns:auto auto;place-content:start;justify-content:start;padding:0 8px}.packet .compare-presets{grid-template-columns:1fr 1fr;min-width:0}.packet .cadence-kpis{margin-top:17px!important}}

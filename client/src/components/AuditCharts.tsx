@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useAudit } from "@/contexts/AuditContext";
 
-export const formatK=(value:number,digits=0)=>{const absolute=Math.abs(value);if(absolute<0.5)return "0 тыс. ₽";if(absolute>=1000)return `${(value/1000).toLocaleString("ru-RU",{minimumFractionDigits:1,maximumFractionDigits:1})} млн ₽`;return `${value.toLocaleString("ru-RU",{minimumFractionDigits:digits,maximumFractionDigits:digits})} тыс. ₽`};
+export const formatK=(value:number,digits?:number)=>{const absolute=Math.abs(value);if(absolute<0.01)return "0 ₽";if(absolute>=1000)return `${(value/1000).toLocaleString("ru-RU",{minimumFractionDigits:1,maximumFractionDigits:1})} млн ₽`;const precision=digits??(absolute<100?1:0);return `${value.toLocaleString("ru-RU",{minimumFractionDigits:precision,maximumFractionDigits:precision})} тыс. ₽`};
 export const formatM=(value:number,digits=1)=>`${value.toLocaleString("ru-RU",{minimumFractionDigits:digits,maximumFractionDigits:digits})} млн ₽`;
 export const formatPct=(value:number,digits=1)=>`${value.toFixed(digits)}%`;
 type TooltipMode="amount"|"million"|"percent"|"number";

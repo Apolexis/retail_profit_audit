@@ -2,10 +2,11 @@ import { buildOperationalCadence } from "./operationalCadence";
 import { describe, expect, it } from "vitest";
 
 describe("buildOperationalCadence", () => {
-  it("ровно распределяет уже отобранный месячный поток по календарным дням", () => {
-    const result = buildOperationalCadence([{ monthDate: "2026-08", entryDate: "2026-08-01", importId: 8, metrics: { revenue: 7000, net_profit: 700, purchases: 3500 } }], { from: "2026-08-01", to: "2026-08-07" });
+  it("суммирует первичные дневные значения без повторного распределения", () => {
+    const result = buildOperationalCadence([{ monthDate: "2026-08", entryDate: "2026-08-01", importId: 8, metrics: { revenue: 1200, net_profit: 120, purchases: 600 } }, { monthDate: "2026-08", entryDate: "2026-08-02", importId: 8, metrics: { revenue: 5800, net_profit: 580, purchases: 2900 } }], { from: "2026-08-01", to: "2026-08-07" });
     expect(result.daily).toHaveLength(7);
-    expect(result.daily[0].revenue).toBe(1000);
+    expect(result.daily[0].revenue).toBe(1200);
+    expect(result.daily[1].revenue).toBe(5800);
     expect(result.daily.reduce((total, day) => total + day.revenue, 0)).toBe(7000);
     expect(result.weekly.reduce((total, week) => total + week.revenue, 0)).toBe(7000);
   });
