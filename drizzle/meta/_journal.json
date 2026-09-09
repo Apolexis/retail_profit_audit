@@ -43,6 +43,20 @@
       "when": 1788915160887,
       "tag": "0005_silky_the_stranger",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1788917443241,
+      "tag": "0006_smiling_slyde",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1788917701316,
+      "tag": "0007_many_sabretooth",
+      "breakpoints": true
     }
   ]
 }

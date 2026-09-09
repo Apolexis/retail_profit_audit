@@ -7,7 +7,9 @@ import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
+import { sdk } from "./sdk";
 import { serveStatic, setupVite } from "./vite";
+import { createWeeklyExecutiveReport, findWeeklyScheduleByTaskUid } from "../weeklyReports";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -44,6 +46,19 @@ async function startServer() {
       createContext,
     })
   );
+  app.post("/api/scheduled/weekly-executive-report", async (req, res) => {
+    try {
+      const user = await sdk.authenticateRequest(req);
+      if (!user.isCron || !user.taskUid) return res.status(403).json({ error: "cron-only" });
+      const schedule = await findWeeklyScheduleByTaskUid(user.taskUid);
+      if (!schedule) return res.json({ ok: true, skipped: "orphan-or-disabled" });
+      const result = await createWeeklyExecutiveReport();
+      return res.json({ ok: true, created: result.created, reportId: result.report.id });
+    } catch (error) {
+      const detail = error instanceof Error ? { message: error.message, stack: error.stack } : { message: String(error) };
+      return res.status(500).json({ error: "weekly-report-failed", detail, context: { path: req.path }, timestamp: new Date().toISOString() });
+    }
+  });
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);

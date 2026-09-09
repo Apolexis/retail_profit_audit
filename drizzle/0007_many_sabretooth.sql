@@ -1,0 +1,1 @@
+ALTER TABLE `audit_metrics` ADD `isHidden` boolean DEFAULT false NOT NULL;

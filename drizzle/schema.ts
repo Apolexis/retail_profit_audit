@@ -57,6 +57,7 @@ export const metrics = mysqlTable("audit_metrics", {
   periodId: int("periodId").notNull(),
   metricCode: varchar("metricCode", { length: 64 }).notNull(),
   amount: decimal("amount", { precision: 18, scale: 2 }).notNull(),
+  isHidden: boolean("isHidden").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => [unique("audit_metric_period_code_uq").on(table.periodId, table.metricCode)]);
@@ -117,8 +118,29 @@ export const auditNotifications = mysqlTable("audit_notifications", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
+export const executiveReportSchedules = mysqlTable("audit_executive_report_schedules", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 64 }).notNull().unique(),
+  cronExpression: varchar("cronExpression", { length: 64 }).notNull(),
+  scheduleCronTaskUid: varchar("schedule_cron_task_uid", { length: 65 }).unique(),
+  isEnabled: boolean("isEnabled").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const weeklyExecutiveReports = mysqlTable("audit_weekly_executive_reports", {
+  id: int("id").autoincrement().primaryKey(),
+  periodStart: varchar("periodStart", { length: 10 }).notNull(),
+  periodEnd: varchar("periodEnd", { length: 10 }).notNull(),
+  snapshotMonth: varchar("snapshotMonth", { length: 7 }),
+  summary: json("summary").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => [unique("audit_weekly_executive_report_period_uq").on(table.periodStart, table.periodEnd)]);
+
 export type LocalAccount = typeof localAccounts.$inferSelect;
 export type LocalSession = typeof localSessions.$inferSelect;
 export type AuditChangeLog = typeof auditChangeLog.$inferSelect;
 export type StoreAccess = typeof storeAccess.$inferSelect;
 export type AuditNotification = typeof auditNotifications.$inferSelect;
+export type ExecutiveReportSchedule = typeof executiveReportSchedules.$inferSelect;
+export type WeeklyExecutiveReport = typeof weeklyExecutiveReports.$inferSelect;
