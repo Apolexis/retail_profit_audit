@@ -22,6 +22,20 @@
       "when": 1788907437875,
       "tag": "0002_fixed_blur",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1788908139035,
+      "tag": "0003_clever_namorita",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1788911538042,
+      "tag": "0004_round_shadow_king",
+      "breakpoints": true
     }
   ]
 }

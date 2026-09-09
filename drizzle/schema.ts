@@ -69,7 +69,7 @@ export const localAccounts = mysqlTable("audit_local_accounts", {
   username: varchar("username", { length: 64 }).notNull().unique(),
   displayName: varchar("displayName", { length: 128 }).notNull(),
   passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
-  role: mysqlEnum("role", ["admin", "analyst", "viewer"]).default("viewer").notNull(),
+  role: mysqlEnum("role", ["admin", "analyst"]).default("analyst").notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -96,6 +96,28 @@ export const auditChangeLog = mysqlTable("audit_change_log", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
+export const storeAccess = mysqlTable("audit_store_access", {
+  id: int("id").autoincrement().primaryKey(),
+  accountId: int("accountId").notNull(),
+  storeId: int("storeId").notNull(),
+  accessLevel: mysqlEnum("accessLevel", ["view", "edit"]).default("view").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => [unique("audit_store_access_account_store_uq").on(table.accountId, table.storeId)]);
+
+export const auditNotifications = mysqlTable("audit_notifications", {
+  id: int("id").autoincrement().primaryKey(),
+  accountId: int("accountId"),
+  severity: mysqlEnum("severity", ["critical", "warning", "info"]).default("info").notNull(),
+  title: varchar("title", { length: 180 }).notNull(),
+  message: text("message").notNull(),
+  entityType: varchar("entityType", { length: 64 }),
+  entityId: varchar("entityId", { length: 128 }),
+  isRead: boolean("isRead").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
 export type LocalAccount = typeof localAccounts.$inferSelect;
 export type LocalSession = typeof localSessions.$inferSelect;
 export type AuditChangeLog = typeof auditChangeLog.$inferSelect;
+export type StoreAccess = typeof storeAccess.$inferSelect;
+export type AuditNotification = typeof auditNotifications.$inferSelect;
