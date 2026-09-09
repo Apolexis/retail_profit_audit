@@ -17,7 +17,7 @@ const monthLabel=(month:string)=>new Date(`${month}-01T12:00:00`).toLocaleDateSt
 const money=(value:number)=>formatK(value/1000);
 
 export default function ControlCenter(){
-  const {range,selectedStore}=useAudit(); const imported=useImportedAudit(); const [comparison,setComparison]=useState<DateRangeValue>(()=>priorYear(range)); const [linked,setLinked]=useState(true);
+  const {range,selectedStore}=useAudit(); const [comparison,setComparison]=useState<DateRangeValue>(()=>priorYear(range)); const imported=useImportedAudit(comparison); const [linked,setLinked]=useState(true);
   useEffect(()=>{if(linked)setComparison(priorYear(range))},[linked,range]);
   const baseMonths=useMemo(()=>monthsIn(range),[range]); const compareMonths=useMemo(()=>monthsIn(comparison),[comparison]);
   const base=useMemo(()=>prepareDailyFacts(imported.periods,range),[imported.periods,range]);

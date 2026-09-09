@@ -173,6 +173,24 @@ html[data-audit-theme="light"] .login-gate .login-submit:hover {
 }
 .packet .chart-control select:focus,.packet .page-controls select:focus,.packet .edit-controls select:focus,.packet .edit-controls input:focus { border-color:#d65a7d;box-shadow:0 0 0 3px rgba(214,90,125,.22); }
 .packet .chart-control select option,.packet .page-controls select option,.packet .edit-controls select option { background:#17111b;color:#f8e8ee; }
+.packet select { min-height:40px;appearance:none;border:1px solid #4c3040!important;border-radius:8px!important;background-color:#14101a!important;background-image:linear-gradient(45deg,transparent 50%,#f2bdcb 50%),linear-gradient(135deg,#f2bdcb 50%,transparent 50%)!important;background-position:calc(100% - 15px) 17px,calc(100% - 11px) 17px!important;background-size:4px 4px,4px 4px!important;background-repeat:no-repeat!important;color:#f7e8ed!important;padding:0 30px 0 10px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.025)!important;outline:none; }
+.packet select:hover,.packet select:focus { border-color:#ff765f!important;box-shadow:0 0 0 2px rgba(255,118,95,.24)!important; }
+.packet select option { background:#17111b;color:#f8e8ee; }
+.packet input[type="time"] { min-height:40px;border:1px solid #4c3040!important;border-radius:8px!important;background:#14101a!important;color:#f7e8ed!important;padding:0 10px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.025)!important;color-scheme:dark;outline:none; }
+.packet input[type="time"]:hover,.packet input[type="time"]:focus { border-color:#ff765f!important;box-shadow:0 0 0 2px rgba(255,118,95,.24)!important; }
+html:not([data-audit-theme="light"]) .packet button:not(:disabled):hover,html:not([data-audit-theme="light"]) .packet a.packet-link:hover,html:not([data-audit-theme="light"]) .login-gate button:not(:disabled):hover { border-color:#ff765f!important;box-shadow:0 0 0 2px rgba(255,118,95,.28),0 10px 22px rgba(255,118,95,.14)!important; }
+html:not([data-audit-theme="light"]) .packet { --cyan:#ff765f; }
+html:not([data-audit-theme="light"]) .packet .packet-card:hover,html:not([data-audit-theme="light"]) .packet .packet-kpi:hover { border-color:#ff765f!important;box-shadow:0 0 0 1px rgba(255,118,95,.38),0 16px 32px rgba(255,118,95,.12)!important; }
+html:not([data-audit-theme="light"]) .packet .packet-actions button:hover,html:not([data-audit-theme="light"]) .packet .series-toggle:hover,html:not([data-audit-theme="light"]) .packet .packet-nav:hover { border-color:#ff765f!important;box-shadow:0 0 0 2px rgba(255,118,95,.22)!important; }
+html:not([data-audit-theme="light"]) .packet .packet-nav:hover { background:#24131c!important;color:#fff4f7!important;box-shadow:inset 0 0 0 1px #ff765f,0 0 0 2px rgba(255,118,95,.2)!important; }
+html:not([data-audit-theme="light"]) .packet .packet-nav.active { background:linear-gradient(90deg,#3a1724,#21121c)!important;box-shadow:inset 3px 0 #ff765f,0 8px 20px rgba(255,118,95,.13)!important; }
+html:not([data-audit-theme="light"]) .packet button:focus-visible,html:not([data-audit-theme="light"]) .packet a:focus-visible,html:not([data-audit-theme="light"]) .packet input:focus-visible,html:not([data-audit-theme="light"]) .login-gate input:focus-visible { outline:2px solid #ff765f!important;outline-offset:2px;box-shadow:0 0 0 4px rgba(255,118,95,.18)!important; }
+html:not([data-audit-theme="light"]) .packet input[type="radio"],html:not([data-audit-theme="light"]) .packet input[type="checkbox"] { accent-color:#ff765f; }
+html:not([data-audit-theme="light"]) .login-gate .login-panel input:focus { border-color:#ff765f!important;box-shadow:0 0 0 3px rgba(255,118,95,.24)!important; }
+/* Access level selection is intentionally teal only for the explicit «Изменение» state: it is semantic status, not a generic selector. */
+/* Picker inventory: every in-app native select and time input inherits the common control shell; calendar presets and chart series are buttons using the coral interaction rule. The access switch retains teal only for semantic edit permission. */
+html[data-audit-theme="light"] .packet .packet-card,html[data-audit-theme="light"] .packet .packet-kpi { animation:none!important;transition:border-color 160ms ease,box-shadow 160ms ease!important; }
+html[data-audit-theme="light"] .packet .packet-card:hover,html[data-audit-theme="light"] .packet .packet-kpi:hover { transform:none!important;background:#fff!important;border-color:#c7adbc!important;box-shadow:0 14px 28px rgba(85,41,63,.09)!important; }
 .packet .cadence-kpis { margin: 22px 0 2px !important; }
 .packet .cadence-primary-kpi { padding: 20px 19px !important; min-height: 132px; }
 .packet .store-manage-list .store-action { display:grid;place-items:center;width:35px;height:35px;padding:0;border:1px solid #593446;border-radius:9px;background:#17101a;color:#f4c4d2; }
@@ -180,6 +198,9 @@ html[data-audit-theme="light"] .login-gate .login-submit:hover {
 .packet .store-rename-toggle { flex:0 0 auto; }
 .packet .store-rename-save { width:auto!important;align-self:start; }
 .packet .account-delete { min-width:104px; }
+.packet .fact-editor { grid-template-columns:minmax(0,1fr) minmax(168px,220px);align-items:start; }
+.packet .fact-editor>label { align-self:start; }
+@media(max-width:560px){.packet .fact-editor{grid-template-columns:1fr;}}
 
 /* Comparison screen: the two periods, switcher and result cards form one aligned operational panel. */
 .packet .comparison-periods { display:grid;grid-template-columns:minmax(0,1fr) 56px minmax(0,1fr) auto;align-items:stretch;gap:14px;margin:0 0 22px;padding:16px;border:1px solid #593446;border-radius:16px;background:linear-gradient(135deg,#160f17,#111018); }
@@ -198,6 +219,11 @@ html[data-audit-theme="light"] .packet .visibility { background:#fff9ec;border-c
 html[data-audit-theme="light"] .packet .visibility.active,html[data-audit-theme="light"] .packet .row-delete { background:#fff5f7;border-color:#ffc7d0;color:#d70036; }
 html[data-audit-theme="light"] .packet .chart-control select,html[data-audit-theme="light"] .packet .page-controls select,html[data-audit-theme="light"] .packet .edit-controls select,html[data-audit-theme="light"] .packet .edit-controls input { background-color:#fff;color:#17171b;border-color:#d8dce5; }
 html[data-audit-theme="light"] .packet .chart-control select option,html[data-audit-theme="light"] .packet .page-controls select option,html[data-audit-theme="light"] .packet .edit-controls select option { background:#fff;color:#17171b; }
+html[data-audit-theme="light"] .packet select { background-color:#fff!important;background-image:linear-gradient(45deg,transparent 50%,#0a63c8 50%),linear-gradient(135deg,#0a63c8 50%,transparent 50%)!important;border-color:#d8dce5!important;color:#17171b!important; }
+html[data-audit-theme="light"] .packet select:hover,html[data-audit-theme="light"] .packet select:focus { border-color:#0a84ff!important;box-shadow:0 0 0 2px rgba(10,132,255,.18)!important; }
+html[data-audit-theme="light"] .packet select option { background:#fff;color:#17171b; }
+html[data-audit-theme="light"] .packet input[type="time"] { background:#fff!important;border-color:#d8dce5!important;color:#17171b!important;box-shadow:none!important;color-scheme:light; }
+html[data-audit-theme="light"] .packet input[type="time"]:hover,html[data-audit-theme="light"] .packet input[type="time"]:focus { border-color:#0a84ff!important;box-shadow:0 0 0 2px rgba(10,132,255,.18)!important; }
 html[data-audit-theme="light"] .packet .subtle-action:hover,html[data-audit-theme="light"] .packet .row-edit:hover,html[data-audit-theme="light"] .packet .visibility:hover,html[data-audit-theme="light"] .packet .chart-control select:hover,html[data-audit-theme="light"] .packet .page-controls select:hover,html[data-audit-theme="light"] .packet .edit-controls select:hover,html[data-audit-theme="light"] .packet .edit-controls input:hover { border-color:#0a84ff !important;box-shadow:0 0 0 2px rgba(10,132,255,.18) !important; }
 html[data-audit-theme="light"] .packet .comparison-periods { background:#fff;border-color:#d9dde6; }
 html[data-audit-theme="light"] .packet .store-manage-list .store-action { background:#f8fbff;border-color:#cbd9ee;color:#075bb5; }
