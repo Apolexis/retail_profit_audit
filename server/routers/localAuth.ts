@@ -5,7 +5,7 @@ import { adminProcedure, protectedProcedure, publicProcedure, router } from "../
 import { adminResetLocalPassword, authenticateLocalAccount, changeLocalPassword, createLocalAccount, createLocalSession, deleteLocalAccount, deleteLocalSessionFromCookie, formatRussianPhone, getLocalAccountByOpenId, getLocalSessionFromCookie, listLocalAccounts, LOCAL_SESSION_COOKIE, recordChange, updateLocalAccount } from "../localAuth";
 import { listAccountStoreAccess, replaceAccountStoreAccess } from "../accessControl";
 import { listAuditStores } from "../audit";
-import { listMyNotifications, markNotificationRead } from "../notifications";
+import { getPushStatus, listMyNotifications, markNotificationRead, removePushSubscription, savePushSubscription } from "../notifications";
 
 const password = z.string().min(10, "Пароль должен содержать не менее 10 символов").max(128);
 const role = z.enum(["admin", "analyst"]);
@@ -81,4 +81,7 @@ export const localAuthRouter = router({
     const account = await localAccountFromContext(ctx.user?.openId);
     return markNotificationRead(account.id, input.id);
   }),
+  pushStatus: protectedProcedure.query(async({ctx})=>getPushStatus((await localAccountFromContext(ctx.user?.openId)).id)),
+  subscribePush: protectedProcedure.input(z.object({endpoint:z.string().url(),keys:z.object({p256dh:z.string().min(1),auth:z.string().min(1)})})).mutation(async({input,ctx})=>savePushSubscription((await localAccountFromContext(ctx.user?.openId)).id,input)),
+  unsubscribePush: protectedProcedure.input(z.object({endpoint:z.string().url().optional()})).mutation(async({input,ctx})=>removePushSubscription((await localAccountFromContext(ctx.user?.openId)).id,input.endpoint)),
 });

@@ -71,6 +71,20 @@
       "when": 1788952672975,
       "tag": "0009_romantic_miek",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1788956336676,
+      "tag": "0010_left_barracuda",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1788956918227,
+      "tag": "0011_elite_bloodstrike",
+      "breakpoints": true
     }
   ]
 }

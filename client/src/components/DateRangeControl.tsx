@@ -16,9 +16,8 @@ type Props={compact?:boolean;value?:DateRangeValue;onChange?:(value:DateRangeVal
 
 export function DateRangeControl({compact=false,value,onChange,title="ПЕРИОД АНАЛИЗА",ariaLabel="Изменить период анализа"}:Props){
   const audit=useAudit(); const current=value??audit.range; const setCurrent=onChange??audit.setRange;
-  const [open,setOpen]=useState(false); const [showStandard,setShowStandard]=useState(false); const [draft,setDraft]=useState<DateRange>(); const [hovered,setHovered]=useState<Date>(); const [compactCalendar,setCompactCalendar]=useState(false); const selected:{from:Date;to:Date}={from:parseISO(current.from),to:parseISO(current.to)};
-  useEffect(()=>{if(!open){setDraft(undefined);setHovered(undefined)}},[open]);
-  useEffect(()=>{const media=window.matchMedia("(max-width: 560px)");const update=()=>setCompactCalendar(media.matches);update();media.addEventListener("change",update);return()=>media.removeEventListener("change",update)},[]);
+  const [open,setOpen]=useState(false); const [showStandard,setShowStandard]=useState(false); const [draft,setDraft]=useState<DateRange>(); const [hovered,setHovered]=useState<Date>(); const selected:{from:Date;to:Date}={from:parseISO(current.from),to:parseISO(current.to)}; const [displayMonth,setDisplayMonth]=useState(selected.from);
+  useEffect(()=>{if(!open){setDraft(undefined);setHovered(undefined)}else setDisplayMonth(selected.from)},[open,current.from]);
   const applyRange=(next:DateRangeValue,close=true)=>{setCurrent(next);setDraft({from:parseISO(next.from),to:parseISO(next.to)});if(close)window.setTimeout(()=>setOpen(false),260)};
   const pickDay=(day:Date)=>{if(!draft?.from||draft.to){setDraft({from:day});setHovered(undefined);return}const [from,to]=day<draft.from?[day,draft.from]:[draft.from,day];applyRange({from:toIso(from),to:toIso(to)})};
   const localToday=new Date(); const localDayKey=toIso(localToday); const year=localToday.getFullYear();
@@ -26,15 +25,15 @@ export function DateRangeControl({compact=false,value,onChange,title="ПЕРИО
   const preview=draft?.from&&!draft.to&&hovered&&hovered.getTime()!==draft.from.getTime()?(hovered<draft.from?{from:hovered,to:draft.from}:{from:draft.from,to:hovered}):undefined;
   const draftStart=draft?.from;const previewEnd=preview?.to??draft?.to;const mobilePreview=dateRangePreview(draftStart,previewEnd,selected);
   const label=draft?.from?(draft.to?`${format(draft.from,"d MMMM yyyy",{locale:ru})} — ${format(draft.to,"d MMMM yyyy",{locale:ru})}`:`Начало: ${format(draft.from,"d MMMM yyyy",{locale:ru})} · выберите конец`):labelFor(current);
-  return <Popover open={open} onOpenChange={setOpen}>
+  return <Popover open={open} onOpenChange={next=>{if(next){setDraft(undefined);setHovered(undefined)}setOpen(next)}}>
     <PopoverTrigger asChild><button className={compact?"date-range-control compact":"date-range-control"} aria-label={ariaLabel}><CalendarDays size={15}/><span>{labelFor(current)}</span><ChevronDown size={13}/></button></PopoverTrigger>
     <PopoverContent className="date-popover" align="end" sideOffset={10}>
       <div className="date-popover-head"><span>{title}</span><b>{label}</b>{draftStart&&<button type="button" className="date-reset" onClick={()=>{setDraft(undefined);setHovered(undefined)}}><RotateCcw size={13}/>Начать заново</button>}</div>
       <div className="mobile-range-preview" aria-live="polite"><small>{mobilePreview.eyebrow}</small><strong>{mobilePreview.title}</strong><span>{mobilePreview.detail}</span></div>
-      <Calendar mode="range" locale={ru} selected={draft??selected} defaultMonth={selected.from} numberOfMonths={compactCalendar?1:2} showOutsideDays={false} onDayClick={pickDay} onDayMouseLeave={()=>setHovered(undefined)} components={{DayButton:({day,modifiers,className,...props})=><CalendarDayButton day={day} modifiers={modifiers} className={[className,modifiers.preview?"range-preview-day":"",modifiers.hovered?"range-hover-day":""].filter(Boolean).join(" ")} {...props} onMouseEnter={()=>setHovered(day.date)}/>}} modifiers={{...(preview?{preview}:{}),...(hovered?{hovered}:{})}} modifiersClassNames={{preview:"range-preview",hovered:"range-hover"}}/>
+      <Calendar mode="range" locale={ru} selected={draft??selected} month={displayMonth} onMonthChange={setDisplayMonth} numberOfMonths={1} showOutsideDays={false} onDayClick={pickDay} onDayMouseLeave={()=>setHovered(undefined)} components={{DayButton:({day,modifiers,className,...props})=><CalendarDayButton day={day} modifiers={modifiers} className={[className,modifiers.preview?"range-preview-day":"",modifiers.hovered?"range-hover-day":"",modifiers.draftStart?"range-draft-start":""].filter(Boolean).join(" ")} {...props} onMouseEnter={()=>setHovered(day.date)}/>}} modifiers={{...(preview?{preview}:{}),...(hovered?{hovered}:{}),...(draft?.from?{draftStart:draft.from}:{})}} modifiersClassNames={{preview:"range-preview",hovered:"range-hover",draftStart:"range-draft-start"}}/>
       <div className="date-shortcut-toggle"><button type="button" onClick={()=>setShowStandard(item=>!item)}>Стандартные периоды <ChevronDown size={13} className={showStandard?"rotated":""}/></button></div>
       {showStandard&&<div className="date-shortcuts">{(["Быстрые","Месяцы","Кварталы"] as const).map(group=><div key={group} className="date-shortcut-group"><small>{group}</small><div>{shortcuts.filter(shortcut=>shortcut.group===group).map(shortcut=><button type="button" key={shortcut.label} onClick={()=>applyRange(shortcut)}>{shortcut.label}</button>)}</div></div>)}</div>}
-      <p className="date-popover-hint">Первый клик — начало; наведите для preview, второй — применит.</p>
+      <p className="date-popover-hint">Первый клик — начало, второй — конец.</p>
     </PopoverContent>
   </Popover>;
 }

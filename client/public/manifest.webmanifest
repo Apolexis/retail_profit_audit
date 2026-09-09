@@ -1,0 +1,25 @@
+{
+  "name": "Аналитика Магазинов",
+  "short_name": "Аналитика",
+  "description": "Закрытая управленческая аналитика магазинов.",
+  "lang": "ru",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0c0b12",
+  "theme_color": "#0c0b12",
+  "icons": [
+    {
+      "src": "/manus-storage/retail-audit-pwa-192_b20e7f41.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/manus-storage/retail-audit-pwa-512_47bd74d4.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

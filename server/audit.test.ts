@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import * as XLSX from "xlsx";
-import { inDateRange, isManualValueChange, materializeMonthlyDailyFacts, normalizeAuditName, parseWorkbook, shouldProtectManualMetric, wasManuallyEditedAfterImport } from "./audit";
+import { inDateRange, isManualValueChange, isPlanFactMetric, materializeMonthlyDailyFacts, normalizeAuditName, parseWorkbook, shouldProtectManualMetric, wasManuallyEditedAfterImport } from "./audit";
 
 const workbookWithSheet=(header:string[],total:number[])=>{const workbook=XLSX.utils.book_new();["tech-1","tech-2","tech-3"].forEach(name=>XLSX.utils.book_append_sheet(workbook,XLSX.utils.aoa_to_sheet([[name]]),name));const sheet=XLSX.utils.aoa_to_sheet([["Январь"],header,[1,...total],["Итого",...total]]);sheet["AQ3"]={t:"n",v:17};sheet["!ref"]="A1:AQ4";XLSX.utils.book_append_sheet(workbook,sheet,"Новый магазин");return XLSX.write(workbook,{type:"buffer",bookType:"xlsx"}) as Buffer};
 const workbookWithDailyRows=(header:string[])=>{const first=header.slice(1).map(()=>0),second=header.slice(1).map(()=>0);first[0]=1000;second[0]=850;first[6]=1200;second[6]=1800;first[31]=3100;first[41]=700;const workbook=XLSX.utils.book_new();["tech-1","tech-2","tech-3"].forEach(name=>XLSX.utils.book_append_sheet(workbook,XLSX.utils.aoa_to_sheet([[name]]),name));XLSX.utils.book_append_sheet(workbook,XLSX.utils.aoa_to_sheet([["Январь"],header,[1,...first],[2,...second],["Итого",...first]]),"Дневной магазин");return XLSX.write(workbook,{type:"buffer",bookType:"xlsx"}) as Buffer};
@@ -60,5 +60,14 @@ describe("безопасные имена аналитических объек�
   it("удаляет лишние пробелы перед проверкой дубликатов и сохранением",()=>{
     expect(normalizeAuditName("  Магазин   Север  ")).toBe("Магазин Север");
     expect(normalizeAuditName("   ")).toBe("");
+  });
+});
+
+describe("допустимые показатели план‑факта",()=>{
+  it("принимает только согласованные управленческие показатели",()=>{
+    expect(isPlanFactMetric("revenue")).toBe(true);
+    expect(isPlanFactMetric("net_profit")).toBe(true);
+    expect(isPlanFactMetric("stock_close")).toBe(false);
+    expect(isPlanFactMetric("произвольный показатель")).toBe(false);
   });
 });

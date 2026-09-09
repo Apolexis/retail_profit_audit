@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { evaluateMetricAlert } from "./notifications";
+import { evaluateMetricAlert, shouldSendMobilePush } from "./notifications";
 
 describe("пороги критических уведомлений", () => {
   it("немедленно отмечает отрицательную чистую прибыль", () => {
@@ -14,5 +14,13 @@ describe("пороги критических уведомлений", () => {
   });
   it("не оповещает о несущественном изменении", () => {
     expect(evaluateMetricAlert("net_profit", 500000, 530000)).toBeNull();
+  });
+});
+
+describe("телефонные push‑уведомления",()=>{
+  it("отправляет только критичные сигналы и новые управленческие отчеты",()=>{
+    expect(shouldSendMobilePush({severity:"critical"})).toBe(true);
+    expect(shouldSendMobilePush({severity:"info",entityType:"weekly_report"})).toBe(true);
+    expect(shouldSendMobilePush({severity:"warning",entityType:"metric"})).toBe(false);
   });
 });

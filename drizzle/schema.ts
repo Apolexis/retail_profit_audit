@@ -62,9 +62,21 @@ export const metrics = mysqlTable("audit_metrics", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => [unique("audit_metric_period_code_uq").on(table.periodId, table.metricCode)]);
 
+/** Monthly budgets entered by administrators; the fact layer remains entirely separate. */
+export const planFacts = mysqlTable("audit_plan_facts", {
+  id: int("id").autoincrement().primaryKey(),
+  storeId: int("storeId").notNull(),
+  monthDate: varchar("monthDate", { length: 7 }).notNull(),
+  metricCode: varchar("metricCode", { length: 64 }).notNull(),
+  amount: decimal("amount", { precision: 18, scale: 2 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [unique("audit_plan_fact_store_month_metric_uq").on(table.storeId, table.monthDate, table.metricCode)]);
+
 export type AuditStore = typeof stores.$inferSelect;
 export type AuditPeriod = typeof periods.$inferSelect;
 export type AuditMetric = typeof metrics.$inferSelect;
+export type AuditPlanFact = typeof planFacts.$inferSelect;
 
 export const localAccounts = mysqlTable("audit_local_accounts", {
   id: int("id").autoincrement().primaryKey(),
@@ -118,6 +130,17 @@ export const auditNotifications = mysqlTable("audit_notifications", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
+export const auditPushSubscriptions = mysqlTable("audit_push_subscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  accountId: int("accountId").notNull(),
+  endpoint: text("endpoint").notNull(),
+  endpointHash: varchar("endpointHash", { length: 64 }).notNull(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [unique("audit_push_subscription_endpoint_hash_uq").on(table.endpointHash)]);
+
 export const executiveReportSchedules = mysqlTable("audit_executive_report_schedules", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 64 }).notNull().unique(),
@@ -145,5 +168,6 @@ export type LocalSession = typeof localSessions.$inferSelect;
 export type AuditChangeLog = typeof auditChangeLog.$inferSelect;
 export type StoreAccess = typeof storeAccess.$inferSelect;
 export type AuditNotification = typeof auditNotifications.$inferSelect;
+export type AuditPushSubscription = typeof auditPushSubscriptions.$inferSelect;
 export type ExecutiveReportSchedule = typeof executiveReportSchedules.$inferSelect;
 export type WeeklyExecutiveReport = typeof weeklyExecutiveReports.$inferSelect;
