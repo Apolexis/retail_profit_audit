@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getSessionCookieOptions } from "../_core/cookies";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "../_core/trpc";
-import { authenticateLocalAccount, changeLocalPassword, createLocalAccount, createLocalSession, deleteLocalSessionFromCookie, formatRussianPhone, getLocalAccountByOpenId, getLocalSessionFromCookie, listLocalAccounts, LOCAL_SESSION_COOKIE, recordChange, updateLocalAccount } from "../localAuth";
+import { authenticateLocalAccount, changeLocalPassword, createLocalAccount, createLocalSession, deleteLocalAccount, deleteLocalSessionFromCookie, formatRussianPhone, getLocalAccountByOpenId, getLocalSessionFromCookie, listLocalAccounts, LOCAL_SESSION_COOKIE, recordChange, updateLocalAccount } from "../localAuth";
 import { listAccountStoreAccess, replaceAccountStoreAccess } from "../accessControl";
 import { listAuditStores } from "../audit";
 import { listMyNotifications, markNotificationRead } from "../notifications";
@@ -50,6 +50,10 @@ export const localAuthRouter = router({
   update: adminProcedure.input(z.object({ id: z.number().int(), role: role.optional(), isActive: z.boolean().optional() })).mutation(async ({ input, ctx }) => {
     const actor = await localAccountFromContext(ctx.user?.openId);
     return updateLocalAccount(input, actor.id);
+  }),
+  delete: adminProcedure.input(z.object({ id: z.number().int() })).mutation(async ({ input, ctx }) => {
+    const actor = await localAccountFromContext(ctx.user?.openId);
+    return deleteLocalAccount(input.id, actor.id);
   }),
   storeAccess: adminProcedure.input(z.object({ accountId: z.number().int() })).query(async ({ input, ctx }) => {
     await localAccountFromContext(ctx.user?.openId);

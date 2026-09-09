@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { trpc } from "@/lib/trpc";
-export type ImportedPeriod={storeId:number;store:string;isHidden:boolean;monthDate:string;metrics:Record<string,number>};
+export type ImportedPeriod={storeId:number;store:string;isHidden:boolean;importId:number|null;monthDate:string;entryDate:string;metrics:Record<string,number>;allocationRatio?:number};
 const monthLabels=["Янв","Фев","Мар","Апр","Май","Июн","Июл","Авг","Сен","Окт","Ноя","Дек"];
 export const monthLabel=(monthDate:string)=>monthLabels[Math.max(0,Math.min(11,Number(monthDate.slice(5,7))-1))]??monthDate;
 export const enrich=(period:ImportedPeriod):Record<string,number|string>=>{const revenue=Number(period.metrics.revenue??0),gross=Number(period.metrics.gross_profit??0),net=Number(period.metrics.net_profit??0),purchaseSmoked=Number(period.metrics.purchase_smoked??0),purchaseFrozen=Number(period.metrics.purchase_frozen??0),salesSmoked=Number(period.metrics.sales_smoked??0),salesFrozen=Number(period.metrics.sales_frozen??0);return {...period.metrics,purchase_total:purchaseSmoked+purchaseFrozen,sales_total:salesSmoked+salesFrozen,gross_margin_pct:revenue?gross/revenue*100:0,net_margin_pct:revenue?net/revenue*100:0,smoked_markup_pct:purchaseSmoked?(salesSmoked/purchaseSmoked-1)*100:0,frozen_markup_pct:purchaseFrozen?(salesFrozen/purchaseFrozen-1)*100:0,month:monthLabel(period.monthDate)}};

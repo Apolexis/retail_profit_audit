@@ -1,10 +1,45 @@
 import { describe, expect, it } from "vitest";
 import * as XLSX from "xlsx";
-import { parseWorkbook } from "./audit";
+import { inDateRange, isManualValueChange, normalizeAuditName, parseWorkbook, shouldProtectManualMetric, wasManuallyEditedAfterImport } from "./audit";
 
 const workbookWithSheet=(header:string[],total:number[])=>{const workbook=XLSX.utils.book_new();["tech-1","tech-2","tech-3"].forEach(name=>XLSX.utils.book_append_sheet(workbook,XLSX.utils.aoa_to_sheet([[name]]),name));const sheet=XLSX.utils.aoa_to_sheet([["Январь"],header,[1,...total],["Итого",...total]]);sheet["AQ3"]={t:"n",v:17};sheet["!ref"]="A1:AQ4";XLSX.utils.book_append_sheet(workbook,sheet,"Новый магазин");return XLSX.write(workbook,{type:"buffer",bookType:"xlsx"}) as Buffer};
 
 describe("parseWorkbook",()=>{
   it("пропускает первые три листа и нормализует месячный блок с заголовками 2026",()=>{const header=["Дата","Остаток","З. Коп","З. Мор","П. Коп","П. Мор","Закупка","Продажа","% коп","% мор","% общий","Грязная","Выр нал","Б/нал","Общая","Списания К.","Списания М.","Перемещение","Уценка","Переоценка","Хоз. Нужды","Доставка","Уборка","Премия","Выслуга","Доплата","Водитель","Ком. Плат.","Расходы","Траты нал","Вод. Б/нал","Ком. Б/нал","Аренда","-% банк","Налоги","Зарпл. Б/нал","Налоги з/п","Отпускные","Налоги отпуск.","Зарпл. Нал","Отпуск. Нал","НДФЛ 22%","Итог"];const total=header.slice(1).map((_,index)=>index+10);const result=parseWorkbook(workbookWithSheet(header,total),"операционный_2026.xlsx");expect(result.year).toBe(2026);expect(result.stores).toEqual(["Новый магазин"]);expect(result.periods).toHaveLength(1);expect(result.periods[0]?.monthDate).toBe("2026-01");expect(result.periods[0]?.entryDate).toBe("2026-01-01");expect(result.periods[0]?.metrics).toEqual(expect.arrayContaining([{code:"revenue",amount:16},{code:"net_profit",amount:17},{code:"stock_open",amount:10}]));});
   it("сохраняет отличающуюся вторую колонку «Расходы» из книги 2025 отдельным кодом",()=>{const header=["Дата","Остаток","З. Коп","З. Мор","П. Коп","П. Мор","Закупка","Продажа","% коп","% мор","% общий","Грязная","Выр нал","б/нал","Общая","Списания К.","Списания М.","Перемещение","Уценка","Переоценка","Хоз. Нужды","Доставка","Уборка","Примия","Выслуга","Доплата","Водитель","Ком. Плат.","Расходы","Траты нал","Расходы","Ком. Б/нал","Аренда","-% банк","Налоги","Зарпл. б/нал","Зарпл. нал","НДФЛ 22%","Итог"];const total=header.slice(1).map((_,index)=>index+10);const result=parseWorkbook(workbookWithSheet(header,total),"учет_2025.xlsx");expect(result.year).toBe(2025);expect(result.periods[0]?.metrics).toEqual(expect.arrayContaining([{code:"bonus",amount:32},{code:"cashless_operating_costs",amount:39},{code:"personal_income_tax_22",amount:46}]));});
+});
+
+describe("защита ручных правок при повторном импорте",()=>{
+  it("защищает только изменение, сделанное после последней импортной записи",()=>{
+    const importTime=new Date("2026-09-01T08:00:00.000Z");
+    expect(wasManuallyEditedAfterImport(new Date("2026-09-01T08:00:01.000Z"),importTime)).toBe(true);
+    expect(wasManuallyEditedAfterImport(importTime,importTime)).toBe(false);
+    expect(wasManuallyEditedAfterImport(new Date("2026-08-31T23:59:59.000Z"),importTime)).toBe(false);
+  });
+  it("не принимает скрытие показателя за ручное изменение его суммы",()=>{
+    expect(isManualValueChange("metric.update")).toBe(true);
+    expect(isManualValueChange("metric.rollback")).toBe(true);
+    expect(isManualValueChange("metric.visibility")).toBe(false);
+  });
+  it("сохраняет новую ручную сумму, но позволяет replace перезаписать ее",()=>{
+    const importTime=new Date("2026-09-01T08:00:00.000Z");
+    const manualTime=new Date("2026-09-01T08:01:00.000Z");
+    expect(shouldProtectManualMetric("metric.update",manualTime,importTime)).toBe(true);
+    expect(shouldProtectManualMetric("metric.update",importTime,importTime)).toBe(false);
+    expect(shouldProtectManualMetric("metric.visibility",manualTime,importTime)).toBe(false);
+  });
+});
+
+describe("календарный выбор импорта",()=>{
+  it("включает месячный источник, когда выбранный диапазон пересекает любой день месяца",()=>{
+    expect(inDateRange("2026-09-01",{from:"2026-09-15",to:"2026-09-25"},"2026-09")).toBe(true);
+    expect(inDateRange("2026-09-01",{from:"2026-10-01",to:"2026-10-31"},"2026-09")).toBe(false);
+  });
+});
+
+describe("безопасные имена аналитических объектов",()=>{
+  it("удаляет лишние пробелы перед проверкой дубликатов и сохранением",()=>{
+    expect(normalizeAuditName("  Магазин   Север  ")).toBe("Магазин Север");
+    expect(normalizeAuditName("   ")).toBe("");
+  });
 });

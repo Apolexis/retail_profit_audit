@@ -1,0 +1,141 @@
+/* Unified interactive system: coral signal in dark space, system blue in light. */
+.packet,
+.login-gate {
+  --button-accent: #ff765f;
+  --button-accent-2: #bd4bea;
+  --button-ink: #190b13;
+  --button-hover-surface: #341628;
+}
+
+.packet button:not(:disabled),
+.packet a.packet-link,
+.packet a.alert-link,
+.login-gate button:not(:disabled),
+.login-gate a {
+  transition: transform 160ms cubic-bezier(.23,1,.32,1), background 160ms ease, border-color 160ms ease, box-shadow 160ms ease, color 160ms ease, filter 160ms ease;
+}
+
+@media (prefers-reduced-motion:no-preference) {
+  .packet button:not(:disabled):hover,
+  .packet a.packet-link:hover,
+  .packet a.alert-link:hover,
+  .login-gate button:not(:disabled):hover {
+    transform: translateY(-2px);
+    border-color: var(--button-accent) !important;
+    background: var(--button-hover-surface) !important;
+    color: #fff !important;
+    box-shadow: 0 12px 26px color-mix(in srgb, var(--button-accent) 28%, transparent) !important;
+    filter: none !important;
+  }
+  .packet button:not(:disabled):active,
+  .packet a.packet-link:active,
+  .packet a.alert-link:active,
+  .login-gate button:not(:disabled):active {
+    transform: translateY(0) scale(.965);
+    box-shadow: none !important;
+  }
+}
+
+.packet .packet-link,
+.login-gate .login-submit {
+  border: 1px solid color-mix(in srgb, var(--button-accent) 72%, white) !important;
+  background: linear-gradient(135deg, var(--button-accent), var(--button-accent-2)) !important;
+  color: var(--button-ink) !important;
+  box-shadow: 0 12px 26px color-mix(in srgb, var(--button-accent) 24%, transparent) !important;
+}
+
+.packet .packet-link:hover,
+.login-gate .login-submit:hover {
+  background: linear-gradient(135deg, #ff9279, #d976ff) !important;
+  color: #160713 !important;
+}
+
+.packet-mark img,
+.login-mark img {
+  filter: none !important;
+}
+
+.login-mark img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+/* Prevent sidebar width changes and cross-axis scrollbars during nav interactions. */
+.packet-spine,
+.packet-nav-list,
+.packet-nav,
+.packet-nav span,
+.packet-nav b {
+  min-width: 0;
+  max-width: 100%;
+}
+.packet-spine { overflow-x: hidden !important; }
+.packet-nav-list { overflow-x: hidden !important; scrollbar-gutter: stable; }
+.packet-nav { overflow: hidden; }
+.packet-nav span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Light mode never inherits dark or burgundy dashboard surfaces. */
+html[data-audit-theme="light"] .packet,
+html[data-audit-theme="light"] .login-gate {
+  --button-accent: #0a84ff;
+  --button-accent-2: #5e5ce6;
+  --button-ink: #ffffff;
+  --button-hover-surface: #e8f3ff;
+  background: #f2f2f7 !important;
+  color: #111318 !important;
+}
+html[data-audit-theme="light"] .packet .cover,
+html[data-audit-theme="light"] .packet .packet-card,
+html[data-audit-theme="light"] .packet .packet-kpi,
+html[data-audit-theme="light"] .packet .cover-note,
+html[data-audit-theme="light"] .packet .quick-grid span,
+html[data-audit-theme="light"] .packet .zone-grid article,
+html[data-audit-theme="light"] .packet .launch-card,
+html[data-audit-theme="light"] .packet .scenario-result,
+html[data-audit-theme="light"] .packet .playbook-grid div,
+html[data-audit-theme="light"] .packet .section-recommendation,
+html[data-audit-theme="light"] .packet .product-ledger div,
+html[data-audit-theme="light"] .packet .scenario-card {
+  background: #ffffff !important;
+  color: #111318 !important;
+  border-color: #d9dce4 !important;
+  box-shadow: 0 10px 24px rgba(28,39,61,.08) !important;
+}
+html[data-audit-theme="light"] .packet .cover:before,
+html[data-audit-theme="light"] .packet .cover:after { opacity: .25; }
+html[data-audit-theme="light"] .packet .cover .packet-kicker,
+html[data-audit-theme="light"] .packet .packet-kicker,
+html[data-audit-theme="light"] .packet .card-link,
+html[data-audit-theme="light"] .packet .launch-card svg:first-child,
+html[data-audit-theme="light"] .packet .pilot-knob b { color: #0a63c8 !important; }
+html[data-audit-theme="light"] .packet .cover p,
+html[data-audit-theme="light"] .packet .page-lede p,
+html[data-audit-theme="light"] .packet .section-recommendation p,
+html[data-audit-theme="light"] .packet .launch-card small,
+html[data-audit-theme="light"] .packet .zone-grid p,
+html[data-audit-theme="light"] .packet .quick-grid span,
+html[data-audit-theme="light"] .packet .playbook-grid span { color: #536176 !important; }
+html[data-audit-theme="light"] .packet .cover h2,
+html[data-audit-theme="light"] .packet .page-lede h2,
+html[data-audit-theme="light"] .packet .cover-note strong,
+html[data-audit-theme="light"] .packet .quick-grid b,
+html[data-audit-theme="light"] .packet .zone-grid strong,
+html[data-audit-theme="light"] .packet .launch-card b,
+html[data-audit-theme="light"] .packet .scenario-result strong { color: #111318 !important; }
+html[data-audit-theme="light"] .packet .packet-link,
+html[data-audit-theme="light"] .login-gate .login-submit { color: #fff !important; }
+html[data-audit-theme="light"] .packet button:not(:disabled):hover,
+html[data-audit-theme="light"] .packet a.packet-link:hover,
+html[data-audit-theme="light"] .packet a.alert-link:hover,
+html[data-audit-theme="light"] .login-gate button:not(:disabled):hover {
+  background: #e8f3ff !important;
+  color: #075bb5 !important;
+  border-color: #0a84ff !important;
+  box-shadow: 0 12px 26px rgba(10,132,255,.22) !important;
+}
+html[data-audit-theme="light"] .packet .packet-link:hover,
+html[data-audit-theme="light"] .login-gate .login-submit:hover {
+  background: linear-gradient(135deg, #0a84ff, #5e5ce6) !important;
+  color: #fff !important;
+}
