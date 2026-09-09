@@ -19,6 +19,12 @@ describe("контрастная светлая тема", () => {
     expect(styles).toContain(".packet .card-title small,html[data-audit-theme=\"light\"] .packet .median-badge{background:#f3f7fd!important");
   });
 
+  it("сохраняет контраст Sonner-уведомлений в обеих темах", () => {
+    expect(styles).toContain("[data-sonner-toaster] [data-sonner-toast]{background:#171018!important;color:#f8edf2!important");
+    expect(styles).toContain('html[data-audit-theme="light"] [data-sonner-toaster] [data-sonner-toast]{background:#ffffff!important;color:#152033!important');
+    expect(styles).toContain("[data-sonner-toast] [data-button]{background:#ff765f!important");
+  });
+
   it("передает в scatter-графики Портфеля светлую палитру, а не темные константы", () => {
     expect(portfolio).toContain('theme==="light"?{grid:"#d8e0ea"');
     expect(portfolio).toContain("stroke={palette.grid}");
