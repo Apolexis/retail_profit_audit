@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const component = readFileSync(new URL("./DateRangeControl.tsx", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../calendar-range.css", import.meta.url), "utf8");
+const finalOverrides = readFileSync(new URL("../final-overrides.css", import.meta.url), "utf8");
 
 describe("мобильный контракт календаря", () => {
   it("рендерит доступный предпросмотр выбранного диапазона", () => {
@@ -37,5 +38,18 @@ describe("мобильный контракт календаря", () => {
     expect(styles).toContain('.date-shortcut-toggle,\n.date-shortcuts { position: relative !important; z-index: 2 !important; isolation: isolate !important; }');
     expect(styles).toContain('.date-popover:has(.date-shortcuts) .mobile-range-preview { display: none !important; }');
     expect(styles).toContain('.date-shortcuts button { min-height: 26px !important; }');
+  });
+
+  it("разводит сетку дней и быстрые периоды в мобильном потоке", () => {
+    expect(component).toContain('className={showStandard?"calendar-standard-open":undefined}');
+    expect(styles).toContain('.date-popover:has(.date-shortcuts) .calendar-standard-open { display: none !important; }');
+    expect(styles).toContain('.date-popover:has(.date-shortcuts) .date-shortcuts { margin-top: 0 !important; }');
+  });
+
+  it("не обрезает точный календарь у нижней границы viewport", () => {
+    expect(component).toContain('side="top" sideOffset={8} collisionPadding={8} sticky="always"');
+    expect(finalOverrides).toContain('body > [data-radix-popper-content-wrapper]:has(.fact-date-popover)');
+    expect(finalOverrides).toContain('bottom: max(88px, env(safe-area-inset-bottom, 0px)) !important;');
+    expect(finalOverrides).toContain('justify-content: center !important;');
   });
 });

@@ -188,6 +188,10 @@ html[data-audit-theme="light"] .date-popover [data-slot="calendar"] .rdp-range_e
   .date-popover,
   .fact-date-popover { padding: 7px !important; }
   .date-popover:has(.date-shortcuts) { max-block-size: calc(100dvh - 16px) !important; overflow-y: auto !important; overscroll-behavior: contain !important; }
+  .date-popover:has(.date-shortcuts) .calendar-standard-open { display: none !important; }
+  .date-popover:has(.date-shortcuts) .date-shortcut-toggle { margin-top: 0 !important; }
+  .date-popover:has(.date-shortcuts) .date-shortcuts { margin-top: 0 !important; }
+  .fact-date-popover { position: fixed !important; top: auto !important; right: 8px !important; bottom: max(8px, env(safe-area-inset-bottom, 0px)) !important; left: auto !important; max-block-size: calc(100dvh - 16px) !important; overflow-y: auto !important; overscroll-behavior: contain !important; transform: none !important; }
   .date-popover:has(.date-shortcuts) .mobile-range-preview { display: none !important; }
   .date-shortcuts { gap: 6px !important; margin-top: 4px !important; padding-top: 6px !important; }
   .date-shortcut-group { gap: 4px !important; }

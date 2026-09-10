@@ -679,7 +679,16 @@ html[data-audit-theme="light"] .packet .data-table th.sortable-column.sort-activ
 .packet .metric-chart .recharts-tooltip-wrapper { pointer-events: none !important; z-index: 20 !important; }
 html[data-audit-theme="light"] .packet .chart-view-control { border-color: #dde1e8; background: #f7f8fb; }
 html[data-audit-theme="light"] .packet .chart-view-button.active { background: #e84f5f; }
-@media (max-width: 720px) { .packet .chart-toolbar { flex-direction: column; align-items: stretch; } .packet .chart-view-control { align-self: flex-start; } }
+@media (max-width: 720px) {
+  .packet .chart-toolbar { flex-direction: column; align-items: stretch; }
+  .packet .chart-view-control { align-self: flex-start; order: -1; min-height: 38px; }
+  .packet .chart-view-button, .packet .series-toggle, .packet .cadence-metric-chip { min-height: 36px; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+}
+
+@media (max-width: 1050px) {
+  .packet .data-table-wrap { width: 100%; max-width: 100%; overflow-x: auto !important; overflow-y: hidden; -webkit-overflow-scrolling: touch; }
+  .packet .data-table-wrap .data-table { width: max-content; min-width: 100%; }
+}
 
 /* План‑факт: месяц открывается по клику в любую точку поля, сумма оформлена тем же контролом. */
 .packet .plan-editor input[type="month"], .packet .plan-editor input[type="number"] { border: 1px solid #4c3040 !important; border-radius: 8px !important; background: #14101a !important; color: #f7e8ed !important; color-scheme: dark; padding: 0 10px !important; }
@@ -1198,7 +1207,7 @@ html[data-audit-theme="dark"] .packet .packet-actions button.theme-button:hover,
 html[data-audit-theme="dark"] .packet .packet-actions a.alert-link:hover { transform:none!important; }
 
 /* На очень узких телефонах заголовок уступает место трем постоянным действиям, а шапка не создает горизонтальную прокрутку. */
-@media (max-width: 350px) {
+@media (max-width: 390px) {
   .packet .packet-top { gap: 8px; padding-inline: 10px; }
   .packet .packet-top > div:first-child { min-width: 0; flex: 1 1 auto; }
   .packet .packet-top h1 { max-width: none; font-size: 14px; }
@@ -1206,7 +1215,56 @@ html[data-audit-theme="dark"] .packet .packet-actions a.alert-link:hover { trans
   .packet .packet-actions :is(.alert-link, .theme-button) { width: 34px !important; height: 34px !important; min-height: 34px !important; border-radius: 9px !important; }
   .packet .packet-mobile.menu-button { width: 36px !important; min-width: 36px !important; height: 34px !important; }
 }
+
+/* Закрытие точек: на очень узких экранах длинные подписи и числа остаются внутри карточки. */
+@media (max-width: 420px) {
+  .packet .closure-planner,
+  .packet .closure-overview,
+  .packet .closure-expense-breakdown,
+  .packet .closure-list,
+  .packet .closure-choice,
+  .packet .closure-choice-main,
+  .packet .closure-choice-values { min-width: 0 !important; max-width: 100% !important; }
+  .packet .closure-expense-breakdown { grid-template-columns: minmax(0, 1fr) !important; }
+  .packet .closure-expense-breakdown > b { justify-self: start; }
+  .packet .closure-expense-list { grid-template-columns: minmax(0, 1fr) !important; }
+  .packet .closure-expense-list > span,
+  .packet .closure-choice-values { overflow-wrap: anywhere; }
+  .packet .closure-choice-main em { overflow-wrap: anywhere; }
+}
+
+/* Расчетные таблицы на промежуточной ширине скроллятся внутри рамки, а не расширяют страницу. */
+@media (max-width: 1100px) {
+  .packet .data-table-wrap { max-width: 100%; overflow-x: auto !important; overscroll-behavior-inline: contain; }
+  .packet .data-table { min-width: max-content; }
+}
 /* В верхнем контексте анализа подпись, диапазон и пояснение не конкурируют за одну строку. */
 .packet .analysis-filter-copy { display:grid!important; grid-template-columns:minmax(0,1fr)!important; gap:3px!important; min-width:0; }
 .packet .analysis-filter-copy > :is(span,strong,small) { display:block!important; max-width:100%; }
 .packet .analysis-filter-copy > small { margin-top:2px!important; line-height:1.45!important; }
+
+/* Точная дата «Базы»: при открытии у нижнего края мобильного экрана календарь остается целиком видимым. */
+@media (max-width: 560px) {
+  body > [data-radix-popper-content-wrapper]:has(.fact-date-popover) {
+    position: fixed !important;
+    top: auto !important;
+    right: 0 !important;
+    bottom: max(88px, env(safe-area-inset-bottom, 0px)) !important;
+    left: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    min-width: 0 !important;
+    transform: none !important;
+  }
+  .fact-date-popover[data-side] {
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    margin: 0 !important;
+    transform: none !important;
+    max-height: calc(100dvh - 56px) !important;
+    overflow-y: auto !important;
+  }
+}

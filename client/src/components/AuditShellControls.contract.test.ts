@@ -19,8 +19,8 @@ describe("базовые управляющие элементы", () => {
     expect(home).toContain("home-portfolio-link");
   });
 
-  it("не допускает горизонтального переполнения шапки на ширине 320 px", () => {
-    expect(css).toContain("@media (max-width: 350px)");
+  it("не допускает горизонтального переполнения шапки на ширине 360 px", () => {
+    expect(css).toContain("@media (max-width: 390px)");
     expect(css).toContain(".packet .packet-top > div:first-child { min-width: 0; flex: 1 1 auto; }");
     expect(css).toContain(".packet .packet-actions { flex: 0 0 auto; gap: 5px; }");
     expect(css).toContain(".packet .packet-mobile.menu-button { width: 36px !important;");

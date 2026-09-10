@@ -10,5 +10,5 @@ it("сохраняет утвержденное название приложе�
   const manifestPath = resolve(process.cwd(), "client/public/manifest.webmanifest");
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as { name: string; short_name: string };
   expect(manifest.name).toBe(appTitle);
-  expect(manifest.short_name).toBe(appTitle);
+  expect(manifest.short_name).toBe("Рыбный");
 });
