@@ -41,14 +41,17 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
   const unread=notificationSummary.data?.unread??0;
   const sectionIsActive=(items:readonly (readonly [string,string,string,boolean])[])=>items.some(([href])=>href===location);
   const sectionIsOpen=(section:{title:string;items:readonly (readonly [string,string,string,boolean])[]})=>Object.hasOwn(expandedSections,section.title)?Boolean(expandedSections[section.title]):sectionIsActive(section.items);
-  const toggleSection=(title:string)=>setExpandedSections(current=>({...current,[title]:!current[title]}));
+  const toggleSection=(title:string,defaultOpen:boolean)=>setExpandedSections(current=>{
+    const open=Object.hasOwn(current,title)?Boolean(current[title]):defaultOpen;
+    return {...current,[title]:!open};
+  });
 
   return <div className="packet">
     <aside className="packet-spine">
       <Link href="/" className="packet-mark"><BrandMark/><span className="brand-title"><span>Аналитика</span><span>«Рыбный»</span></span></Link>
       <nav className="packet-nav-list" aria-label="Разделы системы">
         {visibleNav.map(section=>{const open=sectionIsOpen(section);return <section className={open?"nav-section is-open":"nav-section"} key={section.title}>
-          <button type="button" className="nav-section-trigger" aria-expanded={open} onClick={()=>toggleSection(section.title)}><span>{section.title}</span><ChevronDown size={13}/></button>
+          <button type="button" className="nav-section-trigger" aria-expanded={open} onClick={()=>toggleSection(section.title,sectionIsActive(section.items))}><span className="nav-section-label">{section.title}</span><ChevronDown size={13}/></button>
           <div className="nav-section-links">{section.items.map(([href,,label])=><Link key={href} href={href} className={location===href?"packet-nav active":"packet-nav"}><span>{label}</span>{href==="/notifications"&&unread>0&&<i className="nav-count">{unread>99?"99+":unread}</i>}</Link>)}</div>
         </section>})}<Link href={profileItem[0]} className={location===profileItem[0]?"packet-nav packet-profile-link active":"packet-nav packet-profile-link"}><span>{profileItem[2]}</span></Link>
       </nav>
@@ -59,7 +62,7 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
       <div className="drawer-top"><span>НАВИГАЦИЯ</span><button aria-label="Закрыть меню" onClick={closeMenu}><X size={20}/></button></div>
       <div className="drawer-search"><input value={storeSearch} onChange={event=>setStoreSearch(event.target.value)} placeholder="Найти назначенный магазин…"/>{matches.length>0&&<div>{matches.map(store=><button key={store.id} onClick={()=>chooseStore(store.name)}>{store.name}</button>)}</div>}</div>
       <div className="drawer-scroll">{visibleNav.map(section=>{const open=sectionIsOpen(section);return <section className={open?"nav-drawer-section is-open":"nav-drawer-section"} key={section.title}>
-        <button type="button" className="nav-drawer-section-trigger" aria-expanded={open} onClick={()=>toggleSection(section.title)}><span>{section.title}</span><ChevronDown size={14}/></button>
+        <button type="button" className="nav-drawer-section-trigger" aria-expanded={open} onClick={()=>toggleSection(section.title,sectionIsActive(section.items))}><span className="nav-section-label">{section.title}</span><ChevronDown size={14}/></button>
         <div className="nav-drawer-section-links">{section.items.map(([href,,label])=><Link key={href} href={href} onClick={closeMenu} className={location===href?"drawer-link active":"drawer-link"}><span>{label}</span>{href==="/notifications"&&unread>0&&<i className="nav-count">{unread>99?"99+":unread}</i>}</Link>)}</div>
       </section>})}<Link href={profileItem[0]} onClick={closeMenu} className={location===profileItem[0]?"drawer-link drawer-profile-link active":"drawer-link drawer-profile-link"}><span>{profileItem[2]}</span></Link></div><div className="drawer-period">Активный срез:<strong>{rangeLabel}</strong></div>
     </nav>

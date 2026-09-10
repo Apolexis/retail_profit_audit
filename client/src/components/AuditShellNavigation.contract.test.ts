@@ -26,6 +26,9 @@ describe("AuditShell navigation contract",()=>{
   it("lets the user collapse any group, including the active one",()=>{
     expect(shell).toContain("const sectionIsOpen=");
     expect(shell).toContain("Object.hasOwn(expandedSections,section.title)?Boolean(expandedSections[section.title]):sectionIsActive(section.items)");
+    expect(shell).toContain("const toggleSection=(title:string,defaultOpen:boolean)");
+    expect(shell).toContain("Object.hasOwn(current,title)?Boolean(current[title]):defaultOpen");
+    expect(shell).toContain("toggleSection(section.title,sectionIsActive(section.items))");
     expect(shell).toContain('className="nav-section-trigger"');
     expect(shell).toContain('className="nav-drawer-section-trigger"');
     expect(shell).toContain('aria-expanded={open}');

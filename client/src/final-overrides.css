@@ -1655,3 +1655,10 @@ html[data-audit-theme="dark"] .packet .nav-section:not(.is-open) .nav-section-tr
 html[data-audit-theme="dark"] .packet .nav-drawer-section:not(.is-open) .nav-drawer-section-trigger:hover { color: var(--faint) !important; }
 html[data-audit-theme="dark"] .packet .nav-section.is-open .nav-section-trigger:hover,
 html[data-audit-theme="dark"] .packet .nav-drawer-section.is-open .nav-drawer-section-trigger:hover { color: #ffc0ad !important; }
+
+/* Текст/иконка не перехватывают курсор: в открытой темной категории hover остается на одной кнопке. */
+html[data-audit-theme="dark"] .packet :is(.nav-section-trigger, .nav-drawer-section-trigger) :is(.nav-section-label, svg) { pointer-events: none; color: inherit; }
+
+/* Статус первичной проверки доступа имеет самостоятельный тематический контраст. */
+html[data-audit-theme="dark"] .facts-loader.ocean-loader > p { color: #ff765f !important; }
+html[data-audit-theme="light"] .facts-loader.ocean-loader > p { color: #0a84ff !important; }
