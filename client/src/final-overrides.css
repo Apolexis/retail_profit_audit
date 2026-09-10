@@ -1588,3 +1588,21 @@ html[data-audit-theme="light"] .packet .manage-grid > .packet-card:first-child .
 html[data-audit-theme="light"] .packet .access-import-control-row .access-control-toggle:not(.active) { border-color: #cbd9ee; background: #ffffff; color: #536176; }
 html[data-audit-theme="light"] .packet .access-import-control-row .access-control-toggle.active { border-color: #0a63c8; background: #edf6ff; color: #075dbb; }
 @media (max-width: 680px) { .packet .access-import-control-row .access-control-toggle { width: 100%; justify-self: stretch; } }
+
+/* Последний светлый слой: обычные переходы и уведомления не наследуют коралловую палитру действий риска. */
+html[data-audit-theme="light"] .packet .cover .packet-kicker { color: #51657d !important; }
+html[data-audit-theme="light"] .packet .cover .packet-link,
+html[data-audit-theme="light"] .packet .cover .packet-link:hover,
+html[data-audit-theme="light"] .packet .cover .packet-link:focus-visible { border-color: #0a63c8 !important; background: #edf6ff !important; color: #075dbb !important; box-shadow: 0 8px 20px rgba(10, 99, 200, .14) !important; }
+html[data-audit-theme="light"] .packet .alert-link { border-color: #bdd9f6 !important; background: #ffffff !important; color: #075dbb !important; }
+html[data-audit-theme="light"] .packet .alert-link:hover,
+html[data-audit-theme="light"] .packet .alert-link:focus-visible { border-color: #0a63c8 !important; background: #edf6ff !important; color: #075dbb !important; box-shadow: 0 0 0 2px rgba(10, 99, 200, .12) !important; }
+html[data-audit-theme="light"] .packet .cover .packet-link svg,
+html[data-audit-theme="light"] .packet .alert-link:hover svg,
+html[data-audit-theme="light"] .packet .alert-link:focus-visible svg { color: currentColor !important; }
+html[data-audit-theme="light"] .alert-link { border-color: #bdd9f6 !important; background: #ffffff !important; color: #075dbb !important; }
+html[data-audit-theme="light"] .alert-link:hover,
+html[data-audit-theme="light"] .alert-link:focus-visible { border-color: #0a63c8 !important; background: #edf6ff !important; color: #075dbb !important; box-shadow: 0 0 0 2px rgba(10, 99, 200, .12) !important; }
+html[data-audit-theme="light"] .packet .packet-actions .alert-link { border-color: #bdd9f6 !important; background: #ffffff !important; color: #075dbb !important; }
+html[data-audit-theme="light"] .packet .packet-actions .alert-link:hover,
+html[data-audit-theme="light"] .packet .packet-actions .alert-link:focus-visible { border-color: #0a63c8 !important; background: #edf6ff !important; color: #075dbb !important; box-shadow: 0 0 0 2px rgba(10, 99, 200, .12) !important; }

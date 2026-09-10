@@ -1,6 +1,5 @@
-const CACHE_NAME = "rybny-analytics-shell-v4";
-const CACHE_NAME = "rybny-analytics-shell-v8";
-const APP_SHELL = ["/", "/manifest.webmanifest?v=8", "/manifest-dark.webmanifest?v=8", "/manifest-light.webmanifest?v=8", "/manus-storage/rybny_circle_dark_transparent_v8_03811f3b.png?v=8", "/manus-storage/rybny_circle_light_transparent_v8_bb483d15.png?v=8"];
+const CACHE_NAME = "rybny-analytics-shell-v11";
+const APP_SHELL = ["/", "/manifest.webmanifest?v=11", "/manifest-dark.webmanifest?v=11", "/manifest-light.webmanifest?v=11", "/manus-storage/rybny_circle_dark_transparent_v8_03811f3b.png?v=8", "/manus-storage/rybny_circle_light_transparent_v29_eb5d3ae8.png?v=29"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));

@@ -65,13 +65,17 @@ describe("форматирование денежных показателей",
     expect(windowChartRows([1,2,3,4,5,6],{zoom:2,pan:{x:0,y:0}})).toEqual([3,4,5]);
     expect(viewportChartDomain([0,100],{zoom:2,pan:{x:0,y:0}})).toEqual([25,75]);
     expect(viewportChartDomain([0,100],{zoom:2,pan:{x:1,y:0}},"x")).toEqual([50,100]);
+    expect(viewportChartDomain([8,18],{zoom:2,pan:{x:0,y:0}},"y",false)).toEqual([10.5,15.5]);
     const source = require("node:fs").readFileSync(new URL("./AuditCharts.tsx", import.meta.url), "utf8");
     expect(source).toContain("windowChartRows(data,viewport)");
     expect(source).toContain("viewportChartDomain(plottedValues,viewport)");
     expect(source).toContain('axis:"x"|"y"="y"');
+    expect(source).toContain("includeZero=true");
     expect(source).not.toContain("scale(${zoom})");
     expect(source).toContain("onPointerDown={down}");
     expect(source).toContain("onWheel={wheel}");
+    expect(source).toContain("if(zoom<=1)return");
+    expect(source).toContain("y:current.y+(next.y-previous.y)");
     expect(source).toContain('aria-label="Интерактивный увеличенный график"');
     expect(source).toContain("Сброс");
   });

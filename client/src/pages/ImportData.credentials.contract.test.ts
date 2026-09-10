@@ -73,3 +73,12 @@ describe("типографика диапазона предпросмотра",
     expect(overrides).toContain(".packet .import-preview .import-date-copy { display: grid; gap: 5px; min-width: 0; }");
   });
 });
+
+describe("совпадающие даты", () => {
+  it("передает первую конфликтную дату и магазин в точечное редактирование", () => {
+    expect(page).toContain('const openConflictEditor = () =>');
+    expect(page).toContain('sessionStorage.setItem("auditManageTarget"');
+    expect(page).toContain('className="subtle-action conflict-edit-link"');
+    expect(page).toContain('onClick={openConflictEditor}');
+  });
+});

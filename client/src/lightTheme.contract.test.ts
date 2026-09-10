@@ -32,6 +32,7 @@ describe("контрастная светлая тема", () => {
     expect(overrides).toContain('.mobile-drawer .drawer-link:not(.active):hover');
     expect(overrides).toContain('html[data-audit-theme="light"] .packet .packet-nav.active');
     expect(overrides).toContain('background: #eaf4ff !important;');
+    expect(overrides).toContain('html[data-audit-theme="light"] .alert-link { border-color: #bdd9f6 !important; background: #ffffff !important; color: #075dbb !important; }');
   });
 
   it("оставляет название бренда на экране входа читаемым, а не коралловым", () => {

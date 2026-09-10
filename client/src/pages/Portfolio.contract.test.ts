@@ -18,6 +18,8 @@ describe("страница «Портфель»", () => {
     expect(page).toContain("priorityThresholds.lowCover");
     expect(page).toContain("Покрытие:");
     expect(page).toContain("Маржа:");
+    expect(page).toContain('normal: "#6978d5"');
+    expect(page).toContain('normal: "#a8b2ff"');
   });
 
   it("дает надежно выбрать точку касанием и фокусирует выбранный маркер", () => {
@@ -33,7 +35,8 @@ describe("страница «Портфель»", () => {
     expect(page).toContain("fillOpacity={focus?.store && focus.store !== item.store ? .26 : 1}");
     expect(styles).toContain(".packet .portfolio-scatter-hit { fill: transparent;");
     expect(page).toContain('stroke="none"');
-    expect(page).toContain('viewportChartDomain(allPoints.map(item => Number(item[kind])), viewport, "x")');
+    expect(page).toContain('viewportChartDomain(allPoints.map(item => Number(item[kind])), viewport, "x", false)');
+    expect(page).toContain('viewportChartDomain(allPoints.map(item => item.netMargin), viewport, "y", false)');
     expect(page).toContain("allowDataOverflow");
     expect(page).toContain("const chartData = allPoints.filter");
   });
