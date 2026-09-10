@@ -26,4 +26,12 @@ describe("компактная выдача уведомлений", () => {
     expect(pageSource).toContain("Прочитать все");
     expect(pageSource).toContain("Показать еще");
   });
+
+  it("отделяет ручную рассылку администратора от обычных информационных событий", () => {
+    expect(routerSource).toContain("adminBroadcast:");
+    expect(routerSource).toContain("localAdminFromContext");
+    expect(routerSource).toContain('entityType:"admin_broadcast"');
+    expect(routerSource).toContain("pushSubscriptionsAccepted");
+    expect(notificationsSource).toContain('input.entityType==="admin_broadcast"');
+  });
 });

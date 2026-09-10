@@ -5,7 +5,7 @@ import { adminProcedure, protectedProcedure, publicProcedure, router } from "../
 import { adminResetLocalPassword, authenticateLocalAccount, changeLocalPassword, createLocalAccount, createLocalSession, deleteLocalAccount, deleteLocalSessionFromCookie, formatRussianPhone, getLocalAccountByOpenId, getLocalSessionFromCookie, listLocalAccounts, LOCAL_SESSION_COOKIE, recordChange, updateLocalAccount } from "../localAuth";
 import { getAccessibleStoreIds, listAccountStoreAccess, replaceAccountStoreAccess } from "../accessControl";
 import { getImportThresholdBreachPage, listAuditStores } from "../audit";
-import { getNotificationSummary, getPushStatus, hasNotificationEntityAccess, listMyNotifications, markAllNotificationsRead, markNotificationRead, removePushSubscription, savePushSubscription } from "../notifications";
+import { createNotifications, getNotificationSummary, getPushStatus, hasNotificationEntityAccess, listMyNotifications, markAllNotificationsRead, markNotificationRead, removePushSubscription, savePushSubscription } from "../notifications";
 import { PASSKEY_ATTEMPT_COOKIE, beginPasskeyAuthentication, beginPasskeyRegistration, deleteAccountPasskey, finishPasskeyAuthentication, finishPasskeyRegistration, listAccountPasskeys } from "../passkeys";
 
 const password = z.string().min(10, "Пароль должен содержать не менее 10 символов").max(128);
@@ -16,6 +16,11 @@ const passkeyResponse = z.any();
 async function localAccountFromContext(openId?: string | null) {
   const account = await getLocalAccountByOpenId(openId);
   if (!account) throw new TRPCError({ code: "UNAUTHORIZED", message: "Требуется локальный вход" });
+  return account;
+}
+async function localAdminFromContext(openId?: string | null) {
+  const account = await localAccountFromContext(openId);
+  if (account.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Рассылка доступна только администратору" });
   return account;
 }
 
@@ -119,4 +124,11 @@ export const localAuthRouter = router({
   pushStatus: protectedProcedure.query(async({ctx})=>getPushStatus((await localAccountFromContext(ctx.user?.openId)).id)),
   subscribePush: protectedProcedure.input(z.object({endpoint:z.string().url(),keys:z.object({p256dh:z.string().min(1),auth:z.string().min(1)})})).mutation(async({input,ctx})=>savePushSubscription((await localAccountFromContext(ctx.user?.openId)).id,input)),
   unsubscribePush: protectedProcedure.input(z.object({endpoint:z.string().url().optional()})).mutation(async({input,ctx})=>removePushSubscription((await localAccountFromContext(ctx.user?.openId)).id,input.endpoint)),
+  adminBroadcast: adminProcedure.input(z.object({message:z.string().trim().min(1,"Введите текст сообщения").max(360,"Сообщение не должно превышать 360 символов")})).mutation(async({input,ctx})=>{
+    const actor=await localAdminFromContext(ctx.user?.openId);
+    const accountIds=(await listLocalAccounts()).filter(account=>account.isActive).map(account=>account.id);
+    const result=await createNotifications({accountIds,severity:"info",title:"Сообщение администратора",message:input.message,entityType:"admin_broadcast"});
+    await recordChange({actorId:actor.id,action:"notification.broadcast",entityType:"notification",entityId:"all-active",afterState:{recipientAccounts:result.created,pushSubscriptionsAccepted:result.pushSent,messageLength:input.message.length}});
+    return {recipientAccounts:result.created,pushSubscriptionsAccepted:result.pushSent};
+  }),
 });

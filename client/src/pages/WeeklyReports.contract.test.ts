@@ -32,6 +32,7 @@ describe("WeeklyReports interaction contract",()=>{
     expect(page).toContain("periodStart:selected.periodStart");
     expect(page).toContain("periodEnd:selected.periodEnd");
     expect(page).toContain('selected.periodStart.slice(0,7)===selected.periodEnd.slice(0,7)?"month":"week"');
+    expect(page).toContain('key={`report-period-${selected.id}`}');
   });
 
   it("applies semantic colors only to signed financial outcomes",()=>{

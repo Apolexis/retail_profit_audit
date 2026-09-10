@@ -31,4 +31,11 @@ describe("мобильный контракт календаря", () => {
     expect(styles).toMatch(/\.date-popover,\s*\.fact-date-popover\s*\{[\s\S]*?background:\s*var\(--surface\)\s*!important/);
     expect(styles).toMatch(/\.date-popover \[data-slot="calendar"\],\s*\.fact-date-popover \[data-slot="calendar"\]\s*\{[\s\S]*?background:\s*var\(--surface\)\s*!important/);
   });
+
+  it("держит стандартные периоды над сеткой календаря на мобильной ширине", () => {
+    expect(styles).toContain('.date-popover [data-slot="calendar"] { position: relative !important; z-index: 1 !important; }');
+    expect(styles).toContain('.date-shortcut-toggle,\n.date-shortcuts { position: relative !important; z-index: 2 !important; isolation: isolate !important; }');
+    expect(styles).toContain('.date-popover:has(.date-shortcuts) .mobile-range-preview { display: none !important; }');
+    expect(styles).toContain('.date-shortcuts button { min-height: 26px !important; }');
+  });
 });

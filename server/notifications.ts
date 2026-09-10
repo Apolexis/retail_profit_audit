@@ -11,7 +11,7 @@ export type BrowserPushSubscription = { endpoint:string; keys:{p256dh:string;aut
 const endpointHash=(endpoint:string)=>createHash("sha256").update(endpoint).digest("hex");
 const pushConfigured=()=>Boolean(ENV.webPushPublicKey&&ENV.webPushPrivateKey&&ENV.webPushSubject);
 const entityUrl=(entityType?:string)=>entityType==="import"?"/import":entityType==="weekly_report"?"/reports":entityType==="metric"?"/manage":entityType==="store"?"/stores":"/notifications";
-export const shouldSendMobilePush=(input:{severity:NotificationSeverity;entityType?:string})=>input.severity==="critical"||input.entityType==="weekly_report"||input.entityType==="threshold";
+export const shouldSendMobilePush=(input:{severity:NotificationSeverity;entityType?:string})=>input.severity==="critical"||input.entityType==="weekly_report"||input.entityType==="threshold"||input.entityType==="admin_broadcast";
 
 export function evaluateMetricAlert(metricCode: string, previousAmount: number, nextAmount: number) {
   const delta = nextAmount - previousAmount;

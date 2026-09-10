@@ -18,4 +18,12 @@ describe("матрица доступа к импорту",()=>{
     expect(page).toContain(">Загрузка</button>");
     expect(page).toContain('importAccessLevel: "edit"');
   });
+
+  it("дает администратору форму общей push-рассылки с честным итогом доставки",()=>{
+    const page=readFileSync(resolve(process.cwd(),"client/src/pages/AccessAdmin.tsx"),"utf8");
+    expect(page).toContain("Push всем пользователям");
+    expect(page).toContain("adminBroadcast.useMutation");
+    expect(page).toContain("добровольно включенной браузерной подпиской");
+    expect(page).toContain("pushSubscriptionsAccepted");
+  });
 });

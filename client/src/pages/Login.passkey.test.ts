@@ -17,4 +17,12 @@ describe("русские сообщения быстрого входа", () => 
     expect(page).toContain('const normalized = hasPhone ? normalizeRussianPhone(phone) : "";');
     expect(page).toContain('const phonePayload = normalized.length === 11 ? { phone: normalized } : {};');
   });
+
+  it("дает переключить сохраненную тему до авторизации", () => {
+    const page = readFileSync(new URL("./Login.tsx", import.meta.url), "utf8");
+    expect(page).toContain('import { useAudit } from "@/contexts/AuditContext";');
+    expect(page).toContain('const { theme, toggleTheme } = useAudit();');
+    expect(page).toContain('className="login-theme-toggle"');
+    expect(page).toContain('onClick={toggleTheme}');
+  });
 });

@@ -110,6 +110,9 @@
   box-shadow: 0 0 0 2px rgba(255,118,95,.20) !important;
 }
 
+.date-popover [data-slot="calendar"] { position: relative !important; z-index: 1 !important; }
+.date-shortcut-toggle,
+.date-shortcuts { position: relative !important; z-index: 2 !important; isolation: isolate !important; }
 .date-shortcut-toggle { margin-top: 3px !important; }
 .date-shortcut-toggle button { font-size: 10px !important; }
 .date-shortcuts {
@@ -184,6 +187,11 @@ html[data-audit-theme="light"] .date-popover [data-slot="calendar"] .rdp-range_e
 @media (max-width: 560px) {
   .date-popover,
   .fact-date-popover { padding: 7px !important; }
+  .date-popover:has(.date-shortcuts) { max-block-size: calc(100dvh - 16px) !important; overflow-y: auto !important; overscroll-behavior: contain !important; }
+  .date-popover:has(.date-shortcuts) .mobile-range-preview { display: none !important; }
+  .date-shortcuts { gap: 6px !important; margin-top: 4px !important; padding-top: 6px !important; }
+  .date-shortcut-group { gap: 4px !important; }
+  .date-shortcuts button { min-height: 26px !important; }
   .mobile-range-preview { display: grid; gap: 2px; margin: 2px 1px 7px; padding: 7px 8px; border: 1px solid #753044; border-radius: 9px; background: linear-gradient(145deg,#23121b,#140d13); }
   .mobile-range-preview small { color: #ffb1bd; font: 8px "IBM Plex Mono",monospace; letter-spacing: .08em; }
   .mobile-range-preview strong { color: #fff1f4; font-size: 12px; line-height: 1.2; }

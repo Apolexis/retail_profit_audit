@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Fingerprint, LockKeyhole } from "lucide-react";
+import { Fingerprint, LockKeyhole, Moon, Sun } from "lucide-react";
 import { browserSupportsWebAuthn, startAuthentication } from "@simplewebauthn/browser";
 import { toast } from "sonner";
 import { PhoneInput } from "@/components/PhoneInput";
@@ -7,8 +7,10 @@ import { trpc } from "@/lib/trpc";
 import { normalizeRussianPhone } from "@/lib/phone";
 import { authErrorText } from "@/lib/authError";
 import { passkeyErrorText } from "@/lib/passkeyError";
+import { useAudit } from "@/contexts/AuditContext";
 
 export default function Login({ accessError }: { accessError?: unknown }) {
+  const { theme, toggleTheme } = useAudit();
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [passkeySupported, setPasskeySupported] = useState(false);
@@ -56,6 +58,7 @@ export default function Login({ accessError }: { accessError?: unknown }) {
   return (
     <main className="login-gate">
       <section className="login-panel">
+        <button type="button" className="login-theme-toggle" onClick={toggleTheme} aria-label={theme === "dark" ? "Включить светлую тему" : "Включить темную тему"} title={theme === "dark" ? "Светлая тема" : "Темная тема"}>{theme === "dark" ? <Sun size={16}/> : <Moon size={16}/>}</button>
         <div className="login-mark">
           <img src="/manus-storage/rybny_analytics_app_icon_909727b4.png" alt="Аналитика «Рыбный»" />
           <span>Аналитика «Рыбный»</span>

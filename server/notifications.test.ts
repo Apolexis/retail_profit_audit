@@ -18,9 +18,10 @@ describe("пороги критических уведомлений", () => {
 });
 
 describe("телефонные push‑уведомления",()=>{
-  it("отправляет только критичные сигналы и новые управленческие отчеты",()=>{
+  it("отправляет только критичные сигналы, управленческие отчеты и явную администраторскую рассылку",()=>{
     expect(shouldSendMobilePush({severity:"critical"})).toBe(true);
     expect(shouldSendMobilePush({severity:"info",entityType:"weekly_report"})).toBe(true);
+    expect(shouldSendMobilePush({severity:"info",entityType:"admin_broadcast"})).toBe(true);
     expect(shouldSendMobilePush({severity:"warning",entityType:"metric"})).toBe(false);
   });
 });

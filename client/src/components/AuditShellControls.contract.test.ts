@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const css = readFileSync(new URL("../final-overrides.css", import.meta.url), "utf8");
 const home = readFileSync(new URL("../pages/Home.tsx", import.meta.url), "utf8");
+const shell = readFileSync(new URL("./AuditShell.tsx", import.meta.url), "utf8");
 
 describe("базовые управляющие элементы", () => {
   it("сохраняет увеличенный правый отступ кнопки «Наверх» на малом и широком экране", () => {
@@ -23,5 +24,11 @@ describe("базовые управляющие элементы", () => {
     expect(css).toContain(".packet .packet-top > div:first-child { min-width: 0; flex: 1 1 auto; }");
     expect(css).toContain(".packet .packet-actions { flex: 0 0 auto; gap: 5px; }");
     expect(css).toContain(".packet .packet-mobile.menu-button { width: 36px !important;");
+  });
+
+  it("выводит контекст периода отдельными строками", () => {
+    expect(shell).toContain('className="analysis-filter-copy"');
+    expect(css).toContain(".packet .analysis-filter-copy { display:grid!important; grid-template-columns:minmax(0,1fr)!important;");
+    expect(css).toContain(".packet .analysis-filter-copy > :is(span,strong,small) { display:block!important;");
   });
 });

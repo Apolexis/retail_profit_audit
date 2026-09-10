@@ -1206,3 +1206,7 @@ html[data-audit-theme="dark"] .packet .packet-actions a.alert-link:hover { trans
   .packet .packet-actions :is(.alert-link, .theme-button) { width: 34px !important; height: 34px !important; min-height: 34px !important; border-radius: 9px !important; }
   .packet .packet-mobile.menu-button { width: 36px !important; min-width: 36px !important; height: 34px !important; }
 }
+/* В верхнем контексте анализа подпись, диапазон и пояснение не конкурируют за одну строку. */
+.packet .analysis-filter-copy { display:grid!important; grid-template-columns:minmax(0,1fr)!important; gap:3px!important; min-width:0; }
+.packet .analysis-filter-copy > :is(span,strong,small) { display:block!important; max-width:100%; }
+.packet .analysis-filter-copy > small { margin-top:2px!important; line-height:1.45!important; }
