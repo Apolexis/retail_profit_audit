@@ -17,6 +17,8 @@ describe("матрица доступа к импорту",()=>{
     expect(page).toContain("Импорт Excel");
     expect(page).toContain(">Загрузка</button>");
     expect(page).toContain('importAccessLevel: "edit"');
+    expect(overrides).toContain('.packet .access-import-row .access-switch button { box-sizing: border-box !important; flex: 1 1 0 !important;');
+    expect(overrides).toContain('min-height: 38px !important');
   });
 
   it("дает администратору форму общей push-рассылки с честным итогом доставки",()=>{

@@ -765,6 +765,7 @@ html[data-audit-theme="light"] .packet .packet-nav-group + .packet-nav-group { b
 @media (max-width: 980px) { .packet .packet-nav-heading { display: none; } .packet .packet-nav-group + .packet-nav-group { margin-top: 3px; padding-top: 4px; } }
 .packet .closure-planner { display: grid; gap: 13px; }
 .packet .closure-planner .card-title { margin-bottom: 0; }
+.packet .closure-disclaimer { max-width: 68ch; margin: -4px 0 0; color: var(--muted); font-size: 11px; line-height: 1.45; overflow-wrap: anywhere; }
 .packet .closure-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .packet .closure-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(142px, 1fr)); gap: 8px; }
 .packet .closure-overview > div { display: grid; gap: 5px; min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }
@@ -1168,6 +1169,7 @@ body::-webkit-scrollbar,
 .packet .access-import-row > span > small { display: block !important; max-width: 420px; font-size: 0 !important; line-height: 1.35 !important; }
 .packet .access-import-row > span > small::after { content: "Загрузка — только новые даты · Изменение — замена и удаление"; color: var(--muted); font-size: 11px; }
 .packet .access-import-row .access-switch { justify-self: end !important; margin: 0 !important; }
+.packet .access-import-row .access-switch button { box-sizing: border-box !important; flex: 1 1 0 !important; min-width: 0 !important; min-height: 38px !important; padding-inline: 10px !important; border-radius: 9px !important; text-align: center !important; }
 html[data-audit-theme="light"] .packet .materialization-chip { border-color: #cbd9ee !important; background: #fff !important; color: #536176 !important; }
 html[data-audit-theme="light"] .packet .materialization-chip.active { border-color: #9cadc4 !important; background: #f7f9fc !important; color: #253142 !important; box-shadow: inset 0 0 0 1px rgba(63,84,112,.06) !important; }
 html[data-audit-theme="light"] .packet .materialization-chip:hover,html[data-audit-theme="light"] .packet .materialization-chip:focus-visible { border-color: #536176 !important; background: #f7f9fc !important; color: #253142 !important; box-shadow: none !important; }
@@ -1232,6 +1234,18 @@ html[data-audit-theme="dark"] .packet .packet-actions a.alert-link:hover { trans
   .packet .closure-expense-list > span,
   .packet .closure-choice-values { overflow-wrap: anywhere; }
   .packet .closure-choice-main em { overflow-wrap: anywhere; }
+  .packet .closure-planner { width: 100% !important; box-sizing: border-box !important; overflow: clip !important; }
+  .packet .closure-planner .card-title,
+  .packet .closure-disclaimer,
+  .packet .closure-planner .packet-note,
+  .packet .closure-overview > div,
+  .packet .closure-profit-flow > div { min-width: 0 !important; max-inline-size: 100% !important; }
+  .packet .closure-disclaimer,
+  .packet .closure-planner .packet-note,
+  .packet .closure-overview span,
+  .packet .closure-profit-flow span { overflow-wrap: anywhere !important; word-break: normal !important; }
+  .packet .closure-actions { display: grid !important; grid-template-columns: minmax(0, 1fr) !important; }
+  .packet .closure-actions .subtle-action { width: 100% !important; min-width: 0 !important; white-space: normal !important; }
 }
 
 /* На телефоне действия истории импортов не должны прятаться в горизонтальной таблице. */

@@ -34,6 +34,13 @@ describe("форматирование денежных показателей",
     expect(resolveMetricChartView(3, "overlay")).toBe("overlay");
     expect(resolveMetricChartView(1, "overlay")).toBe("bar");
   });
+  it("дает многоточечному общему графику все три доступных представления", () => {
+    const source = require("node:fs").readFileSync(new URL("./AuditCharts.tsx", import.meta.url), "utf8");
+    expect(source).toContain("{data.length>1&&<ChartViewControls");
+    expect(source).toContain(">Волна</button>");
+    expect(source).toContain(">Столбцы</button>");
+    expect(source).toContain(">Наложение</button>");
+  });
   it("использует единый широкий слот наложения и один цвет для легенды, линии и маркера", () => {
     expect(resolveOverlayBarGeometry(140, 18, 0, 3)).toEqual({ x: 140, width: 54 });
     expect(resolveOverlayBarGeometry(158, 18, 1, 3)).toEqual({ x: 140, width: 54 });
