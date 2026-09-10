@@ -16,7 +16,7 @@ const metrics=[
   ["net_profit","Чистая прибыль"],
   ["purchases","Закупки"],
   ["writeoff_frozen","Списания М."],
-  ["rent","Аренда"],
+  ["rent","Аренда б/нал"],
   ["cash_operating_costs","Траты нал"],
   ["cashless_operating_costs","Расходы безналичные"],
 ] as const;

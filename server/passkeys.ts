@@ -48,12 +48,14 @@ async function saveChallenge(accountId: number, ceremony: "registration" | "auth
   return { attempt, expiresAt: new Date(Date.now() + CHALLENGE_MS) };
 }
 
-async function consumeChallenge(accountId: number, ceremony: "registration" | "authentication", cookieHeader?: string) {
+async function consumeChallenge(accountId: number | undefined, ceremony: "registration" | "authentication", cookieHeader?: string) {
   const attempt = attemptFromCookie(cookieHeader);
   if (!attempt) throw new Error("Срок подтверждения passkey истек. Начните заново.");
   const db = await getDb();
   if (!db) throw new Error("База данных недоступна");
-  const [challenge] = await db.select().from(localPasskeyChallenges).where(and(eq(localPasskeyChallenges.attemptHash, tokenHash(attempt)), eq(localPasskeyChallenges.accountId, accountId), eq(localPasskeyChallenges.ceremony, ceremony), gt(localPasskeyChallenges.expiresAt, new Date()))).limit(1);
+  const conditions = [eq(localPasskeyChallenges.attemptHash, tokenHash(attempt)), eq(localPasskeyChallenges.ceremony, ceremony), gt(localPasskeyChallenges.expiresAt, new Date())];
+  if (typeof accountId === "number") conditions.push(eq(localPasskeyChallenges.accountId, accountId));
+  const [challenge] = await db.select().from(localPasskeyChallenges).where(and(...conditions)).limit(1);
   await db.delete(localPasskeyChallenges).where(eq(localPasskeyChallenges.attemptHash, tokenHash(attempt)));
   if (!challenge) throw new Error("Срок подтверждения passkey истек. Начните заново.");
   return challenge;
@@ -105,25 +107,43 @@ async function activeAccountForPhone(phone: string) {
   return account;
 }
 
-export async function beginPasskeyAuthentication(phone: string, req: RequestLike) {
-  const account = await activeAccountForPhone(phone);
+export async function beginPasskeyAuthentication(phone: string | undefined, req: RequestLike) {
   const db = await getDb();
   if (!db) throw new Error("База данных недоступна");
   const { rpId } = passkeyRelyingParty(req);
-  const credentials = await db.select().from(localPasskeys).where(eq(localPasskeys.accountId, account.id));
-  if (!credentials.length) throw new Error("На этом номере еще не настроен быстрый вход");
+  const normalizedPhone = phone?.trim();
+  if (normalizedPhone) {
+    const account = await activeAccountForPhone(normalizedPhone);
+    const credentials = await db.select().from(localPasskeys).where(eq(localPasskeys.accountId, account.id));
+    if (!credentials.length) throw new Error("На этом номере еще не настроен быстрый вход");
+    const options = await generateAuthenticationOptions({ rpID: rpId, userVerification: "required", allowCredentials: credentials.map(credential => ({ id: credential.credentialId, transports: Array.isArray(credential.transports) ? credential.transports.map(String) : undefined })) });
+    const ceremony = await saveChallenge(account.id, "authentication", options.challenge, req);
+    return { accountId: account.id, options, ...ceremony };
+  }
   const options = await generateAuthenticationOptions({ rpID: rpId, userVerification: "required" });
-  const ceremony = await saveChallenge(account.id, "authentication", options.challenge, req);
-  return { accountId: account.id, options, ...ceremony };
+  const ceremony = await saveChallenge(0, "authentication", options.challenge, req);
+  return { options, ...ceremony };
 }
 
-export async function finishPasskeyAuthentication(phone: string, response: AuthenticationResponseJSON, cookieHeader?: string) {
-  const account = await activeAccountForPhone(phone);
-  const challenge = await consumeChallenge(account.id, "authentication", cookieHeader);
+export async function finishPasskeyAuthentication(phone: string | undefined, response: AuthenticationResponseJSON, cookieHeader?: string) {
   const db = await getDb();
   if (!db) throw new Error("База данных недоступна");
-  const [passkey] = await db.select().from(localPasskeys).where(and(eq(localPasskeys.accountId, account.id), eq(localPasskeys.credentialId, response.id))).limit(1);
+  const normalizedPhone = phone?.trim();
+  let account;
+  let passkey;
+  if (normalizedPhone) {
+    account = await activeAccountForPhone(normalizedPhone);
+    [passkey] = await db.select().from(localPasskeys).where(and(eq(localPasskeys.accountId, account.id), eq(localPasskeys.credentialId, response.id))).limit(1);
+  } else {
+    [passkey] = await db.select().from(localPasskeys).where(eq(localPasskeys.credentialId, response.id)).limit(1);
+    if (passkey) {
+      const [storedAccount] = await db.select().from(localAccounts).where(eq(localAccounts.id, passkey.accountId)).limit(1);
+      if (storedAccount?.isActive) account = storedAccount;
+    }
+  }
   if (!passkey) throw new Error("Ключ быстрого входа не найден");
+  if (!account) throw new Error("Для этого ключа быстрый вход недоступен");
+  const challenge = await consumeChallenge(normalizedPhone ? account.id : undefined, "authentication", cookieHeader);
   const verification = await verifyAuthenticationResponse({ response, expectedChallenge: challenge.challenge, expectedOrigin: challenge.origin, expectedRPID: challenge.rpId, requireUserVerification: true, credential: { id: passkey.credentialId, publicKey: Buffer.from(passkey.publicKey, "base64url"), counter: passkey.counter, transports: Array.isArray(passkey.transports) ? passkey.transports.map(String) : undefined } });
   if (!verification.verified) throw new Error("Не удалось подтвердить быстрый вход");
   await db.update(localPasskeys).set({ counter: verification.authenticationInfo.newCounter, lastUsedAt: new Date() }).where(eq(localPasskeys.id, passkey.id));

@@ -50,9 +50,18 @@ describe("материализация ежемесячных статей в д
     ]);
     const amount=(row:number,code:string)=>rows[row].metrics.find(metric=>metric.code===code)?.amount;
     expect(amount(0,"rent")).toBe(155);expect(amount(1,"rent")).toBe(155);
-    expect(amount(0,"net_profit")).toBe(77.5);expect(amount(1,"net_profit")).toBe(77.5);
+    expect(amount(0,"net_profit")).toBe(89.18);expect(amount(1,"net_profit")).toBe(65.82);
     expect(amount(0,"revenue")).toBe(1000);expect(amount(1,"revenue")).toBe(2000);
     expect(amount(0,"personal_income_tax_22")).toBe(55);expect(amount(1,"personal_income_tax_22")).toBe(0);
+  });
+  it("распределяет итоговую чистую прибыль пропорционально расходам дней и сохраняет сумму месяца",()=>{
+    const rows=materializeMonthlyDailyFacts([
+      {store:"Точка",monthDate:"2026-01",entryDate:"2026-01-01",metrics:[{code:"revenue",amount:900},{code:"purchases",amount:100},{code:"net_profit",amount:300}]},
+      {store:"Точка",monthDate:"2026-01",entryDate:"2026-01-02",metrics:[{code:"revenue",amount:800},{code:"purchases",amount:300},{code:"net_profit",amount:0}]},
+    ]);
+    const profit=(row:number)=>rows[row].metrics.find(metric=>metric.code==="net_profit")?.amount;
+    expect(profit(0)).toBe(75);expect(profit(1)).toBe(225);
+    expect(rows.reduce((sum,row)=>sum+Number(row.metrics.find(metric=>metric.code==="net_profit")?.amount??0),0)).toBe(300);
   });
 });
 

@@ -38,3 +38,20 @@ export function DateRangeControl({compact=false,value,onChange,title="ПЕРИО
     </PopoverContent>
   </Popover>;
 }
+
+type ExactDateProps={value:string;onChange:(value:string)=>void;title?:string;ariaLabel?:string};
+
+/** Тот же компактный календарный контракт, что у диапазона, но с одним выбором даты и без быстрых периодов. */
+export function ExactDateControl({value,onChange,title="ДАТА ФАКТА",ariaLabel="Изменить дату факта"}:ExactDateProps){
+  const [open,setOpen]=useState(false);
+  const selectedDate=/^20\d{2}-\d{2}-\d{2}$/.test(value)?parseISO(value):new Date();
+  const [displayMonth,setDisplayMonth]=useState(selectedDate);
+  useEffect(()=>{if(open)setDisplayMonth(selectedDate);},[open,value]);
+  return <Popover open={open} onOpenChange={setOpen}>
+    <PopoverTrigger asChild><button type="button" className="date-range-control fact-date-trigger" aria-label={ariaLabel}><CalendarDays size={15}/><span>{format(selectedDate,"d MMMM yyyy",{locale:ru})}</span><ChevronDown size={13}/></button></PopoverTrigger>
+    <PopoverContent className="date-popover fact-date-popover" align="start" sideOffset={8}>
+      <div className="date-popover-head fact-date-popover-head"><span>{title}</span><b>{format(selectedDate,"d MMM yyyy",{locale:ru})}</b></div>
+      <Calendar mode="single" locale={ru} selected={undefined} month={displayMonth} onMonthChange={setDisplayMonth} numberOfMonths={1} showOutsideDays={false} onDayClick={day=>{onChange(toIso(day));setOpen(false);}} components={{DayButton:({day,modifiers,className,...props})=><CalendarDayButton day={day} modifiers={modifiers} className={[className,modifiers.singleSelected?"range-draft-start":""].filter(Boolean).join(" ")} {...props}/>}} modifiers={{singleSelected:selectedDate}} modifiersClassNames={{singleSelected:"range-draft-start"}}/>
+    </PopoverContent>
+  </Popover>;
+}

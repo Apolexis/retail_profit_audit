@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, count, desc, eq, inArray, lt } from "drizzle-orm";
 import webpush from "web-push";
 import { auditNotifications, auditPushSubscriptions } from "../drizzle/schema";
 import { ENV } from "./_core/env";
@@ -36,5 +36,23 @@ export async function createNotifications(input: { accountIds: number[]; severit
   return { created: input.accountIds.length, pushSent:push.sent };
 }
 export async function createStoreEventNotifications(input: { storeIds?: number[]; severity: NotificationSeverity; title: string; message: string; entityType?: string; entityId?: string }) {return createNotifications({ ...input, accountIds: await getAlertRecipients(input.storeIds) });}
-export async function listMyNotifications(accountId: number) {const db = await getDb();if (!db) return [];return db.select().from(auditNotifications).where(eq(auditNotifications.accountId, accountId)).orderBy(desc(auditNotifications.createdAt)).limit(100);}
+export async function getNotificationSummary(accountId: number) {
+  const db = await getDb();
+  if (!db) return { unread: 0 };
+  const [row] = await db.select({ unread: count() }).from(auditNotifications).where(and(eq(auditNotifications.accountId, accountId), eq(auditNotifications.isRead, false)));
+  return { unread: Number(row?.unread ?? 0) };
+}
+
+export async function listMyNotifications(accountId: number, input: { limit?: number; cursor?: number } = {}) {
+  const db = await getDb();
+  if (!db) return { items: [], nextCursor: null as number | null };
+  const limit = Math.min(Math.max(input.limit ?? 50, 10), 100);
+  const conditions = input.cursor ? and(eq(auditNotifications.accountId, accountId), lt(auditNotifications.id, input.cursor)) : eq(auditNotifications.accountId, accountId);
+  const rows = await db.select().from(auditNotifications).where(conditions).orderBy(desc(auditNotifications.id)).limit(limit + 1);
+  const items = rows.slice(0, limit);
+  return { items, nextCursor: rows.length > limit ? items.at(-1)?.id ?? null : null };
+}
+/** A non-admin may open a detailed import alert only when that exact alert was delivered to the account. */
+export async function hasNotificationEntityAccess(accountId:number,entityType:string,entityId:string){const db=await getDb();if(!db)return false;const [row]=await db.select({id:auditNotifications.id}).from(auditNotifications).where(and(eq(auditNotifications.accountId,accountId),eq(auditNotifications.entityType,entityType),eq(auditNotifications.entityId,entityId))).limit(1);return Boolean(row);}
 export async function markNotificationRead(accountId: number, notificationId: number) {const db = await getDb();if (!db) throw new Error("База данных недоступна");const [notification] = await db.select().from(auditNotifications).where(eq(auditNotifications.id, notificationId)).limit(1);if (!notification || notification.accountId !== accountId) throw new Error("Уведомление не найдено");await db.update(auditNotifications).set({ isRead: true }).where(eq(auditNotifications.id, notificationId));return { success: true };}
+export async function markAllNotificationsRead(accountId: number) {const db = await getDb();if (!db) throw new Error("База данных недоступна");await db.update(auditNotifications).set({ isRead: true }).where(and(eq(auditNotifications.accountId, accountId), eq(auditNotifications.isRead, false)));return { success: true };}

@@ -13,8 +13,12 @@ export const ALERT_THRESHOLD_DEFAULTS: AlertThresholdDefinition[] = [
   { ruleKey: "stock_high", metricCode: "stock_close", comparison: "gte", threshold: 300_000, severity: "warning", label: "Высокий остаток", description: "конечный остаток на дату", unit: "₽" },
   { ruleKey: "negative_profit", metricCode: "net_profit", comparison: "lte", threshold: 0, severity: "critical", label: "Отрицательная чистая прибыль", description: "чистая прибыль за день", unit: "₽" },
   { ruleKey: "frozen_writeoff_daily", metricCode: "writeoff_frozen", comparison: "gte", threshold: 50_000, severity: "warning", label: "Списания М.", description: "списания мороженой продукции за день", unit: "₽" },
+  { ruleKey: "smoked_writeoff_daily", metricCode: "writeoff_smoked", comparison: "gte", threshold: 50_000, severity: "warning", label: "Списания К.", description: "списания копченой продукции за день", unit: "₽" },
   { ruleKey: "low_revenue_daily", metricCode: "revenue", comparison: "lte", threshold: 30_000, severity: "warning", label: "Низкая выручка", description: "выручка за день", unit: "₽" },
+  { ruleKey: "discount_daily", metricCode: "discount", comparison: "gte", threshold: 15_000, severity: "warning", label: "Высокая уценка", description: "уценка товара за день", unit: "₽" },
   { ruleKey: "gross_profit_nonpositive", metricCode: "gross_profit", comparison: "lte", threshold: 0, severity: "critical", label: "Неваловая прибыль", description: "валовая прибыль не выше нуля за день", unit: "₽" },
+  { ruleKey: "gross_margin_low", metricCode: "gross_margin_pct", comparison: "lte", threshold: 20, severity: "warning", label: "Низкая валовая маржа", description: "доля валовой прибыли в выручке за день", unit: "%" },
+  { ruleKey: "net_profit_drop", metricCode: "net_profit_delta", comparison: "lte", threshold: -30_000, severity: "warning", label: "Резкое снижение чистой прибыли", description: "снижение к предыдущей доступной дате", unit: "₽" },
   { ruleKey: "cashless_expense_daily", metricCode: "cashless_operating_costs", comparison: "gte", threshold: 20_000, severity: "warning", label: "Расходы безнал", description: "безналичные операционные расходы за день", unit: "₽" },
   { ruleKey: "payroll_cost_daily", metricCode: "payroll_costs", comparison: "gte", threshold: 35_000, severity: "warning", label: "ФОТ и отпускные", description: "зарплата, налоги и отпускные за день", unit: "₽" },
 ];
@@ -67,7 +71,16 @@ export type ThresholdBreach = ThresholdCandidate & { rule: AlertThreshold };
 export function withDerivedCashOperatingCostCandidates(candidates: ThresholdCandidate[]) {
   const passthrough: ThresholdCandidate[] = [];
   const grouped = new Map<string, { storeId: number; store: string; entryDate: string; cashTotal: number; payrollTotal: number; directCashAmount?: number }>();
+  const financial = new Map<string, { storeId: number; store: string; entryDate: string; revenue?: number; grossProfit?: number; netProfit?: number }>();
   for (const candidate of candidates) {
+    if (candidate.metricCode === "revenue" || candidate.metricCode === "gross_profit" || candidate.metricCode === "net_profit") {
+      const key = `${candidate.storeId}:${candidate.entryDate}`;
+      const current = financial.get(key) ?? { storeId: candidate.storeId, store: candidate.store, entryDate: candidate.entryDate };
+      if (candidate.metricCode === "revenue") current.revenue = candidate.amount;
+      if (candidate.metricCode === "gross_profit") current.grossProfit = candidate.amount;
+      if (candidate.metricCode === "net_profit") current.netProfit = candidate.amount;
+      financial.set(key, current);
+    }
     if (candidate.metricCode !== "cash_operating_costs" && !cashOperatingComponentSet.has(candidate.metricCode) && !payrollComponentSet.has(candidate.metricCode)) {
       passthrough.push(candidate);
       continue;
@@ -79,10 +92,27 @@ export function withDerivedCashOperatingCostCandidates(candidates: ThresholdCand
     else current.payrollTotal += Math.abs(candidate.amount);
     grouped.set(key, current);
   }
-  return [...passthrough, ...Array.from(grouped.values()).flatMap(item => [
+  const dailyCandidates = [...passthrough, ...Array.from(grouped.values()).flatMap(item => [
     { storeId: item.storeId, store: item.store, entryDate: item.entryDate, metricCode: "cash_operating_costs", amount: item.cashTotal || item.directCashAmount || 0 },
     { storeId: item.storeId, store: item.store, entryDate: item.entryDate, metricCode: "payroll_costs", amount: item.payrollTotal },
   ])];
+  const netProfitByStore = new Map<number, Array<{ storeId: number; store: string; entryDate: string; amount: number }>>();
+  for (const row of Array.from(financial.values())) {
+    if (row.revenue !== undefined && row.grossProfit !== undefined && row.revenue !== 0) dailyCandidates.push({ storeId: row.storeId, store: row.store, entryDate: row.entryDate, metricCode: "gross_margin_pct", amount: (row.grossProfit / row.revenue) * 100 });
+    if (row.netProfit !== undefined) {
+      const list = netProfitByStore.get(row.storeId) ?? [];
+      list.push({ storeId: row.storeId, store: row.store, entryDate: row.entryDate, amount: row.netProfit });
+      netProfitByStore.set(row.storeId, list);
+    }
+  }
+  for (const values of Array.from(netProfitByStore.values())) {
+    values.sort((left, right) => left.entryDate.localeCompare(right.entryDate));
+    for (let index = 1; index < values.length; index += 1) {
+      const current = values[index], previous = values[index - 1];
+      dailyCandidates.push({ storeId: current.storeId, store: current.store, entryDate: current.entryDate, metricCode: "net_profit_delta", amount: current.amount - previous.amount });
+    }
+  }
+  return dailyCandidates;
 }
 
 export function collectThresholdBreaches(candidates: ThresholdCandidate[], thresholds: AlertThreshold[]) {

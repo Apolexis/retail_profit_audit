@@ -3,6 +3,7 @@ import { AlertTriangle, ArrowDownRight, ArrowUpRight, CalendarRange, ChartNoAxes
 import { AuditShell } from "@/components/AuditShell";
 import { DateRangeControl } from "@/components/DateRangeControl";
 import { BenchmarkBars, MetricLineChart, formatK, formatPct } from "@/components/AuditCharts";
+import { FactsLoader } from "@/components/OceanLoader";
 import { useAudit, type DateRangeValue } from "@/contexts/AuditContext";
 import { useImportedAudit } from "@/hooks/useImportedAudit";
 import { prepareDailyFacts } from "@/lib/dailyFacts";
@@ -30,7 +31,7 @@ export default function ControlCenter(){
   const riskStores=[...stores].filter(item=>item.coverDays>20||item.writeoffRate>1.5).sort((a,b)=>b.coverDays-a.coverDays).slice(0,7);
   const rankings=[...stores].sort((a,b)=>b.deltaProfit-a.deltaProfit).map(item=>({store:item.store,value:item.deltaProfit/1000,selected:selectedStore===item.store})); const selectedLabel=selectedStore==="__all__"?"Все магазины":selectedStore;
   const onCompare=(next:DateRangeValue)=>{setLinked(false);setComparison(next)};
-  if(imported.loading)return <AuditShell kicker="15 / ДИНАМИКА" title="Сравнение периодов"><section className="empty-state"><h2>Готовим сравнение периодов…</h2></section></AuditShell>;
+  if(imported.loading)return <AuditShell kicker="15 / ДИНАМИКА" title="Сравнение периодов"><section className="empty-state"><FactsLoader label="Готовим сравнение периодов…"/></section></AuditShell>;
   return <AuditShell kicker="15 / ДИНАМИКА" title="Динамика и сравнение периодов">
     <section className="page-lede"><div><span>ДОПОЛНИТЕЛЬНЫЙ УПРАВЛЕНЧЕСКИЙ СЛОЙ</span><h2>Рост, качество прибыли и деньги в запасе</h2><p>Выберите любые два периода с данными. Система сопоставляет месяцы по порядку внутри диапазонов, поэтому после загрузки 2027 года можно сравнить его с 2026, 2025 или произвольным отрезком.</p></div></section>
     <section className="comparison-periods"><article><span>ОСНОВНОЙ ПЕРИОД</span><DateRangeControl value={range} title="ОСНОВНОЙ ПЕРИОД" ariaLabel="Изменить основной период"/><small>{baseLabel}</small></article><div className="compare-divider"><CalendarRange size={19}/><b>против</b></div><article><span>СРАВНИТЕЛЬНЫЙ ПЕРИОД</span><DateRangeControl value={comparison} onChange={onCompare} title="СРАВНИТЕЛЬНЫЙ ПЕРИОД" ariaLabel="Изменить сравнительный период"/><small>{compareLabel}</small></article><div className="compare-presets"><button type="button" className={linked?"active":""} onClick={()=>{setLinked(true);setComparison(priorYear(range))}}>Предыдущий год</button><button type="button" onClick={()=>{setLinked(false);setComparison(priorPeriod(range))}}>Предыдущий период</button></div></section>

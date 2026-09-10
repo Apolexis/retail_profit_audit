@@ -4,9 +4,14 @@ import { getDb } from "./db";
 import { getLocalAccountByOpenId } from "./localAuth";
 
 export type StoreAccessLevel = "view" | "edit";
+export type ImportAccessLevel = "none" | "upload" | "edit";
 
 export function isAccessLevelAllowed(granted: StoreAccessLevel | undefined, required: StoreAccessLevel) {
   return granted === "edit" || (granted === "view" && required === "view");
+}
+
+export function isImportAccessAllowed(granted: ImportAccessLevel | undefined, required: Exclude<ImportAccessLevel, "none">) {
+  return granted === "edit" || (granted === "upload" && required === "upload");
 }
 
 export async function getCurrentLocalAccount(openId?: string | null) {
@@ -31,6 +36,13 @@ export async function hasStoreAccess(openId: string | null | undefined, storeId:
   if (!db) return false;
   const [grant] = await db.select().from(storeAccess).where(and(eq(storeAccess.accountId, account.id), eq(storeAccess.storeId, storeId))).limit(1);
   return isAccessLevelAllowed(grant?.accessLevel, required);
+}
+
+export async function hasImportAccess(openId: string | null | undefined, required: Exclude<ImportAccessLevel, "none">) {
+  const account = await getCurrentLocalAccount(openId);
+  if (!account) return false;
+  if (account.role === "admin") return true;
+  return isImportAccessAllowed(account.importAccessLevel, required);
 }
 
 export async function listAccountStoreAccess(accountId: number) {

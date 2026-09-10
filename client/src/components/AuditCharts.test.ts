@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatK, sortTooltipPayload } from "./AuditCharts";
+import { formatK, nonZeroLines, resolveMetricChartLayout, resolveMetricChartView, resolveOverlayBarGeometry, sortTooltipPayload, zeroAwareTicks } from "./AuditCharts";
 
 describe("форматирование денежных показателей", () => {
   it("не скрывает малые ненулевые суммы округлением до нуля", () => {
@@ -11,5 +11,43 @@ describe("форматирование денежных показателей",
   });
   it("сортирует значения тултипа по убыванию, включая отрицательные", () => {
     expect(sortTooltipPayload([{ name: "C", value: -5 }, { name: "A", value: 120 }, { name: "B", value: 40 }]).map(item => item.name)).toEqual(["A", "B", "C"]);
+  });
+  it("не выводит серию, которая за весь выбранный срез равна нулю", () => {
+    const lines=[{key:"driverCash",name:"Водитель нал",color:"#111"},{key:"cash",name:"Траты нал",color:"#222"}];
+    expect(nonZeroLines([{driverCash:0,cash:120},{driverCash:0,cash:-30}],lines).map(line=>line.key)).toEqual(["cash"]);
+  });
+  it("принудительно использует столбец и скрывает смысл выбора вида для единственной точки", () => {
+    expect(resolveMetricChartView(1,"line")).toBe("bar");
+    expect(resolveMetricChartView(0,"line")).toBe("bar");
+    expect(resolveMetricChartView(2,"line")).toBe("line");
+    expect(resolveMetricChartView(2,"bar")).toBe("bar");
+  });
+  it("для одного периода по нескольким магазинам выбирает горизонтальные столбцы", () => {
+    expect(resolveMetricChartLayout(1, 4)).toBe("single-period-comparison");
+    expect(resolveMetricChartLayout(1, 1)).toBe("single-value");
+    expect(resolveMetricChartLayout(2, 4)).toBe("timeline");
+  });
+  it("сохраняет волну как базовое представление динамики", () => {
+    expect(resolveMetricChartView(3, "line")).toBe("line");
+  });
+  it("сохраняет наложенные столбцы отдельным режимом для многоточечного ряда", () => {
+    expect(resolveMetricChartView(3, "overlay")).toBe("overlay");
+    expect(resolveMetricChartView(1, "overlay")).toBe("bar");
+  });
+  it("использует единый широкий слот наложения и один цвет для легенды, линии и маркера", () => {
+    expect(resolveOverlayBarGeometry(140, 18, 0, 3)).toEqual({ x: 140, width: 54 });
+    expect(resolveOverlayBarGeometry(158, 18, 1, 3)).toEqual({ x: 140, width: 54 });
+    expect(resolveOverlayBarGeometry(176, 18, 2, 3)).toEqual({ x: 140, width: 54 });
+    const source = require("node:fs").readFileSync(new URL("./AuditCharts.tsx", import.meta.url), "utf8");
+    expect(source).toContain("barGap={0}");
+    expect(source).toContain("resolveOverlayBarGeometry");
+    expect(source).toContain("fill={color}");
+    expect(source).not.toContain("chart-overlay-note");
+    expect(source).toContain("stroke:color,strokeWidth:2,fill:color");
+  });
+  it("сохраняет нулевую отметку в шкале положительных, отрицательных и смешанных значений", () => {
+    expect(zeroAwareTicks([12, 48])).toContain(0);
+    expect(zeroAwareTicks([-12, -48])).toContain(0);
+    expect(zeroAwareTicks([-12, 48])).toContain(0);
   });
 });

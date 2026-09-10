@@ -10,6 +10,7 @@ import { createContext } from "./context";
 import { sdk } from "./sdk";
 import { serveStatic, setupVite } from "./vite";
 import { createScheduledExecutiveReport, findWeeklyScheduleByTaskUid, isWeeklyReportDue } from "../weeklyReports";
+import { registerImportBinaryRoutes } from "../importBinaryRoutes";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -38,6 +39,7 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   registerStorageProxy(app);
   registerOAuthRoutes(app);
+  registerImportBinaryRoutes(app);
   // tRPC API
   app.use(
     "/api/trpc",

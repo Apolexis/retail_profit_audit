@@ -6,7 +6,7 @@ export type CadenceMetric =
 
 export type CadenceSource = { monthDate: string; entryDate: string; importId: number | null; metrics: Record<string, unknown> };
 export type CadencePoint = { date: string; month: string } & Record<CadenceMetric, number>;
-export type CadenceResult = { daily: CadencePoint[]; weekly: CadencePoint[]; monthlySources: number; manualRows: number };
+export type CadenceResult = { daily: CadencePoint[]; weekly: CadencePoint[]; monthly: CadencePoint[]; monthlySources: number; manualRows: number };
 
 const DAY_MS = 86_400_000;
 const expenseCodes = ["household", "delivery", "cleaning", "bonus", "seniority", "supplement", "driver_cash", "utilities_cash", "operating_costs", "cashless_operating_costs", "cash_operating_costs", "driver_cashless", "utilities_cashless", "rent", "bank_fee", "gross_profit_tax", "salary_cashless", "payroll_tax", "vacation_cashless", "vacation_tax", "salary_cash", "vacation_cash", "personal_income_tax_22"];
@@ -39,6 +39,8 @@ const isoWeek = (value: string) => {
   return { key: `${year}-${String(week).padStart(2, "0")}`, label: `Нед. ${week} · ${year}` };
 };
 
+const monthLabel = (value: string) => new Intl.DateTimeFormat("ru-RU", { month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${value}-01T00:00:00Z`));
+
 /** Aggregates prepared daily facts. Stock snapshots remain intentionally outside the operating cadence. */
 export function buildOperationalCadence(rows: CadenceSource[], range: { from: string; to: string }): CadenceResult {
   const dailyByDate = new Map<string, CadencePoint>();
@@ -53,5 +55,7 @@ export function buildOperationalCadence(rows: CadenceSource[], range: { from: st
   const daily = Array.from(dailyByDate.values());
   const weeklyByKey = new Map<string, CadencePoint>();
   for (const day of daily) { const week = isoWeek(day.date); const point = weeklyByKey.get(week.key) ?? { ...blank(week.key), month: week.label }; const { date: _date, month: _month, ...values } = day; add(point, values); weeklyByKey.set(week.key, point); }
-  return { daily, weekly: Array.from(weeklyByKey.entries()).sort(([left], [right]) => left.localeCompare(right)).map(([, point]) => point), monthlySources: sourceMonths.size, manualRows };
+  const monthlyByKey = new Map<string, CadencePoint>();
+  for (const day of daily) { const key = day.date.slice(0, 7); const point = monthlyByKey.get(key) ?? { ...blank(key), month: monthLabel(key) }; const { date: _date, month: _month, ...values } = day; add(point, values); monthlyByKey.set(key, point); }
+  return { daily, weekly: Array.from(weeklyByKey.entries()).sort(([left], [right]) => left.localeCompare(right)).map(([, point]) => point), monthly: Array.from(monthlyByKey.entries()).sort(([left], [right]) => left.localeCompare(right)).map(([, point]) => point), monthlySources: sourceMonths.size, manualRows };
 }

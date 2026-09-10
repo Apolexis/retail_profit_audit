@@ -36,4 +36,10 @@ describe("buildOperationalCadence", () => {
     expect(result.daily[0]).toMatchObject({ purchaseSmoked: 11_000, purchaseFrozen: 9_000, rent: 2_000, salaryCashless: 3_000, driverCashless: 400, writeoffFrozen: -250 });
     expect(result.daily[0].expenses).toBe(5_400);
   });
+
+  it("формирует помесячный ряд из уже материализованных дневных фактов", () => {
+    const result = buildOperationalCadence([{ monthDate: "2026-08", entryDate: "2026-08-30", importId: 8, metrics: { revenue: 1_200 } }, { monthDate: "2026-09", entryDate: "2026-09-01", importId: 8, metrics: { revenue: 3_400 } }], { from: "2026-08-30", to: "2026-09-02" });
+    expect(result.monthly).toHaveLength(2);
+    expect(result.monthly.map(point => point.revenue)).toEqual([1_200, 3_400]);
+  });
 });

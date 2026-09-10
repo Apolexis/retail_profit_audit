@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { collectThresholdBreaches, evaluateAlertThresholds, type AlertThreshold, withDerivedCashOperatingCostCandidates } from "./alertThresholds";
+import { ALERT_THRESHOLD_DEFAULTS, collectThresholdBreaches, evaluateAlertThresholds, type AlertThreshold, withDerivedCashOperatingCostCandidates } from "./alertThresholds";
 
 const thresholds: AlertThreshold[] = [
   { ruleKey: "cash", metricCode: "cash_operating_costs", comparison: "gte", threshold: 10_000, severity: "warning", label: "Траты нал", description: "расходы", unit: "₽", isEnabled: true },
@@ -42,5 +42,26 @@ describe("операционные пороги уведомлений", () => {
       { storeId: 7, store: "ПОРТ", entryDate: "2026-09-02", metricCode: "payroll_tax", amount: 4_000 },
     ]);
     expect(candidates).toContainEqual(expect.objectContaining({ metricCode: "payroll_costs", amount: 24_000 }));
+  });
+
+  it("включают настраиваемый контроль списаний К. в общий реестр сигналов", () => {
+    expect(ALERT_THRESHOLD_DEFAULTS).toContainEqual(expect.objectContaining({ ruleKey: "smoked_writeoff_daily", metricCode: "writeoff_smoked", label: "Списания К.", comparison: "gte" }));
+  });
+
+  it("включают отдельный настраиваемый контроль высокой уценки", () => {
+    expect(ALERT_THRESHOLD_DEFAULTS).toContainEqual(expect.objectContaining({ ruleKey: "discount_daily", metricCode: "discount", label: "Высокая уценка", comparison: "gte", unit: "₽" }));
+  });
+
+  it("рассчитывают валовую маржу и падение чистой прибыли как отдельные кандидаты", () => {
+    const candidates = withDerivedCashOperatingCostCandidates([
+      { storeId: 7, store: "ПОРТ", entryDate: "2026-09-01", metricCode: "revenue", amount: 100_000 },
+      { storeId: 7, store: "ПОРТ", entryDate: "2026-09-01", metricCode: "gross_profit", amount: 18_000 },
+      { storeId: 7, store: "ПОРТ", entryDate: "2026-09-01", metricCode: "net_profit", amount: 20_000 },
+      { storeId: 7, store: "ПОРТ", entryDate: "2026-09-02", metricCode: "net_profit", amount: -15_000 },
+    ]);
+    expect(candidates).toContainEqual(expect.objectContaining({ metricCode: "gross_margin_pct", amount: 18 }));
+    expect(candidates).toContainEqual(expect.objectContaining({ metricCode: "net_profit_delta", amount: -35_000 }));
+    expect(ALERT_THRESHOLD_DEFAULTS).toContainEqual(expect.objectContaining({ ruleKey: "gross_margin_low", unit: "%" }));
+    expect(ALERT_THRESHOLD_DEFAULTS).toContainEqual(expect.objectContaining({ ruleKey: "net_profit_drop", metricCode: "net_profit_delta" }));
   });
 });

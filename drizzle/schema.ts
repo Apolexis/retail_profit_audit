@@ -42,6 +42,25 @@ export const imports = mysqlTable("audit_imports", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
+/** Passwords are stored only as application-encrypted values; they are never returned to the browser. */
+export const importCredentialSettings = mysqlTable("audit_import_credential_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  settingsKey: varchar("settingsKey", { length: 32 }).notNull().unique(),
+  openPasswordCiphertext: text("openPasswordCiphertext"),
+  unprotectPasswordCiphertext: text("unprotectPasswordCiphertext"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+/** Future-only import rule: selected monthly metric codes are materialized to daily facts when a new book is committed. */
+export const importMaterializationSettings = mysqlTable("audit_import_materialization_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  settingsKey: varchar("settingsKey", { length: 32 }).notNull().unique(),
+  metricCodes: json("metricCodes").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 export const periods = mysqlTable("audit_periods", {
   id: int("id").autoincrement().primaryKey(),
   storeId: int("storeId").notNull(),
@@ -77,6 +96,8 @@ export type AuditStore = typeof stores.$inferSelect;
 export type AuditPeriod = typeof periods.$inferSelect;
 export type AuditMetric = typeof metrics.$inferSelect;
 export type AuditPlanFact = typeof planFacts.$inferSelect;
+export type ImportCredentialSettings = typeof importCredentialSettings.$inferSelect;
+export type ImportMaterializationSettings = typeof importMaterializationSettings.$inferSelect;
 
 export const localAccounts = mysqlTable("audit_local_accounts", {
   id: int("id").autoincrement().primaryKey(),
@@ -84,6 +105,7 @@ export const localAccounts = mysqlTable("audit_local_accounts", {
   displayName: varchar("displayName", { length: 128 }).notNull(),
   passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
   role: mysqlEnum("role", ["admin", "analyst"]).default("analyst").notNull(),
+  importAccessLevel: mysqlEnum("importAccessLevel", ["none", "upload", "edit"]).default("none").notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
