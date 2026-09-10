@@ -28,3 +28,9 @@ describe("индикатор проверки безопасного досту�
     expect(styles).toContain('html[data-audit-theme="light"] .facts-loader.ocean-loader > p { color: var(--muted) !important; }');
   });
 });
+
+describe("управленческий фокус светлой темы", () => {
+  it("дает заметную синюю подсветку без смещения карточки", () => {
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .section-recommendation:hover { transform: none !important; border-color: #0a84ff !important; background: #eef7ff !important; box-shadow: 0 0 0 3px rgba(10, 132, 255, .16), 0 16px 34px rgba(10, 99, 200, .14) !important; }');
+  });
+});
