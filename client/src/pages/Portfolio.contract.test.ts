@@ -20,11 +20,18 @@ describe("страница «Портфель»", () => {
     expect(page).toContain("Маржа:");
   });
 
-  it("заменяет плотное облако точек на мобильную карту приоритетов", () => {
+  it("показывает карту приоритетов и крупные графики на любой ширине", () => {
     expect(page).toContain("portfolio-mobile-map");
     expect(page).toContain("portfolio-mobile-priority-list");
     expect(page).toContain("portfolio-meter");
     expect(styles).toContain(".packet .portfolio-mobile-map { display: grid;");
-    expect(styles).toContain(".packet .portfolio-plot-grid { display: none;");
+    expect(styles).toContain(".packet .portfolio-plot-grid { display: grid !important;");
+    expect(page).toContain("setExpandedChart(kind)");
+    expect(page).toContain("chart-expand-dialog portfolio-chart-dialog");
+  });
+
+  it("не оставляет у легенды мелкое техническое пояснение", () => {
+    expect(page).not.toContain("Подписи оставлены у выбранной точки");
+    expect(styles).toContain("margin: 16px 0 18px");
   });
 });

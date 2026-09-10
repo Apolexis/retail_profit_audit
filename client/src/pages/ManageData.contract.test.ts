@@ -28,4 +28,13 @@ describe("страница «База»", () => {
     expect(css).toContain(".metric-rename-action { align-self: end; min-height: 40px; height: 40px; margin: 0 !important; }");
     expect(css).not.toContain(".metric-rename-action { align-self: end; min-height: 40px; margin-bottom: 29px; }");
   });
+
+  it("дает списку видимости магазинов сортировку по названию и статусу", () => {
+    expect(page).toContain('const [storeListSort, setStoreListSort]');
+    expect(page).toContain("const sortedStoreList = useMemo");
+    expect(page).toContain("По названию А—Я");
+    expect(page).toContain("Сначала в анализе");
+    expect(page).toContain("Сначала скрытые");
+    expect(page).toContain("{sortedStoreList.map(item");
+  });
 });

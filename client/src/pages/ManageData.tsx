@@ -28,6 +28,7 @@ export default function ManageData() {
   const [changingMetricType, setChangingMetricType] = useState(false);
   const [renamingStore, setRenamingStore] = useState(false);
   const [storeName, setStoreName] = useState("");
+  const [storeListSort, setStoreListSort] = useState<"name" | "visible" | "hidden">("name");
   const [message, setMessage] = useState("");
   const initializedStoreId = useRef<number | null>(null);
   const restoredTarget = useRef(false);
@@ -75,6 +76,11 @@ export default function ManageData() {
   const selected = stores.data?.find(item => item.id === storeId);
   useEffect(() => { setStoreName(selected?.name ?? ""); setRenamingStore(false); }, [selected?.name, storeId]);
   const sortedMetrics = useMemo(() => [...(metrics.data ?? [])].sort((a, b) => (labels[a.metricCode] ?? a.metricCode).localeCompare(labels[b.metricCode] ?? b.metricCode, "ru")), [metrics.data]);
+  const sortedStoreList = useMemo(() => [...(stores.data ?? [])].sort((left, right) => {
+    if (storeListSort === "visible" && left.isHidden !== right.isHidden) return Number(left.isHidden) - Number(right.isHidden);
+    if (storeListSort === "hidden" && left.isHidden !== right.isHidden) return Number(right.isHidden) - Number(left.isHidden);
+    return left.name.localeCompare(right.name, "ru");
+  }), [stores.data, storeListSort]);
   const existingNewMetric = !editingCode ? sortedMetrics.find(item => item.metricCode === code) : undefined;
   const editingLabel = editingCode ? labels[editingCode] ?? editingCode : null;
 
@@ -93,7 +99,7 @@ export default function ManageData() {
   return <AuditShell kicker="11 / УПРАВЛЕНИЕ БАЗОЙ" title="Магазины и факты">
     <section className="page-lede"><div><h2>Точная запись: магазин, дата, показатель, сумма</h2><p>Импортные месяцы хранятся датой первого числа. Выберите дату календарем: если в выбранном месяце уже есть импорт, показатели появятся ниже. Любой факт можно скрыть из аналитики без удаления из базы.</p></div></section>
     {!stores.data?.length ? <section className="empty-state"><h2>База фактов пока пуста</h2><p>Подтвердите первый импорт книги Excel — здесь появятся магазины, даты и показатели.</p><Link href="/import" className="packet-link">Перейти к импорту</Link></section> : <section className="manage-grid">
-      <article className="packet-card"><div className="card-title"><div><span>МАГАЗИНЫ</span><h3>Видимость в анализе</h3></div></div><div className="store-manage-list">{stores.data.map(item => <div key={item.id}><span><b>{item.name}</b><small>{item.isHidden ? "скрыт из срезов" : "включен в срезы"}</small></span><button type="button" className="store-action" onClick={() => visibility.mutate({ id: item.id, isHidden: !item.isHidden })} title={item.isHidden ? "Показать" : "Скрыть"}>{item.isHidden ? <EyeOff size={17}/> : <Eye size={17}/>}</button><button type="button" onClick={() => { setStoreId(item.id); initializedStoreId.current = null; resetEditor(); }} className={storeId === item.id ? "store-action active" : "store-action"} title="Редактировать факты"><PencilLine size={16}/></button></div>)}</div></article>
+      <article className="packet-card"><div className="card-title manage-store-title"><div><span>МАГАЗИНЫ</span><h3>Видимость в анализе</h3></div><label className="store-list-sort">Сортировка<select value={storeListSort} onChange={event => setStoreListSort(event.target.value as typeof storeListSort)}><option value="name">По названию А—Я</option><option value="visible">Сначала в анализе</option><option value="hidden">Сначала скрытые</option></select></label></div><div className="store-manage-list">{sortedStoreList.map(item => <div key={item.id}><span><b>{item.name}</b><small>{item.isHidden ? "скрыт из срезов" : "включен в срезы"}</small></span><button type="button" className="store-action" onClick={() => visibility.mutate({ id: item.id, isHidden: !item.isHidden })} title={item.isHidden ? "Показать" : "Скрыть"}>{item.isHidden ? <EyeOff size={17}/> : <Eye size={17}/>}</button><button type="button" onClick={() => { setStoreId(item.id); initializedStoreId.current = null; resetEditor(); }} className={storeId === item.id ? "store-action active" : "store-action"} title="Редактировать факты"><PencilLine size={16}/></button></div>)}</div></article>
       <article id="fact-editor" className="packet-card manage-editor"><div className="card-title"><div><span>{editingCode ? "РЕДАКТИРОВАНИЕ ПОКАЗАТЕЛЯ" : "НОВЫЙ ПОКАЗАТЕЛЬ"}</span><h3>{selected?.name ?? "Выберите магазин"}</h3></div><button type="button" className="subtle-action store-rename-toggle" onClick={() => setRenamingStore(value => !value)} disabled={!selected}>{renamingStore ? <X size={14}/> : <PencilLine size={14}/>}{renamingStore ? "Отмена" : "Переименовать магазин"}</button></div>
         {renamingStore && <div className="store-rename-form"><label>Новое название магазина<input value={storeName} maxLength={128} onChange={event => setStoreName(event.target.value)} autoFocus/></label><button type="button" className="packet-link compact store-rename-save" disabled={renameStore.isPending || !storeName.trim()} onClick={submitStoreRename}>{renameStore.isPending ? "Сохраняем…" : "Сохранить название"}</button><small>Переименование сохраняет историю, даты и доступы. Если такое имя уже есть, используйте «Объединение точек» на странице импорта.</small></div>}
         <div className="edit-controls manage-date-control"><label>Дата записи<FactDatePicker value={entryDate} onChange={chooseDate}/><small className="date-picker-hint">Выбрано: {entryDate}{resolvedEntryDate !== entryDate ? ` · импортные показатели за месяц хранятся ${resolvedEntryDate}` : ""}</small></label></div>

@@ -1,145 +1,54 @@
 import { useState } from "react";
 import { CartesianGrid, Cell, LabelList, ReferenceLine, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from "recharts";
-import { FileSpreadsheet } from "lucide-react";
+import { FileSpreadsheet, Maximize2 } from "lucide-react";
 import { AuditShell } from "@/components/AuditShell";
 import { formatK, formatPct } from "@/components/AuditCharts";
 import { FactsLoader } from "@/components/OceanLoader";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAudit } from "@/contexts/AuditContext";
 import { useAuditFacts } from "@/hooks/useAuditFacts";
 
 type CoverageRange = "all" | "low" | "normal" | "high";
 type ChartKind = "revenue" | "cover";
-type PortfolioPoint = {
-  store: string;
-  revenue: number;
-  netMargin: number;
-  netProfit: number;
-  cover: number;
-  stock: number;
-  writeoffs: number;
-  label?: string;
-};
+type PortfolioPoint = { store: string; revenue: number; netMargin: number; netProfit: number; cover: number; stock: number; writeoffs: number; label?: string };
 
 const money = (amount: number) => formatK(amount / 1000);
-const median = (values: number[]) => {
-  const sorted = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  return sorted.length ? (sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2) : 0;
-};
-
+const median = (values: number[]) => { const sorted = [...values].sort((a, b) => a - b); const middle = Math.floor(sorted.length / 2); return sorted.length ? (sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2) : 0; };
 const isRiskPoint = (item: PortfolioPoint) => item.netMargin < 0 || item.cover < 7 || item.cover > 20;
-const priorityScore = (item: PortfolioPoint) => {
-  const lossScore = item.netMargin < 0 ? 100 + Math.abs(item.netMargin) * 100 : 0;
-  const overstockScore = item.cover > 20 ? 50 + item.cover : 0;
-  const shortageScore = item.cover < 7 ? 45 + (7 - item.cover) : 0;
-  return lossScore + overstockScore + shortageScore;
-};
-const priorityReason = (item: PortfolioPoint) => {
-  const reasons: string[] = [];
-  if (item.netMargin < 0) reasons.push("отрицательная маржа");
-  if (item.cover > 20) reasons.push("избыток запаса");
-  if (item.cover < 7) reasons.push("дефицит запаса");
-  return reasons.length ? reasons.join(" · ") : "контроль динамики";
-};
-const signal = (item: PortfolioPoint) =>
-  item.cover > 20
-    ? "Сократить закупку, проверить уценку и списания"
-    : item.cover < 7
-      ? "Проверить наличие ходовых SKU и страховой запас"
-      : item.netMargin < 0
-        ? "Разобрать закупку, ФОТ и аренду до решения по точке"
-        : "Контролировать динамику и не ухудшать запас";
+const priorityScore = (item: PortfolioPoint) => (item.netMargin < 0 ? 100 + Math.abs(item.netMargin) * 100 : 0) + (item.cover > 20 ? 50 + item.cover : 0) + (item.cover < 7 ? 45 + (7 - item.cover) : 0);
+const priorityReason = (item: PortfolioPoint) => { const reasons: string[] = []; if (item.netMargin < 0) reasons.push("отрицательная маржа"); if (item.cover > 20) reasons.push("избыток запаса"); if (item.cover < 7) reasons.push("дефицит запаса"); return reasons.length ? reasons.join(" · ") : "контроль динамики"; };
+const signal = (item: PortfolioPoint) => item.cover > 20 ? "Сократить закупку, проверить уценку и списания" : item.cover < 7 ? "Проверить наличие ходовых SKU и страховой запас" : item.netMargin < 0 ? "Разобрать закупку, ФОТ и аренду до решения по точке" : "Контролировать динамику и не ухудшать запас";
+const chartTitle = (kind: ChartKind) => kind === "revenue" ? "Выручка и чистая маржа" : "Покрытие и прибыльность";
 
-function PortfolioTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: PortfolioPoint }> }) {
-  if (!active || !payload?.[0]) return null;
-  const point = payload[0].payload;
-  return (
-    <div className="tiny-tooltip portfolio-tooltip">
-      <b>{point.store}</b>
-      <span>Выручка: <strong>{money(point.revenue)}</strong></span>
-      <span>Покрытие: <strong>{point.cover.toFixed(1)} дн.</strong></span>
-      <span>Маржа: <strong>{formatPct(point.netMargin)}</strong></span>
-      <span>Фокус: <strong>{priorityReason(point)}</strong></span>
-    </div>
-  );
-}
+function PortfolioTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: PortfolioPoint }> }) { if (!active || !payload?.[0]) return null; const point = payload[0].payload; return <div className="tiny-tooltip portfolio-tooltip"><b>{point.store}</b><span>Выручка: <strong>{money(point.revenue)}</strong></span><span>Покрытие: <strong>{point.cover.toFixed(1)} дн.</strong></span><span>Маржа: <strong>{formatPct(point.netMargin)}</strong></span><span>Фокус: <strong>{priorityReason(point)}</strong></span></div>; }
 
 export default function Portfolio() {
   const facts = useAuditFacts();
   const { rangeLabel, theme } = useAudit();
   const [coverageRange, setCoverageRange] = useState<CoverageRange>("all");
   const [focusedStore, setFocusedStore] = useState("");
-  const palette = theme === "light"
-    ? { grid: "#d8e0ea", axis: "#61718a", reference: "#0a84ff", zero: "#d70036", negative: "#d70036", high: "#b86712", low: "#08745d", normal: "#7a8797", focus: "#0a63c8", label: "#33435a" }
-    : { grid: "#3a2031", axis: "#b490a2", reference: "#ffcf7b", zero: "#ff8ba4", negative: "#ff8ba4", high: "#ffcf7b", low: "#61d9b5", normal: "#9eafc4", focus: "#75b7ff", label: "#ffdce5" };
-  const map: PortfolioPoint[] = facts.summaries.map(summary => ({
-    store: summary.store,
-    revenue: summary.revenue,
-    netMargin: summary.netMargin,
-    netProfit: summary.netProfit,
-    cover: summary.coverDays,
-    stock: summary.stockClose,
-    writeoffs: summary.writeoffFrozen + summary.writeoffSmoked,
-  }));
-  const medianRevenue = median(map.map(item => item.revenue));
-  const medianCover = median(map.map(item => item.cover));
+  const [expandedChart, setExpandedChart] = useState<ChartKind | null>(null);
+  const palette = theme === "light" ? { grid: "#d8e0ea", axis: "#61718a", reference: "#0a84ff", zero: "#d70036", negative: "#d70036", high: "#b86712", low: "#08745d", normal: "#7a8797", focus: "#0a63c8", label: "#33435a" } : { grid: "#3a2031", axis: "#b490a2", reference: "#ffcf7b", zero: "#ff8ba4", negative: "#ff8ba4", high: "#ffcf7b", low: "#61d9b5", normal: "#9eafc4", focus: "#75b7ff", label: "#ffdce5" };
+  const map: PortfolioPoint[] = facts.summaries.map(summary => ({ store: summary.store, revenue: summary.revenue, netMargin: summary.netMargin, netProfit: summary.netProfit, cover: summary.coverDays, stock: summary.stockClose, writeoffs: summary.writeoffFrozen + summary.writeoffSmoked }));
+  const medianRevenue = median(map.map(item => item.revenue)); const medianCover = median(map.map(item => item.cover));
   const visible = map.filter(item => coverageRange === "all" || (coverageRange === "low" ? item.cover < 7 : coverageRange === "normal" ? item.cover >= 7 && item.cover <= 20 : item.cover > 20));
-  const low = map.filter(item => item.cover < 7);
-  const high = map.filter(item => item.cover > 20);
-  const risk = map.filter(isRiskPoint);
-  const priority = [...visible].filter(isRiskPoint).sort((a, b) => priorityScore(b) - priorityScore(a));
-  const selectedFocus = visible.some(item => item.store === focusedStore) ? focusedStore : "";
-  const focus = visible.find(item => item.store === selectedFocus) ?? priority[0] ?? visible[0];
-  const labelledStores = new Set(priority.slice(0, 6).map(item => item.store));
-  if (focus) labelledStores.add(focus.store);
-  const scatterData = visible.map(item => ({ ...item, label: labelledStores.has(item.store) ? item.store : "" }));
-  const mobilePriority = (priority.length ? priority : [...visible].sort((a, b) => b.revenue - a.revenue)).slice(0, 6);
+  const low = map.filter(item => item.cover < 7); const high = map.filter(item => item.cover > 20); const risk = map.filter(isRiskPoint); const priority = [...visible].filter(isRiskPoint).sort((a, b) => priorityScore(b) - priorityScore(a));
+  const selectedFocus = visible.some(item => item.store === focusedStore) ? focusedStore : ""; const focus = visible.find(item => item.store === selectedFocus) ?? priority[0] ?? visible[0];
+  const labelledStores = new Set(priority.slice(0, 6).map(item => item.store)); if (focus) labelledStores.add(focus.store);
+  const scatterData = visible.map(item => ({ ...item, label: labelledStores.has(item.store) ? item.store : "" })); const priorityPoints = (priority.length ? priority : [...visible].sort((a, b) => b.revenue - a.revenue)).slice(0, 6);
   const pointColor = (item: PortfolioPoint) => item.netMargin < 0 ? palette.negative : item.cover > 20 ? palette.high : item.cover < 7 ? palette.low : palette.normal;
-  const marginWidth = (margin: number) => Math.max(4, Math.min(100, 50 + margin * 250));
-  const coverWidth = (cover: number) => Math.max(4, Math.min(100, cover * 2.5));
-  const scatter = (kind: ChartKind) => (
-    <ResponsiveContainer width="100%" height={360}>
-      <ScatterChart margin={{ top: 26, right: 20, bottom: 18, left: 10 }}>
-        <CartesianGrid stroke={palette.grid} strokeDasharray="3 3" />
-        <XAxis type="number" dataKey={kind} tickCount={5} tickFormatter={value => kind === "revenue" ? money(value).replace(" ₽", "") : `${value} дн.`} stroke={palette.axis} tick={{ fill: palette.axis, fontSize: 10 }} />
-        <YAxis type="number" dataKey="netMargin" tickCount={5} tickFormatter={value => formatPct(value)} width={55} stroke={palette.axis} tick={{ fill: palette.axis, fontSize: 10 }} />
-        <ReferenceLine x={kind === "revenue" ? medianRevenue : medianCover} stroke={palette.reference} strokeDasharray="4 4" />
-        <ReferenceLine y={0} stroke={palette.zero} strokeDasharray="4 4" />
-        <Tooltip content={<PortfolioTooltip />} cursor={{ stroke: palette.focus, strokeDasharray: "3 3" }} />
-        <Scatter data={scatterData} isAnimationActive={false}>
-          {scatterData.map(item => <Cell key={`${kind}-${item.store}`} fill={pointColor(item)} stroke={focus?.store === item.store ? palette.focus : "transparent"} strokeWidth={focus?.store === item.store ? 3 : 0} />)}
-          <LabelList dataKey="label" position="top" fill={palette.label} fontSize={10} />
-        </Scatter>
-      </ScatterChart>
-    </ResponsiveContainer>
-  );
+  const marginWidth = (margin: number) => Math.max(4, Math.min(100, 50 + margin * 250)); const coverWidth = (cover: number) => Math.max(4, Math.min(100, cover * 2.5));
+  const scatter = (kind: ChartKind, height = 510) => <ResponsiveContainer width="100%" height={height}><ScatterChart margin={{ top: 28, right: 28, bottom: 18, left: 14 }}><CartesianGrid stroke={palette.grid} strokeDasharray="3 3"/><XAxis type="number" dataKey={kind} tickCount={6} tickFormatter={value => kind === "revenue" ? money(value).replace(" ₽", "") : `${value} дн.`} stroke={palette.axis} tick={{ fill: palette.axis, fontSize: 11 }}/><YAxis type="number" dataKey="netMargin" tickCount={5} tickFormatter={value => formatPct(value)} width={60} stroke={palette.axis} tick={{ fill: palette.axis, fontSize: 11 }}/><ReferenceLine x={kind === "revenue" ? medianRevenue : medianCover} stroke={palette.reference} strokeDasharray="4 4"/><ReferenceLine y={0} stroke={palette.zero} strokeDasharray="4 4"/><Tooltip content={<PortfolioTooltip />} cursor={{ stroke: palette.focus, strokeDasharray: "3 3" }}/><Scatter data={scatterData} isAnimationActive={false}>{scatterData.map(item => <Cell key={`${kind}-${item.store}`} fill={pointColor(item)} stroke={focus?.store === item.store ? palette.focus : "transparent"} strokeWidth={focus?.store === item.store ? 3 : 0}/>) }<LabelList dataKey="label" position="top" fill={palette.label} fontSize={10}/></Scatter></ScatterChart></ResponsiveContainer>;
 
-  return (
-    <AuditShell kicker="07 / ПОРТФЕЛЬ И РИСКИ" title="Портфель: прибыль, остаток, риск">
-      {facts.loading ? <FactsLoader /> : !facts.available ? <section className="empty-state live-empty"><FileSpreadsheet size={30} /><h2>Нет данных для карты портфеля</h2><p>Карта будет построена из импортированных магазинов, периодов и остатков после первого импорта Excel.</p></section> : <>
-        <section className="page-lede">
-          <div><h2>Не рейтинг. Карта того, где деньги зарабатывают или застревают.</h2><p><b>Покрытие запаса</b> — дни обычных продаж, на которые хватит конечного остатка: <b>конечный остаток ÷ средние продажи в день</b>. Медиана <b>{medianCover.toFixed(1)} дня</b> — типичный уровень сети, а не плановый норматив. Срез: <b>{rangeLabel}</b>.</p></div>
-          <div className="page-controls"><label>Диапазон покрытия<select value={coverageRange} onChange={event => setCoverageRange(event.target.value as CoverageRange)}><option value="all">Все магазины</option><option value="low">Ниже 7 дней</option><option value="normal">От 7 до 20 дней</option><option value="high">Выше 20 дней</option></select></label></div>
-        </section>
-        <section className="zone-grid"><article><span>Низкий запас</span><strong>&lt; 7 дней</strong><p>{low.length} точек. Проверить риск отсутствия ходового товара.</p></article><article><span>Медиана сети</span><strong>{medianCover.toFixed(1)} дня</strong><p>Половина точек ниже, половина выше этого фактического уровня.</p></article><article><span>Высокий запас</span><strong>&gt; 20 дней</strong><p>{high.length} точек. Деньги в товаре: сверить закупку, уценку и списания.</p></article></section>
-        <section className="packet-kpis equal"><article className="packet-kpi"><span>Медиана выручки</span><strong>{money(medianRevenue)}</strong><small>типичный масштаб точки</small></article><article className="packet-kpi"><span>Медиана покрытия</span><strong>{medianCover.toFixed(1)} дн.</strong><small>середина распределения</small></article><article className="packet-kpi"><span>Точек в зоне риска</span><strong>{risk.length}</strong><small>отрицательная маржа или запас вне 7—20 дней</small></article><article className="packet-kpi"><span>В выбранном диапазоне</span><strong>{visible.length}</strong><small>из {map.length} магазинов</small></article></section>
-        <section className="packet-card portfolio-focus-card">
-          <div className="portfolio-focus-copy"><span>ФОКУС КАРТЫ</span><h3>{focus?.store ?? "Нет точек в выбранном диапазоне"}</h3><p>{focus ? `${priorityReason(focus)} · ${signal(focus)}` : "Измените диапазон покрытия, чтобы выбрать точку для анализа."}</p></div>
-          {focus && <div className="portfolio-focus-metrics"><div><span>Выручка</span><b>{money(focus.revenue)}</b></div><div><span>Чистая маржа</span><b className={focus.netMargin < 0 ? "negative" : "positive"}>{formatPct(focus.netMargin)}</b></div><div><span>Покрытие</span><b>{focus.cover.toFixed(1)} дн.</b></div><div><span>Списания К.+М.</span><b>{money(focus.writeoffs)}</b></div></div>}
-          <label className="portfolio-focus-select">Точка на графике<select value={selectedFocus} onChange={event => setFocusedStore(event.target.value)}><option value="">Авто: первая точка риска</option>{visible.map(item => <option value={item.store} key={item.store}>{item.store}</option>)}</select></label>
-        </section>
-        <section className="portfolio-map-legend" aria-label="Легенда карт портфеля"><span><i style={{ background: palette.negative }} />Отрицательная маржа</span><span><i style={{ background: palette.high }} />Запас выше 20 дней</span><span><i style={{ background: palette.low }} />Запас ниже 7 дней</span><span><i className="portfolio-focus-ring" style={{ borderColor: palette.focus }} />Выбранная точка</span><small>Подписи оставлены у выбранной точки и шести первоочередных: карта остается читаемой, а точные значения доступны по наведению.</small></section>
-        <section className="packet-split portfolio-plot-grid">
-          <article className="packet-card portfolio-scatter-card"><div className="card-title"><div><span>МАСШТАБ × МАРЖА</span><h3>Выручка и чистая маржа</h3></div><small>пунктир: медиана и 0%</small></div><div className="portfolio-desktop-chart">{scatter("revenue")}</div></article>
-          <article className="packet-card portfolio-scatter-card"><div className="card-title"><div><span>ЗАПАС × МАРЖА</span><h3>Покрытие и прибыльность</h3></div><small>пунктир: медиана и 0%</small></div><div className="portfolio-desktop-chart">{scatter("cover")}</div></article>
-        </section>
-        <section className="packet-card portfolio-mobile-map">
-          <div className="card-title"><div><span>КАРТА ПРИОРИТЕТОВ</span><h3>Точки, где действие требуется раньше</h3></div><small>до 6 точек</small></div>
-          <p className="portfolio-mobile-intro">Компактный мобильный формат заменяет плотное облако точек. Полоса «Маржа» центрирована на 0%, а «Покрытие» показывает отношение к шкале 40 дней.</p>
-          <div className="portfolio-mobile-priority-list">{mobilePriority.map(item => <button type="button" key={item.store} className={focus?.store === item.store ? "portfolio-mobile-priority active" : "portfolio-mobile-priority"} onClick={() => setFocusedStore(item.store)}><div><b>{item.store}</b><span>{priorityReason(item)}</span></div><div className="portfolio-meter"><span>Маржа<i style={{ width: `${marginWidth(item.netMargin)}%`, background: pointColor(item) }} /></span><span>Покрытие<i style={{ width: `${coverWidth(item.cover)}%`, background: pointColor(item) }} /></span></div><div className="portfolio-mobile-values"><span className={item.netMargin < 0 ? "negative" : "positive"}>{formatPct(item.netMargin)}</span><span>{item.cover.toFixed(1)} дн.</span><span>{money(item.revenue)}</span></div></button>)}</div>
-        </section>
-        <section className="packet-card"><div className="card-title"><div><span>ВСЕ МАГАЗИНЫ · ЗАПАС И ЭКОНОМИКА</span><h3>Полный список: где смотреть в первую очередь</h3></div><small>фильтр: {visible.length} точек</small></div><div className="data-table-wrap"><table className="data-table"><thead><tr><th>Магазин</th><th>Выручка</th><th>Чистая прибыль</th><th>Маржа</th><th>Остаток</th><th>Покрытие</th><th>Списания К.+М.</th><th>Действие</th></tr></thead><tbody>{[...visible].sort((a, b) => priorityScore(b) - priorityScore(a) || b.revenue - a.revenue).map(item => <tr key={item.store}><td>{item.store}</td><td>{money(item.revenue)}</td><td className={item.netProfit < 0 ? "negative" : "positive"}>{money(item.netProfit)}</td><td>{formatPct(item.netMargin)}</td><td>{money(item.stock)}</td><td>{item.cover.toFixed(1)} дн.</td><td>{money(item.writeoffs)}</td><td>{signal(item)}</td></tr>)}</tbody></table></div></section>
-      </>}
-    </AuditShell>
-  );
+  return <AuditShell kicker="07 / ПОРТФЕЛЬ И РИСКИ" title="Портфель: прибыль, остаток, риск">{facts.loading ? <FactsLoader/> : !facts.available ? <section className="empty-state live-empty"><FileSpreadsheet size={30}/><h2>Нет данных для карты портфеля</h2><p>Карта будет построена из импортированных магазинов, периодов и остатков после первого импорта Excel.</p></section> : <>
+    <section className="page-lede"><div><h2>Не рейтинг. Карта того, где деньги зарабатывают или застревают.</h2><p><b>Покрытие запаса</b> — дни обычных продаж, на которые хватит конечного остатка: <b>конечный остаток ÷ средние продажи в день</b>. Медиана <b>{medianCover.toFixed(1)} дня</b> — типичный уровень сети, а не плановый норматив. Срез: <b>{rangeLabel}</b>.</p></div><div className="page-controls"><label>Диапазон покрытия<select value={coverageRange} onChange={event => setCoverageRange(event.target.value as CoverageRange)}><option value="all">Все магазины</option><option value="low">Ниже 7 дней</option><option value="normal">От 7 до 20 дней</option><option value="high">Выше 20 дней</option></select></label></div></section>
+    <section className="zone-grid"><article><span>Низкий запас</span><strong>&lt; 7 дней</strong><p>{low.length} точек. Проверить риск отсутствия ходового товара.</p></article><article><span>Медиана сети</span><strong>{medianCover.toFixed(1)} дня</strong><p>Половина точек ниже, половина выше этого фактического уровня.</p></article><article><span>Высокий запас</span><strong>&gt; 20 дней</strong><p>{high.length} точек. Деньги в товаре: сверить закупку, уценку и списания.</p></article></section>
+    <section className="packet-kpis equal"><article className="packet-kpi"><span>Медиана выручки</span><strong>{money(medianRevenue)}</strong><small>типичный масштаб точки</small></article><article className="packet-kpi"><span>Медиана покрытия</span><strong>{medianCover.toFixed(1)} дн.</strong><small>середина распределения</small></article><article className="packet-kpi"><span>Точек в зоне риска</span><strong>{risk.length}</strong><small>отрицательная маржа или запас вне 7—20 дней</small></article><article className="packet-kpi"><span>В выбранном диапазоне</span><strong>{visible.length}</strong><small>из {map.length} магазинов</small></article></section>
+    <section className="packet-card portfolio-focus-card"><div className="portfolio-focus-copy"><span>ФОКУС КАРТЫ</span><h3>{focus?.store ?? "Нет точек в выбранном диапазоне"}</h3><p>{focus ? `${priorityReason(focus)} · ${signal(focus)}` : "Измените диапазон покрытия, чтобы выбрать точку для анализа."}</p></div>{focus && <div className="portfolio-focus-metrics"><div><span>Выручка</span><b>{money(focus.revenue)}</b></div><div><span>Чистая маржа</span><b className={focus.netMargin < 0 ? "negative" : "positive"}>{formatPct(focus.netMargin)}</b></div><div><span>Покрытие</span><b>{focus.cover.toFixed(1)} дн.</b></div><div><span>Списания К.+М.</span><b>{money(focus.writeoffs)}</b></div></div>}<label className="portfolio-focus-select">Точка на графике<select value={selectedFocus} onChange={event => setFocusedStore(event.target.value)}><option value="">Авто: первая точка риска</option>{visible.map(item => <option value={item.store} key={item.store}>{item.store}</option>)}</select></label></section>
+    <section className="portfolio-map-legend" aria-label="Легенда карт портфеля"><span><i style={{background:palette.negative}}/>Отрицательная маржа</span><span><i style={{background:palette.high}}/>Запас выше 20 дней</span><span><i style={{background:palette.low}}/>Запас ниже 7 дней</span><span><i className="portfolio-focus-ring" style={{borderColor:palette.focus}}/>Выбранная точка</span></section>
+    <section className="packet-split portfolio-plot-grid">{(["revenue","cover"] as const).map(kind => <article className="packet-card portfolio-scatter-card" key={kind}><div className="card-title"><div><span>{kind === "revenue" ? "МАСШТАБ × МАРЖА" : "ЗАПАС × МАРЖА"}</span><h3>{chartTitle(kind)}</h3></div><div className="portfolio-chart-actions"><small>пунктир: медиана и 0%</small><button type="button" className="chart-expand-button" onClick={() => setExpandedChart(kind)}><Maximize2 size={14}/><span>Увеличить</span></button></div></div><div className="portfolio-desktop-chart">{scatter(kind)}</div></article>)}</section>
+    <section className="packet-card portfolio-mobile-map"><div className="card-title"><div><span>КАРТА ПРИОРИТЕТОВ</span><h3>Точки, где действие требуется раньше</h3></div><small>до 6 точек</small></div><p className="portfolio-mobile-intro">Шесть точек с наивысшим приоритетом по совокупности маржи и покрытия запаса.</p><div className="portfolio-mobile-priority-list">{priorityPoints.map(item => <button type="button" key={item.store} className={focus?.store === item.store ? "portfolio-mobile-priority active" : "portfolio-mobile-priority"} onClick={() => setFocusedStore(item.store)}><div><b>{item.store}</b><span>{priorityReason(item)}</span></div><div className="portfolio-meter"><span>Маржа<i style={{width:`${marginWidth(item.netMargin)}%`,background:pointColor(item)}}/></span><span>Покрытие<i style={{width:`${coverWidth(item.cover)}%`,background:pointColor(item)}}/></span></div><div className="portfolio-mobile-values"><span className={item.netMargin < 0 ? "negative" : "positive"}>{formatPct(item.netMargin)}</span><span>{item.cover.toFixed(1)} дн.</span><span>{money(item.revenue)}</span></div></button>)}</div></section>
+    <section className="packet-card"><div className="card-title"><div><span>ВСЕ МАГАЗИНЫ · ЗАПАС И ЭКОНОМИКА</span><h3>Полный список: где смотреть в первую очередь</h3></div><small>фильтр: {visible.length} точек</small></div><div className="data-table-wrap"><table className="data-table"><thead><tr><th>Магазин</th><th>Выручка</th><th>Чистая прибыль</th><th>Маржа</th><th>Остаток</th><th>Покрытие</th><th>Списания К.+М.</th><th>Действие</th></tr></thead><tbody>{[...visible].sort((a,b) => priorityScore(b)-priorityScore(a)||b.revenue-a.revenue).map(item => <tr key={item.store}><td>{item.store}</td><td>{money(item.revenue)}</td><td className={item.netProfit < 0 ? "negative" : "positive"}>{money(item.netProfit)}</td><td>{formatPct(item.netMargin)}</td><td>{money(item.stock)}</td><td>{item.cover.toFixed(1)} дн.</td><td>{money(item.writeoffs)}</td><td>{signal(item)}</td></tr>)}</tbody></table></div></section>
+    <Dialog open={expandedChart!==null} onOpenChange={open => { if (!open) setExpandedChart(null); }}><DialogContent className="chart-expand-dialog portfolio-chart-dialog"><DialogHeader><DialogTitle>{expandedChart ? chartTitle(expandedChart) : "График"}</DialogTitle><DialogDescription>Детальный просмотр выбранной карты. Значения доступны по наведению.</DialogDescription></DialogHeader>{expandedChart && <div className="chart-expand-canvas">{scatter(expandedChart,620)}</div>}</DialogContent></Dialog>
+  </>}</AuditShell>;
 }

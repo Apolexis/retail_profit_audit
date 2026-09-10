@@ -33,11 +33,13 @@ describe("мобильный контракт календаря", () => {
     expect(styles).toMatch(/\.date-popover \[data-slot="calendar"\],\s*\.fact-date-popover \[data-slot="calendar"\]\s*\{[\s\S]*?background:\s*var\(--surface\)\s*!important/);
   });
 
-  it("держит стандартные периоды над сеткой календаря на мобильной ширине", () => {
+  it("держит компактные стандартные периоды над сеткой календаря на мобильной ширине", () => {
     expect(styles).toContain('.date-popover [data-slot="calendar"] { position: relative !important; z-index: 1 !important; }');
     expect(styles).toContain('.date-shortcut-toggle,\n.date-shortcuts { position: relative !important; z-index: 2 !important; isolation: isolate !important; }');
     expect(styles).toContain('.date-popover:has(.date-shortcuts) .mobile-range-preview { display: none !important; }');
     expect(styles).toContain('.date-shortcuts button { min-height: 26px !important; }');
+    expect(component).toContain('className={shortcut.wide?"date-shortcut-wide":undefined}');
+    expect(component).not.toContain('className="date-shortcut-group"');
   });
 
   it("разводит сетку дней и быстрые периоды в мобильном потоке", () => {
@@ -47,7 +49,7 @@ describe("мобильный контракт календаря", () => {
   });
 
   it("дает быстрый YTD только по завершенным месяцам", () => {
-    expect(component).toContain('label:"С начала года по завершенный месяц"');
+    expect(component).toContain('label:"Год до прошлого месяца"');
     expect(component).toContain('from:`${year}-01-01`,to:toIso(previousMonthEnd)');
     expect(component).toContain("anchor.getMonth()===0?[]");
     expect(component).not.toContain('label:"Текущий месяц"');

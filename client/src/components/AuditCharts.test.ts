@@ -41,6 +41,14 @@ describe("форматирование денежных показателей",
     expect(source).toContain(">Столбцы</button>");
     expect(source).toContain(">Наложение</button>");
   });
+  it("дает всем общим графикам доступное увеличение в отдельном диалоге", () => {
+    const source = require("node:fs").readFileSync(new URL("./AuditCharts.tsx", import.meta.url), "utf8");
+    expect(source).toContain("function ChartExpandButton");
+    expect(source).toContain("Увеличить график:");
+    expect(source).toContain("Детальный просмотр графика");
+    expect(source).toContain("<MetricLineChart data={data}");
+    expect(source).toContain("<BenchmarkBars data={data}");
+  });
   it("использует единый широкий слот наложения и один цвет для легенды, линии и маркера", () => {
     expect(resolveOverlayBarGeometry(140, 18, 0, 3)).toEqual({ x: 140, width: 54 });
     expect(resolveOverlayBarGeometry(158, 18, 1, 3)).toEqual({ x: 140, width: 54 });
