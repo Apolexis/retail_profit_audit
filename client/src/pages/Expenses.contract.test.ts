@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const page = readFileSync(new URL("./Expenses.tsx", import.meta.url), "utf8");
+const overrides = readFileSync(new URL("../final-overrides.css", import.meta.url), "utf8");
 
 describe("страница «Расходы»", () => {
   it("дает выбрать несколько магазинов и расходных статей", () => {
@@ -24,5 +25,12 @@ describe("страница «Расходы»", () => {
     expect(page).toContain("cashTrend");
     expect(page).toContain("cashLedger");
     expect(page).toContain("НДФЛ 22% вынесен в контрольную карточку");
+  });
+
+  it("на телефоне выводит наличные статьи и полный расходный срез карточками", () => {
+    expect(page).toContain('className="expense-mobile-ledger"');
+    expect(page).toContain('className="packet-card expense-ledger-card"');
+    expect(overrides).toContain('.packet .cash-breakdown-card > .data-table-wrap,');
+    expect(overrides).toContain('.packet .expense-ledger-card > .data-table-wrap { display: none; }');
   });
 });

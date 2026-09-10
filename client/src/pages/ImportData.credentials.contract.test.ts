@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const page = readFileSync(new URL("./ImportData.tsx", import.meta.url), "utf8");
+const overrides = readFileSync(new URL("../final-overrides.css", import.meta.url), "utf8");
 
 describe("защищенный импорт", () => {
   it("показывает только статус конфигурации и два закрытых поля замены", () => {
@@ -41,6 +42,15 @@ describe("уровни доступа к импорту", () => {
     expect(page).toContain("Скачать исходник");
     expect(page).toContain("Скачивание возвращает точную исходную книгу");
     expect(page).toContain('canEditImport && <td className="import-row-actions">');
+  });
+
+  it("выносит действия истории в доступные карточки на мобильной ширине", () => {
+    expect(page).toContain('className="import-history-mobile"');
+    expect(page).toContain('className="import-history-card-actions"');
+    expect(page).toContain('{canEditImport && <div className="import-history-card-actions"');
+    expect(overrides).toContain('.packet .import-history .data-table-wrap { display: none; }');
+    expect(overrides).toContain('.packet .import-history-card-actions { display: grid;');
+    expect(overrides).toContain('gap: 8px; padding-right: 54px;');
   });
 });
 
