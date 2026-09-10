@@ -982,8 +982,6 @@ html[data-audit-theme="light"] .packet .inventory-profile-insight.risk { color:#
 @media(max-width:560px){.packet .inventory-profile-grid{grid-template-columns:1fr 1fr;gap:7px}.packet .inventory-profile-grid>div{padding:9px}.packet .inventory-profile-grid strong{font-size:15px}}
 
 .packet .cadence-metric-group.cash-control-group { margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; }
-.packet .cadence-metric-group.cash-control-group .cadence-group-label > span { color: #ffad9b; }
-html[data-audit-theme="light"] .packet .cadence-metric-group.cash-control-group .cadence-group-label > span { color: #b33d52; }
 html[data-audit-theme="light"] .packet .cadence-group-label > small { background: #fff0f1; color: #a13a4e; }
 
 /* Независимая композиция категорий: не наследует старые packet-nav-group / heading и не обрезает подсветку. */
@@ -1305,4 +1303,56 @@ html[data-audit-theme="dark"] .packet .packet-actions a.alert-link:hover { trans
     max-height: calc(100dvh - 56px) !important;
     overflow-y: auto !important;
   }
+}
+
+/* Портфель: карты показывают приоритеты, а не нечитаемое облако из подписей всех магазинов. */
+.packet .portfolio-focus-card { display: grid; grid-template-columns: minmax(190px, .9fr) minmax(0, 1.65fr) minmax(190px, .8fr); gap: 18px; align-items: center; }
+.packet .portfolio-focus-copy > span { display: block; color: var(--faint); font: 9px "IBM Plex Mono", monospace; letter-spacing: .08em; }
+.packet .portfolio-focus-copy h3 { margin: 6px 0 5px; color: var(--text); font-size: 25px; letter-spacing: -.05em; }
+.packet .portfolio-focus-copy p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
+.packet .portfolio-focus-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.packet .portfolio-focus-metrics > div { min-width: 0; padding: 9px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); }
+.packet .portfolio-focus-metrics span { display: block; color: var(--faint); font: 8px "IBM Plex Mono", monospace; letter-spacing: .05em; text-transform: uppercase; }
+.packet .portfolio-focus-metrics b { display: block; min-width: 0; margin-top: 5px; overflow: hidden; color: var(--text); font-size: 12px; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+.packet .portfolio-focus-select { display: grid; gap: 6px; min-width: 0; color: var(--faint); font: 9px "IBM Plex Mono", monospace; letter-spacing: .06em; text-transform: uppercase; }
+.packet .portfolio-focus-select select { min-width: 0; height: 38px; padding: 0 9px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); color: var(--text); font: 700 11px Manrope, Arial, sans-serif; letter-spacing: 0; text-transform: none; }
+.packet .portfolio-map-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 7px 14px; margin: -4px 0 17px; color: var(--muted); font-size: 10px; }
+.packet .portfolio-map-legend > span { display: inline-flex; align-items: center; gap: 5px; }
+.packet .portfolio-map-legend i { display: block; width: 8px; height: 8px; border-radius: 999px; }
+.packet .portfolio-map-legend .portfolio-focus-ring { box-sizing: border-box; background: transparent; border: 2px solid; }
+.packet .portfolio-map-legend small { flex: 1 1 250px; color: var(--faint); line-height: 1.4; }
+.packet .portfolio-scatter-card { min-width: 0; overflow: hidden; }
+.packet .portfolio-scatter-card .recharts-label-list text { paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }
+.packet .portfolio-mobile-map { display: none; }
+.packet .portfolio-tooltip { min-width: 164px; }
+.packet .portfolio-tooltip span:last-child strong { color: inherit; }
+
+@media (max-width: 720px) {
+  .packet .portfolio-focus-card { grid-template-columns: 1fr; gap: 13px; }
+  .packet .portfolio-focus-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .packet .portfolio-focus-select select { width: 100%; }
+  .packet .portfolio-map-legend { align-items: flex-start; gap: 7px 12px; margin: 0 0 12px; }
+  .packet .portfolio-map-legend small { flex-basis: 100%; }
+  .packet .portfolio-plot-grid { display: none; }
+  .packet .portfolio-mobile-map { display: grid; gap: 11px; }
+  .packet .portfolio-mobile-map .card-title { margin-bottom: 0; }
+  .packet .portfolio-mobile-intro { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+  .packet .portfolio-mobile-priority-list { display: grid; gap: 7px; }
+  .packet .portfolio-mobile-priority { display: grid; grid-template-columns: minmax(84px, .75fr) minmax(0, 1.45fr) auto; gap: 9px; align-items: center; width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); color: var(--text); text-align: left; transform: none !important; }
+  .packet .portfolio-mobile-priority.active { border-color: var(--blue); box-shadow: inset 3px 0 var(--blue); }
+  .packet .portfolio-mobile-priority > div:first-child { display: grid; gap: 2px; min-width: 0; }
+  .packet .portfolio-mobile-priority b { color: var(--text); font-size: 13px; }
+  .packet .portfolio-mobile-priority > div:first-child span { overflow: hidden; color: var(--faint); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+  .packet .portfolio-meter { display: grid; gap: 5px; min-width: 0; }
+  .packet .portfolio-meter > span { position: relative; display: grid; grid-template-columns: 49px minmax(0, 1fr); align-items: center; gap: 5px; min-width: 0; color: var(--faint); font: 8px "IBM Plex Mono", monospace; letter-spacing: .03em; }
+  .packet .portfolio-meter > span::after { content: ""; grid-column: 2; grid-row: 1; height: 5px; border-radius: 99px; background: var(--line); }
+  .packet .portfolio-meter i { z-index: 1; grid-column: 2; grid-row: 1; display: block; height: 5px; border-radius: 99px; }
+  .packet .portfolio-mobile-values { display: grid; justify-items: end; gap: 2px; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .packet .portfolio-mobile-values span:first-child { font-weight: 800; }
+}
+
+@media (max-width: 390px) {
+  .packet .portfolio-mobile-priority { grid-template-columns: minmax(70px, .7fr) minmax(0, 1.25fr) auto; gap: 7px; padding: 9px; }
+  .packet .portfolio-meter > span { grid-template-columns: 42px minmax(0, 1fr); font-size: 7px; }
+  .packet .portfolio-mobile-values { font-size: 9px; }
 }

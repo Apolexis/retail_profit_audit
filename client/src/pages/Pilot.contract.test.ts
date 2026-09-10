@@ -25,9 +25,11 @@ describe("Pilot scenario outcome contract",()=>{
     expect(page).toContain("Выбрать убыточные");
     expect(page).toContain("Изменение закрытия");
     expect(page).toContain("Оценка чистой прибыли сети");
-    expect(page).toContain("Закрытие {closingStores.length}");
+    expect(page).toContain("Закрытие {closureSelectedInScope.length}");
     expect(page).toContain("closureScenario.profitChange");
-    expect(page).toContain("const closureProfitChange=isNetwork?closureScenario.profitChange:0");
+    expect(page).toContain("const closureSelectedInScope=useMemo(()=>isNetwork?closureSelected:closureSelected.filter(candidate=>candidate.store===name)");
+    expect(page).toContain("const hasClosureInScope=closureSelectedInScope.length>0");
+    expect(page).toContain("const closureProfitChange=hasClosureInScope?closureScenario.profitChange:0");
     expect(page).toContain("Закупки Коп. сократятся");
     expect(page).toContain("Закупки Мор. сократятся");
     expect(page).toContain("Остаток сети после закрытия");
@@ -38,5 +40,12 @@ describe("Pilot scenario outcome contract",()=>{
     expect(candidates[0]?.reason).toContain("Убыток");
     const scenario=summarizeClosureScenario({revenue:3_000,expenses:2_600,netProfit:100,purchaseSmoked:600,purchaseFrozen:300,stockClose:200},[candidates[0]!]);
     expect(scenario).toMatchObject({closedRevenue:1_000,closedExpenses:1_100,closedPurchaseSmoked:250,closedPurchaseFrozen:150,closedPurchases:400,closedStock:90,remainingStock:110,profitChange:100,remainingProfit:200,closedExpenseByCode:{rent:400,delivery:50}});
+  });
+
+  it("limits a single-store scenario to the closure selected in its contour",()=>{
+    expect(page).toContain('closureSelected.filter(candidate=>candidate.store===name)');
+    expect(page).toContain("{hasClosureInScope&&<div className=\"closure-expense-breakdown\">");
+    expect(page).toContain("{hasClosureInScope&&<div><span>Закрытие {closureSelectedInScope.length}");
+    expect(page).toContain('чистая прибыль {isNetwork?"сети":"контура"}');
   });
 });

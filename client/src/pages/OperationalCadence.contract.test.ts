@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const page = readFileSync(new URL("./OperationalCadence.tsx", import.meta.url), "utf8");
+const styles = readFileSync(new URL("../final-overrides.css", import.meta.url), "utf8");
 
 describe("страница «Ритм»", () => {
   it("дает выбрать несколько показателей и сохраняет хотя бы один", () => {
@@ -27,6 +28,11 @@ describe("страница «Ритм»", () => {
     expect(page).toContain("cash-control-group");
     expect(page).not.toContain("нал + НДФЛ 22%");
     expect(page).toContain("cadence-group-label");
+  });
+
+  it("использует для группы наличных расходов обычный цвет заголовков в обеих темах", () => {
+    expect(styles).toContain(".packet .cadence-group-label > span { color: var(--faint);");
+    expect(styles).not.toContain(".cash-control-group .cadence-group-label > span { color:");
   });
 
   it("показывает последние интервалы карточками с отдельными значениями", () => {

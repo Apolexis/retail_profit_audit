@@ -26,7 +26,7 @@ describe("контрастная светлая тема", () => {
   });
 
   it("передает в scatter-графики Портфеля светлую палитру, а не темные константы", () => {
-    expect(portfolio).toContain('theme==="light"?{grid:"#d8e0ea"');
+    expect(portfolio).toContain('grid: "#d8e0ea"');
     expect(portfolio).toContain("stroke={palette.grid}");
     expect(portfolio).toContain("fill={palette.label}");
   });
@@ -45,7 +45,7 @@ describe("контрастная светлая тема", () => {
       ["Home.tsx", ".packet .theme-button{background:#f4f7fb!important", "style"],
       ["ControlCenter.tsx", ".packet .comparison-periods { background:#fff", "style"],
       ["OperationalCadence.tsx", ".packet .inline-table .inline-row{min-height:48px", "style"],
-      ["Portfolio.tsx", "theme===\"light\"?{grid:\"#d8e0ea\"", "page"],
+      ["Portfolio.tsx", "grid: \"#d8e0ea\"", "page"],
       ["ManageData.tsx", ".packet .store-rename-save{height:40px!important", "style"],
       ["AccessAdmin.tsx", ".packet .account-choice.selected{background:#eaf3ff!important", "style"],
       ["Notifications.tsx", ".packet .notification-actions{display:flex", "style"],

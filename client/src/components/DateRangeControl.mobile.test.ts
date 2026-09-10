@@ -46,6 +46,13 @@ describe("мобильный контракт календаря", () => {
     expect(styles).toContain('.date-popover:has(.date-shortcuts) .date-shortcuts { margin-top: 0 !important; }');
   });
 
+  it("дает быстрый YTD только по завершенным месяцам", () => {
+    expect(component).toContain('label:"С начала года по завершенный месяц"');
+    expect(component).toContain('from:`${year}-01-01`,to:toIso(previousMonthEnd)');
+    expect(component).toContain("anchor.getMonth()===0?[]");
+    expect(component).not.toContain('label:"Текущий месяц"');
+  });
+
   it("не обрезает точный календарь у нижней границы viewport", () => {
     expect(component).toContain('side="top" sideOffset={8} collisionPadding={8} sticky="always"');
     expect(finalOverrides).toContain('body > [data-radix-popper-content-wrapper]:has(.fact-date-popover)');
