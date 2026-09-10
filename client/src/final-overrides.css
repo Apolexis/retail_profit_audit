@@ -1649,3 +1649,9 @@ html[data-audit-theme="light"] .packet .section-recommendation:hover { border-co
 /* Темные заголовки категорий не меняют ни фон, ни границу под указателем: это исключает мерцание на точной границе. */
 html[data-audit-theme="dark"] .packet :is(.nav-section-trigger, .nav-drawer-section-trigger) { transition: none !important; }
 html[data-audit-theme="dark"] .packet :is(.nav-section-trigger, .nav-drawer-section-trigger):hover { border-color: var(--line) !important; background: var(--surface-2) !important; box-shadow: none !important; }
+
+/* На границе темных категорий не меняется даже цвет текста: открытые и закрытые состояния зафиксированы отдельно. */
+html[data-audit-theme="dark"] .packet .nav-section:not(.is-open) .nav-section-trigger:hover,
+html[data-audit-theme="dark"] .packet .nav-drawer-section:not(.is-open) .nav-drawer-section-trigger:hover { color: var(--faint) !important; }
+html[data-audit-theme="dark"] .packet .nav-section.is-open .nav-section-trigger:hover,
+html[data-audit-theme="dark"] .packet .nav-drawer-section.is-open .nav-drawer-section-trigger:hover { color: #ffc0ad !important; }
