@@ -20,6 +20,7 @@ describe("матрица доступа к импорту",()=>{
     expect(overrides).toContain('.packet .access-import-row .access-switch button { width: auto !important; min-width: 0 !important; height: 29px !important;');
     expect(overrides).toContain('min-height: 29px !important');
     expect(overrides).toContain('padding: 7px 9px !important; border-radius: 6px !important; flex: 0 1 auto !important');
+    expect(overrides).toContain('.packet .access-import-row { padding-bottom: 12px !important; margin-bottom: 4px !important; }');
   });
 
   it("дает администратору форму общей push-рассылки с честным итогом доставки",()=>{
@@ -34,5 +35,6 @@ describe("матрица доступа к импорту",()=>{
     const page=readFileSync(resolve(process.cwd(),"client/src/pages/AccessAdmin.tsx"),"utf8");
     expect(page).toContain('className="admin-password-reset-title"');
     expect(overrides).toContain(".packet .admin-password-reset-title { display: block;");
+    expect(overrides).toContain('.packet .admin-password-reset > div { display: grid; gap: 4px; }');
   });
 });

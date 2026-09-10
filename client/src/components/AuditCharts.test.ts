@@ -36,7 +36,7 @@ describe("форматирование денежных показателей",
   });
   it("дает многоточечному общему графику все три доступных представления", () => {
     const source = require("node:fs").readFileSync(new URL("./AuditCharts.tsx", import.meta.url), "utf8");
-    expect(source).toContain("{data.length>1&&<ChartViewControls");
+    expect(source).toContain("{showViewControls&&data.length>1&&<ChartViewControls");
     expect(source).toContain(">Волна</button>");
     expect(source).toContain(">Столбцы</button>");
     expect(source).toContain(">Наложение</button>");
@@ -45,8 +45,8 @@ describe("форматирование денежных показателей",
     const source = require("node:fs").readFileSync(new URL("./AuditCharts.tsx", import.meta.url), "utf8");
     expect(source).toContain("function ChartExpandButton");
     expect(source).toContain("Увеличить график:");
-    expect(source).toContain("Детальный просмотр: колесо или pinch");
-    expect(source).toContain("<MetricLineChart data={data}");
+    expect(source).not.toContain("Детальный просмотр: колесо или pinch");
+    expect(source).toContain("<MetricLineChart key={expandedView} data={data}");
     expect(source).toContain("<BenchmarkBars data={data}");
   });
 
@@ -54,8 +54,10 @@ describe("форматирование денежных показателей",
     const source = require("node:fs").readFileSync(new URL("./AuditCharts.tsx", import.meta.url), "utf8");
     expect(source).toContain("initialView?:MetricChartView");
     expect(source).toContain("useState<MetricChartView>(initialView)");
-    expect(source).toContain("initialView={chartView} expanded");
-    expect(source).toContain("{data.length>1&&<ChartViewControls view={chartView}");
+    expect(source).toContain("initialView={expandedView} expanded showViewControls={false}");
+    expect(source).toContain("{showViewControls&&data.length>1&&<ChartViewControls view={chartView}");
+    expect(source).toContain('className="chart-expand-view-control"');
+    expect(source).toContain("showViewControls={data.length>1}");
   });
   it("поддерживает ограниченное мышиное и сенсорное управление увеличенным графиком", () => {
     expect(clampChartZoom(.5)).toBe(1);

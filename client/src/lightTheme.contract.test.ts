@@ -30,6 +30,12 @@ describe("контрастная светлая тема", () => {
     expect(overrides).toContain('html[data-audit-theme="light"] .packet .packet-nav:not(.active):hover');
     expect(overrides).toContain('box-shadow: inset 0 0 0 1px #0a84ff');
     expect(overrides).toContain('.mobile-drawer .drawer-link:not(.active):hover');
+    expect(overrides).toContain('html[data-audit-theme="light"] .packet .packet-nav.active');
+    expect(overrides).toContain('background: #eaf4ff !important;');
+  });
+
+  it("оставляет название бренда на экране входа читаемым, а не коралловым", () => {
+    expect(overrides).toContain('html[data-audit-theme="light"] .login-mark { color: #1f3652 !important; }');
   });
 
   it("передает в scatter-графики Портфеля светлую палитру, а не темные константы", () => {

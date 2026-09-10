@@ -52,8 +52,10 @@ describe("мобильный контракт календаря", () => {
   it("дает быстрый YTD только по завершенным месяцам", () => {
     expect(component).toContain('label:"Год до прошлого месяца"');
     expect(component).toContain('from:`${year}-01-01`,to:toIso(previousMonthEnd)');
+    expect(component).toContain('label:"С начала года"');
     expect(component).toContain("anchor.getMonth()===0?[]");
     expect(component).not.toContain('label:"Текущий месяц"');
+    expect(component).not.toContain('label:"Год по сегодня"');
     expect(component).not.toContain('label:"Сегодня"');
   });
 

@@ -14,4 +14,10 @@ describe("универсальный вход с ключом доступа", (
     expect(login).toContain("beginPasskey.mutateAsync(phonePayload)");
     expect(login).toContain("finishPasskey.mutateAsync({ ...phonePayload, response })");
   });
+
+  it("использует знак меню и не выводит лишнее пояснение о назначенных магазинах", () => {
+    expect(login).toContain('import { BrandMark } from "@/components/AuditShell";');
+    expect(login).toContain("<BrandMark />");
+    expect(login).not.toContain("Доступ к показателям сети предоставляется только для назначенных магазинов");
+  });
 });

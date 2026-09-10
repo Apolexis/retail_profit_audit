@@ -8,6 +8,7 @@ import { normalizeRussianPhone } from "@/lib/phone";
 import { authErrorText } from "@/lib/authError";
 import { passkeyErrorText } from "@/lib/passkeyError";
 import { useAudit } from "@/contexts/AuditContext";
+import { BrandMark } from "@/components/AuditShell";
 
 export default function Login({ accessError }: { accessError?: unknown }) {
   const { theme, toggleTheme } = useAudit();
@@ -60,11 +61,10 @@ export default function Login({ accessError }: { accessError?: unknown }) {
       <section className="login-panel">
         <button type="button" className="login-theme-toggle" onClick={toggleTheme} aria-label={theme === "dark" ? "Включить светлую тему" : "Включить темную тему"} title={theme === "dark" ? "Светлая тема" : "Темная тема"}>{theme === "dark" ? <Sun size={16}/> : <Moon size={16}/>}</button>
         <div className="login-mark">
-          <img src="/manus-storage/rybny_analytics_app_icon_909727b4.png" alt="Аналитика «Рыбный»" />
+          <BrandMark />
           <span>Аналитика «Рыбный»</span>
         </div>
         <h1>Вход в управленческий контур</h1>
-        <p>Введите номер телефона и пароль. Доступ к показателям сети предоставляется только для назначенных магазинов и действий вашей роли.</p>
         <form onSubmit={submit}>
           <label>Номер телефона<PhoneInput value={phone} onValueChange={setPhone} required /></label>
           <label>Пароль<input type="password" autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} required /></label>
