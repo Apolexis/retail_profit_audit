@@ -17,6 +17,7 @@ describe("триггеры категорий темной навигации", 
     expect(styles).toContain('html[data-audit-theme="dark"] .packet :is(.nav-section-trigger, .nav-drawer-section-trigger):hover { border-color: var(--line) !important; background: var(--surface-2) !important; box-shadow: none !important; }');
     expect(styles).toContain('html[data-audit-theme="dark"] .packet .nav-section:not(.is-open) .nav-section-trigger:hover');
     expect(styles).toContain('html[data-audit-theme="dark"] .packet .nav-section.is-open .nav-section-trigger:hover');
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet .nav-drawer-section.is-open .nav-drawer-section-trigger:hover { color: var(--text) !important; }');
     expect(styles).toContain('html[data-audit-theme="dark"] .packet :is(.nav-section-trigger, .nav-drawer-section-trigger) :is(.nav-section-label, svg) { pointer-events: none; color: inherit; }');
   });
 });
@@ -24,6 +25,6 @@ describe("триггеры категорий темной навигации", 
 describe("индикатор проверки безопасного доступа", () => {
   it("использует тематический акцент вместо серого или кораллового чужой темы", () => {
     expect(styles).toContain('html[data-audit-theme="dark"] .facts-loader.ocean-loader > p { color: #ff765f !important; }');
-    expect(styles).toContain('html[data-audit-theme="light"] .facts-loader.ocean-loader > p { color: #0a84ff !important; }');
+    expect(styles).toContain('html[data-audit-theme="light"] .facts-loader.ocean-loader > p { color: var(--muted) !important; }');
   });
 });
