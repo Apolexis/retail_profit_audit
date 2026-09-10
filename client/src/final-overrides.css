@@ -1255,6 +1255,8 @@ html[data-audit-theme="dark"] .packet .packet-actions a.alert-link:hover { trans
 }
 
 /* На телефоне действия истории импортов не должны прятаться в горизонтальной таблице. */
+.packet .expense-mobile-ledger { display: none; }
+
 @media (max-width: 720px) {
   .packet .expense-mobile-ledger { display: grid; gap: 8px; }
   .packet .cash-breakdown-card > .data-table-wrap,
