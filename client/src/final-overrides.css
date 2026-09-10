@@ -1645,3 +1645,7 @@ html[data-audit-theme="light"] .packet .report-history-item.active :is(strong, s
 .packet .section-recommendation { transition: border-color 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease); }
 .packet .section-recommendation:hover { transform: none !important; border-color: rgba(255, 118, 95, .72); background: linear-gradient(105deg, #21131c, #17101b); box-shadow: 0 16px 38px rgba(255, 118, 95, .12); }
 html[data-audit-theme="light"] .packet .section-recommendation:hover { border-color: #0a84ff; background: #f5faff; box-shadow: 0 16px 34px rgba(10, 99, 200, .12); }
+
+/* Темные заголовки категорий не меняют ни фон, ни границу под указателем: это исключает мерцание на точной границе. */
+html[data-audit-theme="dark"] .packet :is(.nav-section-trigger, .nav-drawer-section-trigger) { transition: none !important; }
+html[data-audit-theme="dark"] .packet :is(.nav-section-trigger, .nav-drawer-section-trigger):hover { border-color: var(--line) !important; background: var(--surface-2) !important; box-shadow: none !important; }
