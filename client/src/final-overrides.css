@@ -556,16 +556,16 @@ html[data-audit-theme="light"] .packet .packet-link.compact:hover {
 }
 
 html[data-audit-theme="light"] .login-passkey {
-  background: #ffffff !important;
-  border-color: #e6848e !important;
-  color: #a52d42 !important;
+  background: #edf6ff !important;
+  border-color: #0a63c8 !important;
+  color: #075dbb !important;
 }
 
 html[data-audit-theme="light"] .login-passkey:hover {
-  background: linear-gradient(135deg, #ff7b78 0%, #e63f58 100%) !important;
-  border-color: #e63f58 !important;
-  color: #ffffff !important;
-  box-shadow: 0 0 0 2px rgba(230, 63, 88, 0.16) !important;
+  background: #dceeff !important;
+  border-color: #075dbb !important;
+  color: #064f9f !important;
+  box-shadow: 0 0 0 2px rgba(10, 99, 200, 0.14) !important;
 }
 
 html[data-audit-theme="light"] .packet .pilot-knob > span b {
@@ -1538,3 +1538,53 @@ html[data-audit-theme="dark"] .packet .mobile-quick-nav .mobile-quick-home {
 .packet .admin-password-reset > div { display: grid; gap: 4px; }
 .packet .admin-password-reset-title { margin: 0 !important; }
 .packet .access-import-row { padding-bottom: 12px !important; margin-bottom: 4px !important; }
+
+/* Импорт: нативный input никогда не становится видимым, а предпросмотр остается компактным. */
+.packet .import-drop, .packet .drop-target, .packet .upload-file { min-width: 0; max-width: 100%; box-sizing: border-box; }
+.packet .import-file-input[hidden] { display: none !important; }
+.packet .upload-file span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.packet .import-preview .import-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.packet .import-preview .import-date-filter { margin-bottom: 18px; }
+.packet .import-preview .import-date-copy { display: grid; gap: 5px; min-width: 0; }
+.packet .import-preview .import-date-copy > span,
+.packet .import-preview .import-date-copy > strong,
+.packet .import-preview .import-date-copy > small { display: block; }
+.packet .import-preview .import-date-copy > strong { line-height: 1.25; }
+.packet .import-preview .import-date-copy > small { line-height: 1.5; }
+@media (max-width: 560px) { .packet .import-preview .import-summary { grid-template-columns: 1fr; } }
+html[data-audit-theme="light"] .packet .import-message:not(.success) { border: 1px solid #e7a8b2; background: #fff4f5; color: #963746; }
+
+/* Светлая тема: обычная навигация и рабочие карточки используют спокойный iOS-blue, а не риск-красный. */
+html[data-audit-theme="light"] .packet .nav-section .packet-nav:hover,
+html[data-audit-theme="light"] .packet .nav-section .packet-nav:focus-visible { border-color: #0a63c8 !important; background: #edf6ff !important; color: #075dbb !important; }
+html[data-audit-theme="light"] .packet .nav-section .packet-nav.active { border-color: #0a63c8 !important; background: #edf6ff !important; box-shadow: inset 2px 0 #0a63c8 !important; color: #075dbb !important; }
+html[data-audit-theme="light"] .packet .nav-drawer-section .drawer-link:hover,
+html[data-audit-theme="light"] .packet .nav-drawer-section .drawer-link:focus-visible { border-color: #0a63c8 !important; background: #edf6ff !important; color: #075dbb !important; }
+html[data-audit-theme="light"] .packet .threshold-rule:hover { border-color: #0a63c8 !important; background: #f5faff !important; }
+html[data-audit-theme="light"] .packet .unread-pill { border-color: #bdd9f6 !important; background: #edf6ff !important; color: #075dbb !important; }
+html[data-audit-theme="light"] .packet .login-passkey { border-color: #0a63c8 !important; background: #edf6ff !important; color: #075dbb !important; }
+
+/* Бренд: та же тематическая стрелка, что на экране входа; форма рыб остается неизменной. */
+html[data-audit-theme="light"] .packet .brand-zigzag { stroke: #0a63c8 !important; }
+html[data-audit-theme="dark"] .packet .brand-zigzag { stroke: #ff765f !important; }
+
+/* Дополнительное право предпросмотра размещено рядом с правом импорта. */
+.packet .access-import-control-row { align-items: center; }
+.packet .access-control-toggle { min-height: 29px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-2); color: var(--muted); font: 700 11px Manrope, Arial, sans-serif; }
+.packet .access-control-toggle.active { border-color: var(--cyan); background: color-mix(in srgb, var(--cyan) 12%, var(--surface)); color: var(--text); }
+html[data-audit-theme="light"] .packet .access-control-toggle { border-color: #c6d9ec; background: #fbfdff; color: #3d617f; }
+html[data-audit-theme="light"] .packet .access-control-toggle.active { border-color: #0a63c8; background: #edf6ff; color: #075dbb; }
+
+/* На узком экране рекомендации сценария читаются одной колонкой. */
+@media (max-width: 720px) { .packet .playbook-grid { grid-template-columns: 1fr; } }
+
+/* «Доступ»: отдельный контроль импорта повторяет геометрию прав, а поля не наследуют чужую тему. */
+.packet .access-import-control-row { border-bottom: 0 !important; margin-bottom: 12px !important; }
+.packet .access-import-control-row .access-control-toggle { display: inline-grid; place-items: center; width: 184px; min-height: 36px; padding: 7px 10px; border-radius: 9px; text-align: center; white-space: nowrap; }
+.packet .manage-grid > .packet-card:first-child .stack-form :is(input, select) { min-height: 40px; border-color: #4c3040; background: #17131c; color: #f7e8ed; color-scheme: dark; }
+.packet .manage-grid > .packet-card:first-child .stack-form :is(input, select):focus { border-color: #ff937f !important; box-shadow: 0 0 0 2px rgba(255, 118, 95, .22) !important; outline: none; }
+html[data-audit-theme="light"] .packet .manage-grid > .packet-card:first-child .stack-form :is(input, select) { border-color: #cbd9ee; background: #ffffff; color: #1c2735; color-scheme: light; }
+html[data-audit-theme="light"] .packet .manage-grid > .packet-card:first-child .stack-form :is(input, select):focus { border-color: #0a63c8 !important; box-shadow: 0 0 0 2px rgba(10, 99, 200, .16) !important; }
+html[data-audit-theme="light"] .packet .access-import-control-row .access-control-toggle:not(.active) { border-color: #cbd9ee; background: #ffffff; color: #536176; }
+html[data-audit-theme="light"] .packet .access-import-control-row .access-control-toggle.active { border-color: #0a63c8; background: #edf6ff; color: #075dbb; }
+@media (max-width: 680px) { .packet .access-import-control-row .access-control-toggle { width: 100%; justify-self: stretch; } }

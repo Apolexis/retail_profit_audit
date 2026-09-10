@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampChartPan, clampChartZoom, formatK, nonZeroLines, resolveMetricChartLayout, resolveMetricChartView, resolveOverlayBarGeometry, sortTooltipPayload, zeroAwareTicks } from "./AuditCharts";
+import { clampChartZoom, formatK, nonZeroLines, resolveMetricChartLayout, resolveMetricChartView, resolveOverlayBarGeometry, sortTooltipPayload, viewportChartDomain, windowChartRows, zeroAwareTicks } from "./AuditCharts";
 
 describe("форматирование денежных показателей", () => {
   it("не скрывает малые ненулевые суммы округлением до нуля", () => {
@@ -59,12 +59,17 @@ describe("форматирование денежных показателей",
     expect(source).toContain('className="chart-expand-view-control"');
     expect(source).toContain("showViewControls={data.length>1}");
   });
-  it("поддерживает ограниченное мышиное и сенсорное управление увеличенным графиком", () => {
+  it("масштабирует домен и видимый срез данных, а не SVG-поверхность", () => {
     expect(clampChartZoom(.5)).toBe(1);
     expect(clampChartZoom(4)).toBe(3);
-    expect(clampChartPan(999,2)).toBe(180);
-    expect(clampChartPan(-999,2)).toBe(-180);
+    expect(windowChartRows([1,2,3,4,5,6],{zoom:2,pan:{x:0,y:0}})).toEqual([3,4,5]);
+    expect(viewportChartDomain([0,100],{zoom:2,pan:{x:0,y:0}})).toEqual([25,75]);
+    expect(viewportChartDomain([0,100],{zoom:2,pan:{x:1,y:0}},"x")).toEqual([50,100]);
     const source = require("node:fs").readFileSync(new URL("./AuditCharts.tsx", import.meta.url), "utf8");
+    expect(source).toContain("windowChartRows(data,viewport)");
+    expect(source).toContain("viewportChartDomain(plottedValues,viewport)");
+    expect(source).toContain('axis:"x"|"y"="y"');
+    expect(source).not.toContain("scale(${zoom})");
     expect(source).toContain("onPointerDown={down}");
     expect(source).toContain("onWheel={wheel}");
     expect(source).toContain('aria-label="Интерактивный увеличенный график"');

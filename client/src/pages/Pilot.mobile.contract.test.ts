@@ -11,6 +11,7 @@ it("сохраняет сценарные блоки закрытия внутр
   expect(css).toContain(".packet .closure-choice-main em { overflow-wrap: anywhere; }");
   expect(css).toContain(".packet .closure-disclaimer,");
   expect(css).toContain(".packet .closure-actions { display: grid !important;");
+  expect(css).toContain("@media (max-width: 720px) { .packet .playbook-grid { grid-template-columns: 1fr; } }");
 });
 
 it("поднимает сценарий закрытия перед рекомендованными сценариями и выносит предупреждение из заголовка", () => {

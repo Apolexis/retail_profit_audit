@@ -26,11 +26,16 @@ describe("страница «Портфель»", () => {
     expect(page).toContain("const focusPoint = () => props.payload && setFocusedStore(props.payload.store)");
     expect(page).toContain("onPointerDown={focusPoint}");
     expect(page).not.toContain("onPointerMove={focusPoint}");
+    expect(page).toContain("selected || hovered");
+    expect(page).toContain('"portfolio-scatter-focus"');
     expect(page).toContain('className="portfolio-scatter-hit"');
     expect(page).toContain('className="portfolio-scatter-hit" cx={props.cx} cy={props.cy} r={18} fill="transparent"');
-    expect(page).toContain("fillOpacity={selectedFocus && focus?.store !== item.store ? .26 : 1}");
+    expect(page).toContain("fillOpacity={focus?.store && focus.store !== item.store ? .26 : 1}");
     expect(styles).toContain(".packet .portfolio-scatter-hit { fill: transparent;");
     expect(page).toContain('stroke="none"');
+    expect(page).toContain('viewportChartDomain(allPoints.map(item => Number(item[kind])), viewport, "x")');
+    expect(page).toContain("allowDataOverflow");
+    expect(page).toContain("const chartData = allPoints.filter");
   });
 
   it("оставляет только линию медианы с конкретной подписью", () => {

@@ -64,3 +64,12 @@ describe("будущая материализация импорта", () => {
     expect(page).toContain('me.data?.role === "admin" && <div className="materialization-picker"');
   });
 });
+
+describe("типографика диапазона предпросмотра", () => {
+  it("выводит заголовок, подзаголовок и пояснение отдельными уровнями", () => {
+    expect(page).toContain('className="import-date-copy"');
+    expect(page).toContain("Выберите календарный диапазон");
+    expect(page).toContain("В базу попадут только распознанные даты файла внутри интервала.");
+    expect(overrides).toContain(".packet .import-preview .import-date-copy { display: grid; gap: 5px; min-width: 0; }");
+  });
+});

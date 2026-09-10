@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import express from "express";
 import { createContext } from "./_core/context";
-import { hasImportAccess, getCurrentLocalAccount } from "./accessControl";
+import { hasImportAccess, getCurrentLocalAccount, hasImportControlAccess } from "./accessControl";
 import { commitWorkbookForDateRangeFast, getImportThresholdBreaches, previewImportThresholdBreaches, previewWorkbook, withWorkbookCredentials } from "./audit";
 import { buildImportPreviewSummary } from "./importPreviewSummary";
 import { resolveImportCredentials } from "./importCredentials";
@@ -30,6 +30,12 @@ export function summarizeImportThresholdBreaches(fileName: string, thresholdBrea
     title: `Импорт: ${thresholdBreaches.length} пороговых сигналов`,
     message: `Книга «${fileName}» выявила ${thresholdBreaches.length} пороговых событий в ${stores.size} магазинах. ${topRules || "Откройте Сигналы для расшифровки."}`,
   };
+}
+
+/** Never send monetary control details to an uploader who lacks the dedicated preview permission. */
+export function redactImportControlPreview<T extends ReturnType<typeof buildImportPreviewSummary>>(summary: T, canViewImportControls: boolean) {
+  if (canViewImportControls) return { ...summary, canViewImportControls: true };
+  return { ...summary, canViewImportControls: false, dailyTotals: [], thresholdBreachCount: 0, thresholdBreaches: [] };
 }
 
 async function requireBinaryImportAccess(req: Request, res: Response, required: "upload" | "edit") {
@@ -68,8 +74,9 @@ export function registerImportBinaryRoutes(app: Express) {
       const source = requireWorkbook(req, res);
       if (!source) return;
       const preview = await previewWorkbook(source.buffer, source.fileName, await resolveImportCredentials());
-      const thresholdBreaches = await previewImportThresholdBreaches(preview.periods);
-      res.json(buildImportPreviewSummary(preview, thresholdBreaches));
+      const canViewImportControls = await hasImportControlAccess(ctx.user!.openId);
+      const thresholdBreaches = canViewImportControls ? await previewImportThresholdBreaches(preview.periods) : [];
+      res.json(redactImportControlPreview(buildImportPreviewSummary(preview, thresholdBreaches), canViewImportControls));
     } catch (error) {
       res.status(400).json({ error: errorText(error) });
     }

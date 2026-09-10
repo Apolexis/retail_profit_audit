@@ -24,17 +24,26 @@ async function localAdminFromContext(openId?: string | null) {
   return account;
 }
 
+const accountResponse = (account: Awaited<ReturnType<typeof localAccountFromContext>>) => ({
+  id: account.id,
+  phone: formatRussianPhone(account.username),
+  displayName: account.displayName,
+  role: account.role,
+  importAccessLevel: account.role === "admin" ? "edit" : account.importAccessLevel,
+  canViewImportControls: account.role === "admin" || account.canViewImportControls,
+});
+
 export const localAuthRouter = router({
   me: publicProcedure.query(async ({ ctx }) => {
     const account = (await getLocalSessionFromCookie(ctx.req.headers.cookie))?.account ?? await getLocalAccountByOpenId(ctx.user?.openId);
-    return account ? { id: account.id, phone: formatRussianPhone(account.username), displayName: account.displayName, role: account.role, importAccessLevel: account.role === "admin" ? "edit" : account.importAccessLevel } : null;
+    return account ? accountResponse(account) : null;
   }),
   login: publicProcedure.input(z.object({ username: z.string().min(1).max(64), password: z.string().min(1).max(128) })).mutation(async ({ input, ctx }) => {
     const account = await authenticateLocalAccount(input.username, input.password);
     if (!account) throw new TRPCError({ code: "UNAUTHORIZED", message: "Неверный логин или пароль" });
     const session = await createLocalSession(account.id);
-    ctx.res.cookie(LOCAL_SESSION_COOKIE, session.token, { ...getSessionCookieOptions(ctx.req), sameSite: "lax", maxAge: session.expiresAt.getTime()-Date.now() });
-    return { id: account.id, phone: formatRussianPhone(account.username), displayName: account.displayName, role: account.role, importAccessLevel: account.role === "admin" ? "edit" : account.importAccessLevel };
+    ctx.res.cookie(LOCAL_SESSION_COOKIE, session.token, { ...getSessionCookieOptions(ctx.req), sameSite: "lax", maxAge: session.expiresAt.getTime() - Date.now() });
+    return accountResponse(account);
   }),
   logout: publicProcedure.mutation(async ({ ctx }) => {
     const account = (await getLocalSessionFromCookie(ctx.req.headers.cookie))?.account;
@@ -67,7 +76,7 @@ export const localAuthRouter = router({
     const session = await createLocalSession(account.id);
     ctx.res.clearCookie(PASSKEY_ATTEMPT_COOKIE, { ...getSessionCookieOptions(ctx.req), sameSite: "lax", maxAge: -1 });
     ctx.res.cookie(LOCAL_SESSION_COOKIE, session.token, { ...getSessionCookieOptions(ctx.req), sameSite: "lax", maxAge: session.expiresAt.getTime() - Date.now() });
-    return { id: account.id, phone: formatRussianPhone(account.username), displayName: account.displayName, role: account.role, importAccessLevel: account.role === "admin" ? "edit" : account.importAccessLevel };
+    return accountResponse(account);
   }),
   changePassword: protectedProcedure.input(z.object({ currentPassword: z.string().min(1), nextPassword: password })).mutation(async ({ input, ctx }) => {
     const account = await localAccountFromContext(ctx.user?.openId);
@@ -81,7 +90,7 @@ export const localAuthRouter = router({
     const actor = await localAccountFromContext(ctx.user?.openId);
     return { id: await createLocalAccount(input, actor.id) };
   }),
-  update: adminProcedure.input(z.object({ id: z.number().int(), role: role.optional(), isActive: z.boolean().optional(), importAccessLevel: importAccessLevel.optional() })).mutation(async ({ input, ctx }) => {
+  update: adminProcedure.input(z.object({ id: z.number().int(), role: role.optional(), isActive: z.boolean().optional(), importAccessLevel: importAccessLevel.optional(), canViewImportControls: z.boolean().optional() })).mutation(async ({ input, ctx }) => {
     const actor = await localAccountFromContext(ctx.user?.openId);
     return updateLocalAccount(input, actor.id);
   }),
@@ -115,20 +124,21 @@ export const localAuthRouter = router({
     const account = await localAccountFromContext(ctx.user?.openId);
     return listMyNotifications(account.id, input);
   }),
-  importAlertDetails: protectedProcedure.input(z.object({ importId:z.number().int().positive(), limit:z.number().int().min(10).max(100).optional(), cursor:z.number().int().nonnegative().optional() })).query(async({input,ctx})=>{const account=await localAccountFromContext(ctx.user?.openId);if(account.role!=="admin"&&!await hasNotificationEntityAccess(account.id,"alert_feed",String(input.importId)))throw new TRPCError({code:"FORBIDDEN",message:"Нет доступа к деталям этого уведомления"});return getImportThresholdBreachPage(input.importId,await getAccessibleStoreIds(ctx.user?.openId),input);}),
-  markNotificationRead: protectedProcedure.input(z.object({ id: z.number().int() })).mutation(async ({ input, ctx }) => {
+  importAlertDetails: protectedProcedure.input(z.object({ importId: z.number().int().positive(), limit: z.number().int().min(10).max(100).optional(), cursor: z.number().int().nonnegative().optional() })).query(async ({ input, ctx }) => {
     const account = await localAccountFromContext(ctx.user?.openId);
-    return markNotificationRead(account.id, input.id);
+    if (account.role !== "admin" && !await hasNotificationEntityAccess(account.id, "alert_feed", String(input.importId))) throw new TRPCError({ code: "FORBIDDEN", message: "Нет доступа к деталям этого уведомления" });
+    return getImportThresholdBreachPage(input.importId, await getAccessibleStoreIds(ctx.user?.openId), input);
   }),
+  markNotificationRead: protectedProcedure.input(z.object({ id: z.number().int() })).mutation(async ({ input, ctx }) => markNotificationRead((await localAccountFromContext(ctx.user?.openId)).id, input.id)),
   markAllNotificationsRead: protectedProcedure.mutation(async ({ ctx }) => markAllNotificationsRead((await localAccountFromContext(ctx.user?.openId)).id)),
-  pushStatus: protectedProcedure.query(async({ctx})=>getPushStatus((await localAccountFromContext(ctx.user?.openId)).id)),
-  subscribePush: protectedProcedure.input(z.object({endpoint:z.string().url(),keys:z.object({p256dh:z.string().min(1),auth:z.string().min(1)})})).mutation(async({input,ctx})=>savePushSubscription((await localAccountFromContext(ctx.user?.openId)).id,input)),
-  unsubscribePush: protectedProcedure.input(z.object({endpoint:z.string().url().optional()})).mutation(async({input,ctx})=>removePushSubscription((await localAccountFromContext(ctx.user?.openId)).id,input.endpoint)),
-  adminBroadcast: adminProcedure.input(z.object({message:z.string().trim().min(1,"Введите текст сообщения").max(360,"Сообщение не должно превышать 360 символов")})).mutation(async({input,ctx})=>{
-    const actor=await localAdminFromContext(ctx.user?.openId);
-    const accountIds=(await listLocalAccounts()).filter(account=>account.isActive).map(account=>account.id);
-    const result=await createNotifications({accountIds,severity:"info",title:"Сообщение администратора",message:input.message,entityType:"admin_broadcast"});
-    await recordChange({actorId:actor.id,action:"notification.broadcast",entityType:"notification",entityId:"all-active",afterState:{recipientAccounts:result.created,pushSubscriptionsAccepted:result.pushSent,messageLength:input.message.length}});
-    return {recipientAccounts:result.created,pushSubscriptionsAccepted:result.pushSent};
+  pushStatus: protectedProcedure.query(async ({ ctx }) => getPushStatus((await localAccountFromContext(ctx.user?.openId)).id)),
+  subscribePush: protectedProcedure.input(z.object({ endpoint: z.string().url(), keys: z.object({ p256dh: z.string().min(1), auth: z.string().min(1) }) })).mutation(async ({ input, ctx }) => savePushSubscription((await localAccountFromContext(ctx.user?.openId)).id, input)),
+  unsubscribePush: protectedProcedure.input(z.object({ endpoint: z.string().url().optional() })).mutation(async ({ input, ctx }) => removePushSubscription((await localAccountFromContext(ctx.user?.openId)).id, input.endpoint)),
+  adminBroadcast: adminProcedure.input(z.object({ message: z.string().trim().min(1, "Введите текст сообщения").max(360, "Сообщение не должно превышать 360 символов") })).mutation(async ({ input, ctx }) => {
+    const actor = await localAdminFromContext(ctx.user?.openId);
+    const accountIds = (await listLocalAccounts()).filter(account => account.isActive).map(account => account.id);
+    const result = await createNotifications({accountIds,severity:"info",title:"Сообщение администратора",message:input.message,entityType:"admin_broadcast"});
+    await recordChange({ actorId: actor.id, action: "notification.broadcast", entityType: "notification", entityId: "all-active", afterState: { recipientAccounts: result.created, pushSubscriptionsAccepted: result.pushSent, messageLength: input.message.length } });
+    return { recipientAccounts: result.created, pushSubscriptionsAccepted: result.pushSent };
   }),
 });

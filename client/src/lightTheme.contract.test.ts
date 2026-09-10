@@ -36,6 +36,9 @@ describe("контрастная светлая тема", () => {
 
   it("оставляет название бренда на экране входа читаемым, а не коралловым", () => {
     expect(overrides).toContain('html[data-audit-theme="light"] .login-mark { color: #1f3652 !important; }');
+    expect(overrides).toContain('html[data-audit-theme="light"] .login-passkey {');
+    expect(overrides).toContain('border-color: #0a63c8 !important;');
+    expect(overrides).toContain('html[data-audit-theme="light"] .login-passkey:hover {');
   });
 
   it("передает в scatter-графики Портфеля светлую палитру, а не темные константы", () => {

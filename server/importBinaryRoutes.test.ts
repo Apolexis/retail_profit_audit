@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { summarizeImportThresholdBreaches } from "./importBinaryRoutes";
+import { redactImportControlPreview, summarizeImportThresholdBreaches } from "./importBinaryRoutes";
 
 describe("summarizeImportThresholdBreaches", () => {
   it("сводит множественные риски импорта в одно уведомление вместо сотен одинаковых карточек", () => {
@@ -17,5 +17,21 @@ describe("summarizeImportThresholdBreaches", () => {
   it("предусматривает переход из итогового сигнала в ленту подробных рисков", () => {
     const source = require("node:fs").readFileSync(new URL("./importBinaryRoutes.ts", import.meta.url), "utf8");
     expect(source).toContain('entityType: "alert_feed"');
+  });
+
+  it("не передает суммы и пороговые события загрузчику без отдельного права просмотра", () => {
+    const preview = {
+      year: 2026, stores: ["ПОРТ"], periodCount: 1, recognitionIssues: [],
+      technicalDays: [{ entryDate: "2026-01-01", periodCount: 1, conflictCount: 0, protectedMetricCount: 0 }],
+      dailyTotals: [{ entryDate: "2026-01-01", periodCount: 1, cashTotals: { delivery: 100 }, ndflTotal: 22, conflictCount: 0, protectedMetricCount: 0, thresholdBreachCount: 1 }],
+      conflictCount: 0, conflictSamples: [], protectedMetricCount: 0, protectedMetricSamples: [], thresholdBreachCount: 1,
+      thresholdBreaches: [{ entryDate: "2026-01-01", amount: 100, store: "ПОРТ", rule: { ruleKey: "delivery", label: "Доставка", severity: "warning" as const, description: "", threshold: 50 } }],
+    };
+    const redacted = redactImportControlPreview(preview, false);
+    expect(redacted.canViewImportControls).toBe(false);
+    expect(redacted.dailyTotals).toEqual([]);
+    expect(redacted.thresholdBreachCount).toBe(0);
+    expect(redacted.thresholdBreaches).toEqual([]);
+    expect(redacted.technicalDays).toHaveLength(1);
   });
 });

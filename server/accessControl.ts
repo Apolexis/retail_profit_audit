@@ -45,6 +45,12 @@ export async function hasImportAccess(openId: string | null | undefined, require
   return isImportAccessAllowed(account.importAccessLevel, required);
 }
 
+/** Importing a workbook and viewing its financial control preview are separate permissions. */
+export async function hasImportControlAccess(openId: string | null | undefined) {
+  const account = await getCurrentLocalAccount(openId);
+  return Boolean(account && (account.role === "admin" || account.canViewImportControls));
+}
+
 export async function listAccountStoreAccess(accountId: number) {
   const db = await getDb();
   if (!db) return [];

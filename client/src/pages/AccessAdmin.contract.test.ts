@@ -23,6 +23,14 @@ describe("матрица доступа к импорту",()=>{
     expect(overrides).toContain('.packet .access-import-row { padding-bottom: 12px !important; margin-bottom: 4px !important; }');
   });
 
+  it("дает отдельное право просмотра финансового блока предпросмотра импорта",()=>{
+    const page=readFileSync(resolve(process.cwd(),"client/src/pages/AccessAdmin.tsx"),"utf8");
+    expect(page).toContain("Сигналы и контроль импорта");
+    expect(page).toContain("canViewImportControls");
+    expect(page).toContain("Просмотр разрешен");
+    expect(overrides).toContain(".packet .access-control-toggle.active");
+  });
+
   it("дает администратору форму общей push-рассылки с честным итогом доставки",()=>{
     const page=readFileSync(resolve(process.cwd(),"client/src/pages/AccessAdmin.tsx"),"utf8");
     expect(page).toContain("Push всем пользователям");

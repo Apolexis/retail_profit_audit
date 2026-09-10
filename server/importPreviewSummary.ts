@@ -86,6 +86,7 @@ export function buildImportPreviewSummary<T extends PreviewThresholdBreach>(
     stores: preview.stores,
     periodCount: preview.periods.length,
     recognitionIssues: preview.recognitionIssues,
+    technicalDays: Array.from(days.values()).map(day => ({ entryDate: day.entryDate, periodCount: day.periodCount, conflictCount: day.conflictCount, protectedMetricCount: day.protectedMetricCount })).sort((left, right) => left.entryDate.localeCompare(right.entryDate)),
     dailyTotals: Array.from(days.values()).sort((left, right) => left.entryDate.localeCompare(right.entryDate)),
     conflictCount: preview.conflicts.length,
     conflictSamples: preview.conflicts.slice(0, 24),

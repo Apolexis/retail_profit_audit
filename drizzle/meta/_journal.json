@@ -120,6 +120,13 @@
       "when": 1788991896195,
       "tag": "0016_unusual_gambit",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1789060536035,
+      "tag": "0017_daily_beast",
+      "breakpoints": true
     }
   ]
 }
