@@ -1,5 +1,5 @@
-const CACHE_NAME = "rybny-analytics-shell-v13";
-const APP_SHELL = ["/", "/manifest.webmanifest?v=13", "/manifest-dark.webmanifest?v=13", "/manifest-light.webmanifest?v=13", "/manus-storage/rybny_circle_dark_transparent_v8_03811f3b.png?v=8", "/manus-storage/rybny_circle_light_transparent_v41_12c60e40.png?v=41"];
+const CACHE_NAME = "rybny-analytics-shell-v14";
+const APP_SHELL = ["/", "/manifest.webmanifest?v=14", "/manifest-dark.webmanifest?v=14", "/manifest-light.webmanifest?v=14", "/manus-storage/rybny_circle_dark_v45_dc39f0c9.png", "/manus-storage/rybny_circle_light_v45_94fe9f81.png"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
@@ -20,8 +20,8 @@ self.addEventListener("push", event => {
   const payload = event.data?.json?.() || { title: "Аналитика «Рыбный»", body: "Новое уведомление" };
   event.waitUntil(self.registration.showNotification(payload.title || "Аналитика «Рыбный»", {
     body: payload.body || "Новое уведомление",
-    icon: payload.icon || "/manus-storage/rybny_circle_dark_transparent_v8_03811f3b.png?v=8",
-    badge: payload.badge || "/manus-storage/rybny_circle_dark_transparent_v8_03811f3b.png?v=8",
+    icon: payload.icon || "/manus-storage/rybny_circle_dark_v45_dc39f0c9.png",
+    badge: payload.badge || "/manus-storage/rybny_circle_dark_v45_dc39f0c9.png",
     data: payload.data || { url: "/notifications" },
   }));
 });

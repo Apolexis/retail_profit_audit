@@ -75,7 +75,8 @@ describe("форматирование денежных показателей",
     expect(source).toContain("includeZero=true");
     expect(source).not.toContain("scale(${zoom})");
     expect(source).toContain("onPointerDown={down}");
-    expect(source).toContain("onWheel={wheel}");
+    expect(source).toContain('addEventListener("wheel",wheel,{passive:false})');
+    expect(source).toContain("event.stopPropagation()");
     expect(source).toContain("if(zoom<=1)return");
     expect(source).toContain("y:current.y-(next.y-previous.y)*1.4");
     expect(source).toContain('aria-label="Интерактивный увеличенный график"');

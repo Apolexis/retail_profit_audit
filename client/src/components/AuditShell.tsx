@@ -7,7 +7,7 @@ import { DateRangeControl } from "@/components/DateRangeControl";
 import "@/audit.css";
 import "@/mobile-nav.css";
 
-export function BrandMark(){return <svg className="brand-mark" viewBox="0 0 52 42" aria-hidden="true"><path className="brand-zigzag" d="M4 31 13 23l7 5 10-14 7 7 11-12"/><path className="brand-fish brand-fish-red" d="M7 10c4-4 10-2 12 2 2 4-1 8-5 8-4 0-7-3-7-6l-4 3 1-5-3-3 5 1Z"/><circle className="brand-eye" cx="14" cy="13" r="1.2"/><path className="brand-fish brand-fish-yellow" d="M28 29c3-3 8-2 10 1 2 3 0 7-4 7-3 0-6-2-6-5l-3 2 1-4-2-2 4 1Z"/><circle className="brand-eye" cx="34" cy="31" r="1"/></svg>}
+export function BrandMark(){return <img className="brand-mark" src="/manus-storage/rybny_brand_compact_d86c28dd.png" alt="" aria-hidden="true"/>}
 const navSections=[
   {title:"АНАЛИТИКА",items:[["/","00","Сводка",false],["/months","01","Месяцы",false],["/pricing","02","Цены",false],["/expenses","03","Расходы",false],["/inventory","04","Остатки",false],["/stores","05","Магазины",false],["/compare","06","Сравнить",false]]},
   {title:"РЕШЕНИЯ",items:[["/control","07","Динамика",false],["/cadence","08","Ритм",false],["/portfolio","09","Портфель",false],["/pilot","10","Пилот",false],["/forecast","19","Прогноз",false],["/planfact","11","План‑факт",false]]},

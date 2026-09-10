@@ -6,7 +6,7 @@
   "background_color": "#0c0b12",
   "theme_color": "#0c0b12",
   "icons": [
-    {"src":"/manus-storage/rybny_circle_dark_transparent_v8_03811f3b.png?v=8","sizes":"192x192","type":"image/png","purpose":"any"},
-    {"src":"/manus-storage/rybny_circle_dark_transparent_v8_03811f3b.png?v=8","sizes":"512x512","type":"image/png","purpose":"any"}
+    {"src":"/manus-storage/rybny_circle_dark_v45_dc39f0c9.png","sizes":"192x192","type":"image/png","purpose":"any"},
+    {"src":"/manus-storage/rybny_circle_dark_v45_dc39f0c9.png","sizes":"512x512","type":"image/png","purpose":"any"}
   ]
 }

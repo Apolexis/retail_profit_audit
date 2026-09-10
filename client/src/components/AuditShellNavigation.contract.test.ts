@@ -42,15 +42,13 @@ describe("AuditShell navigation contract",()=>{
     expect(shell).toContain('kicker.replace(/^\\d+\\s*\\/\\s*/,"")');
   });
 
-  it("uses a light vector brand mark without a dark image backing",()=>{
+  it("uses the agreed compact brand mark in navigation and login",()=>{
     expect(shell).toContain("function BrandMark()");
     expect(shell).toContain('className="brand-mark"');
-    expect(shell).toContain("brand-fish-red");
-    expect(shell).toContain("brand-fish-yellow");
+    expect(shell).toContain('src="/manus-storage/rybny_brand_compact_d86c28dd.png"');
+    expect(shell).toContain('alt="" aria-hidden="true"');
     expect(shell).toContain('className="brand-title"');
     expect(shell).not.toContain("rybny_analytics_app_icon");
-    expect(design).toContain(".packet .brand-zigzag");
-    expect(shell).toContain('className="brand-title"');
   });
 
   it("keeps notification and theme controls visually unified in the dark header",()=>{

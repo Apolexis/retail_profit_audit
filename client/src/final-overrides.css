@@ -1608,3 +1608,40 @@ html[data-audit-theme="light"] .alert-link:focus-visible { border-color: #0a63c8
 html[data-audit-theme="light"] .packet .packet-actions .alert-link { border-color: #bdd9f6 !important; background: #ffffff !important; color: #075dbb !important; }
 html[data-audit-theme="light"] .packet .packet-actions .alert-link:hover,
 html[data-audit-theme="light"] .packet .packet-actions .alert-link:focus-visible { border-color: #0a63c8 !important; background: #edf6ff !important; color: #075dbb !important; box-shadow: 0 0 0 2px rgba(10, 99, 200, .12) !important; }
+
+/* Финальный пакет интерфейса: таблицы, категории, импорт, графики и отчеты. */
+.packet .data-table-wrap { isolation: isolate; overflow-x: auto; overflow-y: hidden; border-radius: 12px; }
+.packet .data-table { border-collapse: separate; border-spacing: 0; }
+.packet .data-table thead th:first-child { border-top-left-radius: 11px; }
+.packet .data-table thead th:last-child { border-top-right-radius: 11px; }
+html[data-audit-theme="light"] .packet .data-table th.sortable-column:hover,
+html[data-audit-theme="light"] .packet .data-table th.sortable-column:focus-visible { color: #075dbb; background: #edf6ff; }
+html[data-audit-theme="light"] .packet .data-table th.sortable-column.sort-active,
+html[data-audit-theme="light"] .packet .data-table th.sortable-column.sort-active::after { color: #075dbb; }
+
+.packet .chart-panzoom { overscroll-behavior: contain; }
+
+.packet :is(.nav-section-trigger, .nav-drawer-section-trigger) { min-height: 30px; margin: 0; padding: 0 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); color: var(--faint); box-shadow: none !important; filter: none !important; }
+.packet :is(.nav-section, .nav-drawer-section).is-open :is(.nav-section-trigger, .nav-drawer-section-trigger) { color: var(--text); }
+.packet :is(.nav-section-trigger, .nav-drawer-section-trigger):hover,
+.packet :is(.nav-section-trigger, .nav-drawer-section-trigger):focus-visible { border-color: var(--line) !important; background: var(--surface-3) !important; color: var(--text); outline: 0; transform: none !important; box-shadow: none !important; filter: none !important; }
+html[data-audit-theme="dark"] .packet :is(.nav-section-trigger, .nav-drawer-section-trigger):hover { border-color: #314259 !important; background: #182231 !important; }
+html[data-audit-theme="light"] .packet :is(.nav-section-trigger, .nav-drawer-section-trigger) { border-color: #d9e1eb; background: #fbfcfe; color: #51657d; }
+html[data-audit-theme="light"] .packet :is(.nav-section, .nav-drawer-section).is-open :is(.nav-section-trigger, .nav-drawer-section-trigger) { color: #075dbb; }
+html[data-audit-theme="light"] .packet :is(.nav-section-trigger, .nav-drawer-section-trigger):hover,
+html[data-audit-theme="light"] .packet :is(.nav-section-trigger, .nav-drawer-section-trigger):focus-visible { border-color: #0a63c8 !important; background: #edf6ff !important; color: #075dbb; }
+
+@media (min-width: 561px) { .packet .conflict-actions > label { position: relative; top: 4px; } }
+
+.packet .brand-mark { display: block; object-fit: contain; }
+.login-mark .brand-mark { width: 42px; height: 42px; flex: 0 0 auto; }
+
+html[data-audit-theme="light"] .packet .report-schedule-controls .schedule-toggle:hover { border-color: #0a84ff; background: #edf6ff; color: #075dbb; }
+html[data-audit-theme="light"] .packet .report-schedule-controls .schedule-toggle.active { border-color: #0a84ff; background: #eaf4ff; color: #075dbb; }
+html[data-audit-theme="light"] .packet .report-history-item.active { border-color: #0a84ff; background: #eaf4ff; color: #1f2d42; }
+html[data-audit-theme="light"] .packet .report-history-item.active :is(strong, small) { color: #1f2d42; }
+
+/* Управленческий фокус: одинаковая обратная связь на всех страницах без сдвига блока. */
+.packet .section-recommendation { transition: border-color 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease); }
+.packet .section-recommendation:hover { transform: none !important; border-color: rgba(255, 118, 95, .72); background: linear-gradient(105deg, #21131c, #17101b); box-shadow: 0 16px 38px rgba(255, 118, 95, .12); }
+html[data-audit-theme="light"] .packet .section-recommendation:hover { border-color: #0a84ff; background: #f5faff; box-shadow: 0 16px 34px rgba(10, 99, 200, .12); }
