@@ -6,7 +6,7 @@ export type DateRangeValue={from:string;to:string};
 const defaultRange={from:"2026-01-01",to:"2026-12-31"};
 const pretty=(date:string)=>date.split("-").reverse().join(".");
 const normalizeRange=(value:DateRangeValue):DateRangeValue=>value.from<=value.to?value:{from:value.to,to:value.from};
-const themeIcon={dark:"/manus-storage/rybny_pwa_dark_transparent_59ff5339.png",light:"/manus-storage/rybny_pwa_light_transparent_dc120776.png"} as const;
+const themeIcon={dark:"/manus-storage/rybny_circle_dark_transparent_v3_2f5a31f6.png",light:"/manus-storage/rybny_circle_light_transparent_v3_ecbf32a1.png"} as const;
 const themeManifest={dark:"/manifest-dark.webmanifest",light:"/manifest-light.webmanifest"} as const;
 const storedTheme=()=>localStorage.getItem("audit-theme") as "dark"|"light"|null;
 const systemTheme=()=>window.matchMedia?.("(prefers-color-scheme: light)").matches?"light":"dark";

@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { rankClosureCandidates, summarizeClosureScenario } from "@/lib/closureScenario";
 
 const page=readFileSync(resolve(process.cwd(),"client/src/pages/Pilot.tsx"),"utf8");
+const styles=readFileSync(resolve(process.cwd(),"client/src/final-overrides.css"),"utf8");
 
 describe("Pilot scenario outcome contract",()=>{
   it("shows the base, scenario delta, and final profit in the right order",()=>{
@@ -35,6 +36,7 @@ describe("Pilot scenario outcome contract",()=>{
     expect(page).toContain("Остаток сети после закрытия");
     expect(page).toContain("ПРЕКРАЩАЕМЫЕ РАСХОДЫ");
     expect(page).toContain("Общий итог и статьи выбранных точек");
+    expect(styles).toContain(".packet .closure-overview { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));");
     const candidates=rankClosureCandidates([{store:"Убыток",revenue:1_000,expenses:1_100,netProfit:-100,netMargin:-10,purchaseSmoked:250,purchaseFrozen:150,stockClose:90,expenseByCode:{rent:400,delivery:50}},{store:"Плюс",revenue:2_000,expenses:1_500,netProfit:200,netMargin:10}]);
     expect(candidates[0]).toMatchObject({store:"Убыток",shouldReviewForClosure:true});
     expect(candidates[0]?.reason).toContain("Убыток");

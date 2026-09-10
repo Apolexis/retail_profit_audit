@@ -775,7 +775,7 @@ html[data-audit-theme="light"] .packet .packet-nav-group + .packet-nav-group { b
 .packet .closure-planner .card-title { margin-bottom: 0; }
 .packet .closure-disclaimer { max-width: 68ch; margin: -4px 0 0; color: var(--muted); font-size: 11px; line-height: 1.45; overflow-wrap: anywhere; }
 .packet .closure-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.packet .closure-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(142px, 1fr)); gap: 8px; }
+.packet .closure-overview { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .packet .closure-overview > div { display: grid; gap: 5px; min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }
 .packet .closure-overview span { color: var(--faint); font: 8px "IBM Plex Mono", monospace; letter-spacing: .06em; line-height: 1.25; text-transform: uppercase; }
 .packet .closure-overview strong,.packet .closure-overview b { font-size: 14px; line-height: 1.2; font-variant-numeric: tabular-nums; }
@@ -1338,9 +1338,14 @@ html[data-audit-theme="dark"] .packet .packet-actions a.alert-link:hover { trans
 .packet .portfolio-mobile-intro { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
 .packet .portfolio-thresholds { display: grid; gap: 13px; }
 .packet .portfolio-thresholds .card-title { margin-bottom: 0; }
+.packet .portfolio-threshold-context { display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px 10px; color: var(--faint); font: 9px "IBM Plex Mono", monospace; letter-spacing: .05em; text-transform: uppercase; }
+.packet .portfolio-threshold-context b { color: var(--text); font: 800 13px Manrope, Arial, sans-serif; letter-spacing: normal; }
 .packet .portfolio-threshold-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
-.packet .portfolio-threshold-fields label { display: grid; gap: 5px; min-width: 0; color: var(--faint); font: 9px "IBM Plex Mono", monospace; letter-spacing: .05em; text-transform: uppercase; }
-.packet .portfolio-threshold-fields input { min-width: 0; height: 36px; padding: 0 9px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); color: var(--text); font: 800 12px Manrope, Arial, sans-serif; }
+.packet .threshold-stepper { display: grid; gap: 6px; min-width: 0; color: var(--faint); font: 9px "IBM Plex Mono", monospace; letter-spacing: .05em; text-transform: uppercase; }
+.packet .threshold-stepper > div { display: grid; grid-template-columns: 34px minmax(0, 1fr) 34px; align-items: center; min-height: 36px; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); }
+.packet .threshold-stepper button { display: grid; place-items: center; align-self: stretch; border: 0; border-radius: 0; background: transparent; color: var(--text); font: 700 18px/1 Manrope, Arial, sans-serif; }
+.packet .threshold-stepper button:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); transform: none; }
+.packet .threshold-stepper b { min-width: 0; color: var(--text); font: 800 12px Manrope, Arial, sans-serif; letter-spacing: normal; text-align: center; }
 .packet .portfolio-tooltip { min-width: 164px; }
 .packet .portfolio-tooltip span:last-child strong { color: inherit; }
 .packet .portfolio-mobile-priority-list { display: grid; gap: 7px; max-width: 960px; margin: 0 auto; }
@@ -1386,15 +1391,15 @@ html[data-audit-theme="dark"] .packet .portfolio-mobile-priority.active { border
 .chart-expand-dialog [data-slot="dialog-description"] { color: #aeb9c8; }
 .chart-expand-dialog [data-slot="dialog-close"] { color: #dce6f3; }
 .chart-expand-canvas { min-width: min(900px, 100%); }
-.chart-panzoom { position: relative; min-height: 560px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--line) 76%, transparent); border-radius: 12px; touch-action: none; cursor: grab; user-select: none; }
+.chart-panzoom { position: relative; min-height: 560px; overflow: clip; border: 1px solid color-mix(in srgb, var(--line) 76%, transparent); border-radius: 12px; touch-action: none; cursor: grab; user-select: none; }
 .chart-panzoom.dragging { cursor: grabbing; }
 .chart-panzoom:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
-.chart-expand-view-control { position: relative; z-index: 5; display: flex; justify-content: flex-start; min-width: 0; margin: 2px 0 10px; }
+.chart-expand-view-control { position: relative; z-index: 6; display: flex; justify-content: flex-start; min-width: 0; margin: 2px 0 10px; isolation: isolate; }
 .chart-expand-view-control .chart-view-control { display: inline-flex; max-width: 100%; gap: 3px; padding: 3px; border: 1px solid #324158; border-radius: 9px; background: #161f2d; }
 .chart-expand-view-control .chart-view-button { min-height: 29px; padding: 0 9px; border: 0; border-radius: 6px; background: transparent; color: #aeb9c8; font-size: 10px; font-weight: 800; }
 .chart-expand-view-control .chart-view-button:hover:not(.active) { color: #f7fbff; background: #25364d; box-shadow: none; }
 .chart-expand-view-control .chart-view-button.active { background: #ff765f; color: #fff; box-shadow: 0 4px 10px rgba(255,118,95,.24); }
-.chart-panzoom-actions { position: relative; z-index: 2; display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-height: 38px; padding: 6px 8px; background: color-mix(in srgb, var(--surface) 92%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent); backdrop-filter: blur(10px); }
+.chart-panzoom-actions { position: relative; z-index: 2; display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-height: 38px; padding: 6px 8px; border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent); border-radius: 11px 11px 0 0; background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(10px); }
 .chart-panzoom-actions button { min-height: 26px; padding: 0 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-2); color: var(--text); font: 800 11px Manrope, Arial, sans-serif; }
 .chart-panzoom-actions button:hover { border-color: var(--blue); background: var(--surface-3); }
 .chart-panzoom-actions b { min-width: 39px; color: var(--muted); font: 800 10px "IBM Plex Mono", monospace; text-align: center; }
@@ -1457,15 +1462,65 @@ html[data-audit-theme="light"] .mobile-drawer .drawer-link.active {
   border-color: #0a84ff !important;
   background: #eaf4ff !important;
   color: #075dbb !important;
-  box-shadow: inset 0 0 0 1px #0a84ff, 0 0 0 2px rgba(10, 132, 255, 0.1) !important;
+  box-shadow: inset 2px 0 #0a84ff !important;
 }
 
 /* Сводка: вводный контур отделен от общего выбора периода. */
-.packet .packet-main:has(> .cover) > .summary-period-filter { margin-top: 16px !important; }
+.packet .packet-main:has(> .cover) > .summary-period-filter { margin-top: 22px !important; }
 
 /* Пустая сводка: декоративные иконки не теряются на светлой поверхности. */
 html[data-audit-theme="light"] .packet .home-empty-facts > svg,
 html[data-audit-theme="light"] .packet .home-empty-facts .packet-link svg { color: #0a63c8 !important; }
+html[data-audit-theme="light"] .packet .home-empty-facts > svg,
+html[data-audit-theme="light"] .packet .home-empty-facts .packet-link svg * { stroke: currentColor !important; }
+
+/* Светлая ошибка входа должна использовать палитру формы, а не темный дефолт. */
+html[data-audit-theme="light"] .login-gate .login-error {
+  border-color: #e7a8b2 !important;
+  background: #fff4f5 !important;
+  color: #963746 !important;
+}
+
+/* Карточки учетных записей: выбранное и hover-состояния используют одну геометрию. */
+.packet .account-list > .account-choice,
+.packet .account-list > .account-choice:first-child {
+  border: 1px solid transparent !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+.packet .account-list > .account-choice:hover,
+.packet .account-list > .account-choice:focus-visible {
+  border-color: var(--line-strong, var(--line)) !important;
+  background: var(--surface-2) !important;
+  outline: none;
+}
+.packet .account-list > .account-choice.selected,
+.packet .account-list > .account-choice:first-child.selected {
+  border-color: var(--cyan) !important;
+  background: color-mix(in srgb, var(--cyan) 9%, var(--surface)) !important;
+  box-shadow: inset 2px 0 var(--cyan) !important;
+}
+html[data-audit-theme="light"] .packet .account-list > .account-choice.selected,
+html[data-audit-theme="light"] .packet .account-list > .account-choice:first-child.selected {
+  border-color: #0a84ff !important;
+  background: #eaf4ff !important;
+  box-shadow: inset 2px 0 #0a84ff !important;
+}
+
+/* Импорт отделен тем же нижним ритмом, что и назначения магазинов. */
+.packet .access-import-row { margin-bottom: 11px !important; padding-bottom: 11px !important; border-bottom: 1px solid var(--line); }
+
+/* Компактные действия телефона не должны спорить с контентом; дом остается коралловым в темной теме. */
+@media (max-width: 720px) {
+  .packet .mobile-quick-nav { width: min(292px, calc(100vw - 36px)); }
+  .packet .mobile-quick-nav :is(button, a) { min-height: 36px; }
+}
+html[data-audit-theme="dark"] .packet .mobile-quick-nav a.mobile-quick-home {
+  border-color: rgba(255, 118, 95, .78) !important;
+  background: rgba(255, 118, 95, .16) !important;
+  color: #ff9b88 !important;
+}
 
 /* Нижняя мобильная панель остается компактной; «Домой» продолжает фирменную коралловую линию в темной теме. */
 @media (max-width: 720px) {

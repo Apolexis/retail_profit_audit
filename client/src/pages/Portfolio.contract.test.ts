@@ -25,11 +25,12 @@ describe("страница «Портфель»", () => {
     expect(page).not.toContain("onMouseMove={selectScatterPoint}");
     expect(page).toContain("const focusPoint = () => props.payload && setFocusedStore(props.payload.store)");
     expect(page).toContain("onPointerDown={focusPoint}");
-    expect(page).toContain("onPointerMove={focusPoint}");
+    expect(page).not.toContain("onPointerMove={focusPoint}");
     expect(page).toContain('className="portfolio-scatter-hit"');
+    expect(page).toContain('className="portfolio-scatter-hit" cx={props.cx} cy={props.cy} r={18} fill="transparent"');
     expect(page).toContain("fillOpacity={selectedFocus && focus?.store !== item.store ? .26 : 1}");
     expect(styles).toContain(".packet .portfolio-scatter-hit { fill: transparent;");
-    expect(page).toContain('stroke={selected ? palette.focus : "none"}');
+    expect(page).toContain('stroke="none"');
   });
 
   it("оставляет только линию медианы с конкретной подписью", () => {
@@ -68,10 +69,12 @@ describe("страница «Портфель»", () => {
   it("дает отдельные сохраняемые пороги приоритета для маржи и покрытия", () => {
     expect(page).toContain('priorityThresholdStorageKey = "audit-portfolio-priority-thresholds"');
     expect(page).toContain("КРИТЕРИИ КАРТЫ ПРИОРИТЕТОВ");
-    expect(page).toContain("Финансовые факты и расчеты не меняются.");
-    expect(page).toContain("Маржа ниже, %");
-    expect(page).toContain("Низкое покрытие, дней");
-    expect(page).toContain("Высокое покрытие, дней");
+    expect(page).toContain("финансовые факты и расчеты не меняются.");
+    expect(page).toContain("Маржа ниже");
+    expect(page).toContain("Низкое покрытие");
+    expect(page).toContain("Высокое покрытие");
+    expect(page).toContain("threshold-stepper");
+    expect(page).toContain("Типичное покрытие сети");
     expect(page).toContain("localStorage.setItem(priorityThresholdStorageKey");
     expect(page).toContain("priorityScore(b, priorityThresholds)");
     expect(styles).toContain('html[data-audit-theme="dark"] .packet .portfolio-mobile-priority.active { border-color: #ff765f;');

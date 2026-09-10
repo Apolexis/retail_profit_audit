@@ -10,10 +10,10 @@ describe("страница «Сводка»", () => {
     expect(home).toContain("Прибыль, запас и риск — в одном управленческом контуре.");
     expect(home).toContain('className="empty-state live-empty home-empty-facts"');
     expect(shell).toContain('analysis-filter${kicker.startsWith("00")');
-    expect(shell).toContain('ОБЩИЙ ПЕРИОД');
+    expect(shell).toContain('ОБЩИЙ СРЕЗ');
     expect(shell).toContain('summary-period-filter');
     expect(styles).toContain('.packet .packet-main:has(> .cover) { display: flex; flex-direction: column; }');
     expect(styles).toContain('.packet .packet-main > .cover { order: -1; }');
-    expect(styles).toContain('.packet .packet-main:has(> .cover) > .summary-period-filter { margin-top: 16px !important; }');
+    expect(styles).toContain('.packet .packet-main:has(> .cover) > .summary-period-filter { margin-top: 22px !important; }');
   });
 });

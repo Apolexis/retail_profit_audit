@@ -67,7 +67,7 @@ describe("форматирование денежных показателей",
     const source = require("node:fs").readFileSync(new URL("./AuditCharts.tsx", import.meta.url), "utf8");
     expect(source).toContain("onPointerDown={down}");
     expect(source).toContain("onWheel={wheel}");
-    expect(source).toContain("Колесо мыши или щипок");
+    expect(source).toContain('aria-label="Интерактивный увеличенный график"');
     expect(source).toContain("Сброс");
   });
   it("использует единый широкий слот наложения и один цвет для легенды, линии и маркера", () => {
@@ -79,7 +79,7 @@ describe("форматирование денежных показателей",
     expect(source).toContain("resolveOverlayBarGeometry");
     expect(source).toContain("fill={color}");
     expect(source).not.toContain("chart-overlay-note");
-    expect(source).toContain("stroke:color,strokeWidth:2,fill:color");
+    expect(source).toContain('stroke:"none",strokeWidth:0,fill:color');
   });
   it("сохраняет нулевую отметку в шкале положительных, отрицательных и смешанных значений", () => {
     expect(zeroAwareTicks([12, 48])).toContain(0);
