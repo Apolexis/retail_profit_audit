@@ -9,7 +9,7 @@ describe("базовые управляющие элементы", () => {
   it("сохраняет увеличенный правый отступ кнопки «Наверх» на малом и широком экране", () => {
     expect(css).toContain("right: max(45px, calc(env(safe-area-inset-right, 0px) + 45px)) !important");
     expect(css).toContain("@media (min-width: 721px)");
-    expect(css).toContain(".packet .scroll-top { right: 45px !important; }");
+    expect(css).toContain(".packet .scroll-top { left: auto !important; right: 45px !important; }");
   });
 
   it("использует общую визуальную систему для темы и уведомлений без сдвига прав доступа", () => {
@@ -30,5 +30,15 @@ describe("базовые управляющие элементы", () => {
     expect(shell).toContain('className="analysis-filter-copy"');
     expect(css).toContain(".packet .analysis-filter-copy { display:grid!important; grid-template-columns:minmax(0,1fr)!important;");
     expect(css).toContain(".packet .analysis-filter-copy > :is(span,strong,small) { display:block!important;");
+  });
+
+  it("дает установленному мобильному приложению компактные переходы без перекрытия контента", () => {
+    expect(shell).toContain('className="mobile-quick-nav"');
+    expect(shell).toContain('aria-label="Назад"');
+    expect(shell).toContain('aria-label="Домой"');
+    expect(shell).toContain('aria-label="Вперёд"');
+    expect(shell).toContain('aria-label="Обновить данные"');
+    expect(css).toContain(".packet .packet-main { padding-bottom: 142px; }");
+    expect(css).toContain("grid-template-columns: repeat(4, minmax(0, 1fr))");
   });
 });

@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const styles = readFileSync(new URL("./design-system.css", import.meta.url), "utf8");
+const overrides = readFileSync(new URL("./final-overrides.css", import.meta.url), "utf8");
 const portfolio = readFileSync(new URL("./pages/Portfolio.tsx", import.meta.url), "utf8");
 const lightScreens = ["Home.tsx", "ControlCenter.tsx", "OperationalCadence.tsx", "Portfolio.tsx", "ManageData.tsx", "AccessAdmin.tsx", "Notifications.tsx", "WeeklyReports.tsx"];
 
@@ -23,6 +24,12 @@ describe("контрастная светлая тема", () => {
     expect(styles).toContain("[data-sonner-toaster] [data-sonner-toast]{background:#171018!important;color:#f8edf2!important");
     expect(styles).toContain('html[data-audit-theme="light"] [data-sonner-toaster] [data-sonner-toast]{background:#ffffff!important;color:#152033!important');
     expect(styles).toContain("[data-sonner-toast] [data-button]{background:#ff765f!important");
+  });
+
+  it("использует iOS-синий контур hover у обычной навигации светлой темы", () => {
+    expect(overrides).toContain('html[data-audit-theme="light"] .packet .packet-nav:not(.active):hover');
+    expect(overrides).toContain('box-shadow: inset 0 0 0 1px #0a84ff');
+    expect(overrides).toContain('.mobile-drawer .drawer-link:not(.active):hover');
   });
 
   it("передает в scatter-графики Портфеля светлую палитру, а не темные константы", () => {

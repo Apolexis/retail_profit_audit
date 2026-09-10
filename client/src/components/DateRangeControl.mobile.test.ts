@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 const component = readFileSync(new URL("./DateRangeControl.tsx", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../calendar-range.css", import.meta.url), "utf8");
 const finalOverrides = readFileSync(new URL("../final-overrides.css", import.meta.url), "utf8");
+const auditContext = readFileSync(new URL("../contexts/AuditContext.tsx", import.meta.url), "utf8");
 
 describe("мобильный контракт календаря", () => {
   it("рендерит доступный предпросмотр выбранного диапазона", () => {
@@ -53,6 +54,14 @@ describe("мобильный контракт календаря", () => {
     expect(component).toContain('from:`${year}-01-01`,to:toIso(previousMonthEnd)');
     expect(component).toContain("anchor.getMonth()===0?[]");
     expect(component).not.toContain('label:"Текущий месяц"');
+    expect(component).not.toContain('label:"Сегодня"');
+  });
+
+  it("сохраняет срез, примененный стандартной кнопкой, при следующем открытии", () => {
+    expect(auditContext).toContain('localStorage.getItem("audit-range")');
+    expect(auditContext).toContain("return normalizeRange(stored)");
+    expect(auditContext).toContain('localStorage.setItem("audit-range",JSON.stringify(range))');
+    expect(auditContext).not.toContain('normalized.from==="2026-01-01"&&normalized.to==="2026-08-31"');
   });
 
   it("не обрезает точный календарь у нижней границы viewport", () => {

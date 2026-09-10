@@ -3,7 +3,7 @@ export function getPwaInstallGuide(userAgent: string, maxTouchPoints = 0) {
   const isIPadDesktopAgent = agent.includes("macintosh") && maxTouchPoints > 1;
 
   if (/iphone|ipad|ipod/.test(agent) || isIPadDesktopAgent) {
-    return "На iPhone или iPad в Safari нажмите «Поделиться», затем выберите «На экран „Домой“» и подтвердите добавление.";
+    return "На iPhone или iPad в Safari нажмите «Поделиться», затем выберите: На экран «Домой», и подтвердите добавление.";
   }
 
   if (agent.includes("android")) {

@@ -6,8 +6,10 @@ const overrides = readFileSync(new URL("../final-overrides.css", import.meta.url
 
 describe("страница «Расходы»", () => {
   it("дает выбрать несколько магазинов и расходных статей", () => {
-    expect(page).toContain('useState<"stores" | "fields" | null>(null)');
-    expect(page).toContain("togglePicker");
+    expect(page).toContain("useState(false)");
+    expect(page).toContain("togglePickers");
+    expect(page).toContain('aria-expanded={pickersOpen}');
+    expect(page).toContain('pickersOpen ? "свернуть оба выбора" : "выбрать магазины и статьи"');
     expect(page).not.toContain("MAX_SELECTED_EXPENSES");
     expect(page).not.toContain("MAX_SELECTED_STORES");
     expect(page).toContain("Магазины расходного среза");

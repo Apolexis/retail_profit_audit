@@ -40,8 +40,24 @@
 }
 
 @media (min-width: 721px) {
-  .packet .scroll-top { right: 45px !important; }
+  .packet .scroll-top { left: auto !important; right: 45px !important; }
 }
+
+@media (min-width: 721px) and (max-width: 1050px) {
+  .packet .scroll-top { left: auto !important; right: 45px !important; bottom: 38px !important; }
+}
+
+/* На телефоне установленное PWA не имеет браузерной панели: здесь доступны только базовые переходы. */
+.packet .mobile-quick-nav { display: none; }
+@media (max-width: 720px) {
+  .packet .packet-main { padding-bottom: 142px; }
+  .packet .mobile-quick-nav { position: fixed; z-index: 55; left: 50%; bottom: max(10px, env(safe-area-inset-bottom, 0px)); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; width: min(340px, calc(100vw - 32px)); padding: 5px; transform: translateX(-50%); border: 1px solid var(--line); border-radius: 14px; background: color-mix(in srgb, var(--surface) 94%, transparent); box-shadow: 0 12px 30px rgba(0,0,0,.24); backdrop-filter: blur(16px); }
+  .packet .mobile-quick-nav :is(button, a) { display: grid; min-width: 0; min-height: 45px; place-items: center; gap: 2px; padding: 3px 2px; border: 1px solid transparent; border-radius: 10px; background: transparent; color: var(--muted); font: 800 9px Manrope, Arial, sans-serif; text-decoration: none; white-space: nowrap; }
+  .packet .mobile-quick-nav :is(button, a):active { transform: scale(.96); }
+  .packet .mobile-quick-nav .mobile-quick-home { border-color: color-mix(in srgb, var(--blue) 45%, var(--line)); background: color-mix(in srgb, var(--blue) 14%, transparent); color: var(--blue); }
+  .packet .scroll-top { bottom: max(88px, calc(env(safe-area-inset-bottom, 0px) + 82px)) !important; }
+}
+html[data-audit-theme="light"] .packet .mobile-quick-nav .mobile-quick-home { border-color: #7bb4f2; background: #e8f3ff; color: #0a63c8; }
 
 /* Dark: coral hover, never the legacy cold-blue outline. */
 html[data-audit-theme="dark"] .packet .packet-link,
@@ -97,6 +113,16 @@ html[data-audit-theme="light"] .packet .packet-link.compact:hover {
   border-color: #e84f5f !important;
   color: #a72f43 !important;
   box-shadow: 0 0 0 2px rgba(232, 79, 95, 0.14), 0 10px 20px rgba(197, 53, 76, 0.12) !important;
+}
+
+/* Светлая навигация использует спокойный iOS‑синий; коралл остается только для рисков и критичных действий. */
+html[data-audit-theme="light"] .packet .packet-nav:not(.active):hover,
+html[data-audit-theme="light"] .packet .nav-section-trigger:hover,
+html[data-audit-theme="light"] .mobile-drawer .drawer-link:not(.active):hover {
+  transform: none !important;
+  background: #edf6ff !important;
+  color: #075dbb !important;
+  box-shadow: inset 0 0 0 1px #0a84ff, 0 0 0 2px rgba(10, 132, 255, 0.10) !important;
 }
 
 /* «Пилот» в светлой теме: нейтральный текст и яркий коралловый ползунок. */
@@ -1302,34 +1328,41 @@ html[data-audit-theme="dark"] .packet .packet-actions a.alert-link:hover { trans
 .packet .portfolio-map-legend > span { display: inline-flex; align-items: center; gap: 5px; }
 .packet .portfolio-map-legend i { display: block; width: 8px; height: 8px; border-radius: 999px; }
 .packet .portfolio-map-legend .portfolio-focus-ring { box-sizing: border-box; background: transparent; border: 2px solid; }
-.packet .portfolio-plot-grid { display: grid !important; grid-template-columns: minmax(0, 1fr) !important; gap: 15px !important; }
+.packet .portfolio-plot-grid { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 15px !important; }
 .packet .portfolio-scatter-card { min-width: 0; overflow: hidden; }
+.packet .admin-password-reset-title { display: block; margin-top: 6px; }
 .packet .portfolio-chart-actions { display: inline-flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
 .packet .portfolio-scatter-card .recharts-label-list text { paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }
 .packet .portfolio-mobile-map { display: grid; gap: 11px; }
 .packet .portfolio-mobile-map .card-title { margin-bottom: 0; }
 .packet .portfolio-mobile-intro { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.packet .portfolio-thresholds { display: grid; gap: 13px; }
+.packet .portfolio-thresholds .card-title { margin-bottom: 0; }
+.packet .portfolio-threshold-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.packet .portfolio-threshold-fields label { display: grid; gap: 5px; min-width: 0; color: var(--faint); font: 9px "IBM Plex Mono", monospace; letter-spacing: .05em; text-transform: uppercase; }
+.packet .portfolio-threshold-fields input { min-width: 0; height: 36px; padding: 0 9px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); color: var(--text); font: 800 12px Manrope, Arial, sans-serif; }
 .packet .portfolio-tooltip { min-width: 164px; }
 .packet .portfolio-tooltip span:last-child strong { color: inherit; }
+.packet .portfolio-mobile-priority-list { display: grid; gap: 7px; max-width: 960px; margin: 0 auto; }
+.packet .portfolio-mobile-priority { display: grid; grid-template-columns: minmax(84px, .75fr) minmax(0, 1.45fr) auto; gap: 9px; align-items: center; width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); color: var(--text); text-align: left; transform: none !important; }
+.packet .portfolio-mobile-priority.active { border-color: var(--blue); box-shadow: inset 3px 0 var(--blue); }
+.packet .portfolio-mobile-priority > div:first-child { display: grid; gap: 2px; min-width: 0; }
+.packet .portfolio-mobile-priority b { color: var(--text); font-size: 13px; }
+.packet .portfolio-mobile-priority > div:first-child span { overflow: hidden; color: var(--faint); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.packet .portfolio-meter { display: grid; gap: 5px; min-width: 0; }
+.packet .portfolio-meter > span { position: relative; display: grid; grid-template-columns: 49px minmax(0, 1fr); align-items: center; gap: 5px; min-width: 0; color: var(--faint); font: 8px "IBM Plex Mono", monospace; letter-spacing: .03em; }
+.packet .portfolio-meter > span::after { content: ""; grid-column: 2; grid-row: 1; height: 5px; border-radius: 99px; background: var(--line); }
+.packet .portfolio-meter i { z-index: 1; grid-column: 2; grid-row: 1; display: block; height: 5px; border-radius: 99px; }
+.packet .portfolio-mobile-values { display: grid; justify-items: end; gap: 2px; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.packet .portfolio-mobile-values span:first-child { font-weight: 800; }
 
 @media (max-width: 720px) {
   .packet .portfolio-focus-card { grid-template-columns: 1fr; gap: 13px; }
   .packet .portfolio-focus-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .packet .portfolio-focus-select select { width: 100%; }
+  .packet .portfolio-threshold-fields { grid-template-columns: 1fr; }
   .packet .portfolio-map-legend { align-items: flex-start; gap: 7px 12px; margin: 14px 0; }
   .packet .portfolio-plot-grid { display: grid !important; grid-template-columns: minmax(0, 1fr) !important; }
-  .packet .portfolio-mobile-priority-list { display: grid; gap: 7px; }
-  .packet .portfolio-mobile-priority { display: grid; grid-template-columns: minmax(84px, .75fr) minmax(0, 1.45fr) auto; gap: 9px; align-items: center; width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); color: var(--text); text-align: left; transform: none !important; }
-  .packet .portfolio-mobile-priority.active { border-color: var(--blue); box-shadow: inset 3px 0 var(--blue); }
-  .packet .portfolio-mobile-priority > div:first-child { display: grid; gap: 2px; min-width: 0; }
-  .packet .portfolio-mobile-priority b { color: var(--text); font-size: 13px; }
-  .packet .portfolio-mobile-priority > div:first-child span { overflow: hidden; color: var(--faint); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
-  .packet .portfolio-meter { display: grid; gap: 5px; min-width: 0; }
-  .packet .portfolio-meter > span { position: relative; display: grid; grid-template-columns: 49px minmax(0, 1fr); align-items: center; gap: 5px; min-width: 0; color: var(--faint); font: 8px "IBM Plex Mono", monospace; letter-spacing: .03em; }
-  .packet .portfolio-meter > span::after { content: ""; grid-column: 2; grid-row: 1; height: 5px; border-radius: 99px; background: var(--line); }
-  .packet .portfolio-meter i { z-index: 1; grid-column: 2; grid-row: 1; display: block; height: 5px; border-radius: 99px; }
-  .packet .portfolio-mobile-values { display: grid; justify-items: end; gap: 2px; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .packet .portfolio-mobile-values span:first-child { font-weight: 800; }
 }
 
 @media (max-width: 390px) {
@@ -1351,6 +1384,14 @@ html[data-audit-theme="dark"] .packet .packet-actions a.alert-link:hover { trans
 .chart-expand-dialog [data-slot="dialog-description"] { color: #aeb9c8; }
 .chart-expand-dialog [data-slot="dialog-close"] { color: #dce6f3; }
 .chart-expand-canvas { min-width: min(900px, 100%); }
+.chart-panzoom { position: relative; min-height: 560px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--line) 76%, transparent); border-radius: 12px; touch-action: none; cursor: grab; user-select: none; }
+.chart-panzoom.dragging { cursor: grabbing; }
+.chart-panzoom:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+.chart-panzoom-actions { position: sticky; z-index: 4; top: 0; display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-height: 38px; padding: 6px 8px; background: color-mix(in srgb, var(--surface) 92%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent); backdrop-filter: blur(10px); }
+.chart-panzoom-actions button { min-height: 26px; padding: 0 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-2); color: var(--text); font: 800 11px Manrope, Arial, sans-serif; }
+.chart-panzoom-actions button:hover { border-color: var(--blue); background: var(--surface-3); }
+.chart-panzoom-actions b { min-width: 39px; color: var(--muted); font: 800 10px "IBM Plex Mono", monospace; text-align: center; }
+.chart-panzoom-stage { min-width: 900px; min-height: 620px; transform-origin: center center; will-change: transform; }
 html[data-audit-theme="light"] .chart-expand-dialog { border-color: #cbdcff !important; background: #ffffff !important; color: #1f2d42 !important; }
 html[data-audit-theme="light"] .chart-expand-dialog [data-slot="dialog-title"] { color: #1f2d42; }
 html[data-audit-theme="light"] .chart-expand-dialog [data-slot="dialog-description"] { color: #61718a; }
@@ -1363,4 +1404,24 @@ html[data-audit-theme="light"] .chart-expand-dialog [data-slot="dialog-close"] {
   .packet .store-list-sort { width: 100%; }
   .chart-expand-dialog { width: calc(100vw - 18px) !important; max-height: calc(100dvh - 18px) !important; padding: 18px !important; }
   .chart-expand-canvas { min-width: 720px; }
+  .chart-panzoom { min-height: 500px; }
+  .chart-panzoom-stage { min-width: 720px; min-height: 580px; transform-origin: left top; }
 }
+
+/* Инструкция установки — самостоятельная строка внутри правой зоны профиля, без переполнения карточки. */
+.packet .push-settings-action:has(.install-guide) { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: end; width: min(470px, 100%); }
+.packet .push-settings-action .install-guide { display: block; inline-size: 100%; min-width: 0; max-width: 100%; padding: 8px 10px; overflow-wrap: anywhere; white-space: normal; text-align: right; }
+@media (max-width: 720px) {
+  .packet .push-settings-action:has(.install-guide) { justify-items: start; }
+  .packet .push-settings-action .install-guide { text-align: left; }
+}
+
+/* На «Сводке» сначала вводный управленческий контур, затем общий период анализа. */
+.packet .packet-main:has(> .cover) { display: flex; flex-direction: column; }
+.packet .packet-main > .cover { order: -1; }
+/* Импорт использует ту же трехкнопочную геометрию, что и права для магазинов. */
+.packet .access-import-row .access-switch { display: flex !important; gap: 6px !important; width: auto !important; justify-content: flex-end !important; }
+.packet .access-import-row .access-switch button { width: auto !important; min-width: 0 !important; height: 29px !important; min-height: 29px !important; padding: 7px 9px !important; border-radius: 6px !important; flex: 0 1 auto !important; white-space: nowrap !important; }
+@media (max-width: 760px) { .packet .access-import-row .access-switch { width: auto !important; justify-content: flex-start !important; } }
+.packet .portfolio-scatter-point { cursor: pointer; }
+.packet .portfolio-scatter-hit { fill: transparent; pointer-events: all; touch-action: manipulation; }

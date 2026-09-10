@@ -13,11 +13,27 @@ describe("страница «Портфель»", () => {
   });
 
   it("показывает отдельные цветовые причины риска и точные значения при наведении", () => {
-    expect(page).toContain("Отрицательная маржа");
-    expect(page).toContain("Запас выше 20 дней");
-    expect(page).toContain("Запас ниже 7 дней");
+    expect(page).toContain("Маржа ниже");
+    expect(page).toContain("priorityThresholds.highCover");
+    expect(page).toContain("priorityThresholds.lowCover");
     expect(page).toContain("Покрытие:");
     expect(page).toContain("Маржа:");
+  });
+
+  it("дает надежно выбрать точку касанием и фокусирует выбранный маркер", () => {
+    expect(page).toContain("onMouseMove={selectScatterPoint}");
+    expect(page).toContain("const focusPoint = () => props.payload && setFocusedStore(props.payload.store)");
+    expect(page).toContain("onPointerDown={focusPoint}");
+    expect(page).toContain("onPointerMove={focusPoint}");
+    expect(page).toContain('className="portfolio-scatter-hit"');
+    expect(page).toContain("fillOpacity={selectedFocus && focus?.store !== item.store ? .26 : 1}");
+    expect(styles).toContain(".packet .portfolio-scatter-hit { fill: transparent;");
+  });
+
+  it("оставляет только линию медианы с конкретной подписью", () => {
+    expect(page).toContain("Медиана: {kind === \"revenue\"");
+    expect(page).not.toContain("пунктир: медиана и 0%");
+    expect(page).not.toContain("<ReferenceLine y={priorityThresholds.margin}");
   });
 
   it("показывает карту приоритетов и крупные графики на любой ширине", () => {
@@ -25,13 +41,35 @@ describe("страница «Портфель»", () => {
     expect(page).toContain("portfolio-mobile-priority-list");
     expect(page).toContain("portfolio-meter");
     expect(styles).toContain(".packet .portfolio-mobile-map { display: grid;");
-    expect(styles).toContain(".packet .portfolio-plot-grid { display: grid !important;");
+    expect(styles).toContain("grid-template-columns: repeat(2, minmax(0, 1fr)) !important;");
+    expect(styles).toContain("@media (max-width: 720px)");
     expect(page).toContain("setExpandedChart(kind)");
     expect(page).toContain("chart-expand-dialog portfolio-chart-dialog");
+    expect(page).toContain("<ChartPanZoomSurface>");
+    expect(styles).toContain(".packet .portfolio-mobile-priority-list { display: grid;");
   });
 
   it("не оставляет у легенды мелкое техническое пояснение", () => {
     expect(page).not.toContain("Подписи оставлены у выбранной точки");
     expect(styles).toContain("margin: 16px 0 18px");
+  });
+
+  it("разделяет списания копченой и мороженой продукции в таблице экономики", () => {
+    expect(page).toContain("writeoffSmoked: summary.writeoffSmoked");
+    expect(page).toContain("writeoffFrozen: summary.writeoffFrozen");
+    expect(page).toContain("<th>Списания К.</th>");
+    expect(page).toContain("<th>Списания М.</th>");
+    expect(page).toContain("money(item.writeoffSmoked)");
+    expect(page).toContain("money(item.writeoffFrozen)");
+  });
+
+  it("дает отдельные сохраняемые пороги приоритета для маржи и покрытия", () => {
+    expect(page).toContain('priorityThresholdStorageKey = "audit-portfolio-priority-thresholds"');
+    expect(page).toContain("ПОРОГИ КАРТЫ ПРИОРИТЕТОВ");
+    expect(page).toContain("Маржа ниже, %");
+    expect(page).toContain("Низкое покрытие, дней");
+    expect(page).toContain("Высокое покрытие, дней");
+    expect(page).toContain("localStorage.setItem(priorityThresholdStorageKey");
+    expect(page).toContain("priorityScore(b, priorityThresholds)");
   });
 });

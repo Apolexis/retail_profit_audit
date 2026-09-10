@@ -17,8 +17,9 @@ describe("матрица доступа к импорту",()=>{
     expect(page).toContain("Импорт Excel");
     expect(page).toContain(">Загрузка</button>");
     expect(page).toContain('importAccessLevel: "edit"');
-    expect(overrides).toContain('.packet .access-import-row .access-switch button { box-sizing: border-box !important; flex: 1 1 0 !important;');
-    expect(overrides).toContain('min-height: 38px !important');
+    expect(overrides).toContain('.packet .access-import-row .access-switch button { width: auto !important; min-width: 0 !important; height: 29px !important;');
+    expect(overrides).toContain('min-height: 29px !important');
+    expect(overrides).toContain('padding: 7px 9px !important; border-radius: 6px !important; flex: 0 1 auto !important');
   });
 
   it("дает администратору форму общей push-рассылки с честным итогом доставки",()=>{
@@ -27,5 +28,11 @@ describe("матрица доступа к импорту",()=>{
     expect(page).toContain("adminBroadcast.useMutation");
     expect(page).toContain("добровольно включенной браузерной подпиской");
     expect(page).toContain("pushSubscriptionsAccepted");
+  });
+
+  it("размещает действие смены пароля отдельной строкой под заголовком безопасности",()=>{
+    const page=readFileSync(resolve(process.cwd(),"client/src/pages/AccessAdmin.tsx"),"utf8");
+    expect(page).toContain('className="admin-password-reset-title"');
+    expect(overrides).toContain(".packet .admin-password-reset-title { display: block;");
   });
 });

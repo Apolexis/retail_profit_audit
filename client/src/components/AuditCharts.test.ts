@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatK, nonZeroLines, resolveMetricChartLayout, resolveMetricChartView, resolveOverlayBarGeometry, sortTooltipPayload, zeroAwareTicks } from "./AuditCharts";
+import { clampChartPan, clampChartZoom, formatK, nonZeroLines, resolveMetricChartLayout, resolveMetricChartView, resolveOverlayBarGeometry, sortTooltipPayload, zeroAwareTicks } from "./AuditCharts";
 
 describe("форматирование денежных показателей", () => {
   it("не скрывает малые ненулевые суммы округлением до нуля", () => {
@@ -45,9 +45,28 @@ describe("форматирование денежных показателей",
     const source = require("node:fs").readFileSync(new URL("./AuditCharts.tsx", import.meta.url), "utf8");
     expect(source).toContain("function ChartExpandButton");
     expect(source).toContain("Увеличить график:");
-    expect(source).toContain("Детальный просмотр графика");
+    expect(source).toContain("Детальный просмотр: колесо или pinch");
     expect(source).toContain("<MetricLineChart data={data}");
     expect(source).toContain("<BenchmarkBars data={data}");
+  });
+
+  it("сохраняет выбранный вид и дает переключатель в увеличенном графике", () => {
+    const source = require("node:fs").readFileSync(new URL("./AuditCharts.tsx", import.meta.url), "utf8");
+    expect(source).toContain("initialView?:MetricChartView");
+    expect(source).toContain("useState<MetricChartView>(initialView)");
+    expect(source).toContain("initialView={chartView} expanded");
+    expect(source).toContain("{data.length>1&&<ChartViewControls view={chartView}");
+  });
+  it("поддерживает ограниченное мышиное и сенсорное управление увеличенным графиком", () => {
+    expect(clampChartZoom(.5)).toBe(1);
+    expect(clampChartZoom(4)).toBe(3);
+    expect(clampChartPan(999,2)).toBe(180);
+    expect(clampChartPan(-999,2)).toBe(-180);
+    const source = require("node:fs").readFileSync(new URL("./AuditCharts.tsx", import.meta.url), "utf8");
+    expect(source).toContain("onPointerDown={down}");
+    expect(source).toContain("onWheel={wheel}");
+    expect(source).toContain("Колесо мыши или щипок");
+    expect(source).toContain("Сброс");
   });
   it("использует единый широкий слот наложения и один цвет для легенды, линии и маркера", () => {
     expect(resolveOverlayBarGeometry(140, 18, 0, 3)).toEqual({ x: 140, width: 54 });

@@ -3,7 +3,7 @@ import { getPwaInstallGuide } from "./pwaInstallGuide";
 
 describe("инструкция установки PWA", () => {
   it("дает путь Safari для iPhone и iPad", () => {
-    expect(getPwaInstallGuide("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)")).toContain("iPhone или iPad");
+    expect(getPwaInstallGuide("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)")).toBe("На iPhone или iPad в Safari нажмите «Поделиться», затем выберите: На экран «Домой», и подтвердите добавление.");
     expect(getPwaInstallGuide("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)", 5)).toContain("На экран");
   });
 

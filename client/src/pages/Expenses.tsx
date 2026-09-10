@@ -18,7 +18,7 @@ export default function Expenses() {
   const { selectedStore, rangeLabel } = useAudit();
   const [selectedFields, setSelectedFields] = useState<ExpenseCode[]>([expenseDefinitions[0][0]]);
   const [selectedStores, setSelectedStores] = useState<string[]>(() => selectedStore !== "__all__" ? [selectedStore] : ["__all__"]);
-  const [openPicker, setOpenPicker] = useState<"stores" | "fields" | null>(null);
+  const [pickersOpen, setPickersOpen] = useState(false);
   const selectedConcreteStores = useMemo(() => selectedStores.filter(store => store !== "__all__"), [selectedStores]);
   const networkSelected = selectedStores.includes("__all__");
   const scope = networkSelected ? "Все магазины" : selectedConcreteStores.length === 1 ? selectedConcreteStores[0] : `${selectedConcreteStores.length} магазина`;
@@ -45,7 +45,7 @@ export default function Expenses() {
     return months.map(month => { const monthRows = rows.filter(row => row.monthDate === month); return { month: monthLabel(month), ...Object.fromEntries(cashCodes.map(code => [code, monthRows.reduce((sum, row) => sum + Math.abs(Number(row.metrics[code] ?? 0)), 0) / 1000])) } as { month: string } & Partial<Record<ExpenseCode, number>>; });
   }, [rows]);
 
-  const togglePicker = (picker: "stores" | "fields") => setOpenPicker(current => current === picker ? null : picker);
+  const togglePickers = () => setPickersOpen(current => !current);
   const toggleField = (field: ExpenseCode) => setSelectedFields(current => current.includes(field) ? current.length === 1 ? current : current.filter(value => value !== field) : [...current, field]);
   const toggleStore = (storeName: string) => setSelectedStores(current => {
     if (storeName === "__all__") return ["__all__"];
@@ -57,13 +57,13 @@ export default function Expenses() {
     {facts.loading ? <FactsLoader /> : !facts.available ? <section className="empty-state live-empty"><FileSpreadsheet size={30}/><h2>Нет фактов для расходного аудита</h2><p>Подтвердите импорт Excel: все доступные статьи расходов будут добавлены автоматически.</p></section> : <>
       <section className="page-lede"><div><h2>Не только ФОТ и аренда — весь расходный P&amp;L выбранных магазинов.</h2><p>В общем графике можно одновременно сравнивать нужное число статей и магазинов. Первичные факты выбранных точек суммируются по календарным месяцам; бенчмарк справа остается сравнением доли основной статьи с сетью.</p></div></section>
       <div className="expense-scope-grid">
-        <section className={`expense-picker ${openPicker === "stores" ? "open" : ""}`}>
-          <button type="button" className="expense-picker-toggle" aria-expanded={openPicker === "stores"} onClick={() => togglePicker("stores")}><span>Магазины расходного среза</span><b>{scope}</b><small>{openPicker === "stores" ? "свернуть" : "выбрать"}</small></button>
-          {openPicker === "stores" && <div className="expense-picker-options"><p>Выберите нужные магазины. Их первичные факты суммируются в одном срезе; для сравнения точек между собой используйте раздел «Сравнить».</p><button type="button" aria-pressed={networkSelected} onClick={() => toggleStore("__all__")} className={networkSelected ? "cadence-metric-chip active" : "cadence-metric-chip"}>Вся сеть</button>{facts.storeNames.map(storeName => { const selected = selectedConcreteStores.includes(storeName); return <button type="button" key={storeName} aria-pressed={selected} onClick={() => toggleStore(storeName)} className={selected ? "cadence-metric-chip active" : "cadence-metric-chip"}>{storeName}</button>; })}</div>}
+        <section className={`expense-picker ${pickersOpen ? "open" : ""}`}>
+          <button type="button" className="expense-picker-toggle" aria-expanded={pickersOpen} onClick={togglePickers}><span>Магазины расходного среза</span><b>{scope}</b><small>{pickersOpen ? "свернуть оба выбора" : "выбрать магазины и статьи"}</small></button>
+          {pickersOpen && <div className="expense-picker-options"><p>Выберите нужные магазины. Их первичные факты суммируются в одном срезе; для сравнения точек между собой используйте раздел «Сравнить».</p><button type="button" aria-pressed={networkSelected} onClick={() => toggleStore("__all__")} className={networkSelected ? "cadence-metric-chip active" : "cadence-metric-chip"}>Вся сеть</button>{facts.storeNames.map(storeName => { const selected = selectedConcreteStores.includes(storeName); return <button type="button" key={storeName} aria-pressed={selected} onClick={() => toggleStore(storeName)} className={selected ? "cadence-metric-chip active" : "cadence-metric-chip"}>{storeName}</button>; })}</div>}
         </section>
-        <section className={`expense-picker ${openPicker === "fields" ? "open" : ""}`}>
-          <button type="button" className="expense-picker-toggle" aria-expanded={openPicker === "fields"} onClick={() => togglePicker("fields")}><span>Статьи на графике</span><b>{selectedFields.map(nameFor).join(" · ")}</b><small>{openPicker === "fields" ? "свернуть" : "выбрать"}</small></button>
-          {openPicker === "fields" && <div className="expense-picker-options"><p>Выберите нужные расходные статьи. Хотя бы одна статья остается активной.</p>{expenseDefinitions.map(([code, name]) => { const selected = selectedFields.includes(code); return <button type="button" key={code} aria-pressed={selected} onClick={() => toggleField(code)} className={selected ? "cadence-metric-chip active" : "cadence-metric-chip"}>{name}</button>; })}</div>}
+        <section className={`expense-picker ${pickersOpen ? "open" : ""}`}>
+          <button type="button" className="expense-picker-toggle" aria-expanded={pickersOpen} onClick={togglePickers}><span>Статьи на графике</span><b>{selectedFields.map(nameFor).join(" · ")}</b><small>{pickersOpen ? "свернуть оба выбора" : "выбрать магазины и статьи"}</small></button>
+          {pickersOpen && <div className="expense-picker-options"><p>Выберите нужные расходные статьи. Хотя бы одна статья остается активной.</p>{expenseDefinitions.map(([code, name]) => { const selected = selectedFields.includes(code); return <button type="button" key={code} aria-pressed={selected} onClick={() => toggleField(code)} className={selected ? "cadence-metric-chip active" : "cadence-metric-chip"}>{name}</button>; })}</div>}
         </section>
       </div>
       <section className="packet-kpis equal"><article className="packet-kpi"><span>Все расходы · {scope}</span><strong>{money(store.expenses)}</strong><small>{rangeLabel}</small></article><article className="packet-kpi"><span>Нал + НДФЛ 22%</span><strong>{money(cashTotal)}</strong><small>{formatPct(share(cashTotal, store.revenue))} выручки</small></article><article className={store.expenses > expenseMedian ? "packet-kpi risk" : "packet-kpi"}><span>Разница к медиане сети</span><strong>{store.expenses - expenseMedian > 0 ? "+" : ""}{money(store.expenses - expenseMedian)}</strong><small>сумма всех строк</small></article><article className="packet-kpi"><span>{primaryLabel}</span><strong>{money(articleAmount)}</strong><small>{formatPct(share(articleAmount, store.revenue))} выручки</small></article></section>
