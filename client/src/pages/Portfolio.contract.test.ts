@@ -43,7 +43,8 @@ describe("страница «Портфель»", () => {
   });
 
   it("оставляет только линию медианы с конкретной подписью", () => {
-    expect(page).toContain("Медиана: {kind === \"revenue\"");
+    expect(page).toContain('Медиана: {kind === "cover"');
+    expect(page).toContain("<ReferenceLine x={mediansByChart[kind]}");
     expect(page).not.toContain("пунктир: медиана и 0%");
     expect(page).not.toContain("<ReferenceLine y={priorityThresholds.margin}");
   });
@@ -59,6 +60,10 @@ describe("страница «Портфель»", () => {
     expect(page).toContain("chart-expand-dialog portfolio-chart-dialog");
     expect(page).toContain("<ChartPanZoomSurface>");
     expect(styles).toContain(".packet .portfolio-mobile-priority-list { display: grid;");
+    expect(page).toContain('["revenue","cover","stock","writeoffs"] as const');
+    expect(page).toContain("Остаток и чистая маржа");
+    expect(page).toContain("Списания и чистая маржа");
+    expect(page).toContain("mediansByChart[kind]");
   });
 
   it("не оставляет у легенды мелкое техническое пояснение", () => {

@@ -55,3 +55,10 @@ describe("карточки общего среза и сводки", () => {
     expect(styles).toContain('html[data-audit-theme="light"] .packet .cover-note:hover { border-color: #0a84ff !important;');
   });
 });
+
+describe("выбор адресатов рассылки", () => {
+  it("использует коралловый активный контур в темной теме, сохраняя iOS-синий в светлой", () => {
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet .broadcast-target-buttons button.active { border-color: #ff765f !important;');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .broadcast-target-buttons button.active { border-color: #0a63c8;');
+  });
+});

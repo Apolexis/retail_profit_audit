@@ -42,6 +42,10 @@ describe("контрастная светлая тема", () => {
     expect(overrides).toContain('html[data-audit-theme="light"] .login-passkey:hover {');
   });
 
+  it("не оставляет у статуса безопасного доступа темное свечение или размытие", () => {
+    expect(overrides).toContain('html[data-audit-theme="light"] .ocean-loader.overlay > p { color: #075dbb !important; text-shadow: none !important; filter: none !important; box-shadow: none !important; }');
+  });
+
   it("передает в scatter-графики Портфеля светлую палитру, а не темные константы", () => {
     expect(portfolio).toContain('grid: "#d8e0ea"');
     expect(portfolio).toContain("stroke={palette.grid}");

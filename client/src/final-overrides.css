@@ -1819,10 +1819,13 @@ body:has(.chart-expand-dialog[data-state="open"]) .packet .scroll-top { visibili
 .packet .broadcast-target-buttons button { min-height: 31px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-2); color: var(--muted); font: 700 10px Manrope, Arial, sans-serif; }
 .packet .broadcast-target-buttons button:hover { border-color: var(--blue); background: var(--surface-3); color: var(--text); transform: none; }
 .packet .broadcast-target-buttons button.active { border-color: var(--blue); background: color-mix(in srgb, var(--blue) 12%, var(--surface)); color: var(--text); }
+html[data-audit-theme="dark"] .packet .broadcast-target-buttons button:hover,
+html[data-audit-theme="dark"] .packet .broadcast-target-buttons button.active { border-color: #ff765f !important; background: color-mix(in srgb, #ff765f 14%, var(--surface)) !important; color: #ffe9e3 !important; }
 html[data-audit-theme="light"] .packet .admin-broadcast .stack-form textarea:focus { border-color: #0a63c8 !important; box-shadow: 0 0 0 3px rgba(10, 132, 255, .14) !important; }
 html[data-audit-theme="light"] .packet .broadcast-target-buttons button { border-color: #c6d9ec; background: #fbfdff; color: #3d617f; }
 html[data-audit-theme="light"] .packet .broadcast-target-buttons button:hover,
 html[data-audit-theme="light"] .packet .broadcast-target-buttons button.active { border-color: #0a63c8; background: #edf6ff; color: #075dbb; }
+html[data-audit-theme="light"] .ocean-loader.overlay > p { color: #075dbb !important; text-shadow: none !important; filter: none !important; box-shadow: none !important; }
 .packet .portfolio-focus-card { grid-template-columns: minmax(280px, .85fr) minmax(0, 1.6fr) !important; }
 .packet .portfolio-focus-select-inline { flex: 0 1 220px; min-width: 190px; margin-right: auto; }
 .packet .portfolio-focus-select-inline select { width: 100%; }
