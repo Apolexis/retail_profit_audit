@@ -63,7 +63,7 @@ describe("форматирование денежных показателей",
     expect(clampChartZoom(.5)).toBe(1);
     expect(clampChartZoom(4)).toBe(3);
     expect(chartPanSpeedForZoom(1)).toBeCloseTo(2.35);
-    expect(chartPanSpeedForZoom(3)).toBeCloseTo(2.35/Math.sqrt(3));
+    expect(chartPanSpeedForZoom(3)).toBeCloseTo(2.35/Math.pow(3,1.75));
     expect(windowChartRows([1,2,3,4,5,6],{zoom:2,pan:{x:0,y:0}})).toEqual([3,4,5]);
     expect(windowChartRows([1,2,3,4,5,6],{zoom:2,pan:{x:0,y:1}},"y")).toEqual([4,5,6]);
     expect(windowChartRows([1,2,3,4],{zoom:1.16,pan:{x:1,y:0}})).toEqual([2,3,4]);
@@ -109,6 +109,12 @@ describe("форматирование денежных показателей",
     expect(source).toContain('addEventListener("touchstart",touchStart,{passive:false,capture:true})');
     expect(source).toContain('addEventListener("touchmove",touchMove,{passive:false,capture:true})');
     expect(source).toContain('const touchEnd=()=>clearGesture()');
+    expect(source).toContain('event.preventDefault();event.stopPropagation();const active=touches(event)');
+    expect(source).toContain('event.preventDefault();event.stopPropagation();gesture.current.panning=true;setDragging(true)');
+    expect(source).toContain('if(event.pointerType==="touch"||!pointers.current.has(event.pointerId))return');
+    expect(source).toContain('if(event.pointerType==="touch"||(event.target as Element).closest');
+    expect(source).toContain('onPointerDownOutside={keepChartSurfaceInside} onInteractOutside={keepChartSurfaceInside}');
+    expect(source).toContain('const keepChartSurfaceInside=(event:{preventDefault:()=>void})=>event.preventDefault();');
     expect(source).toContain('aria-label={compact?"Интерактивный график":"Интерактивный увеличенный график"}');
     expect(source).toContain('compact?:boolean}');
     expect(source).not.toContain("invertX");
