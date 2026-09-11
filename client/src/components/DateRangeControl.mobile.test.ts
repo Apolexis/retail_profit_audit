@@ -34,9 +34,10 @@ describe("мобильный контракт календаря", () => {
     expect(styles).toMatch(/\.date-popover \[data-slot="calendar"\],\s*\.fact-date-popover \[data-slot="calendar"\]\s*\{[\s\S]*?background:\s*var\(--surface\)\s*!important/);
   });
 
-  it("держит компактные стандартные периоды над сеткой календаря на мобильной ширине", () => {
-    expect(styles).toContain('.date-popover [data-slot="calendar"] { position: relative !important; z-index: 1 !important; }');
-    expect(styles).toContain('.date-shortcut-toggle,\n.date-shortcuts { position: relative !important; z-index: 2 !important; isolation: isolate !important; }');
+  it("держит компактные стандартные периоды отдельным блоком после сетки календаря на мобильной ширине", () => {
+    expect(styles).toContain('.date-popover { display: flex !important; flex-direction: column !important; align-items: stretch !important; }');
+    expect(styles).toContain('.date-popover > [data-slot="calendar"] { order: 3 !important; display: block !important; position: static !important;');
+    expect(styles).toContain('.date-popover .date-shortcut-toggle { order: 4 !important; display: block !important; position: static !important;');
     expect(styles).toContain('.date-popover:has(.date-shortcuts) .mobile-range-preview { display: none !important; }');
     expect(styles).toContain('.date-shortcuts button { min-height: 26px !important; }');
     expect(component).toContain('className={shortcut.wide?"date-shortcut-wide":undefined}');
@@ -45,10 +46,10 @@ describe("мобильный контракт календаря", () => {
 
   it("разводит сетку дней и быстрые периоды в мобильном потоке", () => {
     expect(component).toContain('className={showStandard?"calendar-standard-open":undefined}');
-    expect(styles).toContain('.date-popover:has(.date-shortcuts) .calendar-standard-open { display: block !important; position: relative !important; z-index: 1 !important; margin-bottom: 6px !important; }');
-    expect(styles).toContain('.date-popover:has(.date-shortcuts) .date-shortcuts { margin-top: 0 !important; }');
-    expect(styles).toContain('.date-popover > [data-slot="calendar"] { display: block !important; clear: both !important; margin-bottom: 12px !important; }');
-    expect(styles).toContain('.date-popover .date-shortcut-toggle { display: block !important; clear: both !important; min-height: 34px !important;');
+    expect(styles).toContain('.date-popover:has(.date-shortcuts) .calendar-standard-open { display: block !important; position: static !important; z-index: auto !important; margin-bottom: 14px !important; }');
+    expect(styles).toContain('.date-popover:has(.date-shortcuts) .date-shortcuts { order: 5 !important; position: static !important;');
+    expect(styles).toContain('.date-popover > [data-slot="calendar"] { order: 3 !important; display: block !important; position: static !important;');
+    expect(styles).toContain('.date-popover .date-shortcut-toggle { order: 4 !important; display: block !important; position: static !important;');
   });
 
   it("дает быстрый YTD только по завершенным месяцам", () => {

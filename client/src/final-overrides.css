@@ -1901,3 +1901,8 @@ html[data-audit-theme="light"] .packet .closure-profit-flow > .total { border-co
 html[data-audit-theme="light"] .packet .scenario-result.positive .scenario-profit-step.total { border-color: #8ccfb5 !important; background: #effaf6 !important; }
 html[data-audit-theme="light"] .packet .scenario-result.negative .scenario-profit-step.total { border-color: #e5b0b5 !important; background: #fff4f4 !important; }
 html[data-audit-theme="light"] .packet .closure-choice.priority .closure-choice-main small.negative { color: #075dbb !important; }
+
+@media (max-width: 560px) {
+  .chart-expand-dialog [data-slot="dialog-close"] { top: 22px !important; right: auto !important; left: 10px !important; transform: none !important; }
+  .chart-expand-dialog [data-slot="dialog-header"] { padding-right: 0 !important; padding-left: 48px !important; }
+}

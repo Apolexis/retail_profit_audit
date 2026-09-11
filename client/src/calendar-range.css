@@ -187,12 +187,15 @@ html[data-audit-theme="light"] .date-popover [data-slot="calendar"] .rdp-range_e
 @media (max-width: 560px) {
   .date-popover,
   .fact-date-popover { padding: 7px !important; }
-  .date-popover > [data-slot="calendar"] { display: block !important; clear: both !important; margin-bottom: 12px !important; }
-  .date-popover .date-shortcut-toggle { display: block !important; clear: both !important; min-height: 34px !important; margin-top: 0 !important; padding-top: 7px !important; border-top: 1px solid color-mix(in srgb, var(--line, #5b3244) 76%, transparent) !important; }
+  .date-popover { display: flex !important; flex-direction: column !important; align-items: stretch !important; }
+  .date-popover > .date-popover-head { order: 1 !important; }
+  .date-popover > .mobile-range-preview { order: 2 !important; }
+  .date-popover > [data-slot="calendar"] { order: 3 !important; display: block !important; position: static !important; float: none !important; clear: both !important; margin: 0 0 14px !important; }
+  .date-popover .date-shortcut-toggle { order: 4 !important; display: block !important; position: static !important; inset: auto !important; clear: both !important; min-height: 34px !important; margin: 0 !important; padding-top: 7px !important; border-top: 1px solid color-mix(in srgb, var(--line, #5b3244) 76%, transparent) !important; }
   .date-popover:has(.date-shortcuts) { max-block-size: calc(100dvh - 16px) !important; overflow-y: auto !important; overscroll-behavior: contain !important; }
-  .date-popover:has(.date-shortcuts) .calendar-standard-open { display: block !important; position: relative !important; z-index: 1 !important; margin-bottom: 6px !important; }
+  .date-popover:has(.date-shortcuts) .calendar-standard-open { display: block !important; position: static !important; z-index: auto !important; margin-bottom: 14px !important; }
   .date-popover:has(.date-shortcuts) .date-shortcut-toggle { margin-top: 0 !important; }
-  .date-popover:has(.date-shortcuts) .date-shortcuts { margin-top: 0 !important; }
+  .date-popover:has(.date-shortcuts) .date-shortcuts { order: 5 !important; position: static !important; inset: auto !important; margin-top: 0 !important; }
   .fact-date-popover { position: fixed !important; top: auto !important; right: 8px !important; bottom: max(8px, env(safe-area-inset-bottom, 0px)) !important; left: auto !important; max-block-size: calc(100dvh - 16px) !important; overflow-y: auto !important; overscroll-behavior: contain !important; transform: none !important; }
   .date-popover:has(.date-shortcuts) .mobile-range-preview { display: none !important; }
   .date-shortcuts { gap: 6px !important; margin-top: 4px !important; padding-top: 6px !important; }
