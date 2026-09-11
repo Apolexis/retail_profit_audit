@@ -2213,3 +2213,21 @@ html[data-audit-theme="light"] .packet .control-kpis .packet-kpi.risk:hover {
 .login-mark .brand-mark-switch .brand-mark.is-visible {
   opacity: 1;
 }
+
+/* На touch-экранах псевдо-hover не должен оставаться на переключателе после касания. */
+@media (hover: none), (pointer: coarse) {
+  .packet .chart-view-button:hover:not(.active),
+  .packet .series-toggle:hover,
+  .chart-expand-view-control .chart-view-button:hover:not(.active) {
+    background: transparent !important;
+    outline: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  .packet .chart-view-button.active:hover,
+  .chart-expand-view-control .chart-view-button.active:hover {
+    outline: none !important;
+    outline-offset: 0 !important;
+  }
+}

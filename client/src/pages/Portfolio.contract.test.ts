@@ -61,8 +61,8 @@ describe("страница «Портфель»", () => {
     expect(styles).toContain("@media (max-width: 720px)");
     expect(page).toContain("setExpandedChart(kind)");
     expect(page).toContain("chart-expand-dialog portfolio-chart-dialog");
-    expect(page).toContain("<ChartPanZoomSurface>{viewport => <div className=\"chart-expand-canvas\">{scatter(expandedChart,620,viewport)}</div>}</ChartPanZoomSurface>");
-    expect(page).toContain('<ChartPanZoomSurface compact>{viewport=>scatter(kind,510,viewport)}</ChartPanZoomSurface>');
+    expect(page).toContain("<ChartPanZoomSurface axisLock={false}>{viewport => <div className=\"chart-expand-canvas\">{scatter(expandedChart,620,viewport)}</div>}</ChartPanZoomSurface>");
+    expect(page).toContain('<ChartPanZoomSurface compact axisLock={false}>{viewport=>scatter(kind,510,viewport)}</ChartPanZoomSurface>');
     expect(styles).toContain(".packet .portfolio-mobile-priority-list { display: grid;");
     expect(page).toContain('["revenue","cover","stock","writeoffs"] as const');
     expect(page).toContain("Остаток и чистая маржа");
