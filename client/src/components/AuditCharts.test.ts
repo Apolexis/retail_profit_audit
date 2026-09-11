@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampChartZoom, formatK, nonZeroLines, normalizeOverlayBarRect, resolveMetricChartLayout, resolveMetricChartView, resolveOverlayBarGeometry, sortTooltipPayload, viewportChartDomain, windowChartRows, zeroAwareTicks } from "./AuditCharts";
+import { clampChartZoom, formatK, nonZeroLines, normalizeOverlayBarRect, panChartRows, resolveMetricChartLayout, resolveMetricChartView, resolveOverlayBarGeometry, sortTooltipPayload, viewportChartDomain, windowChartRows, zeroAwareTicks } from "./AuditCharts";
 
 describe("форматирование денежных показателей", () => {
   it("не скрывает малые ненулевые суммы округлением до нуля", () => {
@@ -65,6 +65,8 @@ describe("форматирование денежных показателей",
     expect(windowChartRows([1,2,3,4,5,6],{zoom:2,pan:{x:0,y:0}})).toEqual([3,4,5]);
     expect(windowChartRows([1,2,3,4,5,6],{zoom:2,pan:{x:0,y:1}},"y")).toEqual([4,5,6]);
     expect(windowChartRows([1,2,3,4,5,6],{zoom:2,pan:{x:2.4,y:0}})).toEqual([4,5,6]);
+    expect(panChartRows([{month:"M1"},{month:"M2"},{month:"M3"}],{zoom:1,pan:{x:1,y:0}}).map(row=>row.month)).toEqual([undefined,undefined,"M1","M2","M3"]);
+    expect(panChartRows([{store:"A"},{store:"B"},{store:"C"}],{zoom:1,pan:{x:0,y:-1}},"y").map(row=>row.store)).toEqual(["A","B","C",undefined,undefined]);
     expect(viewportChartDomain([0,100],{zoom:2,pan:{x:0,y:0}})).toEqual([25,75]);
     expect(viewportChartDomain([0,100],{zoom:2,pan:{x:1,y:0}},"x")).toEqual([125,175]);
     expect(viewportChartDomain([0,100],{zoom:2,pan:{x:2,y:0}},"x")).toEqual([225,275]);
@@ -72,8 +74,10 @@ describe("форматирование денежных показателей",
     expect(viewportChartDomain([0,100],{zoom:1,pan:{x:2.4,y:0}},"x")).toEqual([180,280]);
     expect(viewportChartDomain([8,18],{zoom:2,pan:{x:0,y:0}},"y",false)).toEqual([10.5,15.5]);
     const source = require("node:fs").readFileSync(new URL("./AuditCharts.tsx", import.meta.url), "utf8");
-    expect(source).toContain("windowChartRows(data,viewport)");
-    expect(source).toContain('windowChartRows(data,viewport,"y")');
+    expect(source).toContain("const visible=windowChartRows(data,viewport,axis)");
+    expect(source).toContain("export const panChartRows");
+    expect(source).toContain("const chartData=panChartRows(data,viewport)");
+    expect(source).toContain('const chartData=panChartRows(data,viewport,"y")');
     expect(source).toContain('viewportChartDomain(fullPlottedValues,viewport,"y",(viewport?.zoom??1)<=1)');
     expect(source).toContain('axis:"x"|"y"="y"');
     expect(source).toContain("includeZero=true");

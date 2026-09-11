@@ -1994,3 +1994,18 @@ html[data-audit-theme="light"] .packet .forecast-signal-grid article:hover { tra
 .packet .mobile-quick-nav button { -webkit-tap-highlight-color: transparent !important; touch-action: manipulation !important; }
 .packet .mobile-quick-nav button[data-pointer-action="true"],
 .packet .mobile-quick-nav button[data-pointer-action="true"]:is(:focus, :active) { outline: none !important; box-shadow: none !important; }
+
+/* Сигналы: в светлой теме пороги не наследуют коралловые поверхности или focus-состояния темной темы. */
+html[data-audit-theme="light"] .packet .alert-thresholds { border-color: #cbdcff !important; background: #f7fbff !important; box-shadow: none !important; }
+html[data-audit-theme="light"] .packet .alert-thresholds:hover { border-color: #0a84ff !important; background: #f3f9ff !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .10) !important; }
+html[data-audit-theme="light"] .packet .alert-thresholds .threshold-grid { background: transparent !important; }
+html[data-audit-theme="light"] .packet .alert-thresholds .threshold-rule { border-color: #cbdcff !important; background: #ffffff !important; color: #26384d !important; box-shadow: none !important; }
+html[data-audit-theme="light"] .packet .alert-thresholds .threshold-rule:hover,
+html[data-audit-theme="light"] .packet .alert-thresholds .threshold-rule:focus-within { border-color: #0a84ff !important; background: #f5faff !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .10) !important; }
+html[data-audit-theme="light"] .packet .alert-thresholds .threshold-enabled { color: #425d7b !important; }
+html[data-audit-theme="light"] .packet .alert-thresholds .threshold-enabled input { accent-color: #0a84ff !important; }
+html[data-audit-theme="light"] .packet .alert-thresholds .threshold-amount { color: #425d7b !important; }
+html[data-audit-theme="light"] .packet .alert-thresholds .threshold-amount input { border-color: #c6d9ec !important; background: #ffffff !important; color: #26384d !important; box-shadow: none !important; }
+html[data-audit-theme="light"] .packet .alert-thresholds .threshold-amount input:focus { border-color: #0a84ff !important; background: #f5faff !important; box-shadow: 0 0 0 3px rgba(10, 132, 255, .14) !important; outline: none !important; }
+html[data-audit-theme="light"] .packet .alert-thresholds .packet-link.compact { border-color: #bdd9f6 !important; background: #ffffff !important; color: #075dbb !important; }
+html[data-audit-theme="light"] .packet .alert-thresholds .packet-link.compact:hover { border-color: #0a84ff !important; background: #edf6ff !important; color: #075dbb !important; }

@@ -209,4 +209,9 @@ html[data-audit-theme="light"] .date-popover [data-slot="calendar"] .rdp-range_e
   html[data-audit-theme="light"] .mobile-range-preview small { color: #0a63c8; }
   html[data-audit-theme="light"] .mobile-range-preview strong { color: #25272c; }
   html[data-audit-theme="light"] .mobile-range-preview span { color: #6e6267; }
+
+  /* Периоды всегда идут ниже сетки: без absolute-схемы и с отдельной верхней линией. */
+  .date-popover > [data-slot="calendar"].calendar-standard-open { position: static !important; margin-bottom: 0 !important; }
+  .date-popover > .date-shortcut-toggle { position: static !important; order: 4 !important; width: 100% !important; margin: 12px 0 0 !important; padding-top: 10px !important; border-top: 1px solid color-mix(in srgb, var(--line, #5b3244) 76%, transparent) !important; }
+  .date-popover > .date-shortcuts { position: static !important; order: 5 !important; width: 100% !important; margin-top: 8px !important; }
 }
