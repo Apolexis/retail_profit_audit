@@ -1942,6 +1942,13 @@ html[data-audit-theme="light"] .packet .portfolio-thresholds:hover { border-colo
 
 .packet .mobile-quick-nav button[data-pointer-action="true"]:focus { outline: none !important; box-shadow: none !important; }
 
+/* Нижняя PWA-навигация не сохраняет pointer-фокус после перехода; клавиатурный focus-visible остается доступным. */
+.packet .mobile-quick-nav button { outline: none !important; box-shadow: none !important; }
+.packet .mobile-quick-nav button:focus-visible { outline: 2px solid var(--blue) !important; outline-offset: 2px !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 18%, transparent) !important; }
+html[data-audit-theme="light"] .packet .mobile-drawer .drawer-top button { border-color: #bdd9f6 !important; background: #ffffff !important; color: #075dbb !important; box-shadow: none !important; }
+html[data-audit-theme="light"] .packet .mobile-drawer .drawer-top button:hover,
+html[data-audit-theme="light"] .packet .mobile-drawer .drawer-top button:focus-visible { border-color: #0a84ff !important; background: #edf6ff !important; color: #075dbb !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .12) !important; }
+
 /* Телефон: календарь и права остаются в обычном потоке, а светлая тема не наследует коралл. */
 @media (max-width: 560px) {
   .date-popover { display: flex !important; flex-direction: column !important; align-items: stretch !important; }

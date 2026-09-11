@@ -37,7 +37,9 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
   const isAdmin=me.data?.role==="admin";
   const visibleNav=navSections.map(section=>({...section,items:section.items.filter(([, , ,adminOnly])=>!adminOnly||isAdmin)})).filter(section=>section.items.length>0);
   const closeMenu=()=>{if(document.activeElement instanceof HTMLElement)document.activeElement.blur();setMenuOpen(false)};
-  const clearActionFocus=(target:HTMLElement)=>{target.dataset.pointerAction="true";window.requestAnimationFrame(()=>{target.blur();window.setTimeout(()=>target.blur(),0)});};
+  const clearActionFocus=(target:HTMLElement)=>{target.dataset.pointerAction="true";target.blur();window.requestAnimationFrame(()=>target.blur());};
+  const refreshApp=(target:HTMLElement)=>{target.dataset.pointerAction="true";target.blur();window.location.reload();};
+  useEffect(()=>{const active=document.activeElement;if(active instanceof HTMLElement&&active.closest(".mobile-quick-nav"))active.blur();},[location]);
   const matches=storeSearch.trim()?((availableStores.data??[]).filter(store=>store.name.toLowerCase().includes(storeSearch.trim().toLowerCase())).slice(0,6)):[];
   const chooseStore=(store:string)=>{setSelectedStore(store);setStoreSearch("");closeMenu();setLocation("/stores")};
   const guidance=recommendations[kicker.slice(0,2)]??recommendations["00"];
@@ -74,7 +76,7 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
     {standalone&&<nav className="mobile-quick-nav" aria-label="Быстрые действия">
       <button type="button" onClick={event=>{clearActionFocus(event.currentTarget);window.history.length>1?window.history.back():setLocation("/")}} aria-label="Назад"><ArrowLeft size={16}/><span>Назад</span></button>
       <button type="button" onClick={event=>{clearActionFocus(event.currentTarget);window.history.forward()}} aria-label="Вперёд"><ArrowRight size={16}/><span>Вперёд</span></button>
-      <button type="button" onClick={event=>{event.currentTarget.dataset.pointerAction="true";event.currentTarget.blur();window.location.reload()}} aria-label="Обновить данные"><RefreshCw size={16}/><span>Обновить</span></button>
+      <button type="button" onPointerDown={event=>refreshApp(event.currentTarget)} onClick={event=>{if(event.currentTarget.dataset.pointerAction!=="true")refreshApp(event.currentTarget)}} aria-label="Обновить данные"><RefreshCw size={16}/><span>Обновить</span></button>
     </nav>}
     {showTop&&!menuOpen&&<button className="scroll-top" aria-label="Вернуться к началу страницы" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}><ArrowUp size={18}/></button>}
   </div>;

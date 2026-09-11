@@ -66,10 +66,10 @@ describe("форматирование денежных показателей",
     expect(windowChartRows([1,2,3,4,5,6],{zoom:2,pan:{x:0,y:1}},"y")).toEqual([4,5,6]);
     expect(windowChartRows([1,2,3,4,5,6],{zoom:2,pan:{x:2.4,y:0}})).toEqual([4,5,6]);
     expect(viewportChartDomain([0,100],{zoom:2,pan:{x:0,y:0}})).toEqual([25,75]);
-    expect(viewportChartDomain([0,100],{zoom:2,pan:{x:1,y:0}},"x")).toEqual([60,110]);
-    expect(viewportChartDomain([0,100],{zoom:2,pan:{x:2,y:0}},"x")).toEqual([60,110]);
-    expect(viewportChartDomain([0,100],{zoom:1,pan:{x:1,y:0}},"x")).toEqual([26.25,126.25]);
-    expect(viewportChartDomain([0,100],{zoom:1,pan:{x:2.4,y:0}},"x")).toEqual([26.25,126.25]);
+    expect(viewportChartDomain([0,100],{zoom:2,pan:{x:1,y:0}},"x")).toEqual([125,175]);
+    expect(viewportChartDomain([0,100],{zoom:2,pan:{x:2,y:0}},"x")).toEqual([225,275]);
+    expect(viewportChartDomain([0,100],{zoom:1,pan:{x:1,y:0}},"x")).toEqual([75,175]);
+    expect(viewportChartDomain([0,100],{zoom:1,pan:{x:2.4,y:0}},"x")).toEqual([180,280]);
     expect(viewportChartDomain([8,18],{zoom:2,pan:{x:0,y:0}},"y",false)).toEqual([10.5,15.5]);
     const source = require("node:fs").readFileSync(new URL("./AuditCharts.tsx", import.meta.url), "utf8");
     expect(source).toContain("windowChartRows(data,viewport)");
@@ -84,8 +84,9 @@ describe("форматирование денежных показателей",
     expect(source).not.toContain("if(activeZoom<=1)return");
     expect(source).toContain("y:current.y+(next.y-previous.y)*1.8");
     expect(source).toContain("event.currentTarget.setPointerCapture(event.pointerId)");
-    expect(source).toContain("const renderPan=Math.min(.35,Math.max(-.35,pan))");
+    expect(source).toContain("const renderPan=pan");
     expect(source).toContain("onLostPointerCapture={cancel}");
+    expect(source).toContain('window.addEventListener("pointerup",release,true)');
     expect(source).toContain("event.preventDefault()");
     expect(source).toContain("const clampUnit=(value:number)=>Math.min(2.4,Math.max(-2.4,value))");
     expect(source).toContain("button,[data-chart-point='true']");

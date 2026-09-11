@@ -54,6 +54,7 @@ describe("контрастная светлая тема", () => {
     expect(overrides).toContain('html[data-audit-theme="light"] .packet .manage-editor .manage-editor-notice { border-color: #cbdcff !important; background: #f5f8ff !important; color: #425d7b !important; }');
     expect(overrides).toContain('html[data-audit-theme="light"] .packet .launch-card:hover { transform: none !important; border-color: #0a84ff !important;');
     expect(overrides).toContain('html[data-audit-theme="light"] .packet .mobile-drawer .drawer-search input { border-color: #c6d9ec !important; background: #ffffff !important; color: #26384d !important;');
+    expect(overrides).toContain('html[data-audit-theme="light"] .packet .mobile-drawer .drawer-top button { border-color: #bdd9f6 !important; background: #ffffff !important; color: #075dbb !important;');
   });
 
   it("передает в scatter-графики Портфеля светлую палитру, а не темные константы", () => {
