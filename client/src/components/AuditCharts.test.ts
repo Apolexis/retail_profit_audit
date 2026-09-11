@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampChartZoom, formatK, nonZeroLines, normalizeOverlayBarRect, panChartRows, resolveMetricChartLayout, resolveMetricChartView, resolveOverlayBarGeometry, sortTooltipPayload, viewportChartDomain, windowChartRows, zeroAwareTicks } from "./AuditCharts";
+import { chartPanSpeedForZoom, clampChartZoom, formatK, nonZeroLines, normalizeOverlayBarRect, panChartRows, resolveMetricChartLayout, resolveMetricChartView, resolveOverlayBarGeometry, sortTooltipPayload, viewportChartDomain, windowChartRows, zeroAwareTicks } from "./AuditCharts";
 
 describe("форматирование денежных показателей", () => {
   it("не скрывает малые ненулевые суммы округлением до нуля", () => {
@@ -62,6 +62,8 @@ describe("форматирование денежных показателей",
   it("масштабирует домен и видимый срез данных, а не SVG-поверхность", () => {
     expect(clampChartZoom(.5)).toBe(1);
     expect(clampChartZoom(4)).toBe(3);
+    expect(chartPanSpeedForZoom(1)).toBeCloseTo(2.35);
+    expect(chartPanSpeedForZoom(3)).toBeCloseTo(2.35/Math.sqrt(3));
     expect(windowChartRows([1,2,3,4,5,6],{zoom:2,pan:{x:0,y:0}})).toEqual([3,4,5]);
     expect(windowChartRows([1,2,3,4,5,6],{zoom:2,pan:{x:0,y:1}},"y")).toEqual([4,5,6]);
     expect(windowChartRows([1,2,3,4],{zoom:1.16,pan:{x:1,y:0}})).toEqual([2,3,4]);
@@ -87,8 +89,9 @@ describe("форматирование денежных показателей",
     expect(source).toContain('addEventListener("wheel",wheel,{passive:false})');
     expect(source).toContain("event.stopPropagation()");
     expect(source).not.toContain("if(activeZoom<=1)return");
-    expect(source).toContain("x:current.x-(next.x-previous.x)*2.35");
-    expect(source).toContain("y:current.y+(next.y-previous.y)*2.35");
+    expect(source).toContain("const speed=chartPanSpeedForZoom(zoomRef.current)");
+    expect(source).toContain("x:current.x-(next.x-previous.x)*speed");
+    expect(source).toContain("y:current.y+(next.y-previous.y)*speed");
     expect(source).toContain("event.currentTarget.setPointerCapture(event.pointerId)");
     expect(source).toContain("const renderPan=pan");
     expect(source).toContain("onLostPointerCapture={cancel}");
@@ -99,10 +102,20 @@ describe("форматирование денежных показателей",
     expect(source).toContain("button,[data-chart-point='true']");
     expect(source).toContain("Math.hypot(next.x-start.x,next.y-start.y)<4");
     expect(source).toContain("gesture.current.panning=true;event.preventDefault();event.stopPropagation();setDragging(true)");
-    expect(source).toContain("onPointerDownOutside={event=>event.preventDefault()}");
+    expect(source).not.toContain("onPointerDownOutside={event=>event.preventDefault()}");
+    expect(source).toContain('const chartRenderKey=`${chartView}-${visibleLines.map(line=>line.key).join("-")}`');
+    expect(source).toContain('<ResponsiveContainer key={chartRenderKey} width="100%" height={chartHeight}>');
+    expect(source).toContain("isAnimationActive={false}");
+    expect(source).toContain('addEventListener("touchstart",touchStart,{passive:false,capture:true})');
+    expect(source).toContain('addEventListener("touchmove",touchMove,{passive:false,capture:true})');
+    expect(source).toContain('const touchEnd=()=>clearGesture()');
     expect(source).toContain('aria-label={compact?"Интерактивный график":"Интерактивный увеличенный график"}');
     expect(source).toContain('compact?:boolean}');
     expect(source).not.toContain("invertX");
+    expect(source).toContain('function useSmallChartViewport()');
+    expect(source).toContain('const timelineMargin=compactChart?{top:12,right:8,left:0,bottom:4}');
+    expect(source).toContain('const timelineAxisWidth=compactChart?55:78');
+    expect(source).toContain('compactChart?322:306');
     expect(source).toContain('<ChartPanZoomSurface compact>{compactViewport=><MetricLineChart');
     expect(source).toContain('<ChartPanZoomSurface compact>{compactViewport=><BenchmarkBars');
     expect(source).toContain("Сброс");

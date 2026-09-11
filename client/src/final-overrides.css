@@ -2120,3 +2120,38 @@ html[data-audit-theme="light"] .packet .threshold-stepper > div:hover,
 html[data-audit-theme="light"] .packet .threshold-stepper > div:focus-within,
 html[data-audit-theme="light"] .packet .portfolio-focus-metrics > div:hover { border-color: #0a84ff !important; background: #eef7ff !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .10) !important; }
 @media (max-width: 980px) { .packet .portfolio-focus-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
+
+/* Назначения: название и статус магазина остаются в левой колонке на планшете и телефоне. */
+.packet .access-store-list > div > .access-store-copy { display: grid !important; justify-self: start !important; align-self: center !important; width: 100% !important; min-width: 0 !important; gap: 3px !important; text-align: left !important; }
+.packet .access-store-list > div > .access-store-copy :is(strong, small) { justify-self: start !important; width: 100% !important; text-align: left !important; }
+@media (max-width: 980px) { .packet .access-store-list > div > .access-store-copy { align-self: start !important; } }
+
+/* «Профиль» повторяет геометрию кнопки категории: такая же высота, но без влияния раскрытых секций. */
+.packet .packet-profile-link { flex-basis: 30px !important; height: 30px !important; min-height: 30px !important; max-height: 30px !important; padding: 0 9px !important; }
+@media (max-width: 1100px) { .packet .drawer-profile-link { align-self: stretch !important; flex-basis: 30px !important; width: 100% !important; min-width: 100% !important; height: 30px !important; min-height: 30px !important; max-height: 30px !important; margin: 8px 0 0 !important; padding: 0 9px !important; } }
+
+/* Темная панель календаря продолжается под последней строкой дат. */
+html[data-audit-theme="dark"] .date-popover { background: #121824 !important; padding-bottom: 12px !important; }
+html[data-audit-theme="dark"] .date-popover [data-slot="calendar"],
+html[data-audit-theme="dark"] .date-popover [data-slot="calendar"] :is(.rdp-root, .rdp-months, .rdp-month) { background: #121824 !important; }
+
+/* Светлая тема: нейтральные единицы измерения в карточках самостоятельных ежедневных правил. */
+html[data-audit-theme="light"] .packet .threshold-rule .threshold-amount > span { color: #61728a !important; }
+
+/* Существующая разметка строки назначений: текстовая колонка не центрируется на планшете и телефоне. */
+.packet .access-store-list > div > span { display: grid !important; justify-self: start !important; align-self: center !important; width: 100% !important; min-width: 0 !important; gap: 3px !important; text-align: left !important; }
+.packet .access-store-list > div > span :is(strong, small) { justify-self: start !important; width: 100% !important; text-align: left !important; }
+@media (max-width: 980px) { .packet .access-store-list > div > span { align-self: start !important; } }
+
+/* Светлый drawer: нейтральная подпись и спокойные базовые контуры; синий появляется лишь при фокусе, hover или активном маршруте. */
+@media (max-width: 1100px) {
+  html[data-audit-theme="light"] .packet .drawer-top { color: #51657d !important; }
+  html[data-audit-theme="light"] .packet .nav-drawer-section .drawer-link:not(.active),
+  html[data-audit-theme="light"] .packet .drawer-profile-link:not(.active) { border-color: #d9e1eb !important; background: #ffffff !important; color: #51657d !important; }
+}
+
+/* На телефоне область данных обычного графика получает больше ширины: оси и крайние поля сжаты только там, где экран уже 560 px. */
+@media (max-width: 560px) {
+  .packet .metric-chart { margin-inline: -2px; padding: 4px 0 10px !important; }
+  .packet .chart-panzoom.chart-panzoom-compact .chart-panzoom-stage { padding: 4px 0 !important; }
+}

@@ -15,8 +15,12 @@ it("сохраняет утвержденное название приложе�
   expect(manifest.short_name).toBe("Рыбный");
   expect(worker).toContain('const CACHE_NAME = "rybny-analytics-shell-v19"');
   expect(worker.match(/const CACHE_NAME/g)).toHaveLength(1);
-  expect(index).toContain('id="app-theme-color" name="theme-color" content="#f2f2f7"');
+  const auditContext = readFileSync(resolve(process.cwd(), "client/src/contexts/AuditContext.tsx"), "utf8");
+  expect(index).toContain('id="app-theme-color" name="theme-color" content="#ffffff"');
   expect(index).toContain('apple-mobile-web-app-status-bar-style" content="default"');
+  expect(auditContext).toContain('useLayoutEffect');
+  expect(auditContext).toContain('theme==="dark"?"#0c0b12":"#ffffff"');
+  expect(auditContext).toContain('theme==="dark"?"black":"default"');
   const iconsByTheme: Record<string, string | undefined> = {};
   const expectedIconByManifest={"manifest-dark.webmanifest":"/manus-storage/rybny_circle_dark_v8_high_detail_transparent_a12b19ba.png","manifest-light.webmanifest":"/manus-storage/rybny_circle_light_v10_clean_contours_rgba_candidate_3c5f2dad.png"} as const;
   ["manifest-dark.webmanifest", "manifest-light.webmanifest"].forEach(file => {

@@ -57,4 +57,9 @@ describe("матрица доступа к импорту",()=>{
     expect(overrides).toContain('.packet .access-store-list > div .access-switch { min-width: 0 !important; max-width: none !important; width: 100% !important; justify-self: stretch !important; }');
     expect(overrides).toContain('.packet .access-store-list > div { grid-template-columns: minmax(0, 1fr) minmax(190px, 300px) !important; align-items: center !important; gap: 12px 16px !important; }');
   });
+
+  it("явно выравнивает названия назначенных магазинов слева на компактных ширинах",()=>{
+    expect(overrides).toContain('.packet .access-store-list > div > span { display: grid !important; justify-self: start !important;');
+    expect(overrides).toContain('text-align: left !important;');
+  });
 });

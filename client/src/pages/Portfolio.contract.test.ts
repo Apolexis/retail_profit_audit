@@ -25,8 +25,11 @@ describe("страница «Портфель»", () => {
   it("выбирает точку только явным кликом по видимому маркеру, а hover оставляет для просмотра", () => {
     expect(page).not.toContain("onClick={selectScatterPoint}");
     expect(page).not.toContain("onMouseMove={selectScatterPoint}");
-    expect(page).toContain("const focusPoint = (event: React.MouseEvent<SVGGElement>)");
-    expect(page).toContain("onClick={focusPoint}");
+    expect(page).toContain("const focusPoint = (event: React.PointerEvent<SVGCircleElement>)");
+    expect(page).toContain("data-chart-point=\"true\"");
+    expect(page).toContain("r={selected ? 19 : 17}");
+    expect(page).toContain("onPointerDown={focusPoint}");
+    expect(page).toContain("interactionPoint={interactionPoint}");
     expect(page).toContain("onPointerEnter={() => props.payload && setHoveredStore(props.payload.store)}");
     expect(page).not.toContain("onPointerMove={focusPoint}");
     expect(page).toContain("selected || hovered");
