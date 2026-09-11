@@ -9,6 +9,12 @@ describe("скрытые полосы прокрутки", () => {
     expect(styles).toContain(".packet *::-webkit-scrollbar");
     expect(styles).not.toMatch(/overflow:\s*hidden\s*!important;\s*\/\*\s*global-scrollbar/);
   });
+
+  it("оформляет допустимую мобильную полосу прокрутки темной темы без белой области", () => {
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet { scrollbar-width: thin !important; scrollbar-color: #6e4960 #101620 !important; }');
+    expect(styles).toContain('html[data-audit-theme="dark"] body::-webkit-scrollbar-thumb');
+    expect(styles).toContain('background: #6e4960 !important;');
+  });
 });
 
 describe("триггеры категорий темной навигации", () => {
@@ -60,5 +66,21 @@ describe("выбор адресатов рассылки", () => {
   it("использует коралловый активный контур в темной теме, сохраняя iOS-синий в светлой", () => {
     expect(styles).toContain('html[data-audit-theme="dark"] .packet .broadcast-target-buttons button.active { border-color: #ff765f !important;');
     expect(styles).toContain('html[data-audit-theme="light"] .packet .broadcast-target-buttons button.active { border-color: #0a63c8;');
+  });
+});
+
+describe("действия отчетов и контроля импорта", () => {
+  it("выравнивает высоту расписания и опускает короткую кнопку контроля без сдвига строки", () => {
+    expect(styles).toContain('.packet .report-schedule-controls .schedule-toggle,\n.packet .report-schedule-controls .packet-link.compact { display: inline-flex !important; align-items: center; justify-content: center; min-height: 38px !important; height: 38px !important;');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .report-schedule-controls .schedule-toggle:not(.active) { border-color: #c6d9ec !important; background: #fbfdff !important; color: #4e6681 !important; }');
+    expect(styles).toContain('.packet .access-import-control-row .access-control-toggle { transform: translateY(4px) !important; }');
+  });
+});
+
+describe("выбранный режим графика светлой темы", () => {
+  it("сохраняет видимую iOS-синюю окантовку при hover у выбранного и невыбранного варианта", () => {
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .chart-view-button.active:hover { outline: 2px solid #0a84ff !important; outline-offset: 1px !important;');
+    expect(styles).toContain('html[data-audit-theme="light"] .chart-expand-view-control .chart-view-button.active:hover { outline: 2px solid #0a84ff !important; outline-offset: 1px !important;');
+    expect(styles).toContain('html[data-audit-theme="light"] .chart-expand-view-control .chart-view-button:hover:not(.active) { outline: 2px solid #0a84ff !important; outline-offset: 1px !important;');
   });
 });

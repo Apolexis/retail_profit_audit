@@ -1160,6 +1160,18 @@ body::-webkit-scrollbar,
   display: none;
 }
 
+@media (max-width: 720px) {
+  html[data-audit-theme="dark"],
+  html[data-audit-theme="dark"] body,
+  html[data-audit-theme="dark"] .packet { scrollbar-width: thin !important; scrollbar-color: #6e4960 #101620 !important; }
+  html[data-audit-theme="dark"] body::-webkit-scrollbar,
+  html[data-audit-theme="dark"] .packet::-webkit-scrollbar { display: block !important; width: 8px !important; height: 8px !important; }
+  html[data-audit-theme="dark"] body::-webkit-scrollbar-track,
+  html[data-audit-theme="dark"] .packet::-webkit-scrollbar-track { background: #101620 !important; }
+  html[data-audit-theme="dark"] body::-webkit-scrollbar-thumb,
+  html[data-audit-theme="dark"] .packet::-webkit-scrollbar-thumb { border: 2px solid #101620 !important; border-radius: 999px !important; background: #6e4960 !important; }
+}
+
 /* Компактная настройка будущей материализации: список чипов — единственный источник выбранных статей. */
 .packet .requirement-list .materialization-summary { display: none !important; }
 .packet .requirement-list .materialization-requirement > div > p:first-child { margin: 0 !important; font-size: 0 !important; line-height: 1.42 !important; }
@@ -1747,7 +1759,7 @@ html[data-audit-theme="light"] .packet .conflict-actions input[type="radio"]:che
 
 /* Диалог графика: на телефоне крестик выше длинного заголовка; панель навигации не оставляет острые артефакты на активной ссылке. */
 @media (max-width: 560px) {
-  .chart-expand-dialog [data-slot="dialog-close"] { top: -4px !important; right: 10px !important; }
+  .chart-expand-dialog [data-slot="dialog-close"] { top: 8px !important; right: 10px !important; }
   .chart-expand-dialog [data-slot="dialog-header"] { padding-right: 48px; }
 }
 html[data-audit-theme="dark"] .packet .packet-nav.active,
@@ -1831,3 +1843,25 @@ html[data-audit-theme="light"] .ocean-loader.overlay > p { color: #075dbb !impor
 .packet .portfolio-focus-select-inline { flex: 0 1 220px; min-width: 190px; margin-right: auto; }
 .packet .portfolio-focus-select-inline select { width: 100%; }
 @media (max-width: 720px) { .packet .portfolio-focus-select-inline { flex-basis: 100%; width: 100%; order: -1; } .packet .broadcast-target-buttons { grid-template-columns: 1fr; } }
+
+/* Светлая тема: служебные подписи и риск-поверхности остаются нейтральными, а коралл не наследуется из темной палитры. */
+html[data-audit-theme="light"] .date-popover .date-popover-head > span { color: #0a63c8 !important; }
+html[data-audit-theme="light"] .packet .control-kpis .packet-kpi.risk { border-color: #efbcc3 !important; background: #fff5f5 !important; box-shadow: 0 0 0 1px rgba(195, 53, 73, .04) !important; }
+html[data-audit-theme="light"] .packet .threshold-control-group { border-color: #cbdcff !important; background: #f7fbff !important; }
+html[data-audit-theme="light"] .packet .threshold-control-copy > span { color: #0a63c8 !important; }
+html[data-audit-theme="light"] .packet .threshold-control-copy > strong { color: #26384d !important; }
+html[data-audit-theme="light"] .packet .threshold-control-copy > p { color: #61728a !important; }
+html[data-audit-theme="light"] .packet .manage-editor .manage-editor-notice { border-color: #cbdcff !important; background: #f5f8ff !important; color: #425d7b !important; }
+html[data-audit-theme="light"] .packet .launch-card { border-color: #c6d9ec !important; background: #ffffff !important; box-shadow: none !important; }
+html[data-audit-theme="light"] .packet .launch-card:hover { transform: none !important; border-color: #0a84ff !important; background: #eef7ff !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .12) !important; }
+
+/* Расписание и контроль импорта: одинаковая высота действий, а короткая правая кнопка выровнена с текстовым блоком. */
+.packet .report-schedule-controls .schedule-toggle,
+.packet .report-schedule-controls .packet-link.compact { display: inline-flex !important; align-items: center; justify-content: center; min-height: 38px !important; height: 38px !important; margin-top: 0 !important; }
+html[data-audit-theme="light"] .packet .report-schedule-controls .schedule-toggle:not(.active) { border-color: #c6d9ec !important; background: #fbfdff !important; color: #4e6681 !important; }
+html[data-audit-theme="light"] .packet .report-schedule-controls .schedule-toggle.active { border-color: #0a84ff !important; background: #eaf4ff !important; color: #075dbb !important; }
+.packet .access-import-control-row .access-control-toggle { transform: translateY(4px) !important; }
+
+html[data-audit-theme="light"] .packet .chart-view-button.active:hover { outline: 2px solid #0a84ff !important; outline-offset: 1px !important; box-shadow: 0 0 0 3px rgba(10, 132, 255, .16), 0 4px 10px rgba(10, 99, 200, .22) !important; }
+html[data-audit-theme="light"] .chart-expand-view-control .chart-view-button.active:hover { outline: 2px solid #0a84ff !important; outline-offset: 1px !important; box-shadow: 0 0 0 3px rgba(10, 132, 255, .16) !important; }
+html[data-audit-theme="light"] .chart-expand-view-control .chart-view-button:hover:not(.active) { outline: 2px solid #0a84ff !important; outline-offset: 1px !important; box-shadow: 0 0 0 3px rgba(10, 132, 255, .12) !important; }

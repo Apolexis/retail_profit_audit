@@ -47,6 +47,8 @@ describe("мобильный контракт календаря", () => {
     expect(component).toContain('className={showStandard?"calendar-standard-open":undefined}');
     expect(styles).toContain('.date-popover:has(.date-shortcuts) .calendar-standard-open { display: block !important; position: relative !important; z-index: 1 !important; margin-bottom: 6px !important; }');
     expect(styles).toContain('.date-popover:has(.date-shortcuts) .date-shortcuts { margin-top: 0 !important; }');
+    expect(styles).toContain('.date-popover > [data-slot="calendar"] { display: block !important; clear: both !important; margin-bottom: 12px !important; }');
+    expect(styles).toContain('.date-popover .date-shortcut-toggle { display: block !important; clear: both !important; min-height: 34px !important;');
   });
 
   it("дает быстрый YTD только по завершенным месяцам", () => {
