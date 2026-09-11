@@ -2049,3 +2049,15 @@ html[data-audit-theme="dark"] .packet .portfolio-thresholds .threshold-stepper b
 
 /* Кнопка раскрытия соразмерна переключателю отображения графика. */
 .packet .chart-expand-button { min-height: 35px !important; padding: 0 12px !important; font-size: 11px !important; }
+
+/* Профиль остается отдельным действием и дает явную обратную связь в темной теме. */
+html[data-audit-theme="dark"] .packet :is(.packet-profile-link, .drawer-profile-link):not(.active):hover { border-color: rgba(255, 118, 95, .78) !important; background: rgba(255, 118, 95, .08) !important; color: #fff2ee !important; box-shadow: 0 0 0 2px rgba(255, 118, 95, .12) !important; }
+
+/* Критерии карты в темной теме — нейтральная аналитическая поверхность, без iOS-синего оттенка. */
+html[data-audit-theme="dark"] .packet .portfolio-thresholds { border-color: #46505d !important; background: #1b2028 !important; color: #edf0f3 !important; box-shadow: none !important; }
+html[data-audit-theme="dark"] .packet .portfolio-thresholds .card-title > div > span { color: #b9c1cb !important; }
+html[data-audit-theme="dark"] .packet .portfolio-thresholds :is(h3, .portfolio-threshold-context b) { color: #f5f7f9 !important; }
+html[data-audit-theme="dark"] .packet .portfolio-thresholds :is(p, small, .portfolio-threshold-context, .threshold-stepper > span) { color: #bec5cd !important; }
+html[data-audit-theme="dark"] .packet .portfolio-thresholds .threshold-stepper > div { border-color: #485460 !important; background: #242b34 !important; }
+html[data-audit-theme="dark"] .packet .portfolio-thresholds .threshold-stepper button { color: #d9dfe6 !important; }
+html[data-audit-theme="dark"] .packet .portfolio-thresholds .threshold-stepper button:hover { border-color: #9da8b3 !important; background: #303944 !important; color: #ffffff !important; }

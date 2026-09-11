@@ -106,8 +106,8 @@ describe("страница «Портфель»", () => {
     expect(page).toContain('Покрытие запаса</b> — дни обычных продаж, на которые хватит конечного остатка:<br/>');
     expect(page).toContain('конечный остаток ÷ средние продажи в день.</b><br/>Медиана');
     expect(page).toContain('плановый норматив.<br/>Срез:');
-    expect(styles).toContain('html[data-audit-theme="dark"] .packet .portfolio-thresholds { border-color: #365675 !important; background: #15263c !important;');
-    expect(styles).toContain('html[data-audit-theme="dark"] .packet .portfolio-thresholds .card-title > div > span { color: #88bdff !important; }');
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet .portfolio-thresholds { border-color: #46505d !important; background: #1b2028 !important;');
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet .portfolio-thresholds .card-title > div > span { color: #b9c1cb !important; }');
     expect(styles).toContain('.packet .chart-expand-button { min-height: 35px !important;');
   });
 

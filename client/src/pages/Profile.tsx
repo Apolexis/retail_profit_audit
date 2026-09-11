@@ -81,13 +81,11 @@ export default function Profile() {
         await Promise.all(names.map(name => caches.delete(name)));
       }
       window.localStorage.clear();
-      window.sessionStorage.clear();
       if ("serviceWorker" in navigator) {
         const registrations = await navigator.serviceWorker.getRegistrations();
         await Promise.all(registrations.filter(registration => new URL(registration.scope).origin === window.location.origin).map(registration => registration.update()));
       }
-      toast.success("Локальный кэш сайта очищен. Обновляем…");
-      window.setTimeout(() => window.location.reload(), 150);
+      window.location.replace(window.location.href);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Не удалось очистить кэш сайта");
     } finally {
