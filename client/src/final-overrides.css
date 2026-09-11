@@ -35,7 +35,7 @@
   .packet .scroll-top {
     left: auto !important;
     right: max(45px, calc(env(safe-area-inset-right, 0px) + 45px)) !important;
-    bottom: max(62px, calc(env(safe-area-inset-bottom, 0px) + 42px)) !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 18px) !important;
   }
 }
 
@@ -50,12 +50,12 @@
 /* На телефоне установленное PWA не имеет браузерной панели: здесь доступны только базовые переходы. */
 .packet .mobile-quick-nav { display: none; }
 @media (max-width: 720px) {
-  .packet:has(.mobile-quick-nav) .packet-main { padding-bottom: 112px; }
-  .packet .mobile-quick-nav { position: fixed; z-index: 55; left: 50%; bottom: max(10px, env(safe-area-inset-bottom, 0px)); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; width: min(260px, calc(100vw - 32px)); padding: 5px; transform: translateX(-50%); border: 1px solid var(--line); border-radius: 14px; background: color-mix(in srgb, var(--surface) 94%, transparent); box-shadow: 0 12px 30px rgba(0,0,0,.24); backdrop-filter: blur(16px); }
+  .packet.pwa-standalone .packet-main { padding-bottom: 112px; }
+  .packet .mobile-quick-nav { position: fixed; z-index: 55; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 8px); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; width: min(260px, calc(100vw - 32px)); padding: 5px; transform: translateX(-50%); border: 1px solid var(--line); border-radius: 14px; background: color-mix(in srgb, var(--surface) 94%, transparent); box-shadow: 0 12px 30px rgba(0,0,0,.24); backdrop-filter: blur(16px); }
   .packet .mobile-quick-nav :is(button, a) { display: grid; min-width: 0; min-height: 45px; place-items: center; gap: 2px; padding: 3px 2px; border: 1px solid transparent; border-radius: 10px; background: transparent; color: var(--muted); font: 800 9px Manrope, Arial, sans-serif; text-decoration: none; white-space: nowrap; }
   .packet .mobile-quick-nav :is(button, a):active { transform: scale(.96); }
   .packet .mobile-quick-nav .mobile-quick-home { border-color: color-mix(in srgb, var(--blue) 45%, var(--line)); background: color-mix(in srgb, var(--blue) 14%, transparent); color: var(--blue); }
-  .packet .scroll-top { bottom: max(88px, calc(env(safe-area-inset-bottom, 0px) + 82px)) !important; }
+  .packet.pwa-standalone .scroll-top { bottom: calc(env(safe-area-inset-bottom, 0px) + 80px) !important; }
 }
 html[data-audit-theme="light"] .packet .mobile-quick-nav .mobile-quick-home { border-color: #7bb4f2; background: #e8f3ff; color: #0a63c8; }
 

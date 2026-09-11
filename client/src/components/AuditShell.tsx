@@ -50,7 +50,7 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
     return {...current,[title]:!open};
   });
 
-  return <div className="packet">
+  return <div className={standalone?"packet pwa-standalone":"packet"}>
     <aside className="packet-spine">
       <Link href="/" className="packet-mark"><BrandMark theme={theme}/><span className="brand-title"><span>Аналитика</span><span>«Рыбный»</span></span></Link>
       <nav className="packet-nav-list" aria-label="Разделы системы">

@@ -34,6 +34,7 @@ describe("базовые управляющие элементы", () => {
 
   it("дает установленному мобильному приложению компактные переходы без перекрытия контента", () => {
     expect(shell).toContain('className="mobile-quick-nav"');
+    expect(shell).toContain('standalone?"packet pwa-standalone":"packet"');
     expect(shell).toContain('aria-label="Назад"');
     expect(shell).not.toContain('aria-label="Домой"');
     expect(shell).toContain('aria-label="Вперёд"');
@@ -43,6 +44,9 @@ describe("базовые управляющие элементы", () => {
     expect(shell).toContain('className="mobile-quick-action mobile-quick-forward"');
     expect(shell).toContain('className="mobile-quick-action mobile-quick-refresh"');
     expect(css).toContain("grid-template-columns: repeat(3, minmax(0, 1fr))");
+    expect(css).toContain(".packet.pwa-standalone .packet-main { padding-bottom: 112px; }");
+    expect(css).toContain(".packet.pwa-standalone .scroll-top { bottom: calc(env(safe-area-inset-bottom, 0px) + 80px) !important; }");
+    expect(css).not.toContain(".packet:has(.mobile-quick-nav) .packet-main");
     expect(css).toContain(".packet .mobile-quick-nav .mobile-quick-action");
     expect(css).toContain(".packet .mobile-quick-nav .mobile-quick-action:focus-visible");
     expect(shell).not.toContain("clearActionFocus");
