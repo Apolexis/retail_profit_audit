@@ -1418,6 +1418,8 @@ html[data-audit-theme="dark"] .packet .portfolio-mobile-priority.active { border
 .chart-panzoom-actions button:hover { border-color: var(--blue); background: var(--surface-3); }
 .chart-panzoom-actions b { min-width: 39px; color: var(--muted); font: 800 10px "IBM Plex Mono", monospace; text-align: center; }
 .chart-panzoom-stage { min-width: 900px; min-height: 620px; transform-origin: center center; will-change: transform; }
+.chart-panzoom.chart-panzoom-compact { min-height: 0; touch-action: none; }
+.chart-panzoom.chart-panzoom-compact .chart-panzoom-stage { min-width: 0; min-height: 0; }
 html[data-audit-theme="light"] .chart-expand-dialog { border-color: #cbdcff !important; background: #ffffff !important; color: #1f2d42 !important; }
 html[data-audit-theme="light"] .chart-expand-dialog [data-slot="dialog-title"] { color: #1f2d42; }
 html[data-audit-theme="light"] .chart-expand-dialog [data-slot="dialog-description"] { color: #61718a; }

@@ -86,7 +86,10 @@ describe("форматирование денежных показателей",
     expect(source).toContain("const clampUnit=(value:number)=>Math.min(2.4,Math.max(-2.4,value))");
     expect(source).toContain("button,[data-chart-point='true']");
     expect(source).toContain("setDragging(true)");
-    expect(source).toContain('aria-label="Интерактивный увеличенный график"');
+    expect(source).toContain('aria-label={compact?"Интерактивный график":"Интерактивный увеличенный график"}');
+    expect(source).toContain('compact?:boolean');
+    expect(source).toContain('<ChartPanZoomSurface compact>{compactViewport=><MetricLineChart');
+    expect(source).toContain('<ChartPanZoomSurface compact>{compactViewport=><BenchmarkBars');
     expect(source).toContain("Сброс");
     expect(source).toContain('const medianColor=expanded&&theme==="dark"?"#b694ff":palette.median');
     expect(source).toContain("stroke={medianColor}");
