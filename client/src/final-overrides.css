@@ -1868,3 +1868,36 @@ html[data-audit-theme="light"] .chart-expand-view-control .chart-view-button:hov
 
 html[data-audit-theme="light"] .packet .cover > div:first-child > .packet-link { border-color: #c6d9ec !important; background: #ffffff !important; color: #075dbb !important; box-shadow: none !important; }
 html[data-audit-theme="light"] .packet .cover > div:first-child > .packet-link:hover { transform: none !important; border-color: #0a84ff !important; background: #eef7ff !important; color: #075dbb !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .14) !important; }
+
+html[data-audit-theme="dark"] .packet :is(.packet-profile-link, .drawer-profile-link):not(.active) { border: 1px solid rgba(255, 255, 255, .16) !important; border-radius: 9px !important; background: rgba(255, 255, 255, .025) !important; color: var(--muted) !important; box-shadow: none !important; }
+html[data-audit-theme="light"] .packet :is(.packet-profile-link, .drawer-profile-link):not(.active) { border: 1px solid #c6d9ec !important; border-radius: 9px !important; background: #ffffff !important; color: #42617d !important; box-shadow: none !important; }
+
+/* Портфель: выбор точки предшествует легенде, а светлая тема использует спокойные аналитические поверхности. */
+.packet .portfolio-map-legend { display: grid !important; grid-template-columns: minmax(0, 1fr) !important; align-items: start !important; gap: 10px !important; }
+.packet .portfolio-map-legend .portfolio-focus-select-inline { width: min(280px, 100%) !important; min-width: 0 !important; margin: 0 !important; }
+.packet .portfolio-map-legend-items { display: flex; flex-wrap: wrap; align-items: center; gap: 7px 14px; color: var(--muted); font-size: 10px; }
+.packet .portfolio-map-legend-items > span { display: inline-flex; align-items: center; gap: 5px; }
+.packet .zone-grid article { transition: border-color 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease) !important; }
+html[data-audit-theme="dark"] .packet .zone-grid article:hover { transform: none !important; border-color: rgba(255, 118, 95, .72) !important; background: #21131d !important; box-shadow: 0 0 0 2px rgba(255, 118, 95, .10) !important; }
+html[data-audit-theme="light"] .packet .portfolio-thresholds { border-color: #cbdcff !important; background: #f7fbff !important; box-shadow: 0 12px 26px rgba(10, 99, 200, .05) !important; }
+html[data-audit-theme="light"] .packet .portfolio-thresholds .threshold-stepper > div { border-color: #c6d9ec !important; background: #ffffff !important; }
+html[data-audit-theme="light"] .packet .portfolio-thresholds .threshold-stepper button:hover { background: #eaf4ff !important; color: #075dbb !important; }
+html[data-audit-theme="light"] .packet .zone-grid article { border-color: #c6d9ec !important; background: #ffffff !important; box-shadow: none !important; }
+html[data-audit-theme="light"] .packet .zone-grid article:nth-child(2) { border-color: #cbdcff !important; background: #f5f8ff !important; }
+html[data-audit-theme="light"] .packet .zone-grid article:hover { transform: none !important; border-color: #0a84ff !important; background: #eef7ff !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .12) !important; }
+
+/* Пилот: светлая тема нейтральна по умолчанию; красный остается только для отрицательного сценария. */
+.packet .closure-overview > div,
+.packet .closure-profit-flow > div,
+.packet .scenario-profit-step { transition: border-color 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease) !important; }
+html[data-audit-theme="dark"] .packet .closure-overview > div:hover,
+html[data-audit-theme="dark"] .packet .closure-profit-flow > div:hover,
+html[data-audit-theme="dark"] .packet .scenario-profit-step:hover { transform: none !important; border-color: rgba(255, 118, 95, .72) !important; box-shadow: 0 0 0 2px rgba(255, 118, 95, .10) !important; }
+html[data-audit-theme="light"] .packet .closure-overview > div:hover,
+html[data-audit-theme="light"] .packet .closure-profit-flow > div:hover,
+html[data-audit-theme="light"] .packet .scenario-profit-step:hover { transform: none !important; border-color: #0a84ff !important; background: #eef7ff !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .12) !important; }
+html[data-audit-theme="light"] .packet .scenario-result.neutral .scenario-profit-step.total,
+html[data-audit-theme="light"] .packet .closure-profit-flow > .total { border-color: #cbdcff !important; background: #f5f8ff !important; }
+html[data-audit-theme="light"] .packet .scenario-result.positive .scenario-profit-step.total { border-color: #8ccfb5 !important; background: #effaf6 !important; }
+html[data-audit-theme="light"] .packet .scenario-result.negative .scenario-profit-step.total { border-color: #e5b0b5 !important; background: #fff4f4 !important; }
+html[data-audit-theme="light"] .packet .closure-choice.priority .closure-choice-main small.negative { color: #075dbb !important; }

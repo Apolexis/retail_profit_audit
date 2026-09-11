@@ -71,6 +71,8 @@ describe("страница «Портфель»", () => {
     expect(styles).toContain("margin: 16px 0 18px");
     expect(page).toContain('portfolio-focus-select portfolio-focus-select-inline');
     expect(styles).toContain(".packet .portfolio-focus-card { grid-template-columns: minmax(280px, .85fr) minmax(0, 1.6fr) !important; }");
+    expect(page).toContain('className="portfolio-map-legend-items"');
+    expect(styles).toContain('.packet .portfolio-map-legend { display: grid !important; grid-template-columns: minmax(0, 1fr) !important;');
   });
 
   it("разделяет списания копченой и мороженой продукции в таблице экономики", () => {
@@ -94,5 +96,8 @@ describe("страница «Портфель»", () => {
     expect(page).toContain("localStorage.setItem(priorityThresholdStorageKey");
     expect(page).toContain("priorityScore(b, priorityThresholds)");
     expect(styles).toContain('html[data-audit-theme="dark"] .packet .portfolio-mobile-priority.active { border-color: #ff765f;');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .portfolio-thresholds { border-color: #cbdcff !important; background: #f7fbff !important;');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .zone-grid article:nth-child(2) { border-color: #cbdcff !important; background: #f5f8ff !important; }');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .zone-grid article:hover { transform: none !important; border-color: #0a84ff !important;');
   });
 });

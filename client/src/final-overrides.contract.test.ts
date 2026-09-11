@@ -84,3 +84,10 @@ describe("выбранный режим графика светлой темы",
     expect(styles).toContain('html[data-audit-theme="light"] .chart-expand-view-control .chart-view-button:hover:not(.active) { outline: 2px solid #0a84ff !important; outline-offset: 1px !important;');
   });
 });
+
+describe("неактивная ссылка профиля", () => {
+  it("остается узнаваемой кнопкой в обеих темах без переопределения active-состояния", () => {
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet :is(.packet-profile-link, .drawer-profile-link):not(.active) { border: 1px solid rgba(255, 255, 255, .16) !important;');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet :is(.packet-profile-link, .drawer-profile-link):not(.active) { border: 1px solid #c6d9ec !important;');
+  });
+});
