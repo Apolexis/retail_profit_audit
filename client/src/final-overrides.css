@@ -2155,3 +2155,36 @@ html[data-audit-theme="light"] .packet .threshold-rule .threshold-amount > span 
   .packet .metric-chart { margin-inline: -2px; padding: 4px 0 10px !important; }
   .packet .chart-panzoom.chart-panzoom-compact .chart-panzoom-stage { padding: 4px 0 !important; }
 }
+
+/* Светлый вход не наследует коралловый focus из темного базового каскада. */
+html[data-audit-theme="light"] .login-panel input:focus {
+  border-color: #0a84ff !important;
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, .14) !important;
+}
+
+/* «Наибольшее снижение» — нейтральный аналитический KPI в светлой теме, а не destructive-действие. */
+html[data-audit-theme="light"] .packet .control-kpis .packet-kpi.risk {
+  border-color: #cbdcff !important;
+  background: #f7fbff !important;
+  box-shadow: 0 0 0 1px rgba(10, 132, 255, .05) !important;
+}
+html[data-audit-theme="light"] .packet .control-kpis .packet-kpi.risk:hover {
+  border-color: #0a84ff !important;
+  background: #eef7ff !important;
+  box-shadow: 0 0 0 2px rgba(10, 132, 255, .12) !important;
+}
+
+/* В compact drawer «Профиль» повторяет ширину категорий и возвращает удобную высоту строки. */
+@media (max-width: 1100px) {
+  .packet .drawer-profile-link {
+    align-self: start !important;
+    flex: 0 0 40px !important;
+    width: calc(100% - 10px) !important;
+    min-width: calc(100% - 10px) !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    max-height: 40px !important;
+    margin: 8px 5px 0 !important;
+    padding: 0 9px !important;
+  }
+}

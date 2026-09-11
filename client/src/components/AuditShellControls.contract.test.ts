@@ -56,5 +56,8 @@ describe("базовые управляющие элементы", () => {
     expect(css).toContain('.packet .packet-nav-list { align-content: start !important; grid-auto-rows: max-content !important; }');
     expect(css).toContain('.packet .packet-profile-link { box-sizing: border-box !important; align-self: start !important; flex: 0 0 34px !important; width: calc(100% - 10px) !important; height: 34px !important;');
     expect(css).toContain('.packet .drawer-profile-link { box-sizing: border-box !important; align-self: start !important; flex: 0 0 39px !important; width: calc(100% - 10px) !important; height: 39px !important;');
+    expect(css).toContain('flex: 0 0 40px !important;');
+    expect(css).toContain('width: calc(100% - 10px) !important;');
+    expect(shell).toContain('key={theme} className="brand-mark"');
   });
 });

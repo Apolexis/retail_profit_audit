@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { expect, it } from "vitest";
 
 const page = readFileSync(new URL("./ControlCenter.tsx", import.meta.url), "utf8");
+const styles = readFileSync(new URL("../final-overrides.css", import.meta.url), "utf8");
 
 it("сопоставляет месяцы обоих периодов без подстановки нулей за отсутствующий факт", () => {
   expect(page).toContain("length:Math.max(baseMonths.length,compareMonths.length)");
@@ -27,4 +28,12 @@ it("оставляет два явных независимых календар
   expect(page).toContain('title="СРАВНИТЕЛЬНЫЙ ПЕРИОД"');
   expect(page).not.toContain(">Предыдущий год</button>");
   expect(page).not.toContain(">Предыдущий период</button>");
+});
+
+it("оформляет светлое наибольшее снижение как нейтральный аналитический KPI с hover", () => {
+  expect(page).toContain('<article className="packet-kpi risk"><span>НАИБОЛЬШЕЕ СНИЖЕНИЕ</span>');
+  expect(styles).toContain('html[data-audit-theme="light"] .packet .control-kpis .packet-kpi.risk {');
+  expect(styles).toContain('background: #f7fbff !important;');
+  expect(styles).toContain('.packet .control-kpis .packet-kpi.risk:hover');
+  expect(styles).toContain('background: #eef7ff !important;');
 });
