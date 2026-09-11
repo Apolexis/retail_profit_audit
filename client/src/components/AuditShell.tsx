@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowRight, ArrowUp, BellRing, ChevronDown, House, Menu, Moon, RefreshCw, Sun, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUp, BellRing, ChevronDown, Menu, Moon, RefreshCw, Sun, X } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAudit } from "@/contexts/AuditContext";
 import { trpc } from "@/lib/trpc";
@@ -7,7 +7,8 @@ import { DateRangeControl } from "@/components/DateRangeControl";
 import "@/audit.css";
 import "@/mobile-nav.css";
 
-export function BrandMark(){return <img className="brand-mark" src="/manus-storage/rybny_brand_compact_d86c28dd.png" alt="" aria-hidden="true"/>}
+const compactBrandIcon={dark:"/manus-storage/rybny_pwa_dark_transparent_110da59a.png",light:"/manus-storage/rybny_pwa_light_transparent_d1223d9d.png"} as const;
+export function BrandMark({theme}:{theme:"dark"|"light"}){return <img className="brand-mark" src={compactBrandIcon[theme]} alt="" aria-hidden="true"/>}
 const navSections=[
   {title:"АНАЛИТИКА",items:[["/","00","Сводка",false],["/months","01","Месяцы",false],["/pricing","02","Цены",false],["/expenses","03","Расходы",false],["/inventory","04","Остатки",false],["/stores","05","Магазины",false],["/compare","06","Сравнить",false]]},
   {title:"РЕШЕНИЯ",items:[["/control","07","Динамика",false],["/cadence","08","Ритм",false],["/portfolio","09","Портфель",false],["/pilot","10","Пилот",false],["/forecast","19","Прогноз",false],["/planfact","11","План‑факт",false]]},
@@ -29,8 +30,10 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
   const [storeSearch,setStoreSearch]=useState("");
   const [showTop,setShowTop]=useState(false);
   const [expandedSections,setExpandedSections]=useState<Record<string,boolean>>({});
+  const [standalone,setStandalone]=useState(()=>typeof window!=="undefined"&&(window.matchMedia("(display-mode: standalone)").matches||(window.navigator as Navigator&{standalone?:boolean}).standalone===true));
   const gestureStart=useRef<number|null>(null);
   useEffect(()=>{const update=()=>setShowTop(window.scrollY>280);update();window.addEventListener("scroll",update,{passive:true});return()=>window.removeEventListener("scroll",update)},[]);
+  useEffect(()=>{const media=window.matchMedia("(display-mode: standalone)");const update=()=>setStandalone(media.matches||(window.navigator as Navigator&{standalone?:boolean}).standalone===true);update();media.addEventListener("change",update);return()=>media.removeEventListener("change",update)},[]);
   const isAdmin=me.data?.role==="admin";
   const visibleNav=navSections.map(section=>({...section,items:section.items.filter(([, , ,adminOnly])=>!adminOnly||isAdmin)})).filter(section=>section.items.length>0);
   const closeMenu=()=>setMenuOpen(false);
@@ -48,7 +51,7 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
 
   return <div className="packet">
     <aside className="packet-spine">
-      <Link href="/" className="packet-mark"><BrandMark/><span className="brand-title"><span>Аналитика</span><span>«Рыбный»</span></span></Link>
+      <Link href="/" className="packet-mark"><BrandMark theme={theme}/><span className="brand-title"><span>Аналитика</span><span>«Рыбный»</span></span></Link>
       <nav className="packet-nav-list" aria-label="Разделы системы">
         {visibleNav.map(section=>{const open=sectionIsOpen(section);return <section className={open?"nav-section is-open":"nav-section"} key={section.title}>
           <button type="button" className="nav-section-trigger" aria-expanded={open} onClick={()=>toggleSection(section.title,sectionIsActive(section.items))}><span className="nav-section-label">{section.title}</span><ChevronDown size={13}/></button>
@@ -67,12 +70,11 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
       </section>})}<Link href={profileItem[0]} onClick={closeMenu} className={location===profileItem[0]?"drawer-link drawer-profile-link active":"drawer-link drawer-profile-link"}><span>{profileItem[2]}</span></Link></div><div className="drawer-period">Активный срез:<strong>{rangeLabel}</strong></div>
     </nav>
     <main className="packet-main">{analyticsSection&&<section className={`analysis-filter${kicker.startsWith("00")?" summary-period-filter":""}`}><div className="analysis-filter-copy"><span>ОБЩИЙ СРЕЗ</span><strong>{rangeLabel}</strong><small>Применяется ко всем графикам, сравнениям и итогам текущего раздела.</small></div><DateRangeControl/></section>}{children}<aside className="section-recommendation"><span>УПРАВЛЕНЧЕСКИЙ ФОКУС</span><div><h3>{guidance.title}</h3><p>{guidance.text}</p></div><strong>{guidance.action}</strong></aside></main>
-    <nav className="mobile-quick-nav" aria-label="Быстрые действия">
+    {standalone&&<nav className="mobile-quick-nav" aria-label="Быстрые действия">
       <button type="button" onClick={()=>window.history.length>1?window.history.back():setLocation("/")} aria-label="Назад"><ArrowLeft size={16}/><span>Назад</span></button>
-      <Link href="/" className="mobile-quick-home" aria-label="Домой"><House size={16}/><span>Домой</span></Link>
       <button type="button" onClick={()=>window.history.forward()} aria-label="Вперёд"><ArrowRight size={16}/><span>Вперёд</span></button>
       <button type="button" onClick={()=>window.location.reload()} aria-label="Обновить данные"><RefreshCw size={16}/><span>Обновить</span></button>
-    </nav>
+    </nav>}
     {showTop&&<button className="scroll-top" aria-label="Вернуться к началу страницы" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}><ArrowUp size={18}/></button>}
   </div>;
 }

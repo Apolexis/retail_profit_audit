@@ -35,10 +35,10 @@ describe("базовые управляющие элементы", () => {
   it("дает установленному мобильному приложению компактные переходы без перекрытия контента", () => {
     expect(shell).toContain('className="mobile-quick-nav"');
     expect(shell).toContain('aria-label="Назад"');
-    expect(shell).toContain('aria-label="Домой"');
+    expect(shell).not.toContain('aria-label="Домой"');
     expect(shell).toContain('aria-label="Вперёд"');
     expect(shell).toContain('aria-label="Обновить данные"');
-    expect(css).toContain(".packet .packet-main { padding-bottom: 142px; }");
-    expect(css).toContain("grid-template-columns: repeat(4, minmax(0, 1fr))");
+    expect(shell).toContain("{standalone&&<nav className=\"mobile-quick-nav\"");
+    expect(css).toContain("grid-template-columns: repeat(3, minmax(0, 1fr))");
   });
 });

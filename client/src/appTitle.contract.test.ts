@@ -12,10 +12,10 @@ it("сохраняет утвержденное название приложе�
   const worker = readFileSync(resolve(process.cwd(), "client/public/service-worker.js"), "utf8");
   expect(manifest.name).toBe(appTitle);
   expect(manifest.short_name).toBe("Рыбный");
-  expect(worker).toContain('const CACHE_NAME = "rybny-analytics-shell-v14"');
+  expect(worker).toContain('const CACHE_NAME = "rybny-analytics-shell-v15"');
   expect(worker.match(/const CACHE_NAME/g)).toHaveLength(1);
   const iconsByTheme: Record<string, string | undefined> = {};
-  const expectedIconByManifest={"manifest-dark.webmanifest":"/manus-storage/rybny_circle_dark_v45_dc39f0c9.png","manifest-light.webmanifest":"/manus-storage/rybny_circle_light_v45_94fe9f81.png"} as const;
+  const expectedIconByManifest={"manifest-dark.webmanifest":"/manus-storage/rybny_circle_dark_v8_high_detail_candidate_5c121954.png","manifest-light.webmanifest":"/manus-storage/rybny_circle_light_v8_high_detail_candidate_7a5e477a.png"} as const;
   ["manifest-dark.webmanifest", "manifest-light.webmanifest"].forEach(file => {
     const themed = JSON.parse(readFileSync(resolve(process.cwd(), "client/public", file), "utf8")) as { name: string; short_name: string; icons: Array<{src:string;purpose:string}> };
     expect(themed.name).toBe(appTitle);

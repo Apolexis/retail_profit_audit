@@ -24,14 +24,14 @@ describe("страница «Портфель»", () => {
 
   it("дает надежно выбрать точку касанием и фокусирует выбранный маркер", () => {
     expect(page).toContain("onClick={selectScatterPoint}");
-    expect(page).not.toContain("onMouseMove={selectScatterPoint}");
-    expect(page).toContain("const focusPoint = () => props.payload && setFocusedStore(props.payload.store)");
+    expect(page).toContain("onMouseMove={selectScatterPoint}");
+    expect(page).toContain("const focusPoint = (event: React.PointerEvent<SVGGElement>)");
     expect(page).toContain("onPointerDown={focusPoint}");
     expect(page).not.toContain("onPointerMove={focusPoint}");
     expect(page).toContain("selected || hovered");
     expect(page).toContain('"portfolio-scatter-focus"');
     expect(page).toContain('className="portfolio-scatter-hit"');
-    expect(page).toContain('className="portfolio-scatter-hit" cx={props.cx} cy={props.cy} r={18} fill="transparent"');
+    expect(page).toContain('className="portfolio-scatter-hit" cx={props.cx} cy={props.cy} r={12} fill="transparent"');
     expect(page).toContain("fillOpacity={focus?.store && focus.store !== item.store ? .26 : 1}");
     expect(styles).toContain(".packet .portfolio-scatter-hit { fill: transparent;");
     expect(page).toContain('stroke="none"');

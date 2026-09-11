@@ -17,7 +17,7 @@ describe("универсальный вход с ключом доступа", (
 
   it("использует знак меню и не выводит лишнее пояснение о назначенных магазинах", () => {
     expect(login).toContain('import { BrandMark } from "@/components/AuditShell";');
-    expect(login).toContain("<BrandMark />");
+    expect(login).toContain("<BrandMark theme={theme} />");
     expect(login).not.toContain("Доступ к показателям сети предоставляется только для назначенных магазинов");
   });
 });

@@ -23,9 +23,10 @@ describe("триггеры категорий темной навигации", 
 });
 
 describe("индикатор проверки безопасного доступа", () => {
-  it("использует тематический акцент вместо серого или кораллового чужой темы", () => {
+  it("синхронизирует цвета проверки доступа и загрузки фактов по темам", () => {
     expect(styles).toContain('html[data-audit-theme="dark"] .facts-loader.ocean-loader > p { color: #ff765f !important; }');
     expect(styles).toContain('html[data-audit-theme="light"] .facts-loader.ocean-loader > p { color: var(--muted) !important; }');
+    expect(styles).toContain('html[data-audit-theme="dark"] .facts-loader:not(.ocean-loader) > p { color: #ff765f !important; }');
   });
 });
 

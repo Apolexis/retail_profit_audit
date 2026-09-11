@@ -61,7 +61,7 @@ export default function Login({ accessError }: { accessError?: unknown }) {
       <section className="login-panel">
         <button type="button" className="login-theme-toggle" onClick={toggleTheme} aria-label={theme === "dark" ? "Включить светлую тему" : "Включить темную тему"} title={theme === "dark" ? "Светлая тема" : "Темная тема"}>{theme === "dark" ? <Sun size={16}/> : <Moon size={16}/>}</button>
         <div className="login-mark">
-          <BrandMark />
+          <BrandMark theme={theme} />
           <span>Аналитика «Рыбный»</span>
         </div>
         <h1>Вход в управленческий контур</h1>

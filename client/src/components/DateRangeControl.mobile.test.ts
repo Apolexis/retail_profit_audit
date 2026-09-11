@@ -45,7 +45,7 @@ describe("мобильный контракт календаря", () => {
 
   it("разводит сетку дней и быстрые периоды в мобильном потоке", () => {
     expect(component).toContain('className={showStandard?"calendar-standard-open":undefined}');
-    expect(styles).toContain('.date-popover:has(.date-shortcuts) .calendar-standard-open { display: none !important; }');
+    expect(styles).toContain('.date-popover:has(.date-shortcuts) .calendar-standard-open { display: block !important; position: relative !important; z-index: 1 !important; margin-bottom: 6px !important; }');
     expect(styles).toContain('.date-popover:has(.date-shortcuts) .date-shortcuts { margin-top: 0 !important; }');
   });
 

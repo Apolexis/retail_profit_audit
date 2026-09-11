@@ -50,8 +50,8 @@
 /* На телефоне установленное PWA не имеет браузерной панели: здесь доступны только базовые переходы. */
 .packet .mobile-quick-nav { display: none; }
 @media (max-width: 720px) {
-  .packet .packet-main { padding-bottom: 142px; }
-  .packet .mobile-quick-nav { position: fixed; z-index: 55; left: 50%; bottom: max(10px, env(safe-area-inset-bottom, 0px)); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; width: min(340px, calc(100vw - 32px)); padding: 5px; transform: translateX(-50%); border: 1px solid var(--line); border-radius: 14px; background: color-mix(in srgb, var(--surface) 94%, transparent); box-shadow: 0 12px 30px rgba(0,0,0,.24); backdrop-filter: blur(16px); }
+  .packet:has(.mobile-quick-nav) .packet-main { padding-bottom: 112px; }
+  .packet .mobile-quick-nav { position: fixed; z-index: 55; left: 50%; bottom: max(10px, env(safe-area-inset-bottom, 0px)); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; width: min(260px, calc(100vw - 32px)); padding: 5px; transform: translateX(-50%); border: 1px solid var(--line); border-radius: 14px; background: color-mix(in srgb, var(--surface) 94%, transparent); box-shadow: 0 12px 30px rgba(0,0,0,.24); backdrop-filter: blur(16px); }
   .packet .mobile-quick-nav :is(button, a) { display: grid; min-width: 0; min-height: 45px; place-items: center; gap: 2px; padding: 3px 2px; border: 1px solid transparent; border-radius: 10px; background: transparent; color: var(--muted); font: 800 9px Manrope, Arial, sans-serif; text-decoration: none; white-space: nowrap; }
   .packet .mobile-quick-nav :is(button, a):active { transform: scale(.96); }
   .packet .mobile-quick-nav .mobile-quick-home { border-color: color-mix(in srgb, var(--blue) 45%, var(--line)); background: color-mix(in srgb, var(--blue) 14%, transparent); color: var(--blue); }
@@ -963,8 +963,8 @@ html[data-audit-theme="light"] .packet .pricing-recommendation.positive { border
 .packet .packet-nav-group:last-of-type { border-bottom: 0; }
 .packet .packet-nav-heading.group-toggle { border-radius: 8px; }
 .packet .packet-nav-heading.group-toggle[aria-expanded="true"] { color: #ffb09e; }
-.packet .packet-profile-link { margin: 12px 8px 4px; border-top: 1px solid rgba(255,255,255,.1); border-radius: 0 0 9px 9px; padding-top: 10px; }
-.packet .drawer-profile-link { margin: 10px 14px 2px; border-top: 1px solid rgba(255,255,255,.1); padding-top: 12px; }
+.packet .packet-profile-link { margin: 12px 5px 4px; border-top: 1px solid rgba(255,255,255,.1); border-radius: 0 0 9px 9px; padding-top: 10px; }
+.packet .drawer-profile-link { margin: 10px 5px 2px; border-top: 1px solid rgba(255,255,255,.1); padding-top: 12px; }
 html[data-audit-theme="light"] .packet .packet-nav-heading.group-toggle:hover,
 html[data-audit-theme="light"] .packet .packet-nav-heading.group-toggle:focus-visible,
 html[data-audit-theme="light"] .packet .drawer-nav-heading:hover,
@@ -1001,7 +1001,7 @@ html[data-audit-theme="light"] .packet .cadence-group-label > small { background
 .packet .nav-section.is-open .nav-section-trigger svg { transform: rotate(180deg); }
 .packet .nav-section-trigger:hover, .packet .nav-section-trigger:focus-visible { border-color: rgba(255,147,127,.34); background: rgba(255,118,95,.055); color: #ffb09e; outline: none; }
 .packet .nav-section:not(.is-open) .nav-section-links, .packet .nav-drawer-section:not(.is-open) .nav-drawer-section-links { display: none; }
-.packet .nav-section-links { display: grid; gap: 2px; min-width: 0; margin-top: 0; }
+.packet .nav-section-links { display: grid; gap: 2px; min-width: 0; margin-top: 6px; }
 .packet .nav-section .packet-nav { box-sizing: border-box; min-height: 34px; margin: 0; padding: 8px 9px 8px 11px; border: 1px solid transparent; border-radius: 7px; transform: none !important; }
 .packet .nav-section .packet-nav:hover, .packet .nav-section .packet-nav:focus-visible { border-color: rgba(255,147,127,.42); background: rgba(255,118,95,.07); color: #fff; outline: none; }
 .packet .nav-section .packet-nav.active { border-color: rgba(255,147,127,.46); background: rgba(255,118,95,.11); box-shadow: inset 2px 0 #ff765f; }
@@ -1012,7 +1012,7 @@ html[data-audit-theme="light"] .packet .cadence-group-label > small { background
 .packet .nav-drawer-section.is-open .nav-drawer-section-trigger { color: #ffc0ad; }
 .packet .nav-drawer-section.is-open .nav-drawer-section-trigger svg { transform: rotate(180deg); }
 .packet .nav-drawer-section-trigger:hover, .packet .nav-drawer-section-trigger:focus-visible { border-color: rgba(255,147,127,.4); background: rgba(255,118,95,.065); color: #ffb09e; outline: none; }
-.packet .nav-drawer-section-links { display: grid; gap: 3px; margin-top: 0; }
+.packet .nav-drawer-section-links { display: grid; gap: 3px; margin-top: 6px; }
 .packet .nav-drawer-section .drawer-link { box-sizing: border-box; min-height: 39px; margin: 0; padding: 10px 11px; border: 1px solid rgba(255,255,255,.055); border-radius: 7px; transform: none !important; transition: color 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease), border-color 160ms var(--audit-hover-ease) !important; }
 .packet .nav-drawer-section .drawer-link:hover, .packet .nav-drawer-section .drawer-link:focus-visible { border-color: rgba(255,147,127,.52); background: rgba(255,118,95,.09); color: #fff; outline: none; }
 .packet .nav-drawer-section .drawer-link.active { border-color: rgba(255,147,127,.56); background: rgba(255,118,95,.13); box-shadow: inset 2px 0 #ff765f; color: #fff; }
@@ -1662,3 +1662,53 @@ html[data-audit-theme="dark"] .packet :is(.nav-section-trigger, .nav-drawer-sect
 /* Статус первичной проверки доступа имеет самостоятельный тематический контраст. */
 html[data-audit-theme="dark"] .facts-loader.ocean-loader > p { color: #ff765f !important; }
 html[data-audit-theme="light"] .facts-loader.ocean-loader > p { color: var(--muted) !important; }
+html[data-audit-theme="dark"] .facts-loader:not(.ocean-loader) > p { color: #ff765f !important; }
+
+@media (display-mode: standalone) {
+  html[data-audit-theme="light"] body,
+  html[data-audit-theme="light"] .packet,
+  html[data-audit-theme="light"] .packet .packet-top { background: #ffffff !important; color-scheme: light; }
+}
+
+/* Светлая тема: обычные контролы анализа остаются iOS-синими; коралл зарезервирован для рисков. */
+html[data-audit-theme="light"] .packet .pilot-knob > span b { background: #edf6ff !important; color: #075dbb !important; }
+html[data-audit-theme="light"] .packet .pilot-knob input[type="range"] { background: #dbeeff !important; accent-color: #0a84ff !important; }
+html[data-audit-theme="light"] .packet .pilot-knob input[type="range"]::-webkit-slider-thumb { background: #0a84ff !important; box-shadow: 0 2px 7px rgba(10, 132, 255, .24) !important; }
+html[data-audit-theme="light"] .packet .scenario-card > span,
+html[data-audit-theme="light"] .packet .scenario-card .card-eyebrow,
+html[data-audit-theme="light"] .packet .scenario-card [class*="eyebrow"] { color: #075dbb !important; }
+html[data-audit-theme="light"] .packet .closure-choice:hover,
+html[data-audit-theme="light"] .packet .closure-choice.selected { background: #edf6ff !important; }
+html[data-audit-theme="light"] .packet .closure-choice.priority { box-shadow: inset 3px 0 #0a84ff !important; }
+html[data-audit-theme="light"] .packet .closure-choice input { accent-color: #0a84ff !important; }
+html[data-audit-theme="light"] .packet .cadence-metric-chip:hover:not(:disabled),
+html[data-audit-theme="light"] .packet .cadence-metric-chip:focus-visible,
+html[data-audit-theme="light"] .packet .cadence-metric-chip.active { border-color: #0a84ff !important; background: #edf6ff !important; color: #075dbb !important; }
+html[data-audit-theme="light"] .packet .cadence-group-label > small,
+html[data-audit-theme="light"] .packet .cadence-store-picker > summary small,
+html[data-audit-theme="light"] .packet .expense-picker-toggle small { color: #075dbb !important; }
+html[data-audit-theme="light"] .packet .expense-picker-toggle:hover,
+html[data-audit-theme="light"] .packet .expense-picker.open .expense-picker-toggle { background: #edf6ff !important; }
+html[data-audit-theme="light"] .packet .inventory-profile-card,
+html[data-audit-theme="light"] .packet .inventory-profile-grid > div { border-color: #cbdcff !important; background: #fbfdff !important; }
+html[data-audit-theme="light"] .packet .cash-breakdown-card:hover,
+html[data-audit-theme="light"] .packet .cash-control-card:hover,
+html[data-audit-theme="light"] .packet .import-risk-control:hover { border-color: #0a84ff !important; box-shadow: 0 0 0 1px rgba(10, 132, 255, .18) !important; }
+html[data-audit-theme="light"] .packet .import-message:not(.success),
+html[data-audit-theme="light"] .packet .conflict-box { border-color: #bee0ff !important; background: #eef7ff !important; color: #1c527d !important; }
+html[data-audit-theme="light"] .packet .conflict-box span,
+html[data-audit-theme="light"] .packet .conflict-actions a { color: #075dbb !important; }
+
+/* На широком экране история сводок получает место для периода и действия, без изменения мобильной раскладки. */
+@media (min-width: 1060px) {
+  .packet .report-layout { grid-template-columns: minmax(620px, 1.45fr) minmax(280px, .55fr); }
+  .packet .report-history { display: grid; grid-template-columns: minmax(150px, .48fr) minmax(360px, 1fr); align-items: center; }
+  .packet .report-history-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .packet .report-history-item strong { overflow: visible; text-overflow: clip; }
+}
+
+/* Все действия выбранного конфликта в широкой форме занимают одну базовую линию. */
+@media (min-width: 981px) {
+  .packet .conflict-actions { align-items: center; }
+  .packet .conflict-actions > label { position: static; }
+}

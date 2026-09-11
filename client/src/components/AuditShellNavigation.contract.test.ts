@@ -45,11 +45,9 @@ describe("AuditShell navigation contract",()=>{
     expect(shell).toContain('kicker.replace(/^\\d+\\s*\\/\\s*/,"")');
   });
 
-  it("uses the agreed compact brand mark in navigation and login",()=>{
-    expect(shell).toContain("function BrandMark()");
-    expect(shell).toContain('className="brand-mark"');
-    expect(shell).toContain('src="/manus-storage/rybny_brand_compact_d86c28dd.png"');
-    expect(shell).toContain('alt="" aria-hidden="true"');
+  it("uses the agreed theme-aware compact brand mark in navigation and login",()=>{
+    expect(shell).toContain('const compactBrandIcon={dark:"/manus-storage/rybny_pwa_dark_transparent_110da59a.png",light:"/manus-storage/rybny_pwa_light_transparent_d1223d9d.png"} as const;');
+    expect(shell).toContain('export function BrandMark({theme}:{theme:"dark"|"light"}){return <img className="brand-mark" src={compactBrandIcon[theme]} alt="" aria-hidden="true"/>}');
     expect(shell).toContain('className="brand-title"');
     expect(shell).not.toContain("rybny_analytics_app_icon");
   });
