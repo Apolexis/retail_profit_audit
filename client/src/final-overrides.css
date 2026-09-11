@@ -2093,6 +2093,14 @@ html[data-audit-theme="light"] .packet .chart-expand-button:focus-visible { bord
 .chart-panzoom.chart-panzoom-compact .chart-panzoom-stage { padding: 8px 6px 6px !important; }
 .chart-panzoom :is(.recharts-active-dot, .recharts-dot) { pointer-events: none !important; }
 
+/* «Профиль» — такая же кнопка, как пункты категорий, и не получает отдельную узкую геометрию в compact/drawer-навигации. */
+.packet .packet-nav-list { align-content: start !important; grid-auto-rows: max-content !important; }
+.packet .packet-profile-link { box-sizing: border-box !important; align-self: start !important; flex: 0 0 34px !important; width: calc(100% - 10px) !important; height: 34px !important; min-height: 34px !important; max-height: 34px !important; margin: 8px 5px 0 !important; padding: 8px 9px 8px 11px !important; border-top: 1px solid transparent !important; border-radius: 7px !important; }
+@media (max-width: 1100px) {
+  .packet .drawer-profile-link { box-sizing: border-box !important; align-self: start !important; flex: 0 0 39px !important; width: calc(100% - 10px) !important; height: 39px !important; min-height: 39px !important; max-height: 39px !important; margin: 8px 5px 0 !important; padding: 10px 11px !important; border: 1px solid rgba(255,255,255,.055) !important; border-radius: 7px !important; }
+  html[data-audit-theme="light"] .packet .drawer-profile-link { border-color: rgba(151,78,90,.12) !important; }
+}
+
 /* Критерии карты используют тот же графитовый слой, что и соседние темные карточки. */
 html[data-audit-theme="dark"] .packet .portfolio-thresholds { border-color: #303947 !important; background: linear-gradient(150deg, #121824, #0d121b) !important; box-shadow: 0 14px 35px #00000032 !important; }
 html[data-audit-theme="dark"] .packet .portfolio-thresholds .threshold-stepper > div { border-color: #364252 !important; background: #121925 !important; }

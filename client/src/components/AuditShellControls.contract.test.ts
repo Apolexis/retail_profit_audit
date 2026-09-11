@@ -53,7 +53,8 @@ describe("базовые управляющие элементы", () => {
   });
 
   it("не сжимает профиль при раскрытии категорий навигации", () => {
-    expect(css).toContain('.packet .packet-profile-link { flex: 0 0 auto !important; align-self: stretch !important; width: calc(100% - 10px) !important;');
-    expect(css).toContain('.packet .drawer-profile-link { flex: 0 0 auto !important; align-self: stretch !important; width: 100% !important;');
+    expect(css).toContain('.packet .packet-nav-list { align-content: start !important; grid-auto-rows: max-content !important; }');
+    expect(css).toContain('.packet .packet-profile-link { box-sizing: border-box !important; align-self: start !important; flex: 0 0 34px !important; width: calc(100% - 10px) !important; height: 34px !important;');
+    expect(css).toContain('.packet .drawer-profile-link { box-sizing: border-box !important; align-self: start !important; flex: 0 0 39px !important; width: calc(100% - 10px) !important; height: 39px !important;');
   });
 });

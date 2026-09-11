@@ -23,6 +23,13 @@ describe("мобильный контракт календаря", () => {
     expect(component).toContain("day<draft.from?[day,draft.from]:[draft.from,day]");
   });
 
+  it("выбирает день первым touch без ghost-click, сохраняя второй шаг только для конца диапазона", () => {
+    expect(component).toContain('const touchDayRef=useRef<number|null>(null)');
+    expect(component).toContain('source==="click"&&touchDayRef.current===dayKey');
+    expect(component).toContain('event.pointerType!=="touch"');
+    expect(component).toContain('onPointerUp={event=>pickTouchDay(event,day.date)}');
+  });
+
   it("дает «Базе» тот же календарный компонент без стандартных периодов", () => {
     expect(component).toContain("export function ExactDateControl");
     expect(component).toContain('className="date-popover fact-date-popover"');
