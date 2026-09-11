@@ -1906,3 +1906,7 @@ html[data-audit-theme="light"] .packet .closure-choice.priority .closure-choice-
   .chart-expand-dialog [data-slot="dialog-close"] { top: 22px !important; right: auto !important; left: 10px !important; transform: none !important; }
   .chart-expand-dialog [data-slot="dialog-header"] { padding-right: 0 !important; padding-left: 48px !important; }
 }
+
+@media (max-width: 720px) {
+  .packet .mobile-quick-nav button:focus:not(:focus-visible) { outline: none !important; box-shadow: none !important; }
+}

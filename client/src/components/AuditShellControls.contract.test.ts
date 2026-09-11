@@ -40,7 +40,9 @@ describe("базовые управляющие элементы", () => {
     expect(shell).toContain('aria-label="Обновить данные"');
     expect(shell).toContain("{standalone&&<nav className=\"mobile-quick-nav\"");
     expect(css).toContain("grid-template-columns: repeat(3, minmax(0, 1fr))");
-    expect(shell).toContain("event.currentTarget.blur();window.history.forward()");
+    expect(shell).toContain("const clearActionFocus=(target:HTMLElement)=>window.requestAnimationFrame(()=>target.blur())");
+    expect(shell).toContain("clearActionFocus(event.currentTarget);window.history.forward()");
+    expect(css).toContain(".packet .mobile-quick-nav button:focus:not(:focus-visible) { outline: none !important; box-shadow: none !important; }");
     expect(shell).toContain('href={profileItem[0]} onClick={event=>event.currentTarget.blur()}');
     expect(shell).toContain("event.currentTarget.blur();setMenuOpen(value=>!value)");
     expect(shell).toContain("{showTop&&!menuOpen&&<button className=\"scroll-top\"");
