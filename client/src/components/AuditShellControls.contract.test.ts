@@ -40,5 +40,10 @@ describe("базовые управляющие элементы", () => {
     expect(shell).toContain('aria-label="Обновить данные"');
     expect(shell).toContain("{standalone&&<nav className=\"mobile-quick-nav\"");
     expect(css).toContain("grid-template-columns: repeat(3, minmax(0, 1fr))");
+    expect(shell).toContain("event.currentTarget.blur();window.history.forward()");
+    expect(shell).toContain('href={profileItem[0]} onClick={event=>event.currentTarget.blur()}');
+    expect(shell).toContain("event.currentTarget.blur();setMenuOpen(value=>!value)");
+    expect(shell).toContain("{showTop&&!menuOpen&&<button className=\"scroll-top\"");
+    expect(css).toContain('body:has(.chart-expand-dialog[data-state="open"]) .packet .scroll-top');
   });
 });

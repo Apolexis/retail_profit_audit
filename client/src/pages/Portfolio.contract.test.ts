@@ -38,6 +38,8 @@ describe("страница «Портфель»", () => {
     expect(page).toContain('viewportChartDomain(allPoints.map(item => item.netMargin), viewport, "y", false)');
     expect(page).toContain("allowDataOverflow");
     expect(page).toContain("const chartData = allPoints.filter");
+    expect(page).toContain('margin={{ top: 42, right: 28, bottom: 18, left: 14 }}');
+    expect(page).toContain('style={{pointerEvents:"none"}}');
   });
 
   it("оставляет только линию медианы с конкретной подписью", () => {
@@ -62,6 +64,8 @@ describe("страница «Портфель»", () => {
   it("не оставляет у легенды мелкое техническое пояснение", () => {
     expect(page).not.toContain("Подписи оставлены у выбранной точки");
     expect(styles).toContain("margin: 16px 0 18px");
+    expect(page).toContain('portfolio-focus-select portfolio-focus-select-inline');
+    expect(styles).toContain(".packet .portfolio-focus-card { grid-template-columns: minmax(280px, .85fr) minmax(0, 1.6fr) !important; }");
   });
 
   it("разделяет списания копченой и мороженой продукции в таблице экономики", () => {

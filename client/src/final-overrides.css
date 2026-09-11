@@ -1803,3 +1803,27 @@ html[data-audit-theme="light"] .packet .import-preview .import-threshold-list > 
 html[data-audit-theme="light"] .packet .analysis-filter:hover { border-color: #0a84ff !important; background: #f5f9ff !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .12) !important; }
 html[data-audit-theme="light"] .packet .cover:hover { border-color: #0a84ff !important; background: linear-gradient(145deg, #ffffff, #f7faff 54%, #eef6ff) !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .12), 0 20px 44px rgba(10, 132, 255, .08) !important; }
 html[data-audit-theme="light"] .packet .cover-note:hover { border-color: #0a84ff !important; background: #eef6ff !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .12), 0 12px 28px rgba(10, 99, 200, .10) !important; }
+
+/* Навигация и развернутый график: после действия не остается ложного active/focus-следа. */
+.packet .mobile-quick-nav :is(button, a),
+.packet .mobile-drawer :is(button, a) { -webkit-tap-highlight-color: transparent; }
+html[data-audit-theme="dark"] .packet .packet-profile-link.active { border: 1px solid rgba(255, 147, 127, .46) !important; border-radius: 9px !important; background: rgba(255, 118, 95, .11) !important; box-shadow: inset 2px 0 #ff765f !important; }
+html[data-audit-theme="light"] .packet .packet-profile-link.active { border: 1px solid #0a63c8 !important; border-radius: 9px !important; background: #edf6ff !important; box-shadow: inset 2px 0 #0a63c8 !important; color: #075dbb !important; }
+body:has(.chart-expand-dialog[data-state="open"]) .packet .scroll-top { visibility: hidden; opacity: 0; pointer-events: none; }
+.packet .access-import-control-row > span,
+.packet .access-import-control-row .access-control-toggle { align-self: center !important; margin-block: 0 !important; }
+.packet .admin-broadcast { align-items: start; }
+.packet .broadcast-targeting { display: grid; gap: 7px; }
+.packet .broadcast-targeting > span { color: var(--faint); font: 800 9px "IBM Plex Mono", monospace; letter-spacing: .07em; text-transform: uppercase; }
+.packet .broadcast-target-buttons { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.packet .broadcast-target-buttons button { min-height: 31px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-2); color: var(--muted); font: 700 10px Manrope, Arial, sans-serif; }
+.packet .broadcast-target-buttons button:hover { border-color: var(--blue); background: var(--surface-3); color: var(--text); transform: none; }
+.packet .broadcast-target-buttons button.active { border-color: var(--blue); background: color-mix(in srgb, var(--blue) 12%, var(--surface)); color: var(--text); }
+html[data-audit-theme="light"] .packet .admin-broadcast .stack-form textarea:focus { border-color: #0a63c8 !important; box-shadow: 0 0 0 3px rgba(10, 132, 255, .14) !important; }
+html[data-audit-theme="light"] .packet .broadcast-target-buttons button { border-color: #c6d9ec; background: #fbfdff; color: #3d617f; }
+html[data-audit-theme="light"] .packet .broadcast-target-buttons button:hover,
+html[data-audit-theme="light"] .packet .broadcast-target-buttons button.active { border-color: #0a63c8; background: #edf6ff; color: #075dbb; }
+.packet .portfolio-focus-card { grid-template-columns: minmax(280px, .85fr) minmax(0, 1.6fr) !important; }
+.packet .portfolio-focus-select-inline { flex: 0 1 220px; min-width: 190px; margin-right: auto; }
+.packet .portfolio-focus-select-inline select { width: 100%; }
+@media (max-width: 720px) { .packet .portfolio-focus-select-inline { flex-basis: 100%; width: 100%; order: -1; } .packet .broadcast-target-buttons { grid-template-columns: 1fr; } }

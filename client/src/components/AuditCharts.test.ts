@@ -77,10 +77,13 @@ describe("форматирование денежных показателей",
     expect(source).toContain("onPointerDown={down}");
     expect(source).toContain('addEventListener("wheel",wheel,{passive:false})');
     expect(source).toContain("event.stopPropagation()");
-    expect(source).toContain("if(zoom<=1)return");
+    expect(source).toContain("if(activeZoom<=1)return");
     expect(source).toContain("y:current.y+(next.y-previous.y)*1.4");
+    expect(source).toContain("const activeZoom=zoomRef.current");
+    expect(source).toContain("event.currentTarget.setPointerCapture(event.pointerId)");
+    expect(source).toContain("event.preventDefault()");
     expect(source).toContain("button,[data-chart-point='true']");
-    expect(source).toContain("setDragging(active.length>1||zoom>1)");
+    expect(source).toContain("setDragging(active.length>1||zoomRef.current>1)");
     expect(source).toContain('aria-label="Интерактивный увеличенный график"');
     expect(source).toContain("Сброс");
     expect(source).toContain('const medianColor=expanded&&theme==="dark"?"#b694ff":palette.median');

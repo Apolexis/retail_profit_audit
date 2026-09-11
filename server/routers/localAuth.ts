@@ -11,6 +11,7 @@ import { PASSKEY_ATTEMPT_COOKIE, beginPasskeyAuthentication, beginPasskeyRegistr
 const password = z.string().min(10, "Пароль должен содержать не менее 10 символов").max(128);
 const role = z.enum(["admin", "analyst"]);
 const importAccessLevel = z.enum(["none", "upload", "edit"]);
+const broadcastAudience = z.discriminatedUnion("kind", [z.object({ kind: z.literal("all") }), z.object({ kind: z.literal("account"), accountId: z.number().int().positive() }), z.object({ kind: z.literal("role"), role })]);
 const passkeyResponse = z.any();
 
 async function localAccountFromContext(openId?: string | null) {
@@ -134,11 +135,23 @@ export const localAuthRouter = router({
   pushStatus: protectedProcedure.query(async ({ ctx }) => getPushStatus((await localAccountFromContext(ctx.user?.openId)).id)),
   subscribePush: protectedProcedure.input(z.object({ endpoint: z.string().url(), keys: z.object({ p256dh: z.string().min(1), auth: z.string().min(1) }) })).mutation(async ({ input, ctx }) => savePushSubscription((await localAccountFromContext(ctx.user?.openId)).id, input)),
   unsubscribePush: protectedProcedure.input(z.object({ endpoint: z.string().url().optional() })).mutation(async ({ input, ctx }) => removePushSubscription((await localAccountFromContext(ctx.user?.openId)).id, input.endpoint)),
-  adminBroadcast: adminProcedure.input(z.object({ message: z.string().trim().min(1, "Введите текст сообщения").max(360, "Сообщение не должно превышать 360 символов") })).mutation(async ({ input, ctx }) => {
+  adminBroadcast: adminProcedure.input(z.object({ message: z.string().trim().min(1, "Введите текст сообщения").max(360, "Сообщение не должно превышать 360 символов"), audience: broadcastAudience })).mutation(async ({ input, ctx }) => {
     const actor = await localAdminFromContext(ctx.user?.openId);
-    const accountIds = (await listLocalAccounts()).filter(account => account.isActive).map(account => account.id);
+    const activeAccounts = (await listLocalAccounts()).filter(account => account.isActive);
+    const audience = input.audience;
+    let recipients = activeAccounts;
+    if (audience.kind === "account") {
+      recipients = activeAccounts.filter(account => account.id === audience.accountId);
+    } else if (audience.kind === "role") {
+      recipients = activeAccounts.filter(account => account.role === audience.role);
+    }
+    if (!recipients.length) throw new TRPCError({ code: "BAD_REQUEST", message: "Для выбранной аудитории нет активных учетных записей" });
+    const accountIds = recipients.map(account => account.id);
     const result = await createNotifications({accountIds,severity:"info",title:"Сообщение администратора",message:input.message,entityType:"admin_broadcast"});
-    await recordChange({ actorId: actor.id, action: "notification.broadcast", entityType: "notification", entityId: "all-active", afterState: { recipientAccounts: result.created, pushSubscriptionsAccepted: result.pushSent, messageLength: input.message.length } });
+    let audienceId = "all-active";
+    if (audience.kind === "account") audienceId = `account:${audience.accountId}`;
+    else if (audience.kind === "role") audienceId = `role:${audience.role}`;
+    await recordChange({ actorId: actor.id, action: "notification.broadcast", entityType: "notification", entityId: audienceId, afterState: { audience: input.audience, recipientAccounts: result.created, pushSubscriptionsAccepted: result.pushSent, messageLength: input.message.length } });
     return { recipientAccounts: result.created, pushSubscriptionsAccepted: result.pushSent };
   }),
 });
