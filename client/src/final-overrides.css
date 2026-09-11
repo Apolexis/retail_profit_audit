@@ -1979,3 +1979,18 @@ html[data-audit-theme="light"] .chart-panzoom-actions button:focus-visible { bor
 .packet .forecast-signal-grid article { transition: border-color 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease) !important; }
 html[data-audit-theme="dark"] .packet .forecast-signal-grid article:hover { transform: none !important; border-color: rgba(255, 118, 95, .72) !important; background: #21131d !important; box-shadow: 0 0 0 2px rgba(255, 118, 95, .10) !important; }
 html[data-audit-theme="light"] .packet .forecast-signal-grid article:hover { transform: none !important; border-color: #0a84ff !important; background: #eef7ff !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .12) !important; }
+
+/* Права импорта: на средней ширине все действия используют одну полную колонку, как строки магазинов. */
+.packet .access-import-control-row { margin-bottom: 4px !important; padding-bottom: 8px !important; }
+@media (max-width: 980px) {
+  .packet .access-import-row,
+  .packet .access-store-list > div { grid-template-columns: minmax(0, 1fr) !important; }
+  .packet .access-import-row .access-switch,
+  .packet .access-import-control-row .access-control-toggle,
+  .packet .access-store-list > div .access-switch { width: 100% !important; justify-self: stretch !important; }
+}
+
+/* Нижняя PWA-навигация: touch не оставляет системную рамку после перехода, keyboard-focus остается отдельно. */
+.packet .mobile-quick-nav button { -webkit-tap-highlight-color: transparent !important; touch-action: manipulation !important; }
+.packet .mobile-quick-nav button[data-pointer-action="true"],
+.packet .mobile-quick-nav button[data-pointer-action="true"]:is(:focus, :active) { outline: none !important; box-shadow: none !important; }

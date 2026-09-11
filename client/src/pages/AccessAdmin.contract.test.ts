@@ -29,6 +29,8 @@ describe("матрица доступа к импорту",()=>{
     expect(page).toContain("Просмотр разрешен");
     expect(overrides).toContain(".packet .access-control-toggle.active");
     expect(overrides).toContain('.packet .access-import-control-row .access-control-toggle { width: 100% !important; justify-self: end !important; align-self: center !important; transform: none !important; margin-top: 8px !important; }');
+    expect(overrides).toContain('.packet .access-import-control-row { margin-bottom: 4px !important; padding-bottom: 8px !important; }');
+    expect(overrides).toContain('@media (max-width: 980px) {\n  .packet .access-import-row,\n  .packet .access-store-list > div { grid-template-columns: minmax(0, 1fr) !important; }');
   });
 
   it("дает администратору адресную push-рассылку с честным итогом доставки",()=>{

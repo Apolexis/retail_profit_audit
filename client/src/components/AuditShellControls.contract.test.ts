@@ -40,10 +40,13 @@ describe("базовые управляющие элементы", () => {
     expect(shell).toContain('aria-label="Обновить данные"');
     expect(shell).toContain("{standalone&&<nav className=\"mobile-quick-nav\"");
     expect(css).toContain("grid-template-columns: repeat(3, minmax(0, 1fr))");
-    expect(shell).toContain('const clearActionFocus=(target:HTMLElement)=>{target.dataset.pointerAction="true";target.blur();');
+    expect(shell).toContain('const clearActionFocus=(target:HTMLElement)=>{target.dataset.pointerAction="true";target.blur();window.requestAnimationFrame(()=>target.blur());window.setTimeout(()=>target.blur(),0);window.setTimeout(()=>target.blur(),140);};');
+    expect(shell).toContain('const restoreKeyboardFocus=(target:HTMLElement)=>{delete target.dataset.pointerAction;};');
     expect(shell).toContain("clearActionFocus(event.currentTarget);window.history.forward()");
     expect(css).toContain(".packet .mobile-quick-nav button:focus:not(:focus-visible) { outline: none !important; box-shadow: none !important; }");
     expect(css).toContain('.packet .mobile-quick-nav button[data-pointer-action="true"]:focus { outline: none !important; box-shadow: none !important; }');
+    expect(css).toContain('.packet .mobile-quick-nav button { -webkit-tap-highlight-color: transparent !important; touch-action: manipulation !important; }');
+    expect(css).toContain('.packet .mobile-quick-nav button[data-pointer-action="true"]:is(:focus, :active) { outline: none !important; box-shadow: none !important; }');
     expect(shell).toContain('onPointerDown={event=>refreshApp(event.currentTarget)}');
     expect(shell).toContain('const refreshApp=(target:HTMLElement)=>{target.dataset.pointerAction="true";target.blur();window.location.reload();};');
     expect(shell).toContain('href={profileItem[0]} onClick={event=>event.currentTarget.blur()}');
