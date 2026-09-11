@@ -53,7 +53,7 @@ describe("мобильный контракт календаря", () => {
     expect(styles).toContain('.date-popover > [data-slot="calendar"].calendar-standard-open { position: static !important; margin-bottom: 0 !important; }');
     expect(styles).toContain('.date-popover > .date-shortcut-toggle { position: static !important; order: 4 !important; width: 100% !important; margin: 12px 0 0 !important; padding-top: 10px !important;');
     expect(styles).toContain('.date-popover > .date-shortcuts { position: static !important; order: 5 !important; width: 100% !important; margin-top: 8px !important; }');
-    expect(finalOverrides).toContain('.date-popover:has(.date-shortcuts) > [data-slot="calendar"].calendar-standard-open { margin-bottom: calc(var(--cell-size, 24px) + 18px) !important; }');
+    expect(finalOverrides).toContain('.date-popover:has(.date-shortcuts) > [data-slot="calendar"].calendar-standard-open { margin-bottom: calc(var(--cell-size, 24px) * 1.3 + 18px) !important; }');
   });
 
   it("дает быстрый YTD только по завершенным месяцам", () => {

@@ -87,8 +87,8 @@ describe("форматирование денежных показателей",
     expect(source).toContain('addEventListener("wheel",wheel,{passive:false})');
     expect(source).toContain("event.stopPropagation()");
     expect(source).not.toContain("if(activeZoom<=1)return");
-    expect(source).toContain("x:current.x-(next.x-previous.x)*1.8");
-    expect(source).toContain("y:current.y+(next.y-previous.y)*1.8");
+    expect(source).toContain("x:current.x-(next.x-previous.x)*2.35");
+    expect(source).toContain("y:current.y+(next.y-previous.y)*2.35");
     expect(source).toContain("event.currentTarget.setPointerCapture(event.pointerId)");
     expect(source).toContain("const renderPan=pan");
     expect(source).toContain("onLostPointerCapture={cancel}");
@@ -97,7 +97,8 @@ describe("форматирование денежных показателей",
     expect(source).toContain("event.preventDefault()");
     expect(source).toContain("const clampUnit=(value:number)=>Math.min(2.4,Math.max(-2.4,value))");
     expect(source).toContain("button,[data-chart-point='true']");
-    expect(source).toContain("setDragging(true)");
+    expect(source).toContain("Math.hypot(next.x-start.x,next.y-start.y)<4");
+    expect(source).toContain("gesture.current.panning=true;event.preventDefault();event.stopPropagation();setDragging(true)");
     expect(source).toContain("onPointerDownOutside={event=>event.preventDefault()}");
     expect(source).toContain('aria-label={compact?"Интерактивный график":"Интерактивный увеличенный график"}');
     expect(source).toContain('compact?:boolean}');
