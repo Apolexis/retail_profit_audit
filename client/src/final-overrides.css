@@ -1757,3 +1757,49 @@ html[data-audit-theme="dark"] .packet .drawer-link.active::before,
 html[data-audit-theme="dark"] .packet .drawer-link.active::after { border-radius: inherit !important; }
 html[data-audit-theme="light"] .packet .pricing-median-gap { background: #f4f8ff !important; border-color: #c8ddf7 !important; box-shadow: 0 0 0 1px rgba(10, 132, 255, .05) !important; color: #26384d !important; }
 html[data-audit-theme="light"] .packet .pricing-median-gap.risk { background: #fff5f5 !important; border-color: #efbcc3 !important; box-shadow: 0 0 0 1px rgba(184, 57, 69, .06) !important; color: #85333d !important; }
+
+/* Импорт: базовая карточка спокойна, цвет риска появляется только при фактическом нарушении. */
+.packet .import-preview .import-summary > div:nth-child(3):not(.risk) { border-color: var(--line) !important; background: var(--surface-2) !important; color: var(--text) !important; }
+.packet .import-preview .import-risk-overview article:not(.risk),
+.packet .import-preview .import-cash-breakdown,
+.packet .import-preview .import-threshold-list { border-color: var(--line) !important; background: var(--surface-2) !important; color: var(--text) !important; }
+.packet .import-preview .import-risk-overview article.risk { border-color: rgba(255, 118, 95, .7) !important; background: rgba(255, 118, 95, .08) !important; color: var(--text) !important; }
+.packet .import-preview .import-risk-overview article,
+.packet .import-preview .import-cash-breakdown,
+.packet .import-preview .import-threshold-list { transition: border-color 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease) !important; }
+.packet .import-preview .import-risk-overview article:hover,
+.packet .import-preview .import-cash-breakdown:hover,
+.packet .import-preview .import-threshold-list:hover { transform: none !important; border-color: rgba(255, 118, 95, .78) !important; box-shadow: 0 0 0 2px rgba(255, 118, 95, .11) !important; }
+.packet .import-preview .import-threshold-list > div,
+.packet .import-preview .import-threshold-list > div.info,
+.packet .import-preview .import-threshold-list > div.warning,
+.packet .import-preview .import-threshold-list > div.critical { border-left-color: #ff765f !important; color: var(--text) !important; }
+.packet .import-preview .import-threshold-list > div b { color: var(--text) !important; }
+.packet .import-preview .import-threshold-list > div small { color: var(--muted) !important; }
+.packet .import-preview .import-threshold-list > div strong { color: #ffc2b6 !important; }
+html[data-audit-theme="light"] .packet .import-preview .import-summary > div:nth-child(3):not(.risk),
+html[data-audit-theme="light"] .packet .import-preview .import-risk-overview article:not(.risk),
+html[data-audit-theme="light"] .packet .import-preview .import-cash-breakdown,
+html[data-audit-theme="light"] .packet .import-preview .import-threshold-list { border-color: #d3e2f1 !important; background: #ffffff !important; color: #26384d !important; }
+html[data-audit-theme="light"] .packet .import-preview .import-risk-overview article.risk { border-color: #efbcc3 !important; background: #fff5f5 !important; color: #85333d !important; }
+html[data-audit-theme="light"] .packet .import-preview .import-risk-overview article:hover,
+html[data-audit-theme="light"] .packet .import-preview .import-cash-breakdown:hover,
+html[data-audit-theme="light"] .packet .import-preview .import-threshold-list:hover { border-color: #0a84ff !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .12) !important; }
+html[data-audit-theme="light"] .packet .import-preview .import-threshold-list > div,
+html[data-audit-theme="light"] .packet .import-preview .import-threshold-list > div.info,
+html[data-audit-theme="light"] .packet .import-preview .import-threshold-list > div.warning,
+html[data-audit-theme="light"] .packet .import-preview .import-threshold-list > div.critical { border-left-color: #6a94bd !important; color: #26384d !important; }
+html[data-audit-theme="light"] .packet .import-preview .import-threshold-list > div b { color: #26384d !important; }
+html[data-audit-theme="light"] .packet .import-preview .import-threshold-list > div small { color: #61728a !important; }
+html[data-audit-theme="light"] .packet .import-preview .import-threshold-list > div strong { color: #075dbb !important; }
+
+/* Общий срез и сводка: видимая обратная связь на hover без сдвига компоновки. */
+.packet .analysis-filter,
+.packet .cover,
+.packet .cover-note { transition: border-color 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease) !important; }
+.packet .analysis-filter:hover,
+.packet .cover:hover,
+.packet .cover-note:hover { transform: none !important; border-color: rgba(255, 118, 95, .78) !important; box-shadow: 0 0 0 2px rgba(255, 118, 95, .12) !important; }
+html[data-audit-theme="light"] .packet .analysis-filter:hover { border-color: #0a84ff !important; background: #f5f9ff !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .12) !important; }
+html[data-audit-theme="light"] .packet .cover:hover { border-color: #0a84ff !important; background: linear-gradient(145deg, #ffffff, #f7faff 54%, #eef6ff) !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .12), 0 20px 44px rgba(10, 132, 255, .08) !important; }
+html[data-audit-theme="light"] .packet .cover-note:hover { border-color: #0a84ff !important; background: #eef6ff !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .12), 0 12px 28px rgba(10, 99, 200, .10) !important; }

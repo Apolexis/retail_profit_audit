@@ -35,3 +35,23 @@ describe("управленческий фокус светлой темы", () =
     expect(styles).toContain('html[data-audit-theme="light"] .packet .section-recommendation:hover { transform: none !important; border-color: #0a84ff !important; background: #eef7ff !important; box-shadow: 0 0 0 3px rgba(10, 132, 255, .16), 0 16px 34px rgba(10, 99, 200, .14) !important; }');
   });
 });
+
+describe("карточки контроля импорта", () => {
+  it("дает спокойную базу обычным карточкам, отдельный риск и единый статус правил", () => {
+    expect(styles).toContain('.import-summary > div:nth-child(3):not(.risk)');
+    expect(styles).toContain('.import-risk-overview article.risk { border-color: #efbcc3 !important; background: #fff5f5 !important;');
+    expect(styles).toContain('.import-threshold-list > div.critical { border-left-color: #6a94bd !important; color: #26384d !important; }');
+    expect(styles).toContain('.import-risk-overview article:hover,');
+    expect(styles).toContain('.import-cash-breakdown:hover,');
+    expect(styles).toContain('.import-threshold-list:hover { border-color: #0a84ff !important;');
+  });
+});
+
+describe("карточки общего среза и сводки", () => {
+  it("дают hover-контур без изменения геометрии в обеих темах", () => {
+    expect(styles).toContain('.packet .analysis-filter,\n.packet .cover,\n.packet .cover-note { transition:');
+    expect(styles).toContain('.packet .analysis-filter:hover,\n.packet .cover:hover,\n.packet .cover-note:hover { transform: none !important; border-color: rgba(255, 118, 95, .78) !important;');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .analysis-filter:hover { border-color: #0a84ff !important;');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .cover-note:hover { border-color: #0a84ff !important;');
+  });
+});
