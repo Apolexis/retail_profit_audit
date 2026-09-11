@@ -39,7 +39,12 @@ describe("базовые управляющие элементы", () => {
     expect(shell).toContain('aria-label="Вперёд"');
     expect(shell).toContain('aria-label="Обновить данные"');
     expect(shell).toContain("{standalone&&<nav className=\"mobile-quick-nav\"");
+    expect(shell).toContain('className="mobile-quick-action mobile-quick-back"');
+    expect(shell).toContain('className="mobile-quick-action mobile-quick-forward"');
+    expect(shell).toContain('className="mobile-quick-action mobile-quick-refresh"');
     expect(css).toContain("grid-template-columns: repeat(3, minmax(0, 1fr))");
+    expect(css).toContain(".packet .mobile-quick-nav .mobile-quick-action");
+    expect(css).toContain(".packet .mobile-quick-nav .mobile-quick-action:focus-visible");
     expect(shell).not.toContain("clearActionFocus");
     expect(shell).not.toContain("data-pointer-action");
     expect(shell).toContain('onClick={()=>window.history.forward()}');

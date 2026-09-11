@@ -72,9 +72,9 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
     </nav>
     <main className="packet-main">{analyticsSection&&<section className={`analysis-filter${kicker.startsWith("00")?" summary-period-filter":""}`}><div className="analysis-filter-copy"><span>ОБЩИЙ СРЕЗ</span><strong>{rangeLabel}</strong><small>Применяется ко всем графикам, сравнениям и итогам текущего раздела.</small></div><DateRangeControl/></section>}{children}<aside className="section-recommendation"><span>УПРАВЛЕНЧЕСКИЙ ФОКУС</span><div><h3>{guidance.title}</h3><p>{guidance.text}</p></div><strong>{guidance.action}</strong></aside></main>
     {standalone&&<nav className="mobile-quick-nav" aria-label="Быстрые действия">
-      <button type="button" onClick={()=>{window.history.length>1?window.history.back():setLocation("/")}} aria-label="Назад"><ArrowLeft size={16}/><span>Назад</span></button>
-      <button type="button" onClick={()=>window.history.forward()} aria-label="Вперёд"><ArrowRight size={16}/><span>Вперёд</span></button>
-      <button type="button" onClick={refreshApp} aria-label="Обновить данные"><RefreshCw size={16}/><span>Обновить</span></button>
+      <button type="button" className="mobile-quick-action mobile-quick-back" onClick={()=>{window.history.length>1?window.history.back():setLocation("/")}} aria-label="Назад"><ArrowLeft size={16}/><span>Назад</span></button>
+      <button type="button" className="mobile-quick-action mobile-quick-forward" onClick={()=>window.history.forward()} aria-label="Вперёд"><ArrowRight size={16}/><span>Вперёд</span></button>
+      <button type="button" className="mobile-quick-action mobile-quick-refresh" onClick={refreshApp} aria-label="Обновить данные"><RefreshCw size={16}/><span>Обновить</span></button>
     </nav>}
     {showTop&&!menuOpen&&<button className="scroll-top" aria-label="Вернуться к началу страницы" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}><ArrowUp size={18}/></button>}
   </div>;

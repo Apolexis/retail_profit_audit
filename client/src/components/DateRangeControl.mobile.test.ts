@@ -75,8 +75,8 @@ describe("мобильный контракт календаря", () => {
 
   it("сохраняет срез, примененный стандартной кнопкой, при следующем открытии", () => {
     expect(auditContext).toContain('localStorage.getItem("audit-range")');
-    expect(auditContext).toContain("return normalizeRange(stored)");
-    expect(auditContext).toContain('localStorage.setItem("audit-range",JSON.stringify(range))');
+    expect(auditContext).toContain("stored?.from && stored.to ? normalizeRange(stored) : defaultRange");
+    expect(auditContext).toContain('localStorage.setItem("audit-range", JSON.stringify(range))');
     expect(auditContext).not.toContain('normalized.from==="2026-01-01"&&normalized.to==="2026-08-31"');
   });
 
