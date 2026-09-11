@@ -1755,3 +1755,5 @@ html[data-audit-theme="dark"] .packet .packet-nav.active::before,
 html[data-audit-theme="dark"] .packet .packet-nav.active::after,
 html[data-audit-theme="dark"] .packet .drawer-link.active::before,
 html[data-audit-theme="dark"] .packet .drawer-link.active::after { border-radius: inherit !important; }
+html[data-audit-theme="light"] .packet .pricing-median-gap { background: #f4f8ff !important; border-color: #c8ddf7 !important; box-shadow: 0 0 0 1px rgba(10, 132, 255, .05) !important; color: #26384d !important; }
+html[data-audit-theme="light"] .packet .pricing-median-gap.risk { background: #fff5f5 !important; border-color: #efbcc3 !important; box-shadow: 0 0 0 1px rgba(184, 57, 69, .06) !important; color: #85333d !important; }

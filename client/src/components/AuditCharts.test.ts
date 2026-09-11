@@ -78,11 +78,13 @@ describe("форматирование денежных показателей",
     expect(source).toContain('addEventListener("wheel",wheel,{passive:false})');
     expect(source).toContain("event.stopPropagation()");
     expect(source).toContain("if(zoom<=1)return");
-    expect(source).toContain("y:current.y-(next.y-previous.y)*1.4");
+    expect(source).toContain("y:current.y+(next.y-previous.y)*1.4");
     expect(source).toContain("button,[data-chart-point='true']");
     expect(source).toContain("setDragging(active.length>1||zoom>1)");
     expect(source).toContain('aria-label="Интерактивный увеличенный график"');
     expect(source).toContain("Сброс");
+    expect(source).toContain('const medianColor=expanded&&theme==="dark"?"#b694ff":palette.median');
+    expect(source).toContain("stroke={medianColor}");
   });
   it("использует единый широкий слот наложения и один цвет для легенды, линии и маркера", () => {
     expect(resolveOverlayBarGeometry(140, 18, 0, 3)).toEqual({ x: 140, width: 54 });

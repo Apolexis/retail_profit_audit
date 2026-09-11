@@ -16,4 +16,12 @@ describe("страница «Цены»", () => {
     expect(page).toContain("pricing-recommendation");
     expect(page).toContain("Последний месяц с закупкой");
   });
+
+  it("дает KPI отклонения от медианы самостоятельную тему и оставляет риск отдельным состоянием", () => {
+    const styles = readFileSync(new URL("../final-overrides.css", import.meta.url), "utf8");
+    expect(page).toContain('"packet-kpi pricing-median-gap"');
+    expect(page).toContain('"packet-kpi pricing-median-gap risk"');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .pricing-median-gap { background: #f4f8ff');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .pricing-median-gap.risk { background: #fff5f5');
+  });
 });
