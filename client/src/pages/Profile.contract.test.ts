@@ -11,11 +11,13 @@ describe("страница «Профиль»", () => {
     expect(profile).toContain('"Как добавить на экран"');
   });
 
-  it("дает безопасный сброс только локального PWA-кэша с обновлением service worker", () => {
+  it("сбрасывает локальный кэш всего сайта с обновлением service worker без удаления серверных данных", () => {
     expect(profile).toContain("const clearPwaCache = async () =>");
-    expect(profile).toContain('name.startsWith("rybny-analytics-")');
+    expect(profile).toContain("await Promise.all(names.map(name => caches.delete(name)))");
+    expect(profile).toContain("window.localStorage.clear()");
+    expect(profile).toContain("window.sessionStorage.clear()");
     expect(profile).toContain("navigator.serviceWorker.getRegistrations()");
-    expect(profile).toContain("Кэш приложения очищен. Обновляем…");
-    expect(profile).toContain("Сбросить кэш");
+    expect(profile).toContain("Локальный кэш сайта очищен. Обновляем…");
+    expect(profile).toContain("Сбросить кэш сайта");
   });
 });

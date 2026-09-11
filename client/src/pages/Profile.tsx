@@ -74,19 +74,22 @@ export default function Profile() {
     setInstallPrompt(null);
   };
   const clearPwaCache = async () => {
-    if (!("caches" in window)) { toast.info("В этом браузере нет отдельного PWA-кэша"); return; }
     setClearingCache(true);
     try {
-      const names = await caches.keys();
-      await Promise.all(names.filter(name => name.startsWith("rybny-analytics-")).map(name => caches.delete(name)));
+      if ("caches" in window) {
+        const names = await caches.keys();
+        await Promise.all(names.map(name => caches.delete(name)));
+      }
+      window.localStorage.clear();
+      window.sessionStorage.clear();
       if ("serviceWorker" in navigator) {
         const registrations = await navigator.serviceWorker.getRegistrations();
         await Promise.all(registrations.filter(registration => new URL(registration.scope).origin === window.location.origin).map(registration => registration.update()));
       }
-      toast.success("Кэш приложения очищен. Обновляем…");
-      window.setTimeout(() => window.location.reload(), 450);
+      toast.success("Локальный кэш сайта очищен. Обновляем…");
+      window.setTimeout(() => window.location.reload(), 150);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Не удалось очистить кэш приложения");
+      toast.error(error instanceof Error ? error.message : "Не удалось очистить кэш сайта");
     } finally {
       setClearingCache(false);
     }
@@ -110,6 +113,6 @@ export default function Profile() {
       <article className="packet-card"><span className="card-eyebrow">СМЕНА ПАРОЛЯ</span><form className="stack-form" onSubmit={event => { event.preventDefault(); change.mutate({ currentPassword, nextPassword }); }}><label>Текущий пароль<input type="password" value={currentPassword} onChange={event => setCurrentPassword(event.target.value)} required /></label><label>Новый пароль<input type="password" value={nextPassword} onChange={event => setNextPassword(event.target.value)} minLength={10} required /></label>{change.error && <p className="inline-error">{change.error.message}</p>}<button className="packet-link compact" disabled={change.isPending}>Сохранить пароль</button></form></article>
     </section>
     <section className="packet-card passkey-settings"><div><span className="card-eyebrow">КЛЮЧ ДОСТУПА</span><h3>Вход с ключом доступа</h3><p>Устройство создает ключ для «Аналитики «Рыбный»». Для подтверждения оно может использовать Face ID, Touch ID, Windows Hello, ключ аккаунта или PIN; в системе хранится только открытый ключ.</p></div><div className="passkey-settings-action">{passkeySupported ? <><button className="packet-link compact" onClick={enablePasskey} disabled={passkeyBusy}>{passkeyBusy ? "Подтвердите на устройстве…" : "Добавить ключ доступа"}</button><small>Телефон и пароль всегда остаются резервным способом входа.</small></> : <small>Этот браузер не поддерживает ключи доступа.</small>}</div>{passkeys.data?.length ? <div className="passkey-list">{passkeys.data.map(item => <div key={item.id}><span><b>{item.deviceType === "multiDevice" ? "Синхронизируемый ключ" : "Ключ устройства"}</b><small>{item.lastUsedAt ? `Последний вход: ${new Date(item.lastUsedAt).toLocaleString("ru-RU")}` : `Добавлен: ${new Date(item.createdAt).toLocaleString("ru-RU")}`}</small></span><button className="subtle-button" onClick={() => deletePasskey.mutate({ id: item.id })} disabled={deletePasskey.isPending}>Удалить</button></div>)}</div> : null}</section>
-    <section className="packet-card push-settings"><div><span className="card-eyebrow">ПРИЛОЖЕНИЕ И УВЕДОМЛЕНИЯ</span><h3>На экране телефона или планшета</h3><p>Установите Аналитику «Рыбный» как приложение, затем по желанию включите критичные сигналы и новые управленческие отчеты.</p></div><div className="push-settings-action"><button className="subtle-button" onClick={install} disabled={standalone}>{standalone ? <Smartphone size={16} /> : installPrompt ? <Download size={16} /> : <Share size={16} />} {standalone ? "Уже установлено" : installPrompt ? "Установить приложение" : "Как добавить на экран"}</button><button className="subtle-button" type="button" onClick={clearPwaCache} disabled={clearingCache}><RefreshCw size={16} /> {clearingCache ? "Очищаем кэш…" : "Сбросить кэш"}</button><small>Сбрасывается только локальный кэш приложения; факты, доступ и настройки не меняются.</small>{!pushSupported() ? <small>Этот браузер не поддерживает Web Push.</small> : push.data?.enabled ? <><span><BellRing size={17} /> Включены на этом устройстве</span><button className="subtle-button" onClick={disablePush} disabled={unsubscribe.isPending}><BellOff size={16} />Отключить</button></> : <><span><Smartphone size={17} />{push.data?.configured ? "Разрешение еще не выдано" : "Серверная настройка ожидается"}</span><button className="packet-link compact" onClick={enablePush} disabled={!push.data?.configured || subscribe.isPending}><BellRing size={16} />Включить</button></>}</div></section>
+    <section className="packet-card push-settings"><div><span className="card-eyebrow">ПРИЛОЖЕНИЕ И УВЕДОМЛЕНИЯ</span><h3>На экране телефона или планшета</h3><p>Установите Аналитику «Рыбный» как приложение, затем по желанию включите критичные сигналы и новые управленческие отчеты.</p></div><div className="push-settings-action"><button className="subtle-button" onClick={install} disabled={standalone}>{standalone ? <Smartphone size={16} /> : installPrompt ? <Download size={16} /> : <Share size={16} />} {standalone ? "Уже установлено" : installPrompt ? "Установить приложение" : "Как добавить на экран"}</button><button className="subtle-button" type="button" onClick={clearPwaCache} disabled={clearingCache}><RefreshCw size={16} /> {clearingCache ? "Очищаем кэш…" : "Сбросить кэш сайта"}</button><small>Сбрасываются Cache Storage и локальные настройки сайта. Факты, доступ, серверные записи и текущая сессия не меняются.</small>{!pushSupported() ? <small>Этот браузер не поддерживает Web Push.</small> : push.data?.enabled ? <><span><BellRing size={17} /> Включены на этом устройстве</span><button className="subtle-button" onClick={disablePush} disabled={unsubscribe.isPending}><BellOff size={16} />Отключить</button></> : <><span><Smartphone size={17} />{push.data?.configured ? "Разрешение еще не выдано" : "Серверная настройка ожидается"}</span><button className="packet-link compact" onClick={enablePush} disabled={!push.data?.configured || subscribe.isPending}><BellRing size={16} />Включить</button></>}</div></section>
   </AuditShell>;
 }

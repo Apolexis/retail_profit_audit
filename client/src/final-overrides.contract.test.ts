@@ -91,3 +91,19 @@ describe("неактивная ссылка профиля", () => {
     expect(styles).toContain('html[data-audit-theme="light"] .packet :is(.packet-profile-link, .drawer-profile-link):not(.active) { border: 1px solid #c6d9ec !important;');
   });
 });
+
+describe("пороги, масштаб и ожидаемые KPI", () => {
+  it("сохраняет iOS-синюю светлую поверхность порогов и тематический hover действий", () => {
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .threshold-control-group:hover,');
+    expect(styles).toContain('background: #edf6ff !important;');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .threshold-control-group :is(input, select):focus { border-color: #0a84ff !important;');
+    expect(styles).toContain('html[data-audit-theme="dark"] .chart-panzoom-actions button:hover,');
+    expect(styles).toContain('html[data-audit-theme="light"] .chart-panzoom-actions button:hover,');
+  });
+
+  it("дает ожидаемым месяцам прогноза hover-контур без сдвига", () => {
+    expect(styles).toContain('.packet .forecast-signal-grid article { transition:');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .forecast-signal-grid article:hover { transform: none !important; border-color: #0a84ff !important;');
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet .forecast-signal-grid article:hover { transform: none !important; border-color: rgba(255, 118, 95, .72) !important;');
+  });
+});

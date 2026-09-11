@@ -1961,3 +1961,21 @@ html[data-audit-theme="light"] .packet .mobile-drawer .drawer-search input::plac
 html[data-audit-theme="light"] .packet .mobile-drawer .drawer-search input:focus { border-color: #0a84ff !important; background: #f5faff !important; box-shadow: 0 0 0 3px rgba(10, 132, 255, .12) !important; }
 html[data-audit-theme="light"] .packet .mobile-drawer .drawer-search > div { border-color: #c6d9ec !important; background: #ffffff !important; }
 html[data-audit-theme="light"] .packet .mobile-drawer .drawer-search > div button { color: #26384d !important; }
+
+/* Сигналы: светлые пороги используют iOS-blue во всех интерактивных состояниях без кораллового наследования. */
+html[data-audit-theme="light"] .packet .threshold-control-group,
+html[data-audit-theme="light"] .packet .threshold-control-group:hover,
+html[data-audit-theme="light"] .packet .threshold-control-group:focus-within { border-color: #bedcff !important; background: #edf6ff !important; box-shadow: 0 10px 24px rgba(10, 99, 200, .08) !important; }
+html[data-audit-theme="light"] .packet .threshold-control-group :is(input, select) { border-color: #c6d9ec !important; background: #ffffff !important; color: #26384d !important; accent-color: #0a84ff !important; }
+html[data-audit-theme="light"] .packet .threshold-control-group :is(input, select):focus { border-color: #0a84ff !important; background: #f7fbff !important; box-shadow: 0 0 0 3px rgba(10, 132, 255, .14) !important; outline: none !important; }
+
+/* Кнопки масштаба сохраняют тематический отклик и в развернутом графике. */
+html[data-audit-theme="dark"] .chart-panzoom-actions button:hover,
+html[data-audit-theme="dark"] .chart-panzoom-actions button:focus-visible { border-color: #ff765f !important; background: rgba(255, 118, 95, .14) !important; color: #ffe9e3 !important; box-shadow: 0 0 0 2px rgba(255, 118, 95, .14) !important; }
+html[data-audit-theme="light"] .chart-panzoom-actions button:hover,
+html[data-audit-theme="light"] .chart-panzoom-actions button:focus-visible { border-color: #0a84ff !important; background: #edf6ff !important; color: #075dbb !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .14) !important; }
+
+/* Прогноз: две календарные оценки получают такую же обратную связь, как другие аналитические карточки. */
+.packet .forecast-signal-grid article { transition: border-color 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease) !important; }
+html[data-audit-theme="dark"] .packet .forecast-signal-grid article:hover { transform: none !important; border-color: rgba(255, 118, 95, .72) !important; background: #21131d !important; box-shadow: 0 0 0 2px rgba(255, 118, 95, .10) !important; }
+html[data-audit-theme="light"] .packet .forecast-signal-grid article:hover { transform: none !important; border-color: #0a84ff !important; background: #eef7ff !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .12) !important; }
