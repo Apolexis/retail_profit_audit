@@ -31,6 +31,13 @@ describe("мобильный контракт графических контр�
     expect(styles).toContain('.chart-panzoom.chart-panzoom-touch-inspect { cursor: default; }');
   });
 
+  it("показывает режимы в панели действий развернутого графика без дублирования в его toolbar", () => {
+    expect(chart).toContain('className="chart-panzoom-touch-actions"');
+    expect(chart).toContain('<ChartTouchModeControls mode={touchMode} onChange={setTouchMode}/>');
+    expect(chart).toContain('expandedViewport.setTouchMode} showTouchModeControl={false}');
+    expect(styles).toContain('.chart-expand-dialog .chart-panzoom-touch-actions { margin-right: auto; }');
+  });
+
   it("крепит крестик слева от длинного заголовка только в компактном диалоге", () => {
     expect(styles).toContain('.chart-expand-dialog [data-slot="dialog-close"] { top: 22px !important; right: auto !important; left: 10px !important; transform: none !important; }');
     expect(styles).toContain('.chart-expand-dialog [data-slot="dialog-header"] { padding-right: 0 !important; padding-left: 48px !important; }');

@@ -23,6 +23,8 @@ it("сохраняет утвержденное название приложе�
   expect(auditContext).toContain('theme === "dark" ? "black" : "default"');
   expect(auditContext).toContain("applyPwaTheme(next);");
   expect(auditContext).toContain("root.style.setProperty(\"--pwa-system-color\", color)");
+  expect(auditContext).toContain(".packet.pwa-standalone .packet-top");
+  expect(auditContext).toContain("window.requestAnimationFrame(applyMeta)");
   expect(auditContext).not.toContain("cloneNode(true)");
   const iconsByTheme: Record<string, string | undefined> = {};
   const expectedIconByManifest={"manifest-dark.webmanifest":"/manus-storage/rybny_circle_dark_v8_high_detail_transparent_a12b19ba.png","manifest-light.webmanifest":"/manus-storage/rybny_circle_light_v10_clean_contours_rgba_candidate_3c5f2dad.png"} as const;

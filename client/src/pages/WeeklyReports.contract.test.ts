@@ -53,4 +53,32 @@ describe("WeeklyReports interaction contract",()=>{
     expect(styles).toContain('html[data-audit-theme="light"] .packet .report-export-button');
     expect(styles).toContain('html[data-audit-theme="dark"] .packet .report-export-button');
   });
+
+  it("добавляет в PDF фирменный знак и момент формирования до локального захвата",()=>{
+    expect(page).toContain('const pdfTimestamp=');
+    expect(page).toContain('const [pdfGeneratedAt,setPdfGeneratedAt]=useState<Date|null>(null)');
+    expect(page).toContain('setPdfGeneratedAt(new Date());');
+    expect(page).toContain('requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))');
+    expect(page).toContain('className="report-pdf-brand"');
+    expect(page).toContain('const ReportPdfBrandGlyph=');
+    expect(page).toContain('<ReportPdfBrandGlyph theme={theme}/>');
+    expect(page).toContain('СФОРМИРОВАНО');
+    expect(styles).toContain('.packet .report-pdf-brand { display: flex;');
+  });
+
+  it("добавляет отдельную PDF-страницу динамики из фактических дневных записей выбранного отчета",()=>{
+    expect(page).toContain('export const reportTimeline=');
+    expect(page).toContain('trpc.audit.dashboard.useQuery({ranges:');
+    expect(page).toContain('const dynamics=createReportDynamicsCanvas(summary,timeline,pdfTheme);');
+    expect(page).toContain('pdf.addPage();');
+    expect(page).toContain('"Динамика фактических показателей"');
+    expect(page).toContain('Источник: фактические дневные записи видимых точек в периоде выбранного отчета.');
+    expect(page).toContain('disabled={isExporting||reportDashboard.isLoading}');
+  });
+
+  it("не вставляет пустую промежуточную страницу для почти помещающейся короткой сводки",()=>{
+    expect(page).toContain('export const shouldFitPdfSummaryOnOnePage=');
+    expect(page).toContain('if(shouldFitPdfSummaryOnOnePage(imageHeight,printableHeight))');
+    expect(page).toContain('const renderedWidth=imageWidth*scale;');
+  });
 });

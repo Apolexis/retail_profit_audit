@@ -33,7 +33,10 @@ const AuditContext = createContext<AuditState | null>(null);
 function applyPwaTheme(theme: Theme) {
   const color = theme === "dark" ? "#0c0b12" : "#ffffff";
   const root = document.documentElement;
-  const setMeta = (selector: string, content: string) => document.querySelector<HTMLMetaElement>(selector)?.setAttribute("content", content);
+  const applyMeta = () => {
+    document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach(meta => meta.setAttribute("content", color));
+    document.querySelectorAll<HTMLMetaElement>('meta[name="apple-mobile-web-app-status-bar-style"]').forEach(meta => meta.setAttribute("content", theme === "dark" ? "black" : "default"));
+  };
 
   localStorage.setItem("audit-theme", theme);
   root.dataset.auditTheme = theme;
@@ -43,11 +46,15 @@ function applyPwaTheme(theme: Theme) {
   document.body.style.colorScheme = theme;
   document.body.style.backgroundColor = color;
   document.body.style.setProperty("--pwa-system-color", color);
-  setMeta('meta[name="theme-color"]', color);
-  setMeta('meta[name="apple-mobile-web-app-status-bar-style"]', theme === "dark" ? "black" : "default");
+  applyMeta();
+  document.querySelectorAll<HTMLElement>(".packet.pwa-standalone .packet-top").forEach(header => {
+    header.style.setProperty("background-color", color, "important");
+    header.style.colorScheme = theme;
+  });
   document.getElementById("app-favicon")?.setAttribute("href", themeIcon[theme]);
   document.getElementById("app-apple-touch-icon")?.setAttribute("href", themeIcon[theme]);
   document.getElementById("app-manifest")?.setAttribute("href", themeManifest[theme]);
+  window.requestAnimationFrame(applyMeta);
 }
 
 export function AuditProvider({ children }: { children: ReactNode }) {

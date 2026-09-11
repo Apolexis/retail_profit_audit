@@ -49,6 +49,9 @@ describe("базовые управляющие элементы", () => {
     expect(css).not.toContain(".packet:has(.mobile-quick-nav) .packet-main");
     expect(css).toContain(".packet .mobile-quick-nav .mobile-quick-action");
     expect(css).toContain(".packet .mobile-quick-nav .mobile-quick-action:focus-visible");
+    expect(css).toContain("min-height: 39px;");
+    expect(css).toContain(".packet .mobile-quick-nav .mobile-quick-refresh { border-color: color-mix(in srgb, var(--blue) 48%, var(--line)); background: transparent; }");
+    expect(css).toContain(".mobile-quick-refresh { border-color: #90bfe9 !important; background: transparent !important;");
     expect(shell).not.toContain("clearActionFocus");
     expect(shell).not.toContain("data-pointer-action");
     expect(shell).toContain('onClick={()=>window.history.forward()}');
