@@ -64,6 +64,7 @@ describe("форматирование денежных показателей",
     expect(clampChartZoom(4)).toBe(3);
     expect(windowChartRows([1,2,3,4,5,6],{zoom:2,pan:{x:0,y:0}})).toEqual([3,4,5]);
     expect(windowChartRows([1,2,3,4,5,6],{zoom:2,pan:{x:0,y:1}},"y")).toEqual([4,5,6]);
+    expect(windowChartRows([1,2,3,4],{zoom:1.16,pan:{x:1,y:0}})).toEqual([2,3,4]);
     expect(windowChartRows([1,2,3,4,5,6],{zoom:2,pan:{x:2.4,y:0}})).toEqual([4,5,6]);
     expect(panChartRows([{month:"M1"},{month:"M2"},{month:"M3"}],{zoom:1,pan:{x:1,y:0}}).map(row=>row.month)).toEqual(["M1","M2","M3"]);
     expect(panChartRows([{store:"A"},{store:"B"},{store:"C"}],{zoom:1,pan:{x:0,y:-1}},"y").map(row=>row.store)).toEqual(["A","B","C"]);
@@ -97,6 +98,7 @@ describe("форматирование денежных показателей",
     expect(source).toContain("const clampUnit=(value:number)=>Math.min(2.4,Math.max(-2.4,value))");
     expect(source).toContain("button,[data-chart-point='true']");
     expect(source).toContain("setDragging(true)");
+    expect(source).toContain("onPointerDownOutside={event=>event.preventDefault()}");
     expect(source).toContain('aria-label={compact?"Интерактивный график":"Интерактивный увеличенный график"}');
     expect(source).toContain('compact?:boolean}');
     expect(source).not.toContain("invertX");

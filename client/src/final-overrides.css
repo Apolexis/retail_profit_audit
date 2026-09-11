@@ -2054,6 +2054,21 @@ html[data-audit-theme="dark"] .packet .portfolio-thresholds .threshold-stepper b
 /* Профиль остается отдельным действием и дает явную обратную связь в темной теме. */
 html[data-audit-theme="dark"] .packet :is(.packet-profile-link, .drawer-profile-link):not(.active):hover { border-color: rgba(255, 118, 95, .78) !important; background: rgba(255, 118, 95, .08) !important; color: #fff2ee !important; box-shadow: 0 0 0 2px rgba(255, 118, 95, .12) !important; }
 
+/* Неактивный «Профиль» использует ту же нейтральную базу, что и остальные пункты темного меню. */
+html[data-audit-theme="dark"] .packet :is(.packet-profile-link, .drawer-profile-link):not(.active) { border-color: var(--line) !important; background: transparent !important; color: #aeb9c8 !important; }
+
+/* Наличные расходы и НДФЛ — нейтральный связанный контур; iOS-blue остается для остальных пороговых блоков. */
+html[data-audit-theme="dark"] .packet .threshold-control-group:has(.threshold-grid-cash) { border-color: var(--line) !important; background: var(--surface-2) !important; }
+html[data-audit-theme="dark"] .packet .threshold-control-group:has(.threshold-grid-cash) .threshold-control-copy > span { color: var(--faint) !important; }
+html[data-audit-theme="dark"] .packet .threshold-control-group:has(.threshold-grid-cash) .threshold-control-copy > strong { color: var(--text) !important; }
+html[data-audit-theme="dark"] .packet .threshold-control-group:has(.threshold-grid-cash) .threshold-control-copy > p,
+html[data-audit-theme="dark"] .packet .threshold-control-group:has(.threshold-grid-cash) .threshold-amount > span { color: var(--muted) !important; }
+html[data-audit-theme="light"] .packet .threshold-control-group:has(.threshold-grid-cash) { border-color: #d8e2ef !important; background: #ffffff !important; box-shadow: none !important; }
+html[data-audit-theme="light"] .packet .threshold-control-group:has(.threshold-grid-cash) .threshold-control-copy > span,
+html[data-audit-theme="light"] .packet .threshold-control-group:has(.threshold-grid-cash) .threshold-control-copy > p,
+html[data-audit-theme="light"] .packet .threshold-control-group:has(.threshold-grid-cash) .threshold-amount > span { color: #61728a !important; }
+html[data-audit-theme="light"] .packet .threshold-control-group:has(.threshold-grid-cash) .threshold-control-copy > strong { color: #26384d !important; }
+
 /* Критерии карты в темной теме — нейтральная аналитическая поверхность, без iOS-синего оттенка. */
 html[data-audit-theme="dark"] .packet .portfolio-thresholds { border-color: #46505d !important; background: #1b2028 !important; color: #edf0f3 !important; box-shadow: none !important; }
 html[data-audit-theme="dark"] .packet .portfolio-thresholds .card-title > div > span { color: #b9c1cb !important; }
