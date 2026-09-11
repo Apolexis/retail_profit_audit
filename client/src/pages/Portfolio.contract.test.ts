@@ -58,8 +58,8 @@ describe("страница «Портфель»", () => {
     expect(styles).toContain("@media (max-width: 720px)");
     expect(page).toContain("setExpandedChart(kind)");
     expect(page).toContain("chart-expand-dialog portfolio-chart-dialog");
-    expect(page).toContain("<ChartPanZoomSurface invertX>");
-    expect(page).toContain('<ChartPanZoomSurface compact invertX>{viewport=>scatter(kind,510,viewport)}</ChartPanZoomSurface>');
+    expect(page).toContain("<ChartPanZoomSurface>{viewport => <div className=\"chart-expand-canvas\">{scatter(expandedChart,620,viewport)}</div>}</ChartPanZoomSurface>");
+    expect(page).toContain('<ChartPanZoomSurface compact>{viewport=>scatter(kind,510,viewport)}</ChartPanZoomSurface>');
     expect(styles).toContain(".packet .portfolio-mobile-priority-list { display: grid;");
     expect(page).toContain('["revenue","cover","stock","writeoffs"] as const');
     expect(page).toContain("Остаток и чистая маржа");
@@ -76,13 +76,15 @@ describe("страница «Портфель»", () => {
     expect(styles).toContain('.packet .portfolio-map-legend { display: grid !important; grid-template-columns: minmax(0, 1fr) !important;');
   });
 
-  it("разделяет списания копченой и мороженой продукции в таблице экономики", () => {
+  it("разделяет списания копченой и мороженой продукции в таблице экономики и фокусной карточке", () => {
     expect(page).toContain("writeoffSmoked: summary.writeoffSmoked");
     expect(page).toContain("writeoffFrozen: summary.writeoffFrozen");
     expect(page).toContain("<th>Списания К.</th>");
     expect(page).toContain("<th>Списания М.</th>");
     expect(page).toContain("money(item.writeoffSmoked)");
     expect(page).toContain("money(item.writeoffFrozen)");
+    expect(page).toContain("<span>Списания К.</span><b>{money(focus.writeoffSmoked)}</b>");
+    expect(page).toContain("<span>Списания М.</span><b>{money(focus.writeoffFrozen)}</b>");
   });
 
   it("дает отдельные сохраняемые пороги приоритета для маржи и покрытия", () => {
@@ -106,13 +108,15 @@ describe("страница «Портфель»", () => {
     expect(page).toContain('Покрытие запаса</b> — дни обычных продаж, на которые хватит конечного остатка:<br/>');
     expect(page).toContain('конечный остаток ÷ средние продажи в день.</b><br/>Медиана');
     expect(page).toContain('плановый норматив.<br/>Срез:');
-    expect(styles).toContain('html[data-audit-theme="dark"] .packet .portfolio-thresholds { border-color: #46505d !important; background: #1b2028 !important;');
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet .portfolio-thresholds { border-color: #303947 !important; background: linear-gradient(150deg, #121824, #0d121b) !important;');
     expect(styles).toContain('html[data-audit-theme="dark"] .packet .portfolio-thresholds .card-title > div > span { color: #b9c1cb !important; }');
     expect(styles).toContain('.packet .chart-expand-button { min-height: 35px !important;');
   });
 
-  it("компенсирует горизонтальное направление viewport только в картах портфеля", () => {
-    expect(page).toContain('<ChartPanZoomSurface compact invertX>');
-    expect(page).toContain('<ChartPanZoomSurface invertX>');
+  it("использует единое естественное горизонтальное направление viewport для всех графиков", () => {
+    expect(page).not.toContain("invertX");
+    expect(styles).toContain('.packet .portfolio-focus-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }');
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet .threshold-stepper > div:hover,');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .portfolio-focus-metrics > div:hover { border-color: #0a84ff !important;');
   });
 });

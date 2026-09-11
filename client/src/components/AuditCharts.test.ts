@@ -86,8 +86,7 @@ describe("форматирование денежных показателей",
     expect(source).toContain('addEventListener("wheel",wheel,{passive:false})');
     expect(source).toContain("event.stopPropagation()");
     expect(source).not.toContain("if(activeZoom<=1)return");
-    expect(source).toContain("const xDirection=invertX?-1:1");
-    expect(source).toContain("x:current.x+xDirection*(next.x-previous.x)*1.8");
+    expect(source).toContain("x:current.x-(next.x-previous.x)*1.8");
     expect(source).toContain("y:current.y+(next.y-previous.y)*1.8");
     expect(source).toContain("event.currentTarget.setPointerCapture(event.pointerId)");
     expect(source).toContain("const renderPan=pan");
@@ -99,7 +98,8 @@ describe("форматирование денежных показателей",
     expect(source).toContain("button,[data-chart-point='true']");
     expect(source).toContain("setDragging(true)");
     expect(source).toContain('aria-label={compact?"Интерактивный график":"Интерактивный увеличенный график"}');
-    expect(source).toContain('compact?:boolean;invertX?:boolean');
+    expect(source).toContain('compact?:boolean}');
+    expect(source).not.toContain("invertX");
     expect(source).toContain('<ChartPanZoomSurface compact>{compactViewport=><MetricLineChart');
     expect(source).toContain('<ChartPanZoomSurface compact>{compactViewport=><BenchmarkBars');
     expect(source).toContain("Сброс");

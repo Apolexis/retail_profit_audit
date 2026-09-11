@@ -1943,7 +1943,8 @@ html[data-audit-theme="light"] .packet .mobile-drawer .drawer-top button:focus-v
 /* Телефон: календарь и права остаются в обычном потоке, а светлая тема не наследует коралл. */
 @media (max-width: 560px) {
   .date-popover { display: flex !important; flex-direction: column !important; align-items: stretch !important; }
-  .date-popover [data-slot="calendar"] { position: relative !important; z-index: 0 !important; order: 3 !important; margin-bottom: 18px !important; }
+  .date-popover [data-slot="calendar"] { position: relative !important; z-index: 0 !important; order: 3 !important; margin-bottom: calc(var(--cell-size, 24px) + 18px) !important; }
+  .date-popover:has(.date-shortcuts) > [data-slot="calendar"].calendar-standard-open { margin-bottom: calc(var(--cell-size, 24px) + 18px) !important; }
   .date-popover .date-shortcut-toggle { position: static !important; z-index: 0 !important; order: 4 !important; width: 100% !important; margin: 0 !important; }
   .date-popover .date-shortcuts { position: static !important; z-index: 0 !important; order: 5 !important; width: 100% !important; margin-top: 10px !important; }
 }
@@ -2061,3 +2062,37 @@ html[data-audit-theme="dark"] .packet .portfolio-thresholds :is(p, small, .portf
 html[data-audit-theme="dark"] .packet .portfolio-thresholds .threshold-stepper > div { border-color: #485460 !important; background: #242b34 !important; }
 html[data-audit-theme="dark"] .packet .portfolio-thresholds .threshold-stepper button { color: #d9dfe6 !important; }
 html[data-audit-theme="dark"] .packet .portfolio-thresholds .threshold-stepper button:hover { border-color: #9da8b3 !important; background: #303944 !important; color: #ffffff !important; }
+
+/* Карта и обычные графики используют одинаковую естественную геометрию drag; элементы не прилипают к краям карточки. */
+.packet .metric-chart { padding: 6px 8px 12px !important; }
+.packet .chart-toolbar { align-items: center !important; margin: 0 0 16px !important; padding: 4px 4px 0 !important; }
+.packet .chart-toolbar-actions { gap: 10px !important; }
+.packet .chart-expand-button { transform: none !important; transition: border-color 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease), color 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease) !important; }
+.packet .chart-expand-button:hover,
+.packet .chart-expand-button:focus-visible { transform: none !important; }
+html[data-audit-theme="dark"] .packet .chart-expand-button:hover,
+html[data-audit-theme="dark"] .packet .chart-expand-button:focus-visible { border-color: #ff765f !important; background: rgba(255, 118, 95, .12) !important; color: #fff1ed !important; box-shadow: 0 0 0 2px rgba(255, 118, 95, .12) !important; }
+html[data-audit-theme="light"] .packet .chart-expand-button:hover,
+html[data-audit-theme="light"] .packet .chart-expand-button:focus-visible { border-color: #0a84ff !important; background: #eef7ff !important; color: #075dbb !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .12) !important; }
+.chart-panzoom-stage { box-sizing: border-box !important; padding: 10px 12px 18px !important; }
+.chart-panzoom.chart-panzoom-compact .chart-panzoom-stage { padding: 8px 6px 6px !important; }
+
+/* Критерии карты используют тот же графитовый слой, что и соседние темные карточки. */
+html[data-audit-theme="dark"] .packet .portfolio-thresholds { border-color: #303947 !important; background: linear-gradient(150deg, #121824, #0d121b) !important; box-shadow: 0 14px 35px #00000032 !important; }
+html[data-audit-theme="dark"] .packet .portfolio-thresholds .threshold-stepper > div { border-color: #364252 !important; background: #121925 !important; }
+html[data-audit-theme="dark"] .packet .portfolio-thresholds .threshold-stepper button:hover,
+html[data-audit-theme="dark"] .packet .portfolio-thresholds .threshold-stepper button:focus-visible { background: rgba(255, 118, 95, .14) !important; color: #fff0ec !important; box-shadow: inset 0 0 0 1px rgba(255, 118, 95, .62) !important; outline: none !important; }
+html[data-audit-theme="light"] .packet .portfolio-thresholds .threshold-stepper button:hover,
+html[data-audit-theme="light"] .packet .portfolio-thresholds .threshold-stepper button:focus-visible { background: #eaf4ff !important; color: #075dbb !important; box-shadow: inset 0 0 0 1px #0a84ff !important; outline: none !important; }
+
+/* Карточки выбора порогов и KPI выбранной точки дают заметную, но неподвижную обратную связь. */
+.packet .portfolio-focus-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+.packet .threshold-stepper > div,
+.packet .portfolio-focus-metrics > div { transition: border-color 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease) !important; }
+html[data-audit-theme="dark"] .packet .threshold-stepper > div:hover,
+html[data-audit-theme="dark"] .packet .threshold-stepper > div:focus-within,
+html[data-audit-theme="dark"] .packet .portfolio-focus-metrics > div:hover { border-color: rgba(255, 118, 95, .78) !important; background: rgba(255, 118, 95, .08) !important; box-shadow: 0 0 0 2px rgba(255, 118, 95, .10) !important; }
+html[data-audit-theme="light"] .packet .threshold-stepper > div:hover,
+html[data-audit-theme="light"] .packet .threshold-stepper > div:focus-within,
+html[data-audit-theme="light"] .packet .portfolio-focus-metrics > div:hover { border-color: #0a84ff !important; background: #eef7ff !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .10) !important; }
+@media (max-width: 980px) { .packet .portfolio-focus-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
