@@ -15,4 +15,9 @@ describe("мобильный контракт графических контр�
     expect(chart).toContain('onClick={()=>onChange("bar")}');
     expect(chart).toContain('onClick={()=>toggle(line.key)}');
   });
+
+  it("поднимает крестик над длинным заголовком только в компактном диалоге", () => {
+    expect(styles).toContain('.packet .chart-expand-dialog [data-slot="dialog-close"] { top: -4px !important; right: 10px !important; }');
+    expect(styles).toContain('.packet .chart-expand-dialog [data-slot="dialog-header"] { padding-right: 48px; }');
+  });
 });
