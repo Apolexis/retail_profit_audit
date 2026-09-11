@@ -2003,6 +2003,26 @@ html[data-audit-theme="light"] .packet .alert-thresholds .threshold-rule { borde
 html[data-audit-theme="light"] .packet .alert-thresholds .threshold-rule:hover,
 html[data-audit-theme="light"] .packet .alert-thresholds .threshold-rule:focus-within { border-color: #0a84ff !important; background: #f5faff !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .10) !important; }
 html[data-audit-theme="light"] .packet .alert-thresholds .threshold-enabled { color: #425d7b !important; }
+
+/* История импорта: на планшете и телефоне заголовок и пояснение идут отдельными читаемыми строками. */
+.packet .import-history .card-title > div,
+.packet .import-history .card-title > small { min-width: 0 !important; }
+.packet .import-history .card-title > small { max-width: 38rem; overflow-wrap: anywhere !important; white-space: normal !important; }
+@media (max-width: 980px) {
+  .packet .import-history .card-title { display: grid !important; grid-template-columns: minmax(0, 1fr) !important; gap: 8px !important; }
+  .packet .import-history .card-title > :is(div, small) { width: 100% !important; max-width: none !important; }
+  .packet .import-history .card-title h3 { overflow-wrap: anywhere !important; white-space: normal !important; }
+}
+
+/* Назначения: верхние и нижние действия используют один и тот же столбец управления. */
+.packet .access-store-list > div .access-switch { width: 100% !important; min-width: 190px !important; max-width: 300px !important; justify-self: end !important; }
+@media (max-width: 980px) {
+  .packet .access-store-list > div .access-switch { min-width: 0 !important; max-width: none !important; width: 100% !important; justify-self: stretch !important; }
+}
+
+/* Профиль не должен сжиматься при раскрытии навигационных категорий. */
+.packet .packet-profile-link { flex: 0 0 auto !important; align-self: stretch !important; width: calc(100% - 10px) !important; min-width: calc(100% - 10px) !important; box-sizing: border-box !important; }
+.packet .drawer-profile-link { flex: 0 0 auto !important; align-self: stretch !important; width: 100% !important; min-width: 100% !important; box-sizing: border-box !important; }
 html[data-audit-theme="light"] .packet .alert-thresholds .threshold-enabled input { accent-color: #0a84ff !important; }
 html[data-audit-theme="light"] .packet .alert-thresholds .threshold-amount { color: #425d7b !important; }
 html[data-audit-theme="light"] .packet .alert-thresholds .threshold-amount input { border-color: #c6d9ec !important; background: #ffffff !important; color: #26384d !important; box-shadow: none !important; }

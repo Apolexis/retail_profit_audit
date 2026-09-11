@@ -51,4 +51,9 @@ describe("матрица доступа к импорту",()=>{
     expect(overrides).toContain(".packet .admin-password-reset-title { display: block;");
     expect(overrides).toContain('.packet .admin-password-reset > div { display: grid; gap: 4px; }');
   });
+
+  it("ведет верхние и нижние права импорта по одной адаптивной ширине",()=>{
+    expect(overrides).toContain('.packet .access-store-list > div .access-switch { width: 100% !important; min-width: 190px !important; max-width: 300px !important; justify-self: end !important; }');
+    expect(overrides).toContain('.packet .access-store-list > div .access-switch { min-width: 0 !important; max-width: none !important; width: 100% !important; justify-self: stretch !important; }');
+  });
 });

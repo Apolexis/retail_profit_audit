@@ -54,4 +54,9 @@ describe("базовые управляющие элементы", () => {
     expect(shell).toContain("{showTop&&!menuOpen&&<button className=\"scroll-top\"");
     expect(css).toContain('body:has(.chart-expand-dialog[data-state="open"]) .packet .scroll-top');
   });
+
+  it("не сжимает профиль при раскрытии категорий навигации", () => {
+    expect(css).toContain('.packet .packet-profile-link { flex: 0 0 auto !important; align-self: stretch !important; width: calc(100% - 10px) !important;');
+    expect(css).toContain('.packet .drawer-profile-link { flex: 0 0 auto !important; align-self: stretch !important; width: 100% !important;');
+  });
 });
