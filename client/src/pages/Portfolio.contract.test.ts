@@ -22,18 +22,17 @@ describe("страница «Портфель»", () => {
     expect(page).toContain('normal: "#a8b2ff"');
   });
 
-  it("дает надежно выбрать точку касанием и фокусирует выбранный маркер", () => {
-    expect(page).toContain("onClick={selectScatterPoint}");
-    expect(page).toContain("onMouseMove={selectScatterPoint}");
-    expect(page).toContain("const focusPoint = (event: React.PointerEvent<SVGGElement>)");
-    expect(page).toContain("onPointerDown={focusPoint}");
+  it("выбирает точку только явным кликом по видимому маркеру, а hover оставляет для просмотра", () => {
+    expect(page).not.toContain("onClick={selectScatterPoint}");
+    expect(page).not.toContain("onMouseMove={selectScatterPoint}");
+    expect(page).toContain("const focusPoint = (event: React.MouseEvent<SVGGElement>)");
+    expect(page).toContain("onClick={focusPoint}");
+    expect(page).toContain("onPointerEnter={() => props.payload && setHoveredStore(props.payload.store)}");
     expect(page).not.toContain("onPointerMove={focusPoint}");
     expect(page).toContain("selected || hovered");
     expect(page).toContain('"portfolio-scatter-focus"');
-    expect(page).toContain('className="portfolio-scatter-hit"');
-    expect(page).toContain('className="portfolio-scatter-hit" cx={props.cx} cy={props.cy} r={12} fill="transparent"');
+    expect(page).not.toContain('className="portfolio-scatter-hit"');
     expect(page).toContain("fillOpacity={focus?.store && focus.store !== item.store ? .26 : 1}");
-    expect(styles).toContain(".packet .portfolio-scatter-hit { fill: transparent;");
     expect(page).toContain('stroke="none"');
     expect(page).toContain('viewportChartDomain(allPoints.map(item => Number(item[kind])), viewport, "x", false)');
     expect(page).toContain('viewportChartDomain(allPoints.map(item => item.netMargin), viewport, "y", false)');
