@@ -1909,10 +1909,6 @@ html[data-audit-theme="light"] .packet .closure-choice.priority .closure-choice-
   .chart-expand-dialog [data-slot="dialog-header"] { padding-right: 0 !important; padding-left: 48px !important; }
 }
 
-@media (max-width: 720px) {
-  .packet .mobile-quick-nav button:focus:not(:focus-visible) { outline: none !important; box-shadow: none !important; }
-}
-
 /* Финальный responsive-слой: значения сохраняют смысл, а действия импорта следуют сетке строк магазинов. */
 @media (max-width: 980px) {
   .packet .portfolio-focus-card { grid-template-columns: minmax(0, 1fr) !important; gap: 14px !important; }
@@ -1940,11 +1936,6 @@ html[data-audit-theme="light"] .packet .portfolio-thresholds:hover { border-colo
   .packet .access-import-control-row .access-control-toggle { margin-top: 6px !important; }
 }
 
-.packet .mobile-quick-nav button[data-pointer-action="true"]:focus { outline: none !important; box-shadow: none !important; }
-
-/* Нижняя PWA-навигация не сохраняет pointer-фокус после перехода; клавиатурный focus-visible остается доступным. */
-.packet .mobile-quick-nav button { outline: none !important; box-shadow: none !important; }
-.packet .mobile-quick-nav button:focus-visible { outline: 2px solid var(--blue) !important; outline-offset: 2px !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 18%, transparent) !important; }
 html[data-audit-theme="light"] .packet .mobile-drawer .drawer-top button { border-color: #bdd9f6 !important; background: #ffffff !important; color: #075dbb !important; box-shadow: none !important; }
 html[data-audit-theme="light"] .packet .mobile-drawer .drawer-top button:hover,
 html[data-audit-theme="light"] .packet .mobile-drawer .drawer-top button:focus-visible { border-color: #0a84ff !important; background: #edf6ff !important; color: #075dbb !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .12) !important; }
@@ -1989,11 +1980,6 @@ html[data-audit-theme="light"] .packet .forecast-signal-grid article:hover { tra
   .packet .access-import-control-row .access-control-toggle,
   .packet .access-store-list > div .access-switch { width: 100% !important; justify-self: stretch !important; }
 }
-
-/* Нижняя PWA-навигация: touch не оставляет системную рамку после перехода, keyboard-focus остается отдельно. */
-.packet .mobile-quick-nav button { -webkit-tap-highlight-color: transparent !important; touch-action: manipulation !important; }
-.packet .mobile-quick-nav button[data-pointer-action="true"],
-.packet .mobile-quick-nav button[data-pointer-action="true"]:is(:focus, :active) { outline: none !important; box-shadow: none !important; }
 
 /* Сигналы: в светлой теме пороги не наследуют коралловые поверхности или focus-состояния темной темы. */
 html[data-audit-theme="light"] .packet .alert-thresholds { border-color: #cbdcff !important; background: #f7fbff !important; box-shadow: none !important; }
@@ -2051,3 +2037,15 @@ html[data-audit-theme="light"] .packet .alert-thresholds .threshold-amount input
 html[data-audit-theme="light"] .packet .alert-thresholds .threshold-amount input:focus { border-color: #0a84ff !important; background: #f5faff !important; box-shadow: 0 0 0 3px rgba(10, 132, 255, .14) !important; outline: none !important; }
 html[data-audit-theme="light"] .packet .alert-thresholds .packet-link.compact { border-color: #bdd9f6 !important; background: #ffffff !important; color: #075dbb !important; }
 html[data-audit-theme="light"] .packet .alert-thresholds .packet-link.compact:hover { border-color: #0a84ff !important; background: #edf6ff !important; color: #075dbb !important; }
+
+/* Критерии карты сохраняют единую сдержанную сине-нейтральную систему в обеих темах. */
+html[data-audit-theme="dark"] .packet .portfolio-thresholds { border-color: #365675 !important; background: #15263c !important; color: #eaf3ff !important; box-shadow: none !important; }
+html[data-audit-theme="dark"] .packet .portfolio-thresholds .card-title > div > span { color: #88bdff !important; }
+html[data-audit-theme="dark"] .packet .portfolio-thresholds :is(h3, .portfolio-threshold-context b) { color: #f3f8ff !important; }
+html[data-audit-theme="dark"] .packet .portfolio-thresholds :is(p, small, .portfolio-threshold-context, .threshold-stepper > span) { color: #b6cce6 !important; }
+html[data-audit-theme="dark"] .packet .portfolio-thresholds .threshold-stepper > div { border-color: #3d6088 !important; background: #1b304a !important; }
+html[data-audit-theme="dark"] .packet .portfolio-thresholds .threshold-stepper button { color: #9dcbff !important; }
+html[data-audit-theme="dark"] .packet .portfolio-thresholds .threshold-stepper button:hover { border-color: #75b4ff !important; background: #27496d !important; color: #ffffff !important; }
+
+/* Кнопка раскрытия соразмерна переключателю отображения графика. */
+.packet .chart-expand-button { min-height: 35px !important; padding: 0 12px !important; font-size: 11px !important; }
