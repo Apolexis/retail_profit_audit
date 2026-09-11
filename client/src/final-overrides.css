@@ -1865,3 +1865,6 @@ html[data-audit-theme="light"] .packet .report-schedule-controls .schedule-toggl
 html[data-audit-theme="light"] .packet .chart-view-button.active:hover { outline: 2px solid #0a84ff !important; outline-offset: 1px !important; box-shadow: 0 0 0 3px rgba(10, 132, 255, .16), 0 4px 10px rgba(10, 99, 200, .22) !important; }
 html[data-audit-theme="light"] .chart-expand-view-control .chart-view-button.active:hover { outline: 2px solid #0a84ff !important; outline-offset: 1px !important; box-shadow: 0 0 0 3px rgba(10, 132, 255, .16) !important; }
 html[data-audit-theme="light"] .chart-expand-view-control .chart-view-button:hover:not(.active) { outline: 2px solid #0a84ff !important; outline-offset: 1px !important; box-shadow: 0 0 0 3px rgba(10, 132, 255, .12) !important; }
+
+html[data-audit-theme="light"] .packet .cover > div:first-child > .packet-link { border-color: #c6d9ec !important; background: #ffffff !important; color: #075dbb !important; box-shadow: none !important; }
+html[data-audit-theme="light"] .packet .cover > div:first-child > .packet-link:hover { transform: none !important; border-color: #0a84ff !important; background: #eef7ff !important; color: #075dbb !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .14) !important; }

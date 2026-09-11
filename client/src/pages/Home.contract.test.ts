@@ -15,5 +15,6 @@ describe("страница «Сводка»", () => {
     expect(styles).toContain('.packet .packet-main:has(> .cover) { display: flex; flex-direction: column; }');
     expect(styles).toContain('.packet .packet-main > .cover { order: -1; }');
     expect(styles).toContain('.packet .packet-main:has(> .cover) > .summary-period-filter { margin-top: 22px !important; }');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .cover > div:first-child > .packet-link:hover { transform: none !important; border-color: #0a84ff !important;');
   });
 });
