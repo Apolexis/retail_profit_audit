@@ -121,14 +121,16 @@ describe("форматирование денежных показателей",
     expect(source).not.toContain('onPointerDownOutside={keepChartSurfaceInside}');
     expect(source).not.toContain('const keepChartSurfaceInside');
     expect(source).toContain('aria-label={compact?"Интерактивный график":"Интерактивный увеличенный график"}');
-    expect(source).toContain('compact?:boolean;axisLock?:boolean}');
+    expect(source).toContain('compact?:boolean;axisLock?:boolean;touchModeControl?:boolean}');
     expect(source).not.toContain("invertX");
     expect(source).toContain('function useSmallChartViewport()');
     expect(source).toContain('const timelineMargin=compactChart?{top:12,right:8,left:0,bottom:4}');
     expect(source).toContain('const timelineAxisWidth=compactChart?55:78');
     expect(source).toContain('compactChart?322:306');
-    expect(source).toContain('<ChartPanZoomSurface compact>{compactViewport=><MetricLineChart');
+    expect(source).toContain('<ChartPanZoomSurface compact touchModeControl={data.length>1}>{compactViewport=><MetricLineChart');
     expect(source).toContain('<ChartPanZoomSurface compact>{compactViewport=><BenchmarkBars');
+    expect(source).toContain('<ChartPanZoomSurface compact touchModeControl={data.length>1}>');
+    expect(source).not.toContain('<ChartPanZoomSurface compact touchModeControl={true}>');
     expect(source).toContain("Сброс");
     expect(source).toContain('const medianColor=expanded&&theme==="dark"?"#b694ff":palette.median');
     expect(source).toContain("stroke={medianColor}");

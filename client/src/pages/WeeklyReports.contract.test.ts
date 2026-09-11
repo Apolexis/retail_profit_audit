@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const page=readFileSync(resolve(process.cwd(),"client/src/pages/WeeklyReports.tsx"),"utf8");
+const styles=readFileSync(resolve(process.cwd(),"client/src/final-overrides.css"),"utf8");
 
 describe("WeeklyReports interaction contract",()=>{
   it("selects and opens the newly formed saved report with a Russian notification",()=>{
@@ -39,5 +40,17 @@ describe("WeeklyReports interaction contract",()=>{
     expect(page).toContain('const moneyClass=(value:number)=>value>0?"positive":value<0?"negative":"neutral"');
     expect(page).toContain("className={moneyClass(summary.netProfit)}");
     expect(page).toContain("className={moneyClass(item.value)}");
+  });
+
+  it("выгружает выбранную сводку локально в PDF без изменения ее фактического состава",()=>{
+    expect(page).toContain('import("html2canvas")');
+    expect(page).toContain('import("jspdf")');
+    expect(page).toContain('const exportPdf=async()=>');
+    expect(page).toContain('pdf.save(`Рыбный_отчет_${summary.periodStart}_${summary.periodEnd}.pdf`)');
+    expect(page).toContain('ref={reportPdfRef} className="report-pdf-source"');
+    expect(page).toContain('aria-label="Выгрузить выбранный отчет в PDF"');
+    expect(page).toContain('toast.success("PDF-отчет выгружен"');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .report-export-button');
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet .report-export-button');
   });
 });

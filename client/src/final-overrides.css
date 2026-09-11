@@ -1420,6 +1420,21 @@ html[data-audit-theme="dark"] .packet .portfolio-mobile-priority.active { border
 .chart-panzoom-stage { min-width: 900px; min-height: 620px; transform-origin: center center; will-change: transform; }
 .chart-panzoom.chart-panzoom-compact { min-height: 0; touch-action: none; }
 .chart-panzoom.chart-panzoom-compact .chart-panzoom-stage { min-width: 0; min-height: 0; }
+.chart-touch-mode-control { display: none; }
+@media (hover: none), (pointer: coarse) {
+  .packet .chart-toolbar-actions { flex-wrap: wrap; }
+  .packet .chart-touch-mode-control { display: inline-flex; align-items: center; gap: 3px; min-height: 36px; padding: 3px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); }
+  .packet .chart-touch-mode-button { min-height: 28px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font: 800 9px Manrope, Arial, sans-serif; touch-action: manipulation; }
+  .packet .chart-touch-mode-button.active { background: color-mix(in srgb, var(--blue) 18%, var(--surface)); color: var(--text); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--blue) 48%, transparent); }
+  .packet .chart-touch-mode-button:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+  .chart-panzoom.chart-panzoom-touch-inspect { cursor: default; }
+}
+html[data-audit-theme="light"] .packet .chart-touch-mode-control { border-color: #cbdcff; background: #f7faff; }
+html[data-audit-theme="light"] .packet .chart-touch-mode-button { color: #51657d; }
+html[data-audit-theme="light"] .packet .chart-touch-mode-button.active { background: #0a63c8; color: #fff; box-shadow: none; }
+.packet .report-export-actions { display: flex; justify-content: flex-end; margin: 14px 0 20px; }
+.packet .report-export-button { min-height: 38px; }
+@media (max-width: 720px) { .packet .report-export-actions { display: grid; } .packet .report-export-button { width: 100%; justify-content: center; } }
 html[data-audit-theme="light"] .chart-expand-dialog { border-color: #cbdcff !important; background: #ffffff !important; color: #1f2d42 !important; }
 html[data-audit-theme="light"] .chart-expand-dialog [data-slot="dialog-title"] { color: #1f2d42; }
 html[data-audit-theme="light"] .chart-expand-dialog [data-slot="dialog-description"] { color: #61718a; }
@@ -2269,4 +2284,31 @@ html[data-audit-theme="light"] .packet .control-kpis .packet-kpi.risk:hover {
     outline: none !important;
     outline-offset: 0 !important;
   }
+}
+
+/* PDF-выгрузка повторяет тематическую кнопку отчета, а не наследует темный action-акцент. */
+html[data-audit-theme="light"] .packet .report-export-button {
+  border-color: #9bbbe8 !important;
+  background: #f7faff !important;
+  color: #0a63c8 !important;
+  box-shadow: 0 1px 2px rgba(10, 99, 200, .08) !important;
+}
+html[data-audit-theme="light"] .packet .report-export-button:hover,
+html[data-audit-theme="light"] .packet .report-export-button:focus-visible {
+  border-color: #0a84ff !important;
+  background: #edf6ff !important;
+  color: #075dbb !important;
+  box-shadow: 0 0 0 2px rgba(10, 132, 255, .14) !important;
+}
+html[data-audit-theme="dark"] .packet .report-export-button {
+  border-color: #92516a !important;
+  background: #26131d !important;
+  color: #f5dce3 !important;
+}
+html[data-audit-theme="dark"] .packet .report-export-button:hover,
+html[data-audit-theme="dark"] .packet .report-export-button:focus-visible {
+  border-color: #ff765f !important;
+  background: rgba(255, 118, 95, .14) !important;
+  color: #ffe9e3 !important;
+  box-shadow: 0 0 0 2px rgba(255, 118, 95, .14) !important;
 }
