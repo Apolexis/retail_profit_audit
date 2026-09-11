@@ -58,6 +58,8 @@ describe("базовые управляющие элементы", () => {
     expect(css).toContain('.packet .drawer-profile-link { box-sizing: border-box !important; align-self: start !important; flex: 0 0 39px !important; width: calc(100% - 10px) !important; height: 39px !important;');
     expect(css).toContain('flex: 0 0 40px !important;');
     expect(css).toContain('width: calc(100% - 10px) !important;');
-    expect(shell).toContain('key={theme} className="brand-mark"');
+    expect(shell).toContain('className="brand-mark-switch"');
+    expect(shell).toContain('(["dark","light"] as const).map(markTheme');
+    expect(shell).toContain('loading="eager" decoding="sync"');
   });
 });

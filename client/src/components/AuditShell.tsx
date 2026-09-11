@@ -8,7 +8,7 @@ import "@/audit.css";
 import "@/mobile-nav.css";
 
 const compactBrandIcon={dark:"/manus-storage/rybny_pwa_dark_transparent_110da59a.png",light:"/manus-storage/rybny_pwa_light_transparent_d1223d9d.png"} as const;
-export function BrandMark({theme}:{theme:"dark"|"light"}){return <img key={theme} className="brand-mark" src={compactBrandIcon[theme]} alt="" aria-hidden="true"/>}
+export function BrandMark({theme}:{theme:"dark"|"light"}){return <span className="brand-mark-switch" aria-hidden="true">{(["dark","light"] as const).map(markTheme=><img key={markTheme} className={markTheme===theme?"brand-mark is-visible":"brand-mark"} src={compactBrandIcon[markTheme]} alt="" loading="eager" decoding="sync" draggable={false}/>)}</span>}
 const navSections=[
   {title:"АНАЛИТИКА",items:[["/","00","Сводка",false],["/months","01","Месяцы",false],["/pricing","02","Цены",false],["/expenses","03","Расходы",false],["/inventory","04","Остатки",false],["/stores","05","Магазины",false],["/compare","06","Сравнить",false]]},
   {title:"РЕШЕНИЯ",items:[["/control","07","Динамика",false],["/cadence","08","Ритм",false],["/portfolio","09","Портфель",false],["/pilot","10","Пилот",false],["/forecast","19","Прогноз",false],["/planfact","11","План‑факт",false]]},

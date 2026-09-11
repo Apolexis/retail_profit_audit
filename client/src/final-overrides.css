@@ -2188,3 +2188,28 @@ html[data-audit-theme="light"] .packet .control-kpis .packet-kpi.risk:hover {
     padding: 0 9px !important;
   }
 }
+
+/* Обе тематические версии знака уже загружены: при смене темы меняется только прозрачность. */
+.packet .brand-mark-switch,
+.login-mark .brand-mark-switch {
+  display: grid;
+  position: relative;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+}
+
+.packet .brand-mark-switch .brand-mark,
+.login-mark .brand-mark-switch .brand-mark {
+  grid-area: 1 / 1;
+  width: 28px;
+  height: 28px;
+  opacity: 0;
+  pointer-events: none;
+  transition: none;
+}
+
+.packet .brand-mark-switch .brand-mark.is-visible,
+.login-mark .brand-mark-switch .brand-mark.is-visible {
+  opacity: 1;
+}

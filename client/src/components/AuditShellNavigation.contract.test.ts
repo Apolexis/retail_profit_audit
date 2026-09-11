@@ -47,7 +47,10 @@ describe("AuditShell navigation contract",()=>{
 
   it("uses the agreed theme-aware compact brand mark in navigation and login",()=>{
     expect(shell).toContain('const compactBrandIcon={dark:"/manus-storage/rybny_pwa_dark_transparent_110da59a.png",light:"/manus-storage/rybny_pwa_light_transparent_d1223d9d.png"} as const;');
-    expect(shell).toContain('export function BrandMark({theme}:{theme:"dark"|"light"}){return <img key={theme} className="brand-mark" src={compactBrandIcon[theme]} alt="" aria-hidden="true"/>}');
+    expect(shell).toContain('className="brand-mark-switch"');
+    expect(shell).toContain('(["dark","light"] as const).map(markTheme');
+    expect(shell).toContain('loading="eager" decoding="sync"');
+    expect(shell).not.toContain('<img key={theme} className="brand-mark"');
     expect(shell).toContain('className="brand-title"');
     expect(shell).not.toContain("rybny_analytics_app_icon");
   });
