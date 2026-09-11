@@ -33,4 +33,8 @@ describe("страница прогноза", () => {
     expect(page).toContain("row.actual / 1000");
     expect(page).toContain("row.forecast / 1000");
   });
+
+  it("использует базовую сетку KPI с явными интервалами между карточками", () => {
+    expect(page).toContain('className="packet-kpis forecast-kpis"');
+  });
 });

@@ -65,8 +65,8 @@ describe("форматирование денежных показателей",
     expect(windowChartRows([1,2,3,4,5,6],{zoom:2,pan:{x:0,y:0}})).toEqual([3,4,5]);
     expect(windowChartRows([1,2,3,4,5,6],{zoom:2,pan:{x:0,y:1}},"y")).toEqual([4,5,6]);
     expect(windowChartRows([1,2,3,4,5,6],{zoom:2,pan:{x:2.4,y:0}})).toEqual([4,5,6]);
-    expect(panChartRows([{month:"M1"},{month:"M2"},{month:"M3"}],{zoom:1,pan:{x:1,y:0}}).map(row=>row.month)).toEqual([undefined,undefined,"M1","M2","M3"]);
-    expect(panChartRows([{store:"A"},{store:"B"},{store:"C"}],{zoom:1,pan:{x:0,y:-1}},"y").map(row=>row.store)).toEqual(["A","B","C",undefined,undefined]);
+    expect(panChartRows([{month:"M1"},{month:"M2"},{month:"M3"}],{zoom:1,pan:{x:1,y:0}}).map(row=>row.month)).toEqual(["M1","M2","M3"]);
+    expect(panChartRows([{store:"A"},{store:"B"},{store:"C"}],{zoom:1,pan:{x:0,y:-1}},"y").map(row=>row.store)).toEqual(["A","B","C"]);
     expect(viewportChartDomain([0,100],{zoom:2,pan:{x:0,y:0}})).toEqual([25,75]);
     expect(viewportChartDomain([0,100],{zoom:2,pan:{x:1,y:0}},"x")).toEqual([125,175]);
     expect(viewportChartDomain([0,100],{zoom:2,pan:{x:2,y:0}},"x")).toEqual([225,275]);
@@ -74,7 +74,7 @@ describe("форматирование денежных показателей",
     expect(viewportChartDomain([0,100],{zoom:1,pan:{x:2.4,y:0}},"x")).toEqual([180,280]);
     expect(viewportChartDomain([8,18],{zoom:2,pan:{x:0,y:0}},"y",false)).toEqual([10.5,15.5]);
     const source = require("node:fs").readFileSync(new URL("./AuditCharts.tsx", import.meta.url), "utf8");
-    expect(source).toContain("const visible=windowChartRows(data,viewport,axis)");
+    expect(source).toContain('=>windowChartRows(data,viewport,axis)');
     expect(source).toContain("export const panChartRows");
     expect(source).toContain("const chartData=panChartRows(data,viewport)");
     expect(source).toContain('const chartData=panChartRows(data,viewport,"y")');
@@ -82,11 +82,12 @@ describe("форматирование денежных показателей",
     expect(source).toContain('axis:"x"|"y"="y"');
     expect(source).toContain("includeZero=true");
     expect(source).not.toContain("scale(${zoom})");
-    expect(source).toContain("onPointerDown={down}");
+    expect(source).toContain("onPointerDownCapture={down}");
     expect(source).toContain('addEventListener("wheel",wheel,{passive:false})');
     expect(source).toContain("event.stopPropagation()");
     expect(source).not.toContain("if(activeZoom<=1)return");
-    expect(source).toContain("x:current.x+(next.x-previous.x)*1.8");
+    expect(source).toContain("const xDirection=invertX?-1:1");
+    expect(source).toContain("x:current.x+xDirection*(next.x-previous.x)*1.8");
     expect(source).toContain("y:current.y+(next.y-previous.y)*1.8");
     expect(source).toContain("event.currentTarget.setPointerCapture(event.pointerId)");
     expect(source).toContain("const renderPan=pan");
@@ -98,7 +99,7 @@ describe("форматирование денежных показателей",
     expect(source).toContain("button,[data-chart-point='true']");
     expect(source).toContain("setDragging(true)");
     expect(source).toContain('aria-label={compact?"Интерактивный график":"Интерактивный увеличенный график"}');
-    expect(source).toContain('compact?:boolean');
+    expect(source).toContain('compact?:boolean;invertX?:boolean');
     expect(source).toContain('<ChartPanZoomSurface compact>{compactViewport=><MetricLineChart');
     expect(source).toContain('<ChartPanZoomSurface compact>{compactViewport=><BenchmarkBars');
     expect(source).toContain("Сброс");

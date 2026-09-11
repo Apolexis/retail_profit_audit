@@ -58,8 +58,8 @@ describe("страница «Портфель»", () => {
     expect(styles).toContain("@media (max-width: 720px)");
     expect(page).toContain("setExpandedChart(kind)");
     expect(page).toContain("chart-expand-dialog portfolio-chart-dialog");
-    expect(page).toContain("<ChartPanZoomSurface>");
-    expect(page).toContain('<ChartPanZoomSurface compact>{viewport=>scatter(kind,510,viewport)}</ChartPanZoomSurface>');
+    expect(page).toContain("<ChartPanZoomSurface invertX>");
+    expect(page).toContain('<ChartPanZoomSurface compact invertX>{viewport=>scatter(kind,510,viewport)}</ChartPanZoomSurface>');
     expect(styles).toContain(".packet .portfolio-mobile-priority-list { display: grid;");
     expect(page).toContain('["revenue","cover","stock","writeoffs"] as const');
     expect(page).toContain("Остаток и чистая маржа");
@@ -109,5 +109,10 @@ describe("страница «Портфель»", () => {
     expect(styles).toContain('html[data-audit-theme="dark"] .packet .portfolio-thresholds { border-color: #365675 !important; background: #15263c !important;');
     expect(styles).toContain('html[data-audit-theme="dark"] .packet .portfolio-thresholds .card-title > div > span { color: #88bdff !important; }');
     expect(styles).toContain('.packet .chart-expand-button { min-height: 35px !important;');
+  });
+
+  it("компенсирует горизонтальное направление viewport только в картах портфеля", () => {
+    expect(page).toContain('<ChartPanZoomSurface compact invertX>');
+    expect(page).toContain('<ChartPanZoomSurface invertX>');
   });
 });
