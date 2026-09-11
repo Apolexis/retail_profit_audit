@@ -77,9 +77,10 @@ describe("форматирование денежных показателей",
     expect(source).toContain("onPointerDown={down}");
     expect(source).toContain('addEventListener("wheel",wheel,{passive:false})');
     expect(source).toContain("event.stopPropagation()");
-    expect(source).toContain('if(zoom<=1||event.pointerType==="touch")return');
-    expect(source).toContain("y:current.y+(next.y-previous.y)*1.4");
-    expect(source).toContain('event.pointerType!=="touch"');
+    expect(source).toContain("if(zoom<=1)return");
+    expect(source).toContain("y:current.y-(next.y-previous.y)*1.4");
+    expect(source).toContain("button,[data-chart-point='true']");
+    expect(source).toContain("setDragging(active.length>1||zoom>1)");
     expect(source).toContain('aria-label="Интерактивный увеличенный график"');
     expect(source).toContain("Сброс");
   });
