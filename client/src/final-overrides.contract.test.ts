@@ -73,7 +73,7 @@ describe("действия отчетов и контроля импорта", (
   it("выравнивает высоту расписания и опускает короткую кнопку контроля без сдвига строки", () => {
     expect(styles).toContain('.packet .report-schedule-controls .schedule-toggle,\n.packet .report-schedule-controls .packet-link.compact { display: inline-flex !important; align-items: center; justify-content: center; min-height: 38px !important; height: 38px !important;');
     expect(styles).toContain('html[data-audit-theme="light"] .packet .report-schedule-controls .schedule-toggle:not(.active) { border-color: #c6d9ec !important; background: #fbfdff !important; color: #4e6681 !important; }');
-    expect(styles).toContain('.packet .access-import-control-row .access-control-toggle { transform: translateY(4px) !important; }');
+    expect(styles).toContain('.packet .access-import-control-row .access-control-toggle { width: 100% !important; justify-self: end !important; align-self: center !important; transform: none !important; margin-top: 8px !important; }');
   });
 });
 

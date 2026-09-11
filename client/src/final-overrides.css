@@ -1912,3 +1912,45 @@ html[data-audit-theme="light"] .packet .closure-choice.priority .closure-choice-
 @media (max-width: 720px) {
   .packet .mobile-quick-nav button:focus:not(:focus-visible) { outline: none !important; box-shadow: none !important; }
 }
+
+/* Финальный responsive-слой: значения сохраняют смысл, а действия импорта следуют сетке строк магазинов. */
+@media (max-width: 980px) {
+  .packet .portfolio-focus-card { grid-template-columns: minmax(0, 1fr) !important; gap: 14px !important; }
+  .packet .portfolio-focus-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+.packet .portfolio-focus-metrics > div { min-width: 0; }
+.packet .portfolio-focus-metrics b { overflow: visible !important; font-size: 13px !important; line-height: 1.28; text-overflow: clip !important; white-space: normal !important; }
+@media (max-width: 420px) {
+  .packet .portfolio-focus-metrics > div { padding: 10px 9px !important; }
+  .packet .portfolio-focus-metrics span { font-size: 7px !important; letter-spacing: .035em !important; }
+  .packet .portfolio-focus-metrics b { font-size: 12px !important; }
+}
+
+html[data-audit-theme="light"] .packet .portfolio-thresholds,
+html[data-audit-theme="light"] .packet .portfolio-thresholds:hover { border-color: #bedcff !important; background: #edf6ff !important; box-shadow: 0 10px 24px rgba(10, 99, 200, .08) !important; }
+
+.packet .access-import-row { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(190px, 300px) !important; align-items: center !important; gap: 12px 16px !important; }
+.packet .access-import-row .access-switch { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; width: 100% !important; justify-self: end !important; }
+.packet .access-import-row .access-switch button { width: 100% !important; min-width: 0 !important; justify-content: center !important; }
+.packet .access-import-control-row .access-control-toggle { width: 100% !important; justify-self: end !important; align-self: center !important; transform: none !important; margin-top: 8px !important; }
+@media (max-width: 760px) {
+  .packet .access-import-row { grid-template-columns: minmax(0, 1fr) !important; }
+  .packet .access-import-row .access-switch,
+  .packet .access-import-control-row .access-control-toggle { justify-self: stretch !important; width: 100% !important; }
+  .packet .access-import-control-row .access-control-toggle { margin-top: 6px !important; }
+}
+
+.packet .mobile-quick-nav button[data-pointer-action="true"]:focus { outline: none !important; box-shadow: none !important; }
+
+/* Телефон: календарь и права остаются в обычном потоке, а светлая тема не наследует коралл. */
+@media (max-width: 560px) {
+  .date-popover { display: flex !important; flex-direction: column !important; align-items: stretch !important; }
+  .date-popover [data-slot="calendar"] { position: relative !important; z-index: 0 !important; order: 3 !important; margin-bottom: 18px !important; }
+  .date-popover .date-shortcut-toggle { position: static !important; z-index: 0 !important; order: 4 !important; width: 100% !important; margin: 0 !important; }
+  .date-popover .date-shortcuts { position: static !important; z-index: 0 !important; order: 5 !important; width: 100% !important; margin-top: 10px !important; }
+}
+html[data-audit-theme="light"] .packet .mobile-drawer .drawer-search input { border-color: #c6d9ec !important; background: #ffffff !important; color: #26384d !important; box-shadow: none !important; }
+html[data-audit-theme="light"] .packet .mobile-drawer .drawer-search input::placeholder { color: #61728a !important; }
+html[data-audit-theme="light"] .packet .mobile-drawer .drawer-search input:focus { border-color: #0a84ff !important; background: #f5faff !important; box-shadow: 0 0 0 3px rgba(10, 132, 255, .12) !important; }
+html[data-audit-theme="light"] .packet .mobile-drawer .drawer-search > div { border-color: #c6d9ec !important; background: #ffffff !important; }
+html[data-audit-theme="light"] .packet .mobile-drawer .drawer-search > div button { color: #26384d !important; }

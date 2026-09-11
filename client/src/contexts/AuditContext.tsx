@@ -7,7 +7,7 @@ const defaultRange={from:"2026-01-01",to:"2026-12-31"};
 const pretty=(date:string)=>date.split("-").reverse().join(".");
 const normalizeRange=(value:DateRangeValue):DateRangeValue=>value.from<=value.to?value:{from:value.to,to:value.from};
 const themeIcon={dark:"/manus-storage/rybny_circle_dark_v8_high_detail_transparent_a12b19ba.png",light:"/manus-storage/rybny_circle_light_v10_clean_contours_rgba_candidate_3c5f2dad.png"} as const;
-const themeManifest={dark:"/manifest-dark.webmanifest?v=18",light:"/manifest-light.webmanifest?v=18"} as const;
+const themeManifest={dark:"/manifest-dark.webmanifest?v=19",light:"/manifest-light.webmanifest?v=19"} as const;
 const storedTheme=()=>localStorage.getItem("audit-theme") as "dark"|"light"|null;
 const systemTheme=()=>window.matchMedia?.("(prefers-color-scheme: light)").matches?"light":"dark";
 type AuditState={selectedStore:string;setSelectedStore:(value:string)=>void;range:DateRangeValue;setRange:(value:DateRangeValue)=>void;theme:"dark"|"light";toggleTheme:()=>void;rangeLabel:string;months:string[];includesMonth:(value:string)=>boolean};

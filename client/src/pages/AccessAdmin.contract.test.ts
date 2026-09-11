@@ -17,9 +17,8 @@ describe("матрица доступа к импорту",()=>{
     expect(page).toContain("Импорт Excel");
     expect(page).toContain(">Загрузка</button>");
     expect(page).toContain('importAccessLevel: "edit"');
-    expect(overrides).toContain('.packet .access-import-row .access-switch button { width: auto !important; min-width: 0 !important; height: 29px !important;');
-    expect(overrides).toContain('min-height: 29px !important');
-    expect(overrides).toContain('padding: 7px 9px !important; border-radius: 6px !important; flex: 0 1 auto !important');
+    expect(overrides).toContain('.packet .access-import-row { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(190px, 300px) !important;');
+    expect(overrides).toContain('.packet .access-import-row .access-switch { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; width: 100% !important;');
     expect(overrides).toContain('.packet .access-import-row { padding-bottom: 12px !important; margin-bottom: 4px !important; }');
   });
 
@@ -29,7 +28,7 @@ describe("матрица доступа к импорту",()=>{
     expect(page).toContain("canViewImportControls");
     expect(page).toContain("Просмотр разрешен");
     expect(overrides).toContain(".packet .access-control-toggle.active");
-    expect(overrides).toContain(".packet .access-import-control-row .access-control-toggle { align-self: center;");
+    expect(overrides).toContain('.packet .access-import-control-row .access-control-toggle { width: 100% !important; justify-self: end !important; align-self: center !important; transform: none !important; margin-top: 8px !important; }');
   });
 
   it("дает администратору адресную push-рассылку с честным итогом доставки",()=>{

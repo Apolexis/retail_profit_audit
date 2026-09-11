@@ -50,8 +50,10 @@ describe("контрастная светлая тема", () => {
     expect(overrides).toContain('html[data-audit-theme="light"] .date-popover .date-popover-head > span { color: #0a63c8 !important; }');
     expect(overrides).toContain('html[data-audit-theme="light"] .packet .control-kpis .packet-kpi.risk { border-color: #efbcc3 !important; background: #fff5f5 !important;');
     expect(overrides).toContain('html[data-audit-theme="light"] .packet .threshold-control-group { border-color: #cbdcff !important; background: #f7fbff !important; }');
+    expect(overrides).toContain('html[data-audit-theme="light"] .packet .portfolio-thresholds:hover { border-color: #bedcff !important; background: #edf6ff !important;');
     expect(overrides).toContain('html[data-audit-theme="light"] .packet .manage-editor .manage-editor-notice { border-color: #cbdcff !important; background: #f5f8ff !important; color: #425d7b !important; }');
     expect(overrides).toContain('html[data-audit-theme="light"] .packet .launch-card:hover { transform: none !important; border-color: #0a84ff !important;');
+    expect(overrides).toContain('html[data-audit-theme="light"] .packet .mobile-drawer .drawer-search input { border-color: #c6d9ec !important; background: #ffffff !important; color: #26384d !important;');
   });
 
   it("передает в scatter-графики Портфеля светлую палитру, а не темные константы", () => {
