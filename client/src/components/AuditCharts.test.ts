@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampChartZoom, formatK, nonZeroLines, resolveMetricChartLayout, resolveMetricChartView, resolveOverlayBarGeometry, sortTooltipPayload, viewportChartDomain, windowChartRows, zeroAwareTicks } from "./AuditCharts";
+import { clampChartZoom, formatK, nonZeroLines, normalizeOverlayBarRect, resolveMetricChartLayout, resolveMetricChartView, resolveOverlayBarGeometry, sortTooltipPayload, viewportChartDomain, windowChartRows, zeroAwareTicks } from "./AuditCharts";
 
 describe("форматирование денежных показателей", () => {
   it("не скрывает малые ненулевые суммы округлением до нуля", () => {
@@ -66,6 +66,7 @@ describe("форматирование денежных показателей",
     expect(windowChartRows([1,2,3,4,5,6],{zoom:2,pan:{x:0,y:1}},"y")).toEqual([4,5,6]);
     expect(viewportChartDomain([0,100],{zoom:2,pan:{x:0,y:0}})).toEqual([25,75]);
     expect(viewportChartDomain([0,100],{zoom:2,pan:{x:1,y:0}},"x")).toEqual([50,100]);
+    expect(viewportChartDomain([0,100],{zoom:2,pan:{x:2,y:0}},"x")).toEqual([75,125]);
     expect(viewportChartDomain([8,18],{zoom:2,pan:{x:0,y:0}},"y",false)).toEqual([10.5,15.5]);
     const source = require("node:fs").readFileSync(new URL("./AuditCharts.tsx", import.meta.url), "utf8");
     expect(source).toContain("windowChartRows(data,viewport)");
@@ -82,6 +83,7 @@ describe("форматирование денежных показателей",
     expect(source).toContain("const activeZoom=zoomRef.current");
     expect(source).toContain("event.currentTarget.setPointerCapture(event.pointerId)");
     expect(source).toContain("event.preventDefault()");
+    expect(source).toContain("nextZoom<=1?{x:0,y:0}:value");
     expect(source).toContain("button,[data-chart-point='true']");
     expect(source).toContain("setDragging(active.length>1||zoomRef.current>1)");
     expect(source).toContain('aria-label="Интерактивный увеличенный график"');
@@ -93,9 +95,12 @@ describe("форматирование денежных показателей",
     expect(resolveOverlayBarGeometry(140, 18, 0, 3)).toEqual({ x: 140, width: 54 });
     expect(resolveOverlayBarGeometry(158, 18, 1, 3)).toEqual({ x: 140, width: 54 });
     expect(resolveOverlayBarGeometry(176, 18, 2, 3)).toEqual({ x: 140, width: 54 });
+    expect(normalizeOverlayBarRect(82, -24)).toEqual({ y: 58, height: 24 });
+    expect(normalizeOverlayBarRect(58, 24)).toEqual({ y: 58, height: 24 });
     const source = require("node:fs").readFileSync(new URL("./AuditCharts.tsx", import.meta.url), "utf8");
     expect(source).toContain("barGap={0}");
     expect(source).toContain("resolveOverlayBarGeometry");
+    expect(source).toContain("normalizeOverlayBarRect");
     expect(source).toContain("fill={color}");
     expect(source).not.toContain("chart-overlay-note");
     expect(source).toContain('stroke:"none",strokeWidth:0,fill:color');
