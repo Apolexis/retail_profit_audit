@@ -55,5 +55,6 @@ describe("матрица доступа к импорту",()=>{
   it("ведет верхние и нижние права импорта по одной адаптивной ширине",()=>{
     expect(overrides).toContain('.packet .access-store-list > div .access-switch { width: 100% !important; min-width: 190px !important; max-width: 300px !important; justify-self: end !important; }');
     expect(overrides).toContain('.packet .access-store-list > div .access-switch { min-width: 0 !important; max-width: none !important; width: 100% !important; justify-self: stretch !important; }');
+    expect(overrides).toContain('.packet .access-store-list > div { grid-template-columns: minmax(0, 1fr) minmax(190px, 300px) !important; align-items: center !important; gap: 12px 16px !important; }');
   });
 });

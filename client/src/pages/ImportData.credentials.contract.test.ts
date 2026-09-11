@@ -41,6 +41,10 @@ describe("уровни доступа к импорту", () => {
     expect(page).toContain("downloadImport");
     expect(page).toContain("Скачать исходник");
     expect(page).toContain("Скачивание возвращает точную исходную книгу");
+    expect(page).toContain('className="card-title import-history-title"');
+    expect(page).toContain('className="import-history-note"');
+    expect(overrides).toContain('.packet .import-history .card-title.import-history-title { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(18rem, .9fr) !important;');
+    expect(overrides).toContain('overflow-wrap: anywhere !important;');
     expect(page).toContain('canEditImport && <td className="import-row-actions">');
   });
 

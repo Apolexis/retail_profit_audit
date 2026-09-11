@@ -86,10 +86,12 @@ describe("форматирование денежных показателей",
     expect(source).toContain('addEventListener("wheel",wheel,{passive:false})');
     expect(source).toContain("event.stopPropagation()");
     expect(source).not.toContain("if(activeZoom<=1)return");
+    expect(source).toContain("x:current.x+(next.x-previous.x)*1.8");
     expect(source).toContain("y:current.y+(next.y-previous.y)*1.8");
     expect(source).toContain("event.currentTarget.setPointerCapture(event.pointerId)");
     expect(source).toContain("const renderPan=pan");
     expect(source).toContain("onLostPointerCapture={cancel}");
+    expect(source).not.toContain("onBlur={cancel}");
     expect(source).toContain('window.addEventListener("pointerup",release,true)');
     expect(source).toContain("event.preventDefault()");
     expect(source).toContain("const clampUnit=(value:number)=>Math.min(2.4,Math.max(-2.4,value))");

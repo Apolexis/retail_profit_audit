@@ -107,3 +107,10 @@ describe("пороги, масштаб и ожидаемые KPI", () => {
     expect(styles).toContain('html[data-audit-theme="dark"] .packet .forecast-signal-grid article:hover { transform: none !important; border-color: rgba(255, 118, 95, .72) !important;');
   });
 });
+
+describe("активная поверхность развернутого графика", () => {
+  it("не отдает pointer-события скрытому компактному графику под открытым диалогом", () => {
+    expect(styles).toContain('body:has(.chart-expand-dialog[data-state="open"]) .packet .chart-panzoom-compact { pointer-events: none !important; }');
+    expect(styles).toContain('.chart-expand-dialog .chart-panzoom { isolation: isolate !important; z-index: 1 !important; pointer-events: auto !important; touch-action: none !important; }');
+  });
+});
