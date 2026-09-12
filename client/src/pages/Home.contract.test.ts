@@ -17,4 +17,14 @@ describe("страница «Сводка»", () => {
     expect(styles).toContain('.packet .packet-main:has(> .cover) > .summary-period-filter { margin-top: 22px !important; }');
     expect(styles).toContain('html[data-audit-theme="light"] .packet .cover > div:first-child > .packet-link:hover { transform: none !important; border-color: #0a84ff !important;');
   });
+
+  it("показывает структуру способов оплаты по фактическим наличным и безналичным данным", () => {
+    expect(home).toContain('const cashShare=paymentBase?scope.cashRevenue/paymentBase*100:0');
+    expect(home).toContain('const cashlessShare=paymentBase?scope.cashlessRevenue/paymentBase*100:0');
+    expect(home).toContain('label="Доля наличной выручки"');
+    expect(home).toContain('label="Доля безналичной выручки"');
+    expect(home).toContain('СПОСОБЫ ОПЛАТЫ · ПО МЕСЯЦАМ');
+    expect(home).toContain('chartTitle="Тренд способов оплаты"');
+    expect(styles).toContain('.packet .payment-trend-card');
+  });
 });

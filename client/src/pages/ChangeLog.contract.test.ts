@@ -24,8 +24,12 @@ describe("компактный журнал изменений", () => {
   it("показывает журнал ограниченными порциями с явной догрузкой", () => {
     expect(journal).toContain('trpc.audit.changes.useQuery({limit:20,offset}');
     expect(journal).toContain('ЖУРНАЛ СОБЫТИЙ · ПО 20');
-    expect(journal).toContain('Показать следующие');
+    expect(journal).toContain('Показать еще');
     expect(journal).toContain('"weekly_report.delete":"Удаление сохраненной сводки"');
     expect(overrides).toContain('.packet .change-log-more');
+    expect(journal).toContain('const [query,setQuery]=useState("")');
+    expect(journal).toContain('const [filter,setFilter]=useState<ChangeFilter>("all")');
+    expect(journal).toContain('className="packet-link compact notification-load-more change-log-more"');
+    expect(journal).toContain('Поиск и фильтр применяются к уже загруженным записям');
   });
 });

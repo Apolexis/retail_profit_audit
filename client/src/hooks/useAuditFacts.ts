@@ -14,8 +14,8 @@ const number = (row:ImportedPeriod, key:string) => Number(row.metrics[key] ?? 0)
 const sum = (rows:ImportedPeriod[], key:string) => rows.reduce((total,row) => total + number(row,key),0);
 const median=(items:number[])=>{const sorted=[...items].sort((a,b)=>a-b);if(!sorted.length)return 0;const middle=Math.floor(sorted.length/2);return sorted.length%2?sorted[middle]:(sorted[middle-1]+sorted[middle])/2};
 
-export function useAuditFacts(){
-  const imported=useImportedAudit();
+export function useAuditFacts(options:{includeHidden?:boolean}={}){
+  const imported=useImportedAudit(undefined,options.includeHidden===true);
   const {range}=useAudit();
   const rangeDays=Math.max(1,Math.round((Date.parse(`${range.to}T00:00:00Z`)-Date.parse(`${range.from}T00:00:00Z`))/86_400_000)+1);
   const periods=useMemo(()=>prepareDailyFacts(imported.periods,range),[imported.periods,range.from,range.to]);

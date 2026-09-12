@@ -19,7 +19,9 @@ describe("WeeklyReports interaction contract",()=>{
     expect(page).toContain('trpc.audit.weeklyReports.useQuery({limit:REPORTS_PAGE_SIZE,offset:reportOffset}');
     expect(page).toContain('trpc.audit.deleteWeeklyReport.useMutation');
     expect(page).toContain('Удалить сформированную сводку?');
-    expect(page).toContain('Показать следующие');
+    expect(page).toContain('Показать еще');
+    expect(page).toContain('После каждых восьми выводятся следующие; отчеты не удаляются автоматически.');
+    expect(page).toContain('className="packet-link compact notification-load-more report-history-more"');
     expect(styles).toContain('.packet .report-history-row');
     expect(page).toContain('className={isEnabled?"schedule-toggle active":"schedule-toggle"}');
   });
@@ -58,10 +60,12 @@ describe("WeeklyReports interaction contract",()=>{
     expect(page).toContain('import("html2canvas")');
     expect(page).toContain('import("jspdf")');
     expect(page).toContain('const exportPdf=async()=>');
-    expect(page).toContain('pdf.save(`Рыбный_отчет_${summary.periodStart}_${summary.periodEnd}.pdf`)');
+    expect(page).toContain('const savePdfForDevice=async');
+    expect(page).toContain('const delivery=await savePdfForDevice(pdf,fileName);');
+    expect(page).toContain('navigator as Navigator');
     expect(page).toContain('ref={reportPdfRef} className="report-pdf-source"');
     expect(page).toContain('aria-label="Выгрузить выбранный отчет в PDF"');
-    expect(page).toContain('toast.success("PDF-отчет выгружен"');
+    expect(page).toContain('toast.success("PDF-отчет подготовлен"');
     expect(page).toContain('loadPdfBrand(pdfTheme).catch');
     expect(styles).toContain('html[data-audit-theme="light"] .packet .report-export-button');
     expect(styles).toContain('html[data-audit-theme="dark"] .packet .report-export-button');
@@ -90,6 +94,7 @@ describe("WeeklyReports interaction contract",()=>{
     expect(page).toContain('"Динамика фактических показателей"');
     expect(page).toContain('Источник: фактические дневные записи видимых точек в периоде выбранного отчета.');
     expect(page).toContain('disabled={isExporting||reportDashboard.isLoading}');
+    expect(page).toContain('const captureScale=Math.min(1.35,Math.max(1,window.devicePixelRatio>1?1.2:1));');
   });
 
   it("добавляет полноценный тематический управленческий реестр на отдельную PDF-страницу",()=>{
@@ -99,6 +104,14 @@ describe("WeeklyReports interaction contract",()=>{
     expect(page).toContain('"Риск-сигналы выбранного среза"');
     expect(page).toContain('"Состав и границы фактической базы"');
     expect(page).toContain('const insights=await createReportInsightsCanvas(summary,timeline,pdfTheme,brandSource);');
+  });
+
+  it("добавляет полный дневной реестр с фактической разбивкой наличных и безналичных платежей",()=>{
+    expect(page).toContain('const createReportLedgerCanvases=async');
+    expect(page).toContain('"Дневной реестр фактических показателей"');
+    expect(page).toContain('cashRevenue+=finite(period.metrics.cash_revenue)');
+    expect(page).toContain('cashlessRevenue+=finite(period.metrics.cashless_revenue)');
+    expect(page).toContain('const ledgers=await createReportLedgerCanvases(summary,timeline,pdfTheme,brandSource);');
   });
 
   it("не вставляет пустую промежуточную страницу для почти помещающейся короткой сводки",()=>{

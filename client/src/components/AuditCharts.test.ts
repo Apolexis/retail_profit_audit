@@ -109,8 +109,10 @@ describe("форматирование денежных показателей",
     expect(source).toContain("gesture.current.lastPoint=next;gesture.current.panning=true;event.preventDefault();event.stopPropagation();setDragging(true)");
     expect(source).not.toContain("onPointerDownOutside={event=>event.preventDefault()}");
     expect(source).toContain("const keepChartSurfaceInside");
-    expect(source).toContain('onPointerDownOutside={keepChartSurfaceInside}');
-    expect(source).toContain('onFocusOutside={keepChartSurfaceInside}');
+    expect(source).toContain('onPointerDownOutside={protectGeneralChartSurface?keepChartSurfaceInside:undefined}');
+    expect(source).toContain('onFocusOutside={protectGeneralChartSurface?keepChartSurfaceInside:undefined}');
+    expect(source).toContain('document.body.dataset.generalChartDialogOpen="true"');
+    expect(source).toContain('className={protectGeneralChartSurface?"chart-expand-dialog chart-expand-dialog-general":"chart-expand-dialog"}');
     expect(source).toContain('const chartRenderKey=`${chartView}-${visibleLines.map(line=>line.key).join("-")}`');
     expect(source).toContain('<ResponsiveContainer key={chartRenderKey} width="100%" height={chartHeight}>');
     expect(source).toContain("isAnimationActive={false}");
@@ -122,7 +124,7 @@ describe("форматирование денежных показателей",
     expect(source).toContain('if(event.pointerType==="touch"||!pointers.current.has(event.pointerId))return');
     expect(source).toContain('if(event.pointerType==="touch"||(event.target as Element).closest');
     expect(source).toContain('event.currentTarget.setPointerCapture(event.pointerId)');
-    expect(source).toContain('onPointerDownOutside={keepChartSurfaceInside}');
+    expect(source).toContain('onPointerDownOutside={protectGeneralChartSurface?keepChartSurfaceInside:undefined}');
     expect(source).toContain('const keepChartSurfaceInside');
     expect(source).toContain('aria-label={compact?"Интерактивный график":"Интерактивный увеличенный график"}');
     expect(source).toContain('compact?:boolean;axisLock?:boolean;touchModeControl?:boolean}');
@@ -133,7 +135,7 @@ describe("форматирование денежных показателей",
     expect(source).toContain('compactChart?322:306');
     expect(source).toContain('<ChartPanZoomSurface compact touchModeControl={data.length>1} axisLock={false}>{compactViewport=><MetricLineChart');
     expect(source).toContain('<ChartPanZoomSurface compact>{compactViewport=><BenchmarkBars');
-    expect(source).toContain('<ChartExpandButton title={chartTitle} initialView={chartView} showViewControls={data.length>1} touchModeControl={data.length>1}>');
+    expect(source).toContain('<ChartExpandButton title={chartTitle} initialView={chartView} showViewControls={data.length>1} touchModeControl={data.length>1} protectGeneralChartSurface>');
     expect(source).not.toContain('<ChartPanZoomSurface compact touchModeControl={true}>');
     expect(source).toContain("Сброс");
     expect(source).toContain('const medianColor=expanded&&theme==="dark"?"#b694ff":palette.median');
