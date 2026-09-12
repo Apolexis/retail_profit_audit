@@ -17,7 +17,7 @@ const metrics=[
   ["purchases","Закупки"],
   ["writeoff_frozen","Списания М."],
   ["rent","Аренда б/нал"],
-  ["cash_operating_costs","Траты нал"],
+  ["cash_operating_costs","Общие траты нал"],
   ["cashless_operating_costs","Расходы безналичные"],
 ] as const;
 type MetricCode=(typeof metrics)[number][0];

@@ -108,6 +108,9 @@ describe("форматирование денежных показателей",
     expect(source).toContain("resolveChartPanAxis(next.x-start.x,next.y-start.y,dragThreshold)");
     expect(source).toContain("gesture.current.lastPoint=next;gesture.current.panning=true;event.preventDefault();event.stopPropagation();setDragging(true)");
     expect(source).not.toContain("onPointerDownOutside={event=>event.preventDefault()}");
+    expect(source).toContain("const keepChartSurfaceInside");
+    expect(source).toContain('onPointerDownOutside={keepChartSurfaceInside}');
+    expect(source).toContain('onFocusOutside={keepChartSurfaceInside}');
     expect(source).toContain('const chartRenderKey=`${chartView}-${visibleLines.map(line=>line.key).join("-")}`');
     expect(source).toContain('<ResponsiveContainer key={chartRenderKey} width="100%" height={chartHeight}>');
     expect(source).toContain("isAnimationActive={false}");
@@ -119,8 +122,8 @@ describe("форматирование денежных показателей",
     expect(source).toContain('if(event.pointerType==="touch"||!pointers.current.has(event.pointerId))return');
     expect(source).toContain('if(event.pointerType==="touch"||(event.target as Element).closest');
     expect(source).toContain('event.currentTarget.setPointerCapture(event.pointerId)');
-    expect(source).not.toContain('onPointerDownOutside={keepChartSurfaceInside}');
-    expect(source).not.toContain('const keepChartSurfaceInside');
+    expect(source).toContain('onPointerDownOutside={keepChartSurfaceInside}');
+    expect(source).toContain('const keepChartSurfaceInside');
     expect(source).toContain('aria-label={compact?"Интерактивный график":"Интерактивный увеличенный график"}');
     expect(source).toContain('compact?:boolean;axisLock?:boolean;touchModeControl?:boolean}');
     expect(source).not.toContain("invertX");

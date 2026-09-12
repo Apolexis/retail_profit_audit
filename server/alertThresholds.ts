@@ -7,7 +7,7 @@ export type ThresholdSeverity = "critical" | "warning";
 export type AlertThresholdDefinition = { ruleKey: string; metricCode: string; comparison: ThresholdComparison; threshold: number; severity: ThresholdSeverity; label: string; description: string; unit: string };
 
 export const ALERT_THRESHOLD_DEFAULTS: AlertThresholdDefinition[] = [
-  { ruleKey: "cash_expense_daily", metricCode: "cash_operating_costs", comparison: "gte", threshold: 15_000, severity: "warning", label: "Траты нал", description: "сумма наличных расходов за день", unit: "₽" },
+  { ruleKey: "cash_expense_daily", metricCode: "cash_operating_costs", comparison: "gte", threshold: 15_000, severity: "warning", label: "Общие траты нал", description: "сумма наличных расходов за день", unit: "₽" },
   { ruleKey: "ndfl_22_daily", metricCode: "personal_income_tax_22", comparison: "gte", threshold: 5_000, severity: "warning", label: "НДФЛ 22%", description: "начисление НДФЛ 22% за день", unit: "₽" },
   { ruleKey: "stock_low", metricCode: "stock_close", comparison: "lte", threshold: 15_000, severity: "critical", label: "Низкий остаток", description: "конечный остаток на дату", unit: "₽" },
   { ruleKey: "stock_high", metricCode: "stock_close", comparison: "gte", threshold: 300_000, severity: "warning", label: "Высокий остаток", description: "конечный остаток на дату", unit: "₽" },

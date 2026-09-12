@@ -50,4 +50,14 @@ describe("страница «База»", () => {
     expect(page).toContain("Дополнить выручку нал / б/нал");
     expect(page).toContain("существующие факты не заменяет");
   });
+
+  it("держит общие, копченые и мороженые продажи одной последовательной группой", () => {
+    expect(page).toContain('const choices = ["revenue", "sales_smoked", "sales_frozen"');
+  });
+
+  it("называет общие наличные траты явно и меняет их позицию с НДФЛ 22%", () => {
+    expect(page).toContain('"operating_costs", "personal_income_tax_22", "driver_cashless"');
+    expect(page).toContain('"vacation_cash", "cash_operating_costs", "stock_open"');
+    expect(page).toContain('cash_operating_costs: "Общие траты нал"');
+  });
 });
