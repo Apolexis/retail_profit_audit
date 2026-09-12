@@ -24,6 +24,9 @@ describe("WeeklyReports interaction contract",()=>{
     expect(page).toContain('const [reportPeriod,setReportPeriod]=useState<"week"|"month"|"custom">("week")');
     expect(page).toContain('<option value="custom">Произвольный период</option>');
     expect(page).toContain('value={customRange} onChange={setCustomRange} title="ПЕРИОД ОТЧЕТА"');
+    expect(page).toContain('<DateRangeControl value={customRange}');
+    expect(page).not.toContain('<DateRangeControl compact value={customRange}');
+    expect(styles).toContain('.packet .report-schedule-controls .report-custom-period .date-range-control {\n  width: 100%;\n  justify-content: space-between;\n}');
     expect(page).toContain('generate.mutate(isCustomPeriod?{range:customRange}:undefined)');
     expect(page).toContain('Он формируется вручную и не меняет сохраненное недельное или месячное расписание.');
   });

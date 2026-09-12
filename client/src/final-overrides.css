@@ -2436,19 +2436,11 @@ html[data-audit-theme="light"] .chart-expand-dialog .chart-panzoom[class*="chart
   }
 }
 
-/* Настройка отчетов: календарный диапазон использует ту же спокойную поверхность, что соседние поля расписания. */
+/* Настройка отчетов: диапазон использует базовый календарный контракт приложения, меняется только ширина в сетке. */
 .packet .report-schedule-controls .report-custom-period { min-width: 292px; }
 .packet .report-schedule-controls .report-custom-period .date-range-control {
   width: 100%;
   justify-content: space-between;
-  background: var(--surface-2);
-  border-color: var(--line);
-  color: var(--text);
-}
-html[data-audit-theme="light"] .packet .report-schedule-controls .report-custom-period .date-range-control {
-  background: #ffffff;
-  border-color: #b7d5ef;
-  color: #1e3951;
 }
 @media (max-width: 720px) {
   .packet .report-schedule-controls .report-custom-period { min-width: 0; width: 100%; }
