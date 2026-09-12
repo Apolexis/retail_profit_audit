@@ -22,6 +22,6 @@ describe("страница «Сравнить»", () => {
     expect(page).toContain('useAuditFacts({includeHidden:!onlyVisibleStores})');
     expect(page).toContain('Только видимые');
     expect(page).toContain('Все точки');
-    expect(page).toContain('Исключенные и резервные точки скрыты из выбора.');
+    expect(page).not.toContain('Исключенные и резервные точки скрыты из выбора.');
   });
 });

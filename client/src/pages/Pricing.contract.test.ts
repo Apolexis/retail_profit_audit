@@ -17,13 +17,24 @@ describe("страница «Цены»", () => {
     expect(page).toContain("Последний месяц с наценкой");
   });
 
-  it("использует исходные проценты наценки из импортированных строк, а не пересчет продаж к закупке", () => {
+  it("использует расчетную наценку из фактических продаж и закупок с корректной агрегацией", () => {
     expect(page).toContain("summary.markupSmoked");
     expect(page).toContain("summary.markupFrozen");
     expect(page).toContain("summary.markupTotal");
     expect(page).toContain('"% наценки Общий"');
-    expect(page).toContain("Проценты наценки берутся из фактических строк импортированной книги");
+    expect(page).toContain("Наценка рассчитывается из фактических продаж и закупок");
+    expect(page).toContain("(продажи − закупки) ÷ закупки × 100");
     expect(page).not.toContain("values.sales / values.purchase");
+  });
+
+  it("дает детальную сопоставимую раскладку трех видов наценки", () => {
+    expect(page).toContain("const markupDetails = useMemo");
+    expect(page).toContain("pricing-markup-detail");
+    expect(page).toContain("Копченая, мороженая и общий товарный поток");
+    expect(page).toContain("Продажи {money(item.selectedPair.sales)}");
+    expect(page).toContain("Закупки {money(item.selectedPair.purchase)}");
+    const styles = readFileSync(new URL("../final-overrides.css", import.meta.url), "utf8");
+    expect(styles).toContain(".packet .pricing-markup-detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));");
   });
 
   it("дает KPI отклонения от медианы самостоятельную тему и оставляет риск отдельным состоянием", () => {

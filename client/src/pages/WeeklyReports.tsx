@@ -26,7 +26,7 @@ const loadPdfBrand=async(theme:"dark"|"light")=>{const response=await fetch(repo
 const drawPdfBrand=async(context:CanvasRenderingContext2D,source:string|undefined,x:number,y:number,size=48)=>{if(!source)return;const image=new Image();await new Promise<void>((resolve,reject)=>{image.onload=()=>resolve();image.onerror=()=>reject(new Error("Не удалось отрисовать фирменный знак"));image.src=source;});context.drawImage(image,x,y,size,size);};
 export const shouldFitPdfSummaryOnOnePage=(imageHeight:number,printableHeight:number)=>imageHeight<=printableHeight*1.12;
 type BrowserPdf={output:(type:"blob")=>Blob;save:(fileName:string)=>void};
-const savePdfForDevice=async(pdf:BrowserPdf,fileName:string,previewWindow:Window|null)=>{const blob=pdf.output("blob");if(!blob.size)throw new Error("PDF сформирован без данных");const shareNavigator=navigator as Navigator&{canShare?:(data:{files:File[]})=>boolean;share?:(data:{files:File[];title:string;text:string})=>Promise<void>};let file:File|undefined;try{if(typeof File!=="undefined")file=new File([blob],fileName,{type:"application/pdf"});}catch(error){console.warn("Нативный File недоступен, используем системный fallback PDF",error);}if(file&&shareNavigator.canShare?.({files:[file]})&&shareNavigator.share){try{await shareNavigator.share({files:[file],title:"Аналитика «Рыбный»",text:"Выбранный отчет руководителя"});previewWindow?.close();return "shared" as const;}catch(error){if(error instanceof DOMException&&error.name==="AbortError"){previewWindow?.close();return "cancelled" as const;}console.warn("Системная отправка PDF недоступна, открываем локальный preview",error);}}const url=URL.createObjectURL(blob);if(previewWindow){previewWindow.location.replace(url);window.setTimeout(()=>URL.revokeObjectURL(url),60_000);return "previewed" as const;}const link=document.createElement("a");link.href=url;link.download=fileName;link.style.display="none";document.body.append(link);await new Promise<void>(resolve=>requestAnimationFrame(()=>{link.click();resolve();}));link.remove();window.setTimeout(()=>URL.revokeObjectURL(url),30_000);return "downloaded" as const;};
+const savePdfForDevice=async(pdf:BrowserPdf,fileName:string)=>{const blob=pdf.output("blob");if(!blob.size)throw new Error("PDF сформирован без данных");const shareNavigator=navigator as Navigator&{canShare?:(data:{files:File[]})=>boolean;share?:(data:{files:File[];title:string;text:string})=>Promise<void>};let file:File|undefined;try{if(typeof File!=="undefined")file=new File([blob],fileName,{type:"application/pdf"});}catch(error){console.warn("Нативный File недоступен, используем системный fallback PDF",error);}if(file&&shareNavigator.canShare?.({files:[file]})&&shareNavigator.share){try{await shareNavigator.share({files:[file],title:"Аналитика «Рыбный»",text:"Выбранный отчет руководителя"});return "shared" as const;}catch(error){if(error instanceof DOMException&&error.name==="AbortError")return "cancelled" as const;console.warn("Системная отправка PDF недоступна, используем загрузку файла",error);}}const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download=fileName;link.style.display="none";document.body.append(link);await new Promise<void>(resolve=>requestAnimationFrame(()=>{link.click();resolve();}));link.remove();window.setTimeout(()=>URL.revokeObjectURL(url),30_000);return "downloaded" as const;};
 const shortDate=(value:string)=>new Date(`${value}T12:00:00`).toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit"});
 const finite=(value:unknown)=>typeof value==="number"&&Number.isFinite(value)?value:Number(value??0)||0;
 export const reportTimeline=(periods:readonly ReportTimelinePeriod[]):ReportTimelinePoint[]=>{
@@ -153,9 +153,6 @@ export default function WeeklyReports(){
   const openReport=(id:number)=>{const report=list.find(item=>item.id===id);selectReport(id);toast.info(report&&id===selected?.id?"Эта сводка уже открыта":"Открыта сохраненная сводка",{description:report?periodLabel(report.summary as unknown as Summary):"Показан выбранный период."});};
   const exportPdf=async()=>{
     if(!summary||isExporting)return;
-    const isAppleMobile=/iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const previewWindow=isAppleMobile?window.open("about:blank","_blank"):null;
-    if(previewWindow)previewWindow.document.title="Готовим PDF-отчет…";
     setIsExporting(true);
     try{
       const {jsPDF}=await import("jspdf");
@@ -178,11 +175,10 @@ export default function WeeklyReports(){
       const ledgers=await createReportLedgerCanvases(summary,timeline,pdfTheme,brandSource);
       ledgers.forEach(ledger=>{pdf.addPage();pdf.addImage(ledger.toDataURL("image/png"),"PNG",0,0,pageWidth,pageHeight,undefined,"FAST");});
       const fileName=`Рыбный_отчет_${summary.periodStart}_${summary.periodEnd}.pdf`;
-      const delivery=await savePdfForDevice(pdf,fileName,previewWindow);
+      const delivery=await savePdfForDevice(pdf,fileName);
       if(delivery==="cancelled")toast.info("Отправка PDF отменена",{description:"Отчет уже подготовлен; при необходимости запустите выгрузку повторно."});
-      else toast.success("PDF-отчет подготовлен",{description:delivery==="shared"?"Открылось системное меню отправки файла.":delivery==="previewed"?"PDF открыт в отдельном окне: используйте системное меню для сохранения или отправки.":`Файл ${fileName} сохранен для загрузки.`});
+      else toast.success("PDF-отчет подготовлен",{description:delivery==="shared"?"Открылось системное меню отправки файла.":`Файл ${fileName} сохранен для загрузки.`});
     }catch(error){
-      previewWindow?.close();
       console.error("Не удалось выгрузить PDF-отчет",error);
       toast.error("Не удалось выгрузить PDF",{description:"Проверьте доступность выбранной сводки и повторите выгрузку."});
     }finally{setIsExporting(false);}

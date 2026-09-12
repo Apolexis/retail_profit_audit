@@ -45,10 +45,11 @@ describe("страница «База»", () => {
     expect(page).toContain("Дата записи");
   });
 
-  it("предлагает дополнить только отсутствующую выручку наличными и безналичными", () => {
-    expect(page).toContain("backfillPaymentRevenue");
-    expect(page).toContain("Дополнить выручку нал / б/нал");
-    expect(page).toContain("существующие факты не заменяет");
+  it("показывает уже доступные показатели выручки по способам оплаты без отдельного ручного дополнения", () => {
+    expect(page).toContain('cash_revenue: "Выручка нал"');
+    expect(page).toContain('cashless_revenue: "Выручка б/нал"');
+    expect(page).not.toContain("backfillPaymentRevenue");
+    expect(page).not.toContain("Дополнить выручку нал / б/нал");
   });
 
   it("держит общие, копченые и мороженые продажи одной последовательной группой", () => {

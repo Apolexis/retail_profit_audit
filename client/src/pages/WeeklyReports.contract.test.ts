@@ -61,7 +61,7 @@ describe("WeeklyReports interaction contract",()=>{
     expect(page).toContain('import("jspdf")');
     expect(page).toContain('const exportPdf=async()=>');
     expect(page).toContain('const savePdfForDevice=async');
-    expect(page).toContain('const delivery=await savePdfForDevice(pdf,fileName,previewWindow);');
+    expect(page).toContain('const delivery=await savePdfForDevice(pdf,fileName);');
     expect(page).toContain('navigator as Navigator');
     expect(page).toContain('className="report-pdf-source"');
     expect(page).toContain('aria-label="Выгрузить выбранный отчет в PDF"');
@@ -74,10 +74,10 @@ describe("WeeklyReports interaction contract",()=>{
   it("добавляет в PDF фирменный знак и первую локально рисуемую страницу без DOM-снимка",()=>{
     expect(page).toContain('const createReportSummaryCanvas=async');
     expect(page).toContain('const summaryCanvas=await createReportSummaryCanvas(summary,pdfTheme,brandSource);');
-    expect(page).toContain('const previewWindow=isAppleMobile?window.open("about:blank","_blank"):null;');
+    expect(page).not.toContain('window.open("about:blank","_blank")');
     expect(page).toContain('const reportPdfBrandIcon=');
     expect(page).toContain('const loadPdfBrand=async');
-    expect(page).toContain('previewWindow.location.replace(url)');
+    expect(page).not.toContain('previewWindow.location.replace(url)');
   });
 
   it("добавляет отдельную PDF-страницу динамики из фактических дневных записей выбранного отчета",()=>{

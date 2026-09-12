@@ -2581,3 +2581,30 @@ html[data-audit-theme] .packet .packet-top::before { position: absolute; z-index
 .packet .control-comparison-note { display: flex; align-items: flex-start; gap: 9px; padding-inline: 16px; }
 .packet .control-comparison-note > svg { flex: 0 0 auto; margin-top: 2px; }
 @media (max-width: 560px) { .packet .control-comparison-note { padding-inline: 14px; } }
+/* Стабильные fixed-контролы PWA: только bottom, без зависимости от меняющейся высоты visual viewport при прокрутке. */
+@media (max-width: 720px) {
+  .packet .scroll-top { top: auto !important; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px) !important; }
+  .packet.pwa-standalone .mobile-quick-nav { top: auto !important; bottom: calc(env(safe-area-inset-bottom, 0px) + 8px) !important; }
+  .packet.pwa-standalone .scroll-top { top: auto !important; bottom: calc(env(safe-area-inset-bottom, 0px) + 80px) !important; }
+  .packet .plan-editor > label { min-width: 0; }
+  .packet .plan-editor input[type="month"] { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; }
+  .packet .plan-table-card .card-title small { max-width: 100%; overflow-wrap: anywhere; }
+  .packet .two-col .card-title small { display: block; max-width: 100%; overflow-wrap: anywhere; }
+}
+.packet .chart-empty { font-size: clamp(12px, 1.1vw, 14px); line-height: 1.45; }
+.packet .change-log-more { margin: 12px 4px 10px; }
+html[data-audit-theme="dark"] .packet .change-log-filters :is(input, select):focus { border-color: #ff937f; box-shadow: none; }
+html[data-audit-theme="light"] .chart-expand-dialog .chart-touch-mode-button.active,
+html[data-audit-theme="light"] .chart-expand-dialog .chart-touch-mode-button[aria-pressed="true"] { border-color: #0a84ff !important; background: #0a84ff !important; color: #ffffff !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .16) !important; }
+html[data-audit-theme="light"] .chart-expand-dialog .chart-expand-view-control .chart-view-button { border-color: #c6d9ec !important; background: #ffffff !important; color: #42617d !important; box-shadow: none !important; }
+html[data-audit-theme="light"] .chart-expand-dialog .chart-expand-view-control .chart-view-button.active { border-color: #0a84ff !important; background: #edf6ff !important; color: #075dbb !important; box-shadow: inset 0 -2px 0 #0a84ff !important; }
+html[data-audit-theme="light"] .login-error { border-color: #bdd9f6 !important; background: #f5faff !important; color: #244864 !important; }
+.packet .pricing-markup-detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+.packet .pricing-markup-detail-grid > article { display: grid; gap: 6px; min-width: 0; padding: 15px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface-2); }
+.packet .pricing-markup-detail-grid > article > span { color: var(--faint); font: 800 9px "IBM Plex Mono", monospace; letter-spacing: .06em; }
+.packet .pricing-markup-detail-grid > article > strong { color: var(--text); font: 800 26px Manrope, Arial, sans-serif; line-height: 1.1; }
+.packet .pricing-markup-detail-grid > article > small { color: var(--faint); font-size: 11px; }
+.packet .pricing-markup-detail-grid > article > b { font-size: 13px; }
+.packet .pricing-markup-detail-grid > article > div { display: grid; gap: 3px; margin-top: 4px; color: var(--faint); font-size: 11px; }
+html[data-audit-theme="light"] .packet .pricing-markup-detail-grid > article { border-color: #c6d9ec; background: #ffffff; }
+@media (max-width: 780px) { .packet .pricing-markup-detail-grid { grid-template-columns: 1fr; } }

@@ -43,7 +43,7 @@ describe("базовые управляющие элементы", () => {
     expect(shell).not.toContain('aria-label="Домой"');
     expect(shell).toContain('aria-label="Вперёд"');
     expect(shell).toContain('aria-label="Обновить данные"');
-    expect(shell).toContain("{standalone&&<nav className=\"mobile-quick-nav\"");
+    expect(shell).toContain("{standalone&&!menuOpen&&<nav className=\"mobile-quick-nav\"");
     expect(shell).toContain('className="mobile-quick-action mobile-quick-back"');
     expect(shell).toContain('className="mobile-quick-action mobile-quick-forward"');
     expect(shell).toContain('className="mobile-quick-action mobile-quick-refresh"');
@@ -69,6 +69,7 @@ describe("базовые управляющие элементы", () => {
     expect(css).toContain('body:has(.chart-expand-dialog[data-state="open"]) .packet .mobile-quick-nav');
     expect(css).toContain('.packet.pwa-standalone .mobile-quick-nav');
     expect(css).toContain('@media (hover: none), (pointer: coarse)');
+    expect(css).toContain('.packet.pwa-standalone .mobile-quick-nav { top: auto !important; bottom: calc(env(safe-area-inset-bottom, 0px) + 8px) !important; }');
   });
 
   it("не сжимает профиль при раскрытии категорий навигации", () => {

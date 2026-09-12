@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const login = readFileSync(new URL("./Login.tsx", import.meta.url), "utf8");
+const styles = readFileSync(new URL("../final-overrides.css", import.meta.url), "utf8");
 
 describe("универсальный вход с ключом доступа", () => {
   it("не называет вход только Face ID и перечисляет доступные способы устройства", () => {
@@ -19,5 +20,10 @@ describe("универсальный вход с ключом доступа", (
     expect(login).toContain('import { BrandMark } from "@/components/AuditShell";');
     expect(login).toContain("<BrandMark theme={theme} />");
     expect(login).not.toContain("Доступ к показателям сети предоставляется только для назначенных магазинов");
+  });
+
+  it("показывает обычную ошибку входа в светлой теме нейтрально, без коралловой палитры", () => {
+    expect(login).toContain('className="login-error"');
+    expect(styles).toContain('html[data-audit-theme="light"] .login-error { border-color: #bdd9f6 !important; background: #f5faff !important; color: #244864 !important; }');
   });
 });
