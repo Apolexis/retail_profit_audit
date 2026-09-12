@@ -40,8 +40,8 @@ describe("мобильный контракт графических контр�
     expect(styles).toContain('@media (hover: none), (pointer: coarse)');
   });
 
-  it("крепит крестик слева от длинного заголовка только в компактном диалоге", () => {
-    expect(styles).toContain('.chart-expand-dialog [data-slot="dialog-close"] { top: 22px !important; right: auto !important; left: 10px !important; transform: none !important; }');
+  it("сдвигает крестик компактного диалога правее от левого края, не перекрывая заголовок", () => {
+    expect(styles).toContain('.chart-expand-dialog [data-slot="dialog-close"] { top: 22px !important; right: auto !important; left: 16px !important; transform: none !important; }');
     expect(styles).toContain('.chart-expand-dialog [data-slot="dialog-header"] { padding-right: 0 !important; padding-left: 48px !important; }');
   });
 

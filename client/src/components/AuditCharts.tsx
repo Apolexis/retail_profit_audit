@@ -23,7 +23,7 @@ export const resolveOverlayBarGeometry=(x:number,width:number,index:number,serie
 export const normalizeOverlayBarRect=(y:number,height:number)=>height>=0?{y,height}:{y:y+height,height:-height};
 export const zeroAwareTicks=(values:readonly number[])=>{const finite=values.filter(Number.isFinite);const minimum=Math.min(0,...(finite.length?finite:[0]));const maximum=Math.max(0,...(finite.length?finite:[0]));if(minimum===maximum)return[0];if(minimum>=0)return[0,maximum/4,maximum/2,maximum*.75,maximum];if(maximum<=0)return[minimum,minimum*.75,minimum/2,minimum/4,0];return[minimum,minimum/2,0,maximum/2,maximum];};
 export const clampChartZoom=(value:number)=>Math.min(3,Math.max(1,value));
-export const chartPanSpeedForZoom=(zoom:number)=>2.35/Math.pow(clampChartZoom(zoom),1.75);
+export const chartPanSpeedForZoom=(zoom:number)=>3.4/Math.sqrt(clampChartZoom(zoom));
 export type ChartPanAxis="x"|"y"|null;
 export type ChartTouchMode="inspect"|"pan";
 export const resolveChartPanAxis=(deltaX:number,deltaY:number,threshold=2):ChartPanAxis=>Math.hypot(deltaX,deltaY)<threshold?null:Math.abs(deltaX)>=Math.abs(deltaY)?"x":"y";

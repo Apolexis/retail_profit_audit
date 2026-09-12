@@ -1970,7 +1970,7 @@ html[data-audit-theme="light"] .packet .scenario-result.negative .scenario-profi
 html[data-audit-theme="light"] .packet .closure-choice.priority .closure-choice-main small.negative { color: #075dbb !important; }
 
 @media (max-width: 560px) {
-  .chart-expand-dialog [data-slot="dialog-close"] { top: 22px !important; right: auto !important; left: 10px !important; transform: none !important; }
+  .chart-expand-dialog [data-slot="dialog-close"] { top: 22px !important; right: auto !important; left: 16px !important; transform: none !important; }
   .chart-expand-dialog [data-slot="dialog-header"] { padding-right: 0 !important; padding-left: 48px !important; }
 }
 
@@ -2387,7 +2387,8 @@ html[data-audit-theme="dark"] .packet .chart-touch-mode-button:focus-visible { o
 }
 html[data-audit-theme="light"] .chart-expand-dialog .chart-panzoom[class*="chart-panzoom-touch-"] .chart-touch-mode-control { border-color: #cbdcff; background: #f7faff; }
 html[data-audit-theme="light"] .chart-expand-dialog .chart-panzoom[class*="chart-panzoom-touch-"] .chart-touch-mode-button { color: #51657d; }
-html[data-audit-theme="light"] .chart-expand-dialog .chart-panzoom[class*="chart-panzoom-touch-"] .chart-touch-mode-button.active { background: #0a63c8; color: #ffffff; box-shadow: none; }
+html[data-audit-theme="light"] .chart-expand-dialog .chart-panzoom[class*="chart-panzoom-touch-"] .chart-touch-mode-button.active,
+html[data-audit-theme="light"] .chart-expand-dialog .chart-panzoom[class*="chart-panzoom-touch-"] .chart-touch-mode-button[aria-pressed="true"] { background: #0a63c8; color: #ffffff; box-shadow: inset 0 0 0 1px #075dbb !important; }
 
 /* Быстрые действия — только в установленном PWA, но на touch-экранах любой ширины. */
 @media (hover: none), (pointer: coarse) {
@@ -2399,9 +2400,13 @@ html[data-audit-theme="light"] .chart-expand-dialog .chart-panzoom[class*="chart
     right: auto !important;
     top: auto !important;
     bottom: calc(env(safe-area-inset-bottom, 0px) + 10px) !important;
-    width: min(312px, calc(100vw - 32px)) !important;
+    width: min(260px, calc(100vw - 32px)) !important;
     transform: translateX(-50%) !important;
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    border: 1px solid var(--line) !important;
+    background: color-mix(in srgb, var(--surface) 94%, transparent) !important;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .24) !important;
+    backdrop-filter: blur(16px);
     visibility: visible;
     opacity: 1;
   }
@@ -2478,6 +2483,23 @@ html[data-audit-theme="light"] .chart-expand-dialog .chart-panzoom[class*="chart
 
 /* На малом установленном экране шапка следует data-audit-theme без ожидания повторного запуска PWA. */
 @media (max-width: 720px) {
-  html[data-audit-theme="light"] .packet.pwa-standalone .packet-top { background: #ffffff !important; color-scheme: light !important; }
-  html[data-audit-theme="dark"] .packet.pwa-standalone .packet-top { background: #0c0b12 !important; color-scheme: dark !important; }
+html[data-audit-theme="light"] .packet.pwa-standalone .packet-top { background: #ffffff !important; color-scheme: light !important; }
+html[data-audit-theme="dark"] .packet.pwa-standalone .packet-top { background: #0c0b12 !important; color-scheme: dark !important; }
 }
+
+/* Списки отчетов и журнал не сжимают действия на малой ширине: карточки занимают доступную сетку и дозагружаются явно. */
+.packet .report-history { align-items: stretch; }
+.packet .report-history > div:first-child { flex: 0 0 minmax(156px, 28%); }
+.packet .report-history-list { flex: 1 1 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; min-width: 0; max-height: 292px; overflow: auto; padding-right: 2px; }
+.packet .report-history-row { display: grid; grid-template-columns: minmax(0, 1fr) 34px; gap: 6px; min-width: 0; }
+.packet .report-history-item { min-width: 0; width: 100%; text-align: left; }
+.packet .report-history-item span { min-width: 0; }
+.packet .report-history-item strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.packet .report-history-delete { display: grid; place-items: center; width: 34px; min-width: 34px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); color: var(--muted); }
+.packet .report-history-delete:hover, .packet .report-history-delete:focus-visible { border-color: #d65d72; background: color-mix(in srgb, #d65d72 12%, var(--surface)); color: #ff9aa6; }
+.packet .report-history-more, .packet .change-log-more { grid-column: 1 / -1; justify-self: stretch; min-height: 36px; border: 1px dashed var(--line); border-radius: 9px; background: transparent; color: var(--muted); font: 800 11px Manrope, Arial, sans-serif; }
+.packet .report-history-more:hover, .packet .change-log-more:hover { border-color: var(--blue); color: var(--text); background: color-mix(in srgb, var(--blue) 9%, transparent); }
+.packet .change-log-more { display: block; width: calc(100% - 42px); margin: 16px 21px 20px; }
+@media (max-width: 760px) { .packet .report-history > div:first-child { flex: 1 1 auto; } .packet .report-history-list { grid-template-columns: 1fr; max-height: 330px; width: 100%; } .packet .report-history-item { min-height: 52px; } }
+html[data-audit-theme="light"] .packet .report-history-delete { border-color: #dec7d2; background: #fff; color: #796473; }
+html[data-audit-theme="light"] .packet .report-history-delete:hover, html[data-audit-theme="light"] .packet .report-history-delete:focus-visible { border-color: #d65d72; background: #fff4f6; color: #b83250; }

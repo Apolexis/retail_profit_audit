@@ -13,9 +13,14 @@ describe("WeeklyReports interaction contract",()=>{
     expect(page).toContain("window.history.replaceState");
   });
 
-  it("keeps saved periods compact and labels the action separately",()=>{
+  it("keeps saved periods compact, paginated and safely removable",()=>{
     expect(page).toContain('className={isActive?"report-history-item active":"report-history-item"}');
-    expect(page).toContain('isActive?"Открыта сейчас":"Показать"');
+    expect(page).toContain('isActive?"Открыта":"Показать"');
+    expect(page).toContain('trpc.audit.weeklyReports.useQuery({limit:REPORTS_PAGE_SIZE,offset:reportOffset}');
+    expect(page).toContain('trpc.audit.deleteWeeklyReport.useMutation');
+    expect(page).toContain('Удалить сформированную сводку?');
+    expect(page).toContain('Показать следующие');
+    expect(styles).toContain('.packet .report-history-row');
     expect(page).toContain('className={isEnabled?"schedule-toggle active":"schedule-toggle"}');
   });
 
@@ -57,6 +62,7 @@ describe("WeeklyReports interaction contract",()=>{
     expect(page).toContain('ref={reportPdfRef} className="report-pdf-source"');
     expect(page).toContain('aria-label="Выгрузить выбранный отчет в PDF"');
     expect(page).toContain('toast.success("PDF-отчет выгружен"');
+    expect(page).toContain('loadPdfBrand(pdfTheme).catch');
     expect(styles).toContain('html[data-audit-theme="light"] .packet .report-export-button');
     expect(styles).toContain('html[data-audit-theme="dark"] .packet .report-export-button');
   });

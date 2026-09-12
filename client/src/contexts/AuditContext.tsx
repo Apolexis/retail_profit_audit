@@ -48,6 +48,15 @@ function applyPwaTheme(theme: Theme) {
     document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach(meta => meta.setAttribute("content", color));
     document.querySelectorAll<HTMLMetaElement>('meta[name="apple-mobile-web-app-status-bar-style"]').forEach(meta => meta.setAttribute("content", theme === "dark" ? "black-translucent" : "default"));
   };
+  const refreshNativeThemeMeta = () => {
+    applyMeta();
+    const themeColor = document.getElementById("app-theme-color");
+    const statusBar = document.getElementById("app-apple-status-bar-style");
+    // iOS sometimes re-evaluates a dynamically changed PWA status color only
+    // after the existing nodes are re-attached to head. Identities are preserved.
+    if (themeColor?.parentElement === document.head) document.head.append(themeColor);
+    if (statusBar?.parentElement === document.head) document.head.append(statusBar);
+  };
 
   localStorage.setItem("audit-theme", theme);
   root.dataset.auditTheme = theme;
@@ -62,7 +71,7 @@ function applyPwaTheme(theme: Theme) {
   document.body.style.setProperty("background", color, "important");
   document.body.style.setProperty("background-color", color, "important");
   document.body.style.setProperty("--pwa-system-color", color, "important");
-  applyMeta();
+  refreshNativeThemeMeta();
   document.querySelectorAll<HTMLElement>(".packet .packet-top").forEach(header => {
     header.style.setProperty("background", color, "important");
     header.style.setProperty("background-color", color, "important");
@@ -71,8 +80,8 @@ function applyPwaTheme(theme: Theme) {
   document.getElementById("app-favicon")?.setAttribute("href", themeIcon[theme]);
   document.getElementById("app-apple-touch-icon")?.setAttribute("href", themeIcon[theme]);
   document.getElementById("app-manifest")?.setAttribute("href", themeManifest[theme]);
-  window.requestAnimationFrame(applyMeta);
-  window.setTimeout(applyMeta, 0);
+  window.requestAnimationFrame(refreshNativeThemeMeta);
+  window.setTimeout(refreshNativeThemeMeta, 32);
   window.dispatchEvent(new CustomEvent("audit-pwa-theme-change", { detail: { theme, color } }));
 }
 
