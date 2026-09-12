@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chartPanSpeedForZoom, clampChartZoom, formatK, nonZeroLines, normalizeOverlayBarRect, panChartRows, resolveChartPanAxis, resolveMetricChartLayout, resolveMetricChartView, resolveOverlayBarGeometry, sortTooltipPayload, viewportChartDomain, windowChartRows, zeroAwareTicks } from "./AuditCharts";
+import { chartPanSpeedForZoom, clampChartZoom, formatK, nonZeroLines, normalizeOverlayBarRect, panChartRows, pointInsideRect, resolveChartPanAxis, resolveMetricChartLayout, resolveMetricChartView, resolveOverlayBarGeometry, sortTooltipPayload, viewportChartDomain, windowChartRows, zeroAwareTicks } from "./AuditCharts";
 
 describe("форматирование денежных показателей", () => {
   it("не скрывает малые ненулевые суммы округлением до нуля", () => {
@@ -67,6 +67,8 @@ describe("форматирование денежных показателей",
     expect(resolveChartPanAxis(1,0)).toBeNull();
     expect(resolveChartPanAxis(14,5)).toBe("x");
     expect(resolveChartPanAxis(5,14)).toBe("y");
+    expect(pointInsideRect({clientX:120,clientY:80},{left:100,right:180,top:40,bottom:120})).toBe(true);
+    expect(pointInsideRect({clientX:181,clientY:80},{left:100,right:180,top:40,bottom:120})).toBe(false);
     expect(windowChartRows([1,2,3,4,5,6],{zoom:2,pan:{x:0,y:0}})).toEqual([3,4,5]);
     expect(windowChartRows([1,2,3,4,5,6],{zoom:2,pan:{x:0,y:1}},"y")).toEqual([4,5,6]);
     expect(windowChartRows([1,2,3,4],{zoom:1.16,pan:{x:1,y:0}})).toEqual([2,3,4]);
@@ -94,7 +96,10 @@ describe("форматирование денежных показателей",
     expect(source).not.toContain("if(activeZoom<=1)return");
     expect(source).toContain("const speed=chartPanSpeedForZoom(zoomRef.current)");
     expect(source).toContain("const queuePan=(delta:{x:number;y:number})");
-    expect(source).toContain("if(axisLock&&!gesture.current.axis)");
+    expect(source).toContain("if(mouseAxisLock&&!gesture.current.axis)");
+    expect(source).toContain("const mouseAxisThreshold=4");
+    expect(source).toContain("mouseVerticalPanDirection=1");
+    expect(source).toContain("mouseVerticalPanDirection={-1}");
     expect(source).toContain('gesture.current.axis==="y"?0:-deltaX*speed');
     expect(source).toContain('gesture.current.axis==="x"?0:deltaY*speed');
     expect(source).toContain("event.currentTarget.setPointerCapture(event.pointerId)");
@@ -111,6 +116,10 @@ describe("форматирование денежных показателей",
     expect(source).toContain("const keepChartSurfaceInside");
     expect(source).toContain('onPointerDownOutside={protectGeneralChartSurface?keepChartSurfaceInside:undefined}');
     expect(source).toContain('onFocusOutside={protectGeneralChartSurface?keepChartSurfaceInside:undefined}');
+    expect(source).toContain('onInteractOutside={protectGeneralChartSurface?keepChartSurfaceInside:undefined}');
+    expect(source).toContain('onPointerDownCapture={protectGeneralChartSurface?stopChartPointerBubble:undefined}');
+    expect(source).toContain('document.body.dataset.generalChartDialogOpen="true"');
+    expect(source).toContain('pointInsideRect(point,dialog.getBoundingClientRect())');
     expect(source).toContain('document.body.dataset.generalChartDialogOpen="true"');
     expect(source).toContain('className={protectGeneralChartSurface?"chart-expand-dialog chart-expand-dialog-general":"chart-expand-dialog"}');
     expect(source).toContain('const chartRenderKey=`${chartView}-${visibleLines.map(line=>line.key).join("-")}`');
@@ -118,7 +127,10 @@ describe("форматирование денежных показателей",
     expect(source).toContain("isAnimationActive={false}");
     expect(source).toContain('addEventListener("touchstart",touchStart,{passive:false,capture:true})');
     expect(source).toContain('addEventListener("touchmove",touchMove,{passive:false,capture:true})');
-    expect(source).toContain('const touchEnd=()=>clearGesture()');
+    expect(source).toContain("const touchEnd=()=>clearGesture()");
+    expect(source).toContain("function StableTinyTooltip");
+    expect(source).toContain("window.setTimeout(()=>setStable(props),72)");
+    expect(source).toContain("isAnimationActive={false} animationDuration={0}");
     expect(source).toContain('const touchStart=(event:TouchEvent)=>{if(isControl(event.target)||!event.touches.length)return;');
     expect(source).toContain('if(!allowTouchPan&&active.length===1)return');
     expect(source).toContain('if(event.pointerType==="touch"||!pointers.current.has(event.pointerId))return');
@@ -127,14 +139,14 @@ describe("форматирование денежных показателей",
     expect(source).toContain('onPointerDownOutside={protectGeneralChartSurface?keepChartSurfaceInside:undefined}');
     expect(source).toContain('const keepChartSurfaceInside');
     expect(source).toContain('aria-label={compact?"Интерактивный график":"Интерактивный увеличенный график"}');
-    expect(source).toContain('compact?:boolean;axisLock?:boolean;touchModeControl?:boolean}');
+    expect(source).toContain('compact?:boolean;axisLock?:boolean;mouseAxisLock?:boolean;mouseVerticalPanDirection?:1|-1;touchModeControl?:boolean}');
     expect(source).not.toContain("invertX");
     expect(source).toContain('function useSmallChartViewport()');
     expect(source).toContain('const timelineMargin=compactChart?{top:12,right:8,left:0,bottom:4}');
     expect(source).toContain('const timelineAxisWidth=compactChart?55:78');
     expect(source).toContain('compactChart?322:306');
     expect(source).toContain('<ChartPanZoomSurface compact touchModeControl={data.length>1} axisLock={false}>{compactViewport=><MetricLineChart');
-    expect(source).toContain('<ChartPanZoomSurface compact>{compactViewport=><BenchmarkBars');
+    expect(source).toContain('<ChartPanZoomSurface compact mouseVerticalPanDirection={-1}>{compactViewport=><BenchmarkBars');
     expect(source).toContain('<ChartExpandButton title={chartTitle} initialView={chartView} showViewControls={data.length>1} touchModeControl={data.length>1} protectGeneralChartSurface>');
     expect(source).not.toContain('<ChartPanZoomSurface compact touchModeControl={true}>');
     expect(source).toContain("Сброс");

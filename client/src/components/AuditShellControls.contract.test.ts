@@ -24,7 +24,7 @@ describe("базовые управляющие элементы", () => {
     expect(css).toContain(".packet .packet-top > div:first-child { min-width: 0; flex: 1 1 auto; }");
     expect(css).toContain(".packet .packet-actions { flex: 0 0 auto; gap: 5px; }");
     expect(css).toContain(".packet .packet-mobile.menu-button { width: 36px !important;");
-    expect(shell).toContain('className="packet-top" data-audit-theme={theme} style={{backgroundColor:theme==="dark"?"#0c0b12":"#ffffff",colorScheme:theme}}');
+    expect(shell).toContain('key={`packet-top-${theme}`} className="packet-top" data-audit-theme={theme} style={{backgroundColor:theme==="dark"?"#0c0b12":"#ffffff",colorScheme:theme}}');
   });
 
   it("выводит контекст периода отдельными строками", () => {

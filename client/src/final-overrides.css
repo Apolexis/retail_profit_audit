@@ -2421,8 +2421,8 @@ html[data-audit-theme="dark"] .packet .chart-touch-mode-button:focus-visible { o
 html[data-audit-theme="light"] .chart-expand-dialog .chart-panzoom[class*="chart-panzoom-touch-"] .chart-touch-mode-control { border-color: #cbdcff; background: #f7faff; }
 html[data-audit-theme="light"] .chart-expand-dialog .chart-panzoom[class*="chart-panzoom-touch-"] .chart-touch-mode-control { min-height: 36px; padding: 3px; }
 html[data-audit-theme="light"] .chart-expand-dialog .chart-panzoom[class*="chart-panzoom-touch-"] .chart-touch-mode-button { min-height: 28px; padding: 0 8px; color: #51657d; }
-html[data-audit-theme="light"] .chart-expand-dialog .chart-panzoom[class*="chart-panzoom-touch-"] .chart-touch-mode-button.active,
-html[data-audit-theme="light"] .chart-expand-dialog .chart-panzoom[class*="chart-panzoom-touch-"] .chart-touch-mode-button[aria-pressed="true"] { background: #0a63c8; color: #ffffff; box-shadow: none !important; }
+html[data-audit-theme="light"] .chart-expand-dialog .chart-touch-mode-button.active,
+html[data-audit-theme="light"] .chart-expand-dialog .chart-touch-mode-button[aria-pressed="true"] { border-color: #0a63c8 !important; background: #0a63c8 !important; color: #ffffff !important; box-shadow: none !important; }
 
 /* Быстрые действия — только в установленном PWA, но на touch-экранах любой ширины. */
 @media (hover: none), (pointer: coarse) {
@@ -2552,3 +2552,32 @@ html[data-audit-theme="light"] .packet .visibility-toggle.active { border-color:
 @media (max-width: 760px) { .packet .report-history { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; } .packet .report-history > div:first-child { min-width: 0; } .packet .report-history-list { grid-template-columns: 1fr; max-height: 330px; width: 100%; } .packet .report-history-item { min-height: 52px; } .packet .change-log-filters { grid-template-columns: 1fr; } }
 html[data-audit-theme="light"] .packet .report-history-delete { border-color: #dec7d2; background: #fff; color: #796473; }
 html[data-audit-theme="light"] .packet .report-history-delete:hover, html[data-audit-theme="light"] .packet .report-history-delete:focus-visible { border-color: #d65d72; background: #fff4f6; color: #b83250; }
+
+/* Финальная геометрия и темы: платежные карточки не перекрывают соседнюю строку, а обычные контроли не наследуют риск-коралл. */
+.packet .payment-kpis.report-payment-kpis { margin-top: 14px; margin-bottom: 18px; }
+.packet .report-payment-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.packet .compare-store-visibility { align-self: stretch; display: grid; align-content: start; gap: 7px; min-height: 0; }
+.packet .visibility-toggle { align-self: start; margin: 0; transform: none !important; transition: border-color 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease), color 160ms var(--audit-hover-ease); }
+.packet .visibility-toggle:hover, .packet .visibility-toggle:focus-visible { transform: none !important; }
+html[data-audit-theme="dark"] .packet .visibility-toggle { border-color: #3c4658; background: #171e2b; color: #d6deea; }
+html[data-audit-theme="dark"] .packet .visibility-toggle.active { border-color: #ff765f; background: rgba(255, 118, 95, .14); color: #ffe4dc; box-shadow: inset 2px 0 #ff765f; }
+html[data-audit-theme="dark"] .packet .visibility-toggle:hover, html[data-audit-theme="dark"] .packet .visibility-toggle:focus-visible { border-color: #ff937f; background: #241923; outline: none; }
+html[data-audit-theme="light"] .packet .visibility-toggle { border-color: #c6d9ec; background: #ffffff; color: #42617d; }
+html[data-audit-theme="light"] .packet .visibility-toggle:hover, html[data-audit-theme="light"] .packet .visibility-toggle:focus-visible { border-color: #0a84ff; background: #edf6ff; color: #075dbb; outline: none; }
+.packet .change-log-filters { padding-inline: 4px; }
+.packet .change-log-filters :is(input, select):hover { border-color: var(--blue); }
+html[data-audit-theme="light"] .packet .change-log-filters :is(input, select) { border-color: #c6d9ec; background: #ffffff; color: #26384d; }
+html[data-audit-theme="light"] .packet .change-log-filters :is(input, select):hover, html[data-audit-theme="light"] .packet .change-log-filters :is(input, select):focus { border-color: #0a84ff; box-shadow: 0 0 0 3px rgba(10, 132, 255, .13); }
+html[data-audit-theme="dark"] .packet .change-log-filters :is(input, select):hover, html[data-audit-theme="dark"] .packet .change-log-filters :is(input, select):focus { border-color: #ff765f; box-shadow: 0 0 0 3px rgba(255, 118, 95, .12); }
+.packet .change-log-more { width: calc(100% - 8px); margin: 4px 4px 10px; }
+@media (min-width: 761px) and (max-width: 1059px) { .packet .report-history { grid-template-columns: minmax(0, 1fr); gap: 12px; } .packet .report-history > div:first-child { min-width: 0; } .packet .report-history-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+html[data-audit-theme="light"] .packet .report-history-delete { border-color: #c6d9ec; background: #ffffff; color: #42617d; }
+html[data-audit-theme="light"] .packet .report-history-delete:hover, html[data-audit-theme="light"] .packet .report-history-delete:focus-visible { border-color: #0a84ff; background: #edf6ff; color: #075dbb; }
+html[data-audit-theme="light"] [data-sonner-toast]:not([data-type="error"]) { border-color: #bdd9f6 !important; background: #ffffff !important; color: #26384d !important; }
+html[data-audit-theme="light"] [data-sonner-toast]:not([data-type="error"]) [data-icon] { color: #0a63c8 !important; }
+html[data-audit-theme] .packet .packet-top { position: relative; isolation: isolate; transform: translateZ(0); }
+html[data-audit-theme] .packet .packet-top::before { position: absolute; z-index: -1; inset: 0; content: ""; background: var(--pwa-system-color); transform: translateZ(0); pointer-events: none; }
+@media (max-width: 560px) { .packet .report-payment-kpis { grid-template-columns: 1fr; } }
+.packet .control-comparison-note { display: flex; align-items: flex-start; gap: 9px; padding-inline: 16px; }
+.packet .control-comparison-note > svg { flex: 0 0 auto; margin-top: 2px; }
+@media (max-width: 560px) { .packet .control-comparison-note { padding-inline: 14px; } }

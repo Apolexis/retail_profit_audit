@@ -33,29 +33,22 @@ const AuditContext = createContext<AuditState | null>(null);
 function applyPwaTheme(theme: Theme) {
   const color = theme === "dark" ? "#0c0b12" : "#ffffff";
   const root = document.documentElement;
-  const applyMeta = () => {
-    const themeColor = document.getElementById("app-theme-color") as HTMLMetaElement | null;
-    const statusBar = document.getElementById("app-apple-status-bar-style") as HTMLMetaElement | null;
-    if (themeColor) {
-      themeColor.setAttribute("content", color);
-      themeColor.content = color;
-    }
-    if (statusBar) {
-      const statusStyle = theme === "dark" ? "black-translucent" : "default";
-      statusBar.setAttribute("content", statusStyle);
-      statusBar.content = statusStyle;
-    }
-    document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach(meta => meta.setAttribute("content", color));
-    document.querySelectorAll<HTMLMetaElement>('meta[name="apple-mobile-web-app-status-bar-style"]').forEach(meta => meta.setAttribute("content", theme === "dark" ? "black-translucent" : "default"));
-  };
   const refreshNativeThemeMeta = () => {
-    applyMeta();
-    const themeColor = document.getElementById("app-theme-color");
-    const statusBar = document.getElementById("app-apple-status-bar-style");
-    // iOS sometimes re-evaluates a dynamically changed PWA status color only
-    // after the existing nodes are re-attached to head. Identities are preserved.
-    if (themeColor?.parentElement === document.head) document.head.append(themeColor);
-    if (statusBar?.parentElement === document.head) document.head.append(statusBar);
+    const upsertMeta = (id: string, name: string, content: string) => {
+      const next = document.createElement("meta");
+      next.id = id;
+      next.name = name;
+      next.content = content;
+      next.dataset.auditThemeRevision = `${theme}-${Date.now()}`;
+      const current = document.getElementById(id);
+      if (current) current.replaceWith(next);
+      else document.head.append(next);
+    };
+    // iOS may ignore an in-place content mutation. A fresh node causes Safari to
+    // re-evaluate the browser/PWA chrome without requiring an orientation change.
+    upsertMeta("app-theme-color", "theme-color", color);
+    upsertMeta("app-apple-status-bar-style", "apple-mobile-web-app-status-bar-style", theme === "dark" ? "black-translucent" : "default");
+    document.querySelectorAll('meta[data-audit-runtime-theme-color], meta[data-audit-runtime-status-style]').forEach(node => node.remove());
   };
 
   localStorage.setItem("audit-theme", theme);
@@ -72,6 +65,9 @@ function applyPwaTheme(theme: Theme) {
   document.body.style.setProperty("background-color", color, "important");
   document.body.style.setProperty("--pwa-system-color", color, "important");
   refreshNativeThemeMeta();
+  // Safari/iOS may retain a composited browser/PWA surface until it observes a fresh
+  // theme-color node and a synchronous layout read. Both are local visual updates.
+  void root.offsetHeight;
   document.querySelectorAll<HTMLElement>(".packet .packet-top").forEach(header => {
     header.style.setProperty("background", color, "important");
     header.style.setProperty("background-color", color, "important");
@@ -80,8 +76,8 @@ function applyPwaTheme(theme: Theme) {
   document.getElementById("app-favicon")?.setAttribute("href", themeIcon[theme]);
   document.getElementById("app-apple-touch-icon")?.setAttribute("href", themeIcon[theme]);
   document.getElementById("app-manifest")?.setAttribute("href", themeManifest[theme]);
-  window.requestAnimationFrame(refreshNativeThemeMeta);
-  window.setTimeout(refreshNativeThemeMeta, 32);
+  window.requestAnimationFrame(()=>{refreshNativeThemeMeta();});
+  window.setTimeout(()=>{refreshNativeThemeMeta();},32);
   window.dispatchEvent(new CustomEvent("audit-pwa-theme-change", { detail: { theme, color } }));
 }
 

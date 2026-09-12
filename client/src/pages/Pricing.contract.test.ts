@@ -14,7 +14,16 @@ describe("страница «Цены»", () => {
   it("заполняет блок месячной наценки фактическими выводами под графиком", () => {
     expect(page).toContain("pricing-monthly-facts");
     expect(page).toContain("pricing-recommendation");
-    expect(page).toContain("Последний месяц с закупкой");
+    expect(page).toContain("Последний месяц с наценкой");
+  });
+
+  it("использует исходные проценты наценки из импортированных строк, а не пересчет продаж к закупке", () => {
+    expect(page).toContain("summary.markupSmoked");
+    expect(page).toContain("summary.markupFrozen");
+    expect(page).toContain("summary.markupTotal");
+    expect(page).toContain('"% наценки Общий"');
+    expect(page).toContain("Проценты наценки берутся из фактических строк импортированной книги");
+    expect(page).not.toContain("values.sales / values.purchase");
   });
 
   it("дает KPI отклонения от медианы самостоятельную тему и оставляет риск отдельным состоянием", () => {

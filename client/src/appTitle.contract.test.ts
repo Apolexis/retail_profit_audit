@@ -24,12 +24,12 @@ it("сохраняет утвержденное название приложе�
   expect(auditContext).toContain("applyPwaTheme(next);");
   expect(auditContext).toContain("root.style.setProperty(\"--pwa-system-color\", color, \"important\")");
   expect(auditContext).toContain("root.dataset.pwaTheme = theme");
-  expect(auditContext).toContain('document.getElementById("app-apple-status-bar-style")');
-  expect(auditContext).toContain('document.head.append(themeColor)');
+  expect(auditContext).toContain('upsertMeta("app-apple-status-bar-style", "apple-mobile-web-app-status-bar-style"');
+  expect(auditContext).toContain('current.replaceWith(next)');
   expect(auditContext).toContain('new CustomEvent("audit-pwa-theme-change"');
   expect(auditContext).toContain(".packet .packet-top");
-  expect(auditContext).toContain("window.requestAnimationFrame(refreshNativeThemeMeta)");
-  expect(auditContext).toContain("window.setTimeout(refreshNativeThemeMeta, 32)");
+  expect(auditContext).toContain("window.requestAnimationFrame(()=>{refreshNativeThemeMeta();});");
+  expect(auditContext).toContain("window.setTimeout(()=>{refreshNativeThemeMeta();},32);");
   expect(auditContext).not.toContain("cloneNode(true)");
   const iconsByTheme: Record<string, string | undefined> = {};
   const expectedIconByManifest={"manifest-dark.webmanifest":"/manus-storage/rybny_circle_dark_v8_high_detail_transparent_a12b19ba.png","manifest-light.webmanifest":"/manus-storage/rybny_circle_light_v10_clean_contours_rgba_candidate_3c5f2dad.png"} as const;

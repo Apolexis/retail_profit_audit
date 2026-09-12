@@ -13,15 +13,16 @@ describe("WeeklyReports interaction contract",()=>{
     expect(page).toContain("window.history.replaceState");
   });
 
-  it("keeps saved periods compact, paginated and safely removable",()=>{
+  it("keeps saved periods compact, stores six recent reports and allows safe manual removal",()=>{
     expect(page).toContain('className={isActive?"report-history-item active":"report-history-item"}');
     expect(page).toContain('isActive?"Открыта":"Показать"');
     expect(page).toContain('trpc.audit.weeklyReports.useQuery({limit:REPORTS_PAGE_SIZE,offset:reportOffset}');
     expect(page).toContain('trpc.audit.deleteWeeklyReport.useMutation');
     expect(page).toContain('Удалить сформированную сводку?');
-    expect(page).toContain('Показать еще');
-    expect(page).toContain('После каждых восьми выводятся следующие; отчеты не удаляются автоматически.');
-    expect(page).toContain('className="packet-link compact notification-load-more report-history-more"');
+    expect(page).toContain('const REPORTS_PAGE_SIZE=6;');
+    expect(page).toContain('Хранятся шесть последних сводок. При создании седьмой автоматически удаляется самая старая сводка');
+    expect(page).toContain('ДОЛЯ НАЛИЧНОЙ ВЫРУЧКИ');
+    expect(page).toContain('ДОЛЯ БЕЗНАЛИЧНОЙ ВЫРУЧКИ');
     expect(styles).toContain('.packet .report-history-row');
     expect(page).toContain('className={isEnabled?"schedule-toggle active":"schedule-toggle"}');
   });
@@ -57,13 +58,12 @@ describe("WeeklyReports interaction contract",()=>{
   });
 
   it("выгружает выбранную сводку локально в PDF без изменения ее фактического состава",()=>{
-    expect(page).toContain('import("html2canvas")');
     expect(page).toContain('import("jspdf")');
     expect(page).toContain('const exportPdf=async()=>');
     expect(page).toContain('const savePdfForDevice=async');
-    expect(page).toContain('const delivery=await savePdfForDevice(pdf,fileName);');
+    expect(page).toContain('const delivery=await savePdfForDevice(pdf,fileName,previewWindow);');
     expect(page).toContain('navigator as Navigator');
-    expect(page).toContain('ref={reportPdfRef} className="report-pdf-source"');
+    expect(page).toContain('className="report-pdf-source"');
     expect(page).toContain('aria-label="Выгрузить выбранный отчет в PDF"');
     expect(page).toContain('toast.success("PDF-отчет подготовлен"');
     expect(page).toContain('loadPdfBrand(pdfTheme).catch');
@@ -71,19 +71,13 @@ describe("WeeklyReports interaction contract",()=>{
     expect(styles).toContain('html[data-audit-theme="dark"] .packet .report-export-button');
   });
 
-  it("добавляет в PDF фирменный знак и момент формирования до локального захвата",()=>{
-    expect(page).toContain('const pdfTimestamp=');
-    expect(page).toContain('const [pdfGeneratedAt,setPdfGeneratedAt]=useState<Date|null>(null)');
-    expect(page).toContain('setPdfGeneratedAt(new Date());');
-    expect(page).toContain('requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))');
-    expect(page).toContain('className="report-pdf-brand"');
-    expect(page).toContain('const ReportPdfBrandGlyph=');
-    expect(page).toContain('<ReportPdfBrandGlyph theme={theme}/>');
+  it("добавляет в PDF фирменный знак и первую локально рисуемую страницу без DOM-снимка",()=>{
+    expect(page).toContain('const createReportSummaryCanvas=async');
+    expect(page).toContain('const summaryCanvas=await createReportSummaryCanvas(summary,pdfTheme,brandSource);');
+    expect(page).toContain('const previewWindow=isAppleMobile?window.open("about:blank","_blank"):null;');
     expect(page).toContain('const reportPdfBrandIcon=');
     expect(page).toContain('const loadPdfBrand=async');
-    expect(page).toContain('const [pdfBrandSrc,setPdfBrandSrc]=useState<string>()');
-    expect(page).toContain('СФОРМИРОВАНО');
-    expect(styles).toContain('.packet .report-pdf-brand { display: flex;');
+    expect(page).toContain('previewWindow.location.replace(url)');
   });
 
   it("добавляет отдельную PDF-страницу динамики из фактических дневных записей выбранного отчета",()=>{
@@ -94,7 +88,7 @@ describe("WeeklyReports interaction contract",()=>{
     expect(page).toContain('"Динамика фактических показателей"');
     expect(page).toContain('Источник: фактические дневные записи видимых точек в периоде выбранного отчета.');
     expect(page).toContain('disabled={isExporting||reportDashboard.isLoading}');
-    expect(page).toContain('const captureScale=Math.min(1.35,Math.max(1,window.devicePixelRatio>1?1.2:1));');
+    expect(page).not.toContain('import("html2canvas")');
   });
 
   it("добавляет полноценный тематический управленческий реестр на отдельную PDF-страницу",()=>{
@@ -114,9 +108,9 @@ describe("WeeklyReports interaction contract",()=>{
     expect(page).toContain('const ledgers=await createReportLedgerCanvases(summary,timeline,pdfTheme,brandSource);');
   });
 
-  it("не вставляет пустую промежуточную страницу для почти помещающейся короткой сводки",()=>{
-    expect(page).toContain('export const shouldFitPdfSummaryOnOnePage=');
-    expect(page).toContain('if(shouldFitPdfSummaryOnOnePage(imageHeight,printableHeight))');
-    expect(page).toContain('const renderedWidth=imageWidth*scale;');
+  it("создает первую страницу PDF без разрезания DOM-снимка на промежуточные листы",()=>{
+    expect(page).toContain('const createReportSummaryCanvas=async');
+    expect(page).toContain('pdf.addImage(summaryCanvas.toDataURL("image/png"),"PNG",0,0,pageWidth,pageHeight,undefined,"FAST");');
+    expect(page).not.toContain('import("html2canvas")');
   });
 });
