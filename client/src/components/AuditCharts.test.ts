@@ -146,7 +146,7 @@ describe("форматирование денежных показателей",
     expect(source).toContain('const timelineAxisWidth=compactChart?55:78');
     expect(source).toContain('compactChart?322:306');
     expect(source).toContain('<ChartPanZoomSurface compact touchModeControl={data.length>1} axisLock={false}>{compactViewport=><MetricLineChart');
-    expect(source).toContain('<ChartPanZoomSurface compact mouseVerticalPanDirection={-1}>{compactViewport=><BenchmarkBars');
+    expect(source).toContain('<ChartPanZoomSurface compact mouseVerticalPanDirection={-1} touchModeControl>{compactViewport=><BenchmarkBars');
     expect(source).toContain('<ChartExpandButton title={chartTitle} initialView={chartView} showViewControls={data.length>1} touchModeControl={data.length>1} protectGeneralChartSurface>');
     expect(source).not.toContain('<ChartPanZoomSurface compact touchModeControl={true}>');
     expect(source).toContain("Сброс");

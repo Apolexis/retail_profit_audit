@@ -23,10 +23,11 @@ describe("Pilot scenario outcome contract",()=>{
 
   it("adds a separate markup lever based on purchases without changing the source facts",()=>{
     expect(page).toContain("markupShift");
-    expect(page).toContain("const markupProfit=purchases*markupShift/100");
-    expect(page).toContain("Поднять наценку на 2 п.п.");
-    expect(page).toContain('label="Наценка общий · п.п."');
-    expect(page).toContain("Наценка общий → прибыль");
+    expect(page).toContain("const markupProfit=store.purchaseSmoked*effectiveMarkupSmokedShift/100+store.purchaseFrozen*effectiveMarkupFrozenShift/100");
+    expect(page).toContain("Рекомендованный тест наценки");
+    expect(page).toContain('label="Наценка Общий · п.п."');
+    expect(page).toContain("Наценка Общий → прибыль");
+    expect(page).toContain("Общий сдвиг равномерно меняет Коп. и Мор.");
   });
 
   it("supports several store closures and explains an evidence-based priority",()=>{

@@ -16,9 +16,11 @@ describe("страница «Расходы»", () => {
     expect(page).toContain("Статьи на графике");
   });
 
-  it("строит совместную помесячную динамику и таблицу выбранных расходов", () => {
+  it("строит совместную динамику и таблицу выбранных расходов на выбранной детализации", () => {
     expect(page).toContain("ДИНАМИКА РАСХОДОВ");
-    expect(page).toContain("Расходы выбранных магазинов по месяцам");
+    expect(page).toContain('aria-label="Детализация расходов"');
+    expect(page).toContain('type DetailLevel = "days" | "weeks" | "months";');
+    expect(page).toContain('level === "days" ? "Дни" : level === "weeks" ? "Недели" : "Месяцы"');
     expect(page).toContain("selectedFields.map(field");
   });
 

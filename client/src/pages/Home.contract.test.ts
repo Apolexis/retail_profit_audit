@@ -19,12 +19,21 @@ describe("страница «Сводка»", () => {
   });
 
   it("показывает структуру способов оплаты по фактическим наличным и безналичным данным", () => {
-    expect(home).toContain('const cashShare=paymentBase?scope.cashRevenue/paymentBase*100:0');
-    expect(home).toContain('const cashlessShare=paymentBase?scope.cashlessRevenue/paymentBase*100:0');
+    expect(home).toContain('const cashShare = paymentBase ? scope.cashRevenue / paymentBase * 100 : 0;');
+    expect(home).toContain('const cashlessShare = paymentBase ? scope.cashlessRevenue / paymentBase * 100 : 0;');
     expect(home).toContain('label="Доля наличной выручки"');
     expect(home).toContain('label="Доля безналичной выручки"');
     expect(home).toContain('СПОСОБЫ ОПЛАТЫ · ПО МЕСЯЦАМ');
     expect(home).toContain('chartTitle="Тренд способов оплаты"');
     expect(styles).toContain('.packet .payment-trend-card');
+  });
+
+  it("показывает расчетную наценку Коп./Мор./Общий по фактическим продажам и закупкам", () => {
+    expect(home).toContain('const markupTrend = useMemo');
+    expect(home).toContain('НАЦЕНКА · ПО МЕСЯЦАМ');
+    expect(home).toContain('% наценки Коп.');
+    expect(home).toContain('% наценки Мор.');
+    expect(home).toContain('% наценки Общий');
+    expect(home).toContain('расчет из фактических продаж и закупок');
   });
 });

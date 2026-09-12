@@ -24,4 +24,11 @@ describe("страница «Сравнить»", () => {
     expect(page).toContain('Все точки');
     expect(page).not.toContain('Исключенные и резервные точки скрыты из выбора.');
   });
+
+  it("поясняет фактическую базу сравнения и не подменяет отсутствие факта нулем", () => {
+    expect(page).toContain("const aHasFacts");
+    expect(page).toContain("const bHasFacts");
+    expect(page).toContain("Расчет фактический");
+    expect(page).toContain('Символ «—» означает отсутствие факта, а не нулевое значение.');
+  });
 });

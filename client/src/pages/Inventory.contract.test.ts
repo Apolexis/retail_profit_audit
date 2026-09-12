@@ -26,4 +26,12 @@ describe("страница «Остатки»", () => {
     expect(page).toContain("Покрытие выше медианы");
     expect(page).toContain("Потери запаса составляют");
   });
+
+  it("позволяет разложить динамику по дням, неделям и месяцам с граничными остатками", () => {
+    expect(page).toContain('type DetailLevel = "days" | "weeks" | "months";');
+    expect(page).toContain('aria-label="Детализация графика"');
+    expect(page).toContain("current.first");
+    expect(page).toContain("current.last");
+    expect(page).toContain('level === "days" ? "Дни"');
+  });
 });

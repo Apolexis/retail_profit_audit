@@ -18,6 +18,6 @@ describe("страница «Профиль»", () => {
     expect(profile).not.toContain("window.sessionStorage.clear()");
     expect(profile).toContain("navigator.serviceWorker.getRegistrations()");
     expect(profile).toContain("window.location.replace(window.location.href)");
-    expect(profile).toContain("Сбросить кэш сайта");
+    expect(profile).toContain("Сбросить кэш приложения");
   });
 });

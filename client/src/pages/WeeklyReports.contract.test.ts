@@ -72,21 +72,21 @@ describe("WeeklyReports interaction contract",()=>{
   });
 
   it("добавляет в PDF фирменный знак и первую локально рисуемую страницу без DOM-снимка",()=>{
-    expect(page).toContain('const createReportSummaryCanvas=async');
-    expect(page).toContain('const summaryCanvas=await createReportSummaryCanvas(summary,pdfTheme,brandSource);');
+    expect(page).toContain('const createReportWeeklySummaryCanvas=async');
+    expect(page).toContain('const summaryCanvas=await createReportWeeklySummaryCanvas(pdfSummary,pdfTheme,brandSource);');
     expect(page).not.toContain('window.open("about:blank","_blank")');
     expect(page).toContain('const reportPdfBrandIcon=');
     expect(page).toContain('const loadPdfBrand=async');
     expect(page).not.toContain('previewWindow.location.replace(url)');
   });
 
-  it("добавляет отдельную PDF-страницу динамики из фактических дневных записей выбранного отчета",()=>{
+  it("добавляет отдельную PDF-страницу динамики из фактических записей, агрегированных по неделям",()=>{
     expect(page).toContain('export const reportTimeline=');
     expect(page).toContain('trpc.audit.dashboard.useQuery({ranges:');
-    expect(page).toContain('const dynamics=await createReportDynamicsCanvas(summary,timeline,pdfTheme,brandSource);');
+    expect(page).toContain('const dynamics=await createReportDynamicsCanvas(pdfSummary,weeklyTimeline,pdfTheme,brandSource);');
     expect(page).toContain('pdf.addPage();');
     expect(page).toContain('"Динамика фактических показателей"');
-    expect(page).toContain('Источник: фактические дневные записи видимых точек в периоде выбранного отчета.');
+    expect(page).toContain('Источник: фактические записи видимых точек, агрегированные по календарным неделям.');
     expect(page).toContain('disabled={isExporting||reportDashboard.isLoading}');
     expect(page).not.toContain('import("html2canvas")');
   });
@@ -97,19 +97,19 @@ describe("WeeklyReports interaction contract",()=>{
     expect(page).toContain('"Точки-ориентиры по прибыли"');
     expect(page).toContain('"Риск-сигналы выбранного среза"');
     expect(page).toContain('"Состав и границы фактической базы"');
-    expect(page).toContain('const insights=await createReportInsightsCanvas(summary,timeline,pdfTheme,brandSource);');
+    expect(page).toContain('const insights=await createReportInsightsCanvas(pdfSummary,weeklyTimeline,pdfTheme,brandSource);');
   });
 
-  it("добавляет полный дневной реестр с фактической разбивкой наличных и безналичных платежей",()=>{
-    expect(page).toContain('const createReportLedgerCanvases=async');
-    expect(page).toContain('"Дневной реестр фактических показателей"');
+  it("добавляет полный недельный реестр с фактической разбивкой наличных и безналичных платежей",()=>{
+    expect(page).toContain('const createReportWeeklyLedgerCanvases=async');
+    expect(page).toContain('"Недельный реестр фактических показателей"');
     expect(page).toContain('cashRevenue+=finite(period.metrics.cash_revenue)');
     expect(page).toContain('cashlessRevenue+=finite(period.metrics.cashless_revenue)');
-    expect(page).toContain('const ledgers=await createReportLedgerCanvases(summary,timeline,pdfTheme,brandSource);');
+    expect(page).toContain('const ledgers=await createReportWeeklyLedgerCanvases(pdfSummary,weeklyTimeline,pdfTheme,brandSource);');
   });
 
   it("создает первую страницу PDF без разрезания DOM-снимка на промежуточные листы",()=>{
-    expect(page).toContain('const createReportSummaryCanvas=async');
+    expect(page).toContain('const createReportWeeklySummaryCanvas=async');
     expect(page).toContain('pdf.addImage(summaryCanvas.toDataURL("image/png"),"PNG",0,0,pageWidth,pageHeight,undefined,"FAST");');
     expect(page).not.toContain('import("html2canvas")');
   });
