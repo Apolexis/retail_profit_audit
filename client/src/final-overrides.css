@@ -2571,6 +2571,7 @@ html[data-audit-theme="light"] .packet .change-log-filters :is(input, select):ho
 html[data-audit-theme="dark"] .packet .change-log-filters :is(input, select):hover, html[data-audit-theme="dark"] .packet .change-log-filters :is(input, select):focus { border-color: #ff765f; box-shadow: 0 0 0 3px rgba(255, 118, 95, .12); }
 .packet .change-log-more { width: calc(100% - 8px); margin: 4px 4px 10px; }
 @media (min-width: 761px) and (max-width: 1059px) { .packet .report-history { grid-template-columns: minmax(0, 1fr); gap: 12px; } .packet .report-history > div:first-child { min-width: 0; } .packet .report-history-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 761px) and (max-width: 1059px) { .packet .report-history-list:has(.report-history-row:only-child) { grid-template-columns: minmax(0, 1fr); } }
 html[data-audit-theme="light"] .packet .report-history-delete { border-color: #c6d9ec; background: #ffffff; color: #42617d; }
 html[data-audit-theme="light"] .packet .report-history-delete:hover, html[data-audit-theme="light"] .packet .report-history-delete:focus-visible { border-color: #0a84ff; background: #edf6ff; color: #075dbb; }
 html[data-audit-theme="light"] [data-sonner-toast]:not([data-type="error"]) { border-color: #bdd9f6 !important; background: #ffffff !important; color: #26384d !important; }
@@ -2617,9 +2618,15 @@ html[data-audit-theme="light"] .packet .benchmark-chart .recharts-reference-line
 .packet .change-log-more { margin-top: 16px; }
 @media (min-width: 721px) and (max-width: 1059px) {
   .packet .packet-split, .packet .two-col, .packet .report-layout, .packet .inventory-profile-grid { grid-template-columns: minmax(0, 1fr) !important; }
+  .packet .push-settings { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .packet .push-settings-action { justify-content: flex-start; max-width: none; }
+  .packet .push-settings-action > small { flex: 1 1 100%; min-width: 0; white-space: normal; overflow-wrap: anywhere; }
 }
 @media (max-width: 560px) {
   .packet .card-title .chart-control { width: 100%; min-width: 0; margin-top: 8px; }
   .packet .card-title .chart-control :is(select, button) { width: 100%; min-width: 0; max-width: 100%; }
+  .packet .chart-controls { display: grid; grid-template-columns: minmax(0, 1fr); width: 100%; }
+  .packet .chart-controls .chart-control { width: 100%; min-width: 0; }
+  .packet .chart-controls .chart-control select { width: 100%; min-width: 0; max-width: 100%; }
   .packet .control-comparison-note { padding-left: 18px; padding-right: 14px; }
 }

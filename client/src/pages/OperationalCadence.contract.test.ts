@@ -12,15 +12,16 @@ describe("страница «Ритм»", () => {
     expect(page).toContain("selectedMetrics.map(metric");
   });
 
-  it("добавляет детализацию по месяцам", () => {
-    expect(page).toContain('value="month">По месяцам');
+  it("добавляет компактную детализацию по месяцам, неделям и дням", () => {
+    expect(page).toContain('aria-label="Детализация ритма"');
+    expect(page).toContain('"Дни" : level === "week" ? "Недели" : "Месяцы"');
     expect(page).toContain("cadence.monthly");
   });
 
   it("дает выбрать магазины без лимита и показывает полную таблицу под графиком", () => {
     expect(page).toContain("Магазины для суммарного среза");
     expect(page).toContain("ДАННЫЕ ПОД ГРАФИКОМ");
-    expect(page).toContain("Все интервалы активного среза");
+    expect(page).toContain("каждый магазин отдельно");
   });
 
   it("выделяет наличные расходы и НДФЛ 22% в понятную группу", () => {
@@ -43,7 +44,8 @@ describe("страница «Ритм»", () => {
   it("не добавляет пустые нулевые интервалы в график, таблицу и последние карточки", () => {
     expect(page).toContain("const visibleSource = source.filter(point => selectedMetrics.some(metric => point[metric] !== 0));");
     expect(page).toContain("const data = visibleSource.map(point");
-    expect(page).toContain("const tableRows = [...visibleSource].slice(-8).reverse();");
-    expect(page).toContain("{visibleSource.map(point => <tr");
+    expect(page).toContain("const perStoreData = useMemo");
+    expect(page).toContain("const intervalRows = [...visibleSource].slice(-8).reverse();");
+    expect(page).toContain("chartLines.map(line => <th");
   });
 });

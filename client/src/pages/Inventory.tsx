@@ -26,7 +26,7 @@ const trendOptions = {
 type TrendKey = keyof typeof trendOptions;
 type DetailLevel = "days" | "weeks" | "months";
 const weekStart = (value: string) => { const date = new Date(`${value}T12:00:00`); date.setDate(date.getDate() - (date.getDay() + 6) % 7); return date.toISOString().slice(0, 10); };
-const detailLabel = (key: string, level: DetailLevel) => level === "days" ? new Date(`${key}T12:00:00`).toLocaleDateString("ru-RU", { day: "2-digit", month: "short" }) : level === "weeks" ? `Нед. ${new Date(`${key}T12:00:00`).toLocaleDateString("ru-RU", { day: "2-digit", month: "short" })}` : new Intl.DateTimeFormat("ru-RU", { month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${key}-01T00:00:00Z"`));
+const detailLabel = (key: string, level: DetailLevel) => level === "days" ? new Date(`${key}T12:00:00`).toLocaleDateString("ru-RU", { day: "2-digit", month: "short" }) : level === "weeks" ? `Нед. ${new Date(`${key}T12:00:00`).toLocaleDateString("ru-RU", { day: "2-digit", month: "short" })}` : new Intl.DateTimeFormat("ru-RU", { month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${key}-01T00:00:00Z`));
 
 export default function Inventory() {
   const facts = useAuditFacts();

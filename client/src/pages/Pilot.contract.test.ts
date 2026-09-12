@@ -21,13 +21,16 @@ describe("Pilot scenario outcome contract",()=>{
     expect(page).toContain('value>0?"positive":value<0?"negative":"neutral"');
   });
 
-  it("adds a separate markup lever based on purchases without changing the source facts",()=>{
+  it("adds a separate markup lever based on purchases without changing the source facts or modeling a separate sale-price lever",()=>{
     expect(page).toContain("markupShift");
     expect(page).toContain("const markupProfit=store.purchaseSmoked*effectiveMarkupSmokedShift/100+store.purchaseFrozen*effectiveMarkupFrozenShift/100");
     expect(page).toContain("Рекомендованный тест наценки");
     expect(page).toContain('label="Наценка Общий · п.п."');
     expect(page).toContain("Наценка Общий → прибыль");
-    expect(page).toContain("Общий сдвиг равномерно меняет Коп. и Мор.");
+    expect(page).toContain("const weightedMarkupShift=purchases?");
+    expect(page).not.toContain('label="Изменение цены продажи"');
+    expect(page).not.toContain("priceProfit");
+    expect(page).toContain("formatPilotNumber");
   });
 
   it("supports several store closures and explains an evidence-based priority",()=>{

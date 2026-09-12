@@ -99,7 +99,7 @@ describe("форматирование денежных показателей",
     expect(source).toContain("if(mouseAxisLock&&!gesture.current.axis)");
     expect(source).toContain("const mouseAxisThreshold=4");
     expect(source).toContain("mouseVerticalPanDirection=1");
-    expect(source).toContain("mouseVerticalPanDirection={-1}");
+    expect(source).not.toContain("mouseVerticalPanDirection={-1}");
     expect(source).toContain('gesture.current.axis==="y"?0:-deltaX*speed');
     expect(source).toContain('gesture.current.axis==="x"?0:deltaY*speed');
     expect(source).toContain("event.currentTarget.setPointerCapture(event.pointerId)");
@@ -146,11 +146,11 @@ describe("форматирование денежных показателей",
     expect(source).toContain('const timelineAxisWidth=compactChart?55:78');
     expect(source).toContain('compactChart?322:306');
     expect(source).toContain('<ChartPanZoomSurface compact touchModeControl={data.length>1} axisLock={false}>{compactViewport=><MetricLineChart');
-    expect(source).toContain('<ChartPanZoomSurface compact mouseVerticalPanDirection={-1} touchModeControl>{compactViewport=><BenchmarkBars');
+    expect(source).toContain('<ChartPanZoomSurface compact touchModeControl>{compactViewport=><BenchmarkBars');
     expect(source).toContain('<ChartExpandButton title={chartTitle} initialView={chartView} showViewControls={data.length>1} touchModeControl={data.length>1} protectGeneralChartSurface>');
     expect(source).not.toContain('<ChartPanZoomSurface compact touchModeControl={true}>');
     expect(source).toContain("Сброс");
-    expect(source).toContain('const medianColor=expanded&&theme==="dark"?"#b694ff":palette.median');
+    expect(source).toContain('const medianColor=palette.median');
     expect(source).toContain("stroke={medianColor}");
   });
   it("использует единый широкий слот наложения и один цвет для легенды, линии и маркера", () => {

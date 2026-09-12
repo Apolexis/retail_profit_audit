@@ -21,7 +21,9 @@ describe("страница «Расходы»", () => {
     expect(page).toContain('aria-label="Детализация расходов"');
     expect(page).toContain('type DetailLevel = "days" | "weeks" | "months";');
     expect(page).toContain('level === "days" ? "Дни" : level === "weeks" ? "Недели" : "Месяцы"');
-    expect(page).toContain("selectedFields.map(field");
+    expect(page).toContain("const storeComparisonTrend");
+    expect(page).toContain("const trendLines = storeComparisonTrend");
+    expect(page).toContain("каждый магазин отдельно");
   });
 
   it("всегда показывает состав наличных расходов по статьям", () => {
