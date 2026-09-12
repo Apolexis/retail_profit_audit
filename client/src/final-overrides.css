@@ -2359,6 +2359,36 @@ html[data-audit-theme="dark"] .packet .chart-touch-mode-button:focus-visible { o
   .chart-expand-dialog .chart-panzoom-touch-actions { display: inline-flex !important; margin-right: auto !important; }
 }
 
+/* Диалог отрисовывается порталом вне .packet: режимы касания получают самостоятельную видимость и тему. */
+.chart-expand-dialog .chart-panzoom[class*="chart-panzoom-touch-"] .chart-touch-mode-control {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 3px;
+  min-height: 35px;
+  padding: 2px;
+  border: 1px solid #5b4250;
+  border-radius: 9px;
+  background: #18141b;
+}
+.chart-expand-dialog .chart-panzoom[class*="chart-panzoom-touch-"] .chart-touch-mode-button {
+  min-height: 29px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #c6bbc3;
+  font: 800 9px Manrope, Arial, sans-serif;
+  touch-action: manipulation;
+}
+.chart-expand-dialog .chart-panzoom[class*="chart-panzoom-touch-"] .chart-touch-mode-button.active {
+  background: #4a2028;
+  color: #fff0ed;
+  box-shadow: inset 0 0 0 1px #ff765f;
+}
+html[data-audit-theme="light"] .chart-expand-dialog .chart-panzoom[class*="chart-panzoom-touch-"] .chart-touch-mode-control { border-color: #cbdcff; background: #f7faff; }
+html[data-audit-theme="light"] .chart-expand-dialog .chart-panzoom[class*="chart-panzoom-touch-"] .chart-touch-mode-button { color: #51657d; }
+html[data-audit-theme="light"] .chart-expand-dialog .chart-panzoom[class*="chart-panzoom-touch-"] .chart-touch-mode-button.active { background: #0a63c8; color: #ffffff; box-shadow: none; }
+
 /* Быстрые действия — только в установленном PWA, но на touch-экранах любой ширины. */
 @media (hover: none), (pointer: coarse) {
   .packet.pwa-standalone .mobile-quick-nav {
@@ -2404,4 +2434,58 @@ html[data-audit-theme="dark"] .packet .chart-touch-mode-button:focus-visible { o
     -webkit-backdrop-filter: none !important;
     filter: none !important;
   }
+}
+
+/* Настройка отчетов: календарный диапазон использует ту же спокойную поверхность, что соседние поля расписания. */
+.packet .report-schedule-controls .report-custom-period { min-width: 292px; }
+.packet .report-schedule-controls .report-custom-period .date-range-control {
+  width: 100%;
+  justify-content: space-between;
+  background: var(--surface-2);
+  border-color: var(--line);
+  color: var(--text);
+}
+html[data-audit-theme="light"] .packet .report-schedule-controls .report-custom-period .date-range-control {
+  background: #ffffff;
+  border-color: #b7d5ef;
+  color: #1e3951;
+}
+@media (max-width: 720px) {
+  .packet .report-schedule-controls .report-custom-period { min-width: 0; width: 100%; }
+}
+
+/* Все touch-размеры PWA используют одну кнопку: от телефона до большого планшета. */
+@media (hover: none), (pointer: coarse) {
+  .packet.pwa-standalone .mobile-quick-nav {
+    gap: 5px !important;
+    padding: 5px !important;
+    border-radius: 15px !important;
+  }
+  .packet.pwa-standalone .mobile-quick-nav .mobile-quick-action {
+    display: grid !important;
+    min-height: 39px !important;
+    grid-template-rows: 14px minmax(10px, auto);
+    place-items: center;
+    gap: 1px;
+    padding: 3px 2px;
+    border: 1px solid var(--line) !important;
+    border-radius: 9px !important;
+    background: var(--surface-2) !important;
+    color: var(--text) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .055), 0 1px 2px rgba(0, 0, 0, .16) !important;
+    font: 800 9px Manrope, Arial, sans-serif;
+    line-height: 1;
+  }
+  .packet.pwa-standalone .mobile-quick-nav .mobile-quick-action svg { width: 14px; height: 14px; color: var(--blue); stroke-width: 2.25; }
+  .packet.pwa-standalone .mobile-quick-nav .mobile-quick-action:active { transform: scale(.97); background: var(--surface-3) !important; }
+  html[data-audit-theme="light"] .packet.pwa-standalone .mobile-quick-nav .mobile-quick-action { border-color: #c9dceb !important; background: #ffffff !important; color: #244864 !important; box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(20, 72, 110, .10) !important; }
+  html[data-audit-theme="light"] .packet.pwa-standalone .mobile-quick-nav .mobile-quick-action svg { color: #0a63c8; }
+  html[data-audit-theme="dark"] .packet.pwa-standalone .mobile-quick-nav .mobile-quick-action { border-color: #3c3645 !important; background: #1b1922 !important; color: #e6e1ec !important; }
+  html[data-audit-theme="dark"] .packet.pwa-standalone .mobile-quick-nav .mobile-quick-action svg { color: #ff9b88; }
+}
+
+/* На малом установленном экране шапка следует data-audit-theme без ожидания повторного запуска PWA. */
+@media (max-width: 720px) {
+  html[data-audit-theme="light"] .packet.pwa-standalone .packet-top { background: #ffffff !important; color-scheme: light !important; }
+  html[data-audit-theme="dark"] .packet.pwa-standalone .packet-top { background: #0c0b12 !important; color-scheme: dark !important; }
 }

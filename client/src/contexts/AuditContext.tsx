@@ -41,12 +41,12 @@ function applyPwaTheme(theme: Theme) {
       themeColor.content = color;
     }
     if (statusBar) {
-      const statusStyle = theme === "dark" ? "black" : "default";
+      const statusStyle = theme === "dark" ? "black-translucent" : "default";
       statusBar.setAttribute("content", statusStyle);
       statusBar.content = statusStyle;
     }
     document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach(meta => meta.setAttribute("content", color));
-    document.querySelectorAll<HTMLMetaElement>('meta[name="apple-mobile-web-app-status-bar-style"]').forEach(meta => meta.setAttribute("content", theme === "dark" ? "black" : "default"));
+    document.querySelectorAll<HTMLMetaElement>('meta[name="apple-mobile-web-app-status-bar-style"]').forEach(meta => meta.setAttribute("content", theme === "dark" ? "black-translucent" : "default"));
   };
 
   localStorage.setItem("audit-theme", theme);
@@ -55,13 +55,16 @@ function applyPwaTheme(theme: Theme) {
   document.body.dataset.auditTheme = theme;
   document.body.dataset.pwaTheme = theme;
   root.style.colorScheme = theme;
-  root.style.backgroundColor = color;
-  root.style.setProperty("--pwa-system-color", color);
+  root.style.setProperty("background", color, "important");
+  root.style.setProperty("background-color", color, "important");
+  root.style.setProperty("--pwa-system-color", color, "important");
   document.body.style.colorScheme = theme;
-  document.body.style.backgroundColor = color;
-  document.body.style.setProperty("--pwa-system-color", color);
+  document.body.style.setProperty("background", color, "important");
+  document.body.style.setProperty("background-color", color, "important");
+  document.body.style.setProperty("--pwa-system-color", color, "important");
   applyMeta();
-  document.querySelectorAll<HTMLElement>(".packet.pwa-standalone .packet-top").forEach(header => {
+  document.querySelectorAll<HTMLElement>(".packet .packet-top").forEach(header => {
+    header.style.setProperty("background", color, "important");
     header.style.setProperty("background-color", color, "important");
     header.style.colorScheme = theme;
   });

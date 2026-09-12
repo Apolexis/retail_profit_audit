@@ -19,9 +19,13 @@ describe("WeeklyReports interaction contract",()=>{
     expect(page).toContain('className={isEnabled?"schedule-toggle active":"schedule-toggle"}');
   });
 
-  it("uses the currently selected form period for manual report generation",()=>{
-    expect(page).toContain('const typeLabel=reportPeriod==="month"?"завершенный месяц":"прошлую неделю"');
-    expect(page).not.toContain("const effectivePeriod=");
+  it("allows a calendar-selected custom period only for manual report generation",()=>{
+    expect(page).toContain('import { DateRangeControl } from "@/components/DateRangeControl"');
+    expect(page).toContain('const [reportPeriod,setReportPeriod]=useState<"week"|"month"|"custom">("week")');
+    expect(page).toContain('<option value="custom">Произвольный период</option>');
+    expect(page).toContain('value={customRange} onChange={setCustomRange} title="ПЕРИОД ОТЧЕТА"');
+    expect(page).toContain('generate.mutate(isCustomPeriod?{range:customRange}:undefined)');
+    expect(page).toContain('Он формируется вручную и не меняет сохраненное недельное или месячное расписание.');
   });
 
   it("never displays legacy methodology from a stored report",()=>{

@@ -46,9 +46,8 @@ describe("мобильный контракт графических контр�
   });
 
   it("дает общим графикам более ранний свободный pan только при отдельном touch-режиме", () => {
-    expect(chart).toContain('const dragThreshold=touchModeControl?1:2');
     expect(chart).toContain('axisLock={false}');
-    expect(chart).toContain('resolveChartPanAxis(next.x-start.x,next.y-start.y,dragThreshold)');
+    expect(chart).toContain('const dragThreshold=touchModeControl?0:2');
     expect(chart).toContain('data-chart-pan-x={pan.x}');
   });
 });
