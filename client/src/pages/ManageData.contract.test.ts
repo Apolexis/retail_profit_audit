@@ -37,4 +37,17 @@ describe("страница «База»", () => {
     expect(page).toContain("Сначала скрытые");
     expect(page).toContain("{sortedStoreList.map(item");
   });
+
+  it("помечает автоматические показатели и использует дату записи", () => {
+    expect(page).toContain('const calculatedMetricCodes = new Set([');
+    expect(page).toContain("Рассчитано автоматически");
+    expect(page).toContain("Проверьте перед изменением");
+    expect(page).toContain("Дата записи");
+  });
+
+  it("предлагает дополнить только отсутствующую выручку наличными и безналичными", () => {
+    expect(page).toContain("backfillPaymentRevenue");
+    expect(page).toContain("Дополнить выручку нал / б/нал");
+    expect(page).toContain("существующие факты не заменяет");
+  });
 });

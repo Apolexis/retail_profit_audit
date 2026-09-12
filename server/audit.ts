@@ -17,8 +17,8 @@ const value=(sheet:XLSX.WorkSheet,address:string)=>{const raw=sheet[address]?.v;
 const sourceYear=(name:string)=>Number((name.match(/(20\d{2})/)??[])[1]??new Date().getFullYear());
 const storageFilename=(fileName:string)=>{const safe=fileName.normalize("NFKD").replace(/[^A-Za-z0-9._-]/g,"_").replace(/_+/g,"_").replace(/^_+|_+$/g,"");return safe||`workbook-${Date.now()}.xlsx`};
 const cleanHeader=(value:unknown)=>String(value??"").toLowerCase().trim().replace(/ё/g,"е").replace(/\./g,"").replace(/\s+/g," ");
-const headerCodes:Record<string,string>={"з коп":"purchase_smoked","з мор":"purchase_frozen","п коп":"sales_smoked","п мор":"sales_frozen",закупка:"purchases",продажа:"revenue",грязная:"gross_profit","выр нал":"cash_revenue","б/нал":"cashless_revenue",общая:"receipts_total","списания к":"writeoff_smoked","списания м":"writeoff_frozen",перемещение:"movement",уценка:"discount",переоценка:"revaluation","хоз нужды":"household",доставка:"delivery",уборка:"cleaning",премия:"bonus",примия:"bonus",выслуга:"seniority",доплата:"supplement",водитель:"driver_cash","ком плат":"utilities_cash","траты нал":"cash_operating_costs","вод б/нал":"driver_cashless","ком б/нал":"utilities_cashless",аренда:"rent","-% банк":"bank_fee",налоги:"gross_profit_tax","зарпл б/нал":"salary_cashless","налоги з/п":"payroll_tax",отпускные:"vacation_cashless","налоги отпуск":"vacation_tax","зарпл нал":"salary_cash","отпуск нал":"vacation_cash","ндфл 22%":"personal_income_tax_22",итог:"net_profit"};
-const ignoredTechnicalHeaders=new Set(["выр нал","б/нал","общая"]);
+const headerCodes:Record<string,string>={"з коп":"purchase_smoked","з мор":"purchase_frozen","п коп":"sales_smoked","п мор":"sales_frozen",закупка:"purchases",продажа:"revenue",грязная:"gross_profit","выр нал":"cash_revenue","б/нал":"cashless_revenue",общая:"receipts_total","% коп":"markup_smoked","% мор":"markup_frozen","% общий":"markup_total","списания к":"writeoff_smoked","списания м":"writeoff_frozen",перемещение:"movement",уценка:"discount",переоценка:"revaluation","хоз нужды":"household",доставка:"delivery",уборка:"cleaning",премия:"bonus",примия:"bonus",выслуга:"seniority",доплата:"supplement",водитель:"driver_cash","ком плат":"utilities_cash","траты нал":"cash_operating_costs","вод б/нал":"driver_cashless","ком б/нал":"utilities_cashless",аренда:"rent","-% банк":"bank_fee",налоги:"gross_profit_tax","зарпл б/нал":"salary_cashless","налоги з/п":"payroll_tax",отпускные:"vacation_cashless","налоги отпуск":"vacation_tax","зарпл нал":"salary_cash","отпуск нал":"vacation_cash","ндфл 22%":"personal_income_tax_22",итог:"net_profit"};
+const ignoredTechnicalHeaders=new Set<string>();
 
 function metricColumns(sheet:XLSX.WorkSheet,headerRow:number){const result=new Map<string,string>();let expenseSeen=0;for(let index=0;index<60;index+=1){const label=cleanHeader(sheet[cell(XLSX.utils.encode_col(index),headerRow)]?.v);if(!label||ignoredTechnicalHeaders.has(label))continue;if(label==="расходы"){result.set(expenseSeen===0?"operating_costs":"cashless_operating_costs",XLSX.utils.encode_col(index));expenseSeen+=1;continue}const code=headerCodes[label];if(code&&!result.has(code))result.set(code,XLSX.utils.encode_col(index))}return result}
 
@@ -52,6 +52,46 @@ export async function listAuditImports(){const db=await getDb();if(!db)return []
 
 /** Returns a short-lived protected link to the original uploaded bytes; never a regenerated or transformed workbook. */
 export async function getAuditImportDownload(importId:number){const db=await getDb();if(!db)throw new Error("База данных недоступна");const [importRow]=await db.select().from(imports).where(eq(imports.id,importId)).limit(1);if(!importRow)throw new Error("Импорт не найден");return {fileName:importRow.fileName,url:await storageGetSignedUrl(importRow.fileKey)};}
+
+export const PAYMENT_REVENUE_METRIC_CODES=["cash_revenue","cashless_revenue","receipts_total"] as const;
+
+/** Adds only missing payment-revenue facts from immutable source workbooks; existing facts are never overwritten. */
+export async function backfillPaymentRevenueFromImports(credentials:WorkbookReadCredentials|undefined=workbookCredentialsContext.getStore()){
+  const db=await getDb();
+  if(!db)throw new Error("База данных недоступна");
+  const sourceImports=await db.select().from(imports).where(eq(imports.status,"completed"));
+  if(!sourceImports.length)throw new Error("Нет завершенных импортов для дополнения показателей");
+  const linkedPeriods=await db.select().from(periods).where(inArray(periods.importId,sourceImports.map(item=>item.id)));
+  if(!linkedPeriods.length)throw new Error("В завершенных импортах нет связанных дат");
+  const storeRows=await db.select().from(stores).where(inArray(stores.id,Array.from(new Set(linkedPeriods.map(item=>item.storeId)))));
+  const storeIdByName=new Map(storeRows.map(item=>[item.name,item.id]));
+  const periodByKey=new Map(linkedPeriods.map(item=>[`${item.importId}:${item.storeId}:${item.entryDate}`,item]));
+  const existingRows=await db.select({periodId:metrics.periodId,metricCode:metrics.metricCode}).from(metrics).where(and(inArray(metrics.periodId,linkedPeriods.map(item=>item.id)),inArray(metrics.metricCode,[...PAYMENT_REVENUE_METRIC_CODES])));
+  const existingKeys=new Set(existingRows.map(item=>`${item.periodId}:${item.metricCode}`));
+  const additions:Array<{periodId:number;metricCode:string;amount:string}>=[];
+  let scannedBooks=0;
+  for(const sourceImport of sourceImports){
+    const fileResponse=await fetch(await storageGetSignedUrl(sourceImport.fileKey));
+    if(!fileResponse.ok)throw new Error(`Не удалось прочитать исходную книгу «${sourceImport.fileName}»`);
+    const raw=Buffer.from(await fileResponse.arrayBuffer());
+    const parsed=parseWorkbook(await prepareWorkbookForRead(raw,credentials),sourceImport.fileName,credentials);
+    scannedBooks+=1;
+    for(const record of parsed.periods){
+      const storeId=storeIdByName.get(record.store);
+      const period=storeId?periodByKey.get(`${sourceImport.id}:${storeId}:${record.entryDate}`):undefined;
+      if(!period)continue;
+      for(const metric of record.metrics){
+        if(!PAYMENT_REVENUE_METRIC_CODES.includes(metric.code as typeof PAYMENT_REVENUE_METRIC_CODES[number]))continue;
+        const key=`${period.id}:${metric.code}`;
+        if(existingKeys.has(key))continue;
+        additions.push({periodId:period.id,metricCode:metric.code,amount:String(metric.amount)});
+        existingKeys.add(key);
+      }
+    }
+  }
+  for(const rows of batch(additions,1000))await db.insert(metrics).values(rows);
+  return {scannedBooks,filledMetrics:additions.length,metricCodes:[...PAYMENT_REVENUE_METRIC_CODES]};
+}
 
 export async function deleteAuditImport(importId:number){const db=await getDb();if(!db)throw new Error("База данных недоступна");const [importRow]=await db.select().from(imports).where(eq(imports.id,importId)).limit(1);if(!importRow)throw new Error("Импорт не найден");const affected=await db.select().from(periods).where(eq(periods.importId,importId));const ids=affected.map(period=>period.id);const affectedStoreIds=Array.from(new Set(affected.map(period=>period.storeId)));if(ids.length)await db.delete(metrics).where(inArray(metrics.periodId,ids));if(ids.length)await db.delete(periods).where(inArray(periods.id,ids));await db.delete(imports).where(eq(imports.id,importId));let deletedStores=0;for(const storeId of affectedStoreIds){const left=await db.select({id:periods.id}).from(periods).where(eq(periods.storeId,storeId)).limit(1);if(!left.length){await db.delete(storeAccess).where(eq(storeAccess.storeId,storeId));await db.delete(stores).where(eq(stores.id,storeId));deletedStores+=1}}return {success:true,fileName:importRow.fileName,deletedPeriods:ids.length,deletedStores};}
 

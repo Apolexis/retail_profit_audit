@@ -8,7 +8,10 @@ import { useAuditFacts } from "@/hooks/useAuditFacts";
 import { buildOperationalCadence, type CadenceMetric } from "@/lib/operationalCadence";
 
 const metrics: Record<CadenceMetric, { label: string; color: string; note: string }> = {
-  revenue: { label: "Выручка", color: "#ffcf7b", note: "Денежный приток от продаж." },
+  revenue: { label: "Продажи общие", color: "#ffcf7b", note: "Продажи по исходной книге." },
+  cashRevenue: { label: "Выручка нал", color: "#55b6ff", note: "Фактическая выручка наличными из исходной книги." },
+  cashlessRevenue: { label: "Выручка б/нал", color: "#61d9b5", note: "Фактическая выручка безналично из исходной книги." },
+  receiptsTotal: { label: "Выручка общая", color: "#d9bdff", note: "Итог выручки наличными и безналично из исходной книги." },
   grossProfit: { label: "Валовая прибыль", color: "#72a8ff", note: "Разница выручки и закупочной части до операционных расходов." },
   netProfit: { label: "Чистая прибыль", color: "#38d6b0", note: "Результат после учтенных расходов." },
   purchases: { label: "Закупки", color: "#b694ff", note: "Объем пополнения товарного запаса." },
@@ -47,7 +50,7 @@ const metrics: Record<CadenceMetric, { label: string; color: string; note: strin
 };
 
 const metricGroups: Array<{ label: string; keys: CadenceMetric[] }> = [
-  { label: "Результат и товар", keys: ["revenue", "grossProfit", "netProfit", "purchases", "purchaseSmoked", "purchaseFrozen", "salesSmoked", "salesFrozen"] },
+  { label: "Выручка, результат и товар", keys: ["receiptsTotal", "cashRevenue", "cashlessRevenue", "revenue", "grossProfit", "netProfit", "purchases", "purchaseSmoked", "purchaseFrozen", "salesSmoked", "salesFrozen"] },
   { label: "Итоговые расходы", keys: ["expenses"] },
   { label: "Наличные расходы и налоги", keys: ["cashExpenses", "cashTaxes", "household", "delivery", "cleaning", "bonus", "seniority", "supplement", "driverCash", "utilitiesCash", "operatingCosts"] },
   { label: "Безналичные, ФОТ и налоги", keys: ["cashlessOperatingCosts", "driverCashless", "utilitiesCashless", "rent", "bankFee", "grossProfitTax", "salaryCashless", "payrollTax", "vacationCashless", "vacationTax", "salaryCash", "vacationCash"] },

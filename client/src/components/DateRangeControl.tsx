@@ -43,7 +43,7 @@ export function DateRangeControl({compact=false,value,onChange,title="ПЕРИО
 type ExactDateProps={value:string;onChange:(value:string)=>void;title?:string;ariaLabel?:string};
 
 /** Тот же компактный календарный контракт, что у диапазона, но с одним выбором даты и без быстрых периодов. */
-export function ExactDateControl({value,onChange,title="ДАТА ФАКТА",ariaLabel="Изменить дату факта"}:ExactDateProps){
+export function ExactDateControl({value,onChange,title="ДАТА ЗАПИСИ",ariaLabel="Изменить дату записи"}:ExactDateProps){
   const [open,setOpen]=useState(false);
   const selectedDate=/^20\d{2}-\d{2}-\d{2}$/.test(value)?parseISO(value):new Date();
   const [displayMonth,setDisplayMonth]=useState(selectedDate);

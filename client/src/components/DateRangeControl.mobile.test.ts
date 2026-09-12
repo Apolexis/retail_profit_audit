@@ -34,6 +34,8 @@ describe("мобильный контракт календаря", () => {
     expect(component).toContain("export function ExactDateControl");
     expect(component).toContain('className="date-popover fact-date-popover"');
     expect(component).toContain("modifiers={{singleSelected:selectedDate}}");
+    expect(component).toContain('title="ДАТА ЗАПИСИ"');
+    expect(component).toContain('ariaLabel="Изменить дату записи"');
   });
 
   it("задает одинаковую темную поверхность поповерам диапазона и точной даты", () => {
