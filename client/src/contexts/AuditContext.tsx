@@ -34,12 +34,26 @@ function applyPwaTheme(theme: Theme) {
   const color = theme === "dark" ? "#0c0b12" : "#ffffff";
   const root = document.documentElement;
   const applyMeta = () => {
+    const themeColor = document.getElementById("app-theme-color") as HTMLMetaElement | null;
+    const statusBar = document.getElementById("app-apple-status-bar-style") as HTMLMetaElement | null;
+    if (themeColor) {
+      themeColor.setAttribute("content", color);
+      themeColor.content = color;
+    }
+    if (statusBar) {
+      const statusStyle = theme === "dark" ? "black" : "default";
+      statusBar.setAttribute("content", statusStyle);
+      statusBar.content = statusStyle;
+    }
     document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach(meta => meta.setAttribute("content", color));
     document.querySelectorAll<HTMLMetaElement>('meta[name="apple-mobile-web-app-status-bar-style"]').forEach(meta => meta.setAttribute("content", theme === "dark" ? "black" : "default"));
   };
 
   localStorage.setItem("audit-theme", theme);
   root.dataset.auditTheme = theme;
+  root.dataset.pwaTheme = theme;
+  document.body.dataset.auditTheme = theme;
+  document.body.dataset.pwaTheme = theme;
   root.style.colorScheme = theme;
   root.style.backgroundColor = color;
   root.style.setProperty("--pwa-system-color", color);
@@ -55,6 +69,8 @@ function applyPwaTheme(theme: Theme) {
   document.getElementById("app-apple-touch-icon")?.setAttribute("href", themeIcon[theme]);
   document.getElementById("app-manifest")?.setAttribute("href", themeManifest[theme]);
   window.requestAnimationFrame(applyMeta);
+  window.setTimeout(applyMeta, 0);
+  window.dispatchEvent(new CustomEvent("audit-pwa-theme-change", { detail: { theme, color } }));
 }
 
 export function AuditProvider({ children }: { children: ReactNode }) {

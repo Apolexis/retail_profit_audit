@@ -34,12 +34,21 @@ describe("мобильный контракт графических контр�
   it("показывает режимы в панели действий развернутого графика без дублирования в его toolbar", () => {
     expect(chart).toContain('className="chart-panzoom-touch-actions"');
     expect(chart).toContain('<ChartTouchModeControls mode={touchMode} onChange={setTouchMode}/>');
+    expect(chart).toContain('{touchModeControl&&<div className="chart-panzoom-touch-actions">');
     expect(chart).toContain('expandedViewport.setTouchMode} showTouchModeControl={false}');
     expect(styles).toContain('.chart-expand-dialog .chart-panzoom-touch-actions { margin-right: auto; }');
+    expect(styles).toContain('@media (hover: none), (pointer: coarse)');
   });
 
   it("крепит крестик слева от длинного заголовка только в компактном диалоге", () => {
     expect(styles).toContain('.chart-expand-dialog [data-slot="dialog-close"] { top: 22px !important; right: auto !important; left: 10px !important; transform: none !important; }');
     expect(styles).toContain('.chart-expand-dialog [data-slot="dialog-header"] { padding-right: 0 !important; padding-left: 48px !important; }');
+  });
+
+  it("дает общим графикам более ранний свободный pan только при отдельном touch-режиме", () => {
+    expect(chart).toContain('const dragThreshold=touchModeControl?1:2');
+    expect(chart).toContain('axisLock={false}');
+    expect(chart).toContain('resolveChartPanAxis(next.x-start.x,next.y-start.y,dragThreshold)');
+    expect(chart).toContain('data-chart-pan-x={pan.x}');
   });
 });

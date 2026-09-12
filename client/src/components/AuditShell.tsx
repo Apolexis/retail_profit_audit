@@ -9,6 +9,7 @@ import "@/mobile-nav.css";
 
 const compactBrandIcon={dark:"/manus-storage/rybny_pwa_dark_transparent_110da59a.png",light:"/manus-storage/rybny_pwa_light_transparent_d1223d9d.png"} as const;
 export function BrandMark({theme}:{theme:"dark"|"light"}){return <span className="brand-mark-switch" aria-hidden="true">{(["dark","light"] as const).map(markTheme=><img key={markTheme} className={markTheme===theme?"brand-mark is-visible":"brand-mark"} src={compactBrandIcon[markTheme]} alt="" loading="eager" decoding="sync" draggable={false}/>)}</span>}
+const isStandalonePwa=()=>typeof window!=="undefined"&&(window.matchMedia("(display-mode: standalone)").matches||(window.navigator as Navigator&{standalone?:boolean}).standalone===true||document.documentElement.dataset.pwaStandalone==="true");
 const navSections=[
   {title:"АНАЛИТИКА",items:[["/","00","Сводка",false],["/months","01","Месяцы",false],["/pricing","02","Цены",false],["/expenses","03","Расходы",false],["/inventory","04","Остатки",false],["/stores","05","Магазины",false],["/compare","06","Сравнить",false]]},
   {title:"РЕШЕНИЯ",items:[["/control","07","Динамика",false],["/cadence","08","Ритм",false],["/portfolio","09","Портфель",false],["/pilot","10","Пилот",false],["/forecast","19","Прогноз",false],["/planfact","11","План‑факт",false]]},
@@ -30,10 +31,10 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
   const [storeSearch,setStoreSearch]=useState("");
   const [showTop,setShowTop]=useState(false);
   const [expandedSections,setExpandedSections]=useState<Record<string,boolean>>({});
-  const [standalone,setStandalone]=useState(()=>typeof window!=="undefined"&&(window.matchMedia("(display-mode: standalone)").matches||(window.navigator as Navigator&{standalone?:boolean}).standalone===true));
+  const [standalone,setStandalone]=useState(isStandalonePwa);
   const gestureStart=useRef<number|null>(null);
   useEffect(()=>{const update=()=>setShowTop(window.scrollY>280);update();window.addEventListener("scroll",update,{passive:true});return()=>window.removeEventListener("scroll",update)},[]);
-  useEffect(()=>{const media=window.matchMedia("(display-mode: standalone)");const update=()=>setStandalone(media.matches||(window.navigator as Navigator&{standalone?:boolean}).standalone===true);update();media.addEventListener("change",update);return()=>media.removeEventListener("change",update)},[]);
+  useEffect(()=>{const media=window.matchMedia("(display-mode: standalone)");const update=()=>setStandalone(isStandalonePwa());update();media.addEventListener("change",update);window.addEventListener("pageshow",update);document.addEventListener("visibilitychange",update);return()=>{media.removeEventListener("change",update);window.removeEventListener("pageshow",update);document.removeEventListener("visibilitychange",update)}},[]);
   const isAdmin=me.data?.role==="admin";
   const visibleNav=navSections.map(section=>({...section,items:section.items.filter(([, , ,adminOnly])=>!adminOnly||isAdmin)})).filter(section=>section.items.length>0);
   const closeMenu=()=>{if(document.activeElement instanceof HTMLElement)document.activeElement.blur();setMenuOpen(false)};

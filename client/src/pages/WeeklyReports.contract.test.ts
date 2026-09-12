@@ -62,6 +62,9 @@ describe("WeeklyReports interaction contract",()=>{
     expect(page).toContain('className="report-pdf-brand"');
     expect(page).toContain('const ReportPdfBrandGlyph=');
     expect(page).toContain('<ReportPdfBrandGlyph theme={theme}/>');
+    expect(page).toContain('const reportPdfBrandIcon=');
+    expect(page).toContain('const loadPdfBrand=async');
+    expect(page).toContain('const [pdfBrandSrc,setPdfBrandSrc]=useState<string>()');
     expect(page).toContain('СФОРМИРОВАНО');
     expect(styles).toContain('.packet .report-pdf-brand { display: flex;');
   });
@@ -69,11 +72,20 @@ describe("WeeklyReports interaction contract",()=>{
   it("добавляет отдельную PDF-страницу динамики из фактических дневных записей выбранного отчета",()=>{
     expect(page).toContain('export const reportTimeline=');
     expect(page).toContain('trpc.audit.dashboard.useQuery({ranges:');
-    expect(page).toContain('const dynamics=createReportDynamicsCanvas(summary,timeline,pdfTheme);');
+    expect(page).toContain('const dynamics=await createReportDynamicsCanvas(summary,timeline,pdfTheme,brandSource);');
     expect(page).toContain('pdf.addPage();');
     expect(page).toContain('"Динамика фактических показателей"');
     expect(page).toContain('Источник: фактические дневные записи видимых точек в периоде выбранного отчета.');
     expect(page).toContain('disabled={isExporting||reportDashboard.isLoading}');
+  });
+
+  it("добавляет полноценный тематический управленческий реестр на отдельную PDF-страницу",()=>{
+    expect(page).toContain('const createReportInsightsCanvas=async');
+    expect(page).toContain('"Управленческий реестр фактов"');
+    expect(page).toContain('"Точки-ориентиры по прибыли"');
+    expect(page).toContain('"Риск-сигналы выбранного среза"');
+    expect(page).toContain('"Состав и границы фактической базы"');
+    expect(page).toContain('const insights=await createReportInsightsCanvas(summary,timeline,pdfTheme,brandSource);');
   });
 
   it("не вставляет пустую промежуточную страницу для почти помещающейся короткой сводки",()=>{

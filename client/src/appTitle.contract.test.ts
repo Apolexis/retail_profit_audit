@@ -17,12 +17,16 @@ it("сохраняет утвержденное название приложе�
   expect(worker.match(/const CACHE_NAME/g)).toHaveLength(1);
   const auditContext = readFileSync(resolve(process.cwd(), "client/src/contexts/AuditContext.tsx"), "utf8");
   expect(index).toContain('id="app-theme-color" name="theme-color" content="#ffffff"');
-  expect(index).toContain('apple-mobile-web-app-status-bar-style" content="default"');
+  expect(index).toContain('id="app-apple-status-bar-style" name="apple-mobile-web-app-status-bar-style" content="default"');
   expect(auditContext).toContain("function applyPwaTheme(theme: Theme)");
   expect(auditContext).toContain('theme === "dark" ? "#0c0b12" : "#ffffff"');
   expect(auditContext).toContain('theme === "dark" ? "black" : "default"');
   expect(auditContext).toContain("applyPwaTheme(next);");
   expect(auditContext).toContain("root.style.setProperty(\"--pwa-system-color\", color)");
+  expect(auditContext).toContain("root.dataset.pwaTheme = theme");
+  expect(auditContext).toContain('document.getElementById("app-apple-status-bar-style")');
+  expect(auditContext).toContain('window.setTimeout(applyMeta, 0)');
+  expect(auditContext).toContain('new CustomEvent("audit-pwa-theme-change"');
   expect(auditContext).toContain(".packet.pwa-standalone .packet-top");
   expect(auditContext).toContain("window.requestAnimationFrame(applyMeta)");
   expect(auditContext).not.toContain("cloneNode(true)");

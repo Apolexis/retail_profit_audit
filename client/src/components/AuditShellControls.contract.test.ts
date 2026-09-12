@@ -35,6 +35,9 @@ describe("базовые управляющие элементы", () => {
   it("дает установленному мобильному приложению компактные переходы без перекрытия контента", () => {
     expect(shell).toContain('className="mobile-quick-nav"');
     expect(shell).toContain('standalone?"packet pwa-standalone":"packet"');
+    expect(shell).toContain('const isStandalonePwa=()=>');
+    expect(shell).toContain('document.documentElement.dataset.pwaStandalone==="true"');
+    expect(shell).toContain('window.addEventListener("pageshow",update)');
     expect(shell).toContain('aria-label="Назад"');
     expect(shell).not.toContain('aria-label="Домой"');
     expect(shell).toContain('aria-label="Вперёд"');
@@ -51,7 +54,7 @@ describe("базовые управляющие элементы", () => {
     expect(css).toContain(".packet .mobile-quick-nav .mobile-quick-action:focus-visible");
     expect(css).toContain("min-height: 39px;");
     expect(css).toContain(".packet .mobile-quick-nav .mobile-quick-refresh { border-color: color-mix(in srgb, var(--blue) 48%, var(--line)); background: transparent; }");
-    expect(css).toContain(".mobile-quick-refresh { border-color: #90bfe9 !important; background: transparent !important;");
+    expect(css).toContain(".mobile-quick-refresh { border-color: #c9dceb !important; background: #ffffff !important;");
     expect(shell).not.toContain("clearActionFocus");
     expect(shell).not.toContain("data-pointer-action");
     expect(shell).toContain('onClick={()=>window.history.forward()}');
@@ -62,6 +65,9 @@ describe("базовые управляющие элементы", () => {
     expect(shell).toContain("event.currentTarget.blur();setMenuOpen(value=>!value)");
     expect(shell).toContain("{showTop&&!menuOpen&&<button className=\"scroll-top\"");
     expect(css).toContain('body:has(.chart-expand-dialog[data-state="open"]) .packet .scroll-top');
+    expect(css).toContain('body:has(.chart-expand-dialog[data-state="open"]) .packet .mobile-quick-nav');
+    expect(css).toContain('.packet.pwa-standalone .mobile-quick-nav');
+    expect(css).toContain('@media (hover: none), (pointer: coarse)');
   });
 
   it("не сжимает профиль при раскрытии категорий навигации", () => {

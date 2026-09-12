@@ -1874,12 +1874,12 @@ html[data-audit-theme="light"] .packet .cover-note:hover { border-color: #0a84ff
 }
 html[data-audit-theme="light"] .packet .mobile-quick-nav .mobile-quick-action { border-color: #c9dceb !important; background: #ffffff !important; color: #244864 !important; box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(20, 72, 110, .10) !important; }
  html[data-audit-theme="light"] .packet .mobile-quick-nav .mobile-quick-action svg { color: #0a63c8; }
-html[data-audit-theme="light"] .packet .mobile-quick-nav .mobile-quick-refresh { border-color: #90bfe9 !important; background: transparent !important; color: #075dbb !important; box-shadow: none !important; }
+html[data-audit-theme="light"] .packet .mobile-quick-nav .mobile-quick-refresh { border-color: #c9dceb !important; background: #ffffff !important; color: #244864 !important; box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(20, 72, 110, .10) !important; }
 html[data-audit-theme="light"] .packet .mobile-quick-nav .mobile-quick-action:hover { border-color: #0a84ff !important; background: #f4f9ff !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .11) !important; }
 html[data-audit-theme="light"] .packet .mobile-quick-nav .mobile-quick-action:focus-visible { outline-color: #0a63c8; }
 html[data-audit-theme="dark"] .packet .mobile-quick-nav .mobile-quick-action { border-color: #3c3645 !important; background: #1b1922 !important; color: #e6e1ec !important; }
 html[data-audit-theme="dark"] .packet .mobile-quick-nav .mobile-quick-action svg { color: #ff9b88; }
-html[data-audit-theme="dark"] .packet .mobile-quick-nav .mobile-quick-refresh { border-color: rgba(255, 118, 95, .52) !important; background: transparent !important; color: #ffe4de !important; box-shadow: none !important; }
+html[data-audit-theme="dark"] .packet .mobile-quick-nav .mobile-quick-refresh { border-color: #3c3645 !important; background: #1b1922 !important; color: #e6e1ec !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .055), 0 1px 2px rgba(0, 0, 0, .16) !important; }
 html[data-audit-theme="dark"] .packet .mobile-quick-nav .mobile-quick-action:hover { border-color: #ff765f !important; background: #2a1a23 !important; box-shadow: 0 0 0 2px rgba(255, 118, 95, .12) !important; }
 html[data-audit-theme="dark"] .packet .mobile-quick-nav .mobile-quick-action:focus-visible { outline-color: #ff9b88; }
 
@@ -1889,6 +1889,7 @@ html[data-audit-theme="dark"] .packet .mobile-quick-nav .mobile-quick-action:foc
 html[data-audit-theme="dark"] .packet .packet-profile-link.active { border: 1px solid rgba(255, 147, 127, .46) !important; border-radius: 9px !important; background: rgba(255, 118, 95, .11) !important; box-shadow: inset 2px 0 #ff765f !important; }
 html[data-audit-theme="light"] .packet .packet-profile-link.active { border: 1px solid #0a63c8 !important; border-radius: 9px !important; background: #edf6ff !important; box-shadow: inset 2px 0 #0a63c8 !important; color: #075dbb !important; }
 body:has(.chart-expand-dialog[data-state="open"]) .packet .scroll-top { visibility: hidden; opacity: 0; pointer-events: none; }
+body:has(.chart-expand-dialog[data-state="open"]) .packet .mobile-quick-nav { visibility: hidden; opacity: 0; pointer-events: none; }
 .packet .access-import-control-row > span,
 .packet .access-import-control-row .access-control-toggle { align-self: center !important; margin-block: 0 !important; }
 .packet .admin-broadcast { align-items: start; }
@@ -2353,6 +2354,29 @@ html[data-audit-theme="dark"] .packet .chart-touch-mode-button.active {
   box-shadow: inset 0 0 0 1px rgba(255, 118, 95, .58) !important;
 }
 html[data-audit-theme="dark"] .packet .chart-touch-mode-button:focus-visible { outline-color: #ff9179 !important; }
+
+@media (hover: none), (pointer: coarse) {
+  .chart-expand-dialog .chart-panzoom-touch-actions { display: inline-flex !important; margin-right: auto !important; }
+}
+
+/* Быстрые действия — только в установленном PWA, но на touch-экранах любой ширины. */
+@media (hover: none), (pointer: coarse) {
+  .packet.pwa-standalone .mobile-quick-nav {
+    display: grid !important;
+    position: fixed !important;
+    z-index: 44 !important;
+    left: 50% !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 10px) !important;
+    width: min(312px, calc(100vw - 32px)) !important;
+    transform: translateX(-50%) !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    visibility: visible;
+    opacity: 1;
+  }
+  .packet.pwa-standalone .packet-main { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 112px) !important; }
+}
 
 /* Телефон: нижние fixed-controls и развернутый график используют стабильную малую высоту viewport, без скачка при скрытии/появлении браузерных панелей. */
 @media (max-width: 720px) {

@@ -105,7 +105,7 @@ describe("форматирование денежных показателей",
     expect(source).toContain("event.preventDefault()");
     expect(source).toContain("const clampUnit=(value:number)=>Math.min(2.4,Math.max(-2.4,value))");
     expect(source).toContain("button,[data-chart-point='true']");
-    expect(source).toContain("resolveChartPanAxis(next.x-start.x,next.y-start.y)");
+    expect(source).toContain("resolveChartPanAxis(next.x-start.x,next.y-start.y,dragThreshold)");
     expect(source).toContain("gesture.current.lastPoint=next;gesture.current.panning=true;event.preventDefault();event.stopPropagation();setDragging(true)");
     expect(source).not.toContain("onPointerDownOutside={event=>event.preventDefault()}");
     expect(source).toContain('const chartRenderKey=`${chartView}-${visibleLines.map(line=>line.key).join("-")}`');
@@ -115,7 +115,7 @@ describe("форматирование денежных показателей",
     expect(source).toContain('addEventListener("touchmove",touchMove,{passive:false,capture:true})');
     expect(source).toContain('const touchEnd=()=>clearGesture()');
     expect(source).toContain('const touchStart=(event:TouchEvent)=>{if(isControl(event.target)||!event.touches.length)return;const active=touches(event)');
-    expect(source).toContain('if(!gesture.current.panning&&Math.hypot(next.x-start.x,next.y-start.y)<2)');
+    expect(source).toContain('if(!gesture.current.panning&&Math.hypot(next.x-start.x,next.y-start.y)<dragThreshold)');
     expect(source).toContain('if(event.pointerType==="touch"||!pointers.current.has(event.pointerId))return');
     expect(source).toContain('if(event.pointerType==="touch"||(event.target as Element).closest');
     expect(source).not.toContain('onPointerDownOutside={keepChartSurfaceInside}');
@@ -127,9 +127,9 @@ describe("форматирование денежных показателей",
     expect(source).toContain('const timelineMargin=compactChart?{top:12,right:8,left:0,bottom:4}');
     expect(source).toContain('const timelineAxisWidth=compactChart?55:78');
     expect(source).toContain('compactChart?322:306');
-    expect(source).toContain('<ChartPanZoomSurface compact touchModeControl={data.length>1}>{compactViewport=><MetricLineChart');
+    expect(source).toContain('<ChartPanZoomSurface compact touchModeControl={data.length>1} axisLock={false}>{compactViewport=><MetricLineChart');
     expect(source).toContain('<ChartPanZoomSurface compact>{compactViewport=><BenchmarkBars');
-    expect(source).toContain('<ChartPanZoomSurface compact touchModeControl={data.length>1}>');
+    expect(source).toContain('<ChartExpandButton title={chartTitle} initialView={chartView} showViewControls={data.length>1} touchModeControl={data.length>1}>');
     expect(source).not.toContain('<ChartPanZoomSurface compact touchModeControl={true}>');
     expect(source).toContain("Сброс");
     expect(source).toContain('const medianColor=expanded&&theme==="dark"?"#b694ff":palette.median');
