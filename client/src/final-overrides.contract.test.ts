@@ -129,7 +129,7 @@ describe("длинные подписи адаптивных карточек", 
 
 describe("финальные исправления журнала и медианных графиков", () => {
   it("задает дозагрузке журнала структурный верхний отступ вместо конфликтующих margin", () => {
-    expect(styles).toContain('.packet .change-log-more-wrap { display: block; width: 100%; padding-top: 23px; }');
+    expect(styles).toContain('.packet .change-log-more-wrap { display: block; width: 100%; padding-top: 20px; }');
     expect(styles).toContain('.packet .change-log-more-wrap .change-log-more { width: calc(100% - 8px); margin: 0 4px 10px !important; }');
   });
 
@@ -150,5 +150,12 @@ describe("финальные исправления журнала и медиа
     expect(styles).toContain('html[data-audit-theme="light"] :is(.chart-expand-dialog, .chart-expand-dialog-general) .chart-panzoom-touch-actions .chart-touch-mode-control { border-color: #c4dffb !important; background: #f4f9ff !important; }');
     expect(styles).toContain('html[data-audit-theme="light"] :is(.chart-expand-dialog, .chart-expand-dialog-general) .chart-panzoom-touch-actions .chart-touch-mode-button.active,');
     expect(styles).toContain('html[data-audit-theme="light"] .packet .pricing-markup-detail .card-title :is(h3, small) { display: block; max-width: 100%; min-width: 0; white-space: normal !important; overflow-wrap: anywhere; word-break: normal; }');
+  });
+
+  it("держит плотный tooltip внутри области графика и исключает смешение цветов медианы и dark-hover", () => {
+    expect(styles).toContain('.recharts-tooltip-wrapper { translate: 0 var(--tiny-tooltip-shift-y, 0px); }');
+    expect(styles).toContain('.tiny-tooltip-dense { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));');
+    expect(styles).toContain('html[data-audit-theme="light"] :is(.benchmark-chart, .benchmark-chart-expanded) .median-badge i { height: 0; background: transparent !important; border-top-color: #0a84ff !important; }');
+    expect(styles).toContain('html[data-audit-theme="dark"] :is(.chart-expand-dialog, .chart-expand-dialog-general) .chart-panzoom:is(:hover, :focus, :focus-visible)');
   });
 });

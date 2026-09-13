@@ -2684,7 +2684,7 @@ html[data-audit-theme="dark"] .chart-store-series-toggle.active { border-color: 
 }
 
 /* Финальные локальные исправления журнала и общих графиков: структурный gap не зависит от исторических margin. */
-.packet .change-log-more-wrap { display: block; width: 100%; padding-top: 23px; }
+.packet .change-log-more-wrap { display: block; width: 100%; padding-top: 20px; }
 .packet .change-log-more-wrap .change-log-more { width: calc(100% - 8px); margin: 0 4px 10px !important; }
 
 /* В светлой теме плашка и оба SVG-представления медианы используют один iOS-синий контракт. */
@@ -2720,3 +2720,20 @@ html[data-audit-theme="light"] :is(.chart-expand-dialog, .chart-expand-dialog-ge
 /* Светлая карточка детализации цен сохраняет полную ширину длинного пояснения так же, как темная. */
 html[data-audit-theme="light"] .packet .pricing-markup-detail .card-title > div { min-width: 0; width: 100%; }
 html[data-audit-theme="light"] .packet .pricing-markup-detail .card-title :is(h3, small) { display: block; max-width: 100%; min-width: 0; white-space: normal !important; overflow-wrap: anywhere; word-break: normal; }
+
+/* Последний слой: положение высокого tooltip измеряется в границах конкретного графика. */
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .recharts-tooltip-wrapper { translate: 0 var(--tiny-tooltip-shift-y, 0px); }
+@media (max-width: 1059px) {
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip-dense { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 8px; width: min(354px, calc(100vw - 24px)); min-width: min(354px, calc(100vw - 24px)); max-width: min(354px, calc(100vw - 24px)); padding: 8px 9px; font-size: 10px; max-height: none !important; overflow: visible !important; }
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip-dense > span { line-height: 1.42; }
+}
+
+/* Светлая легенда медианы — только один синий пунктир; встроенный цвет палитры не смешивается с базовым кораллом. */
+html[data-audit-theme="light"] :is(.benchmark-chart, .benchmark-chart-expanded) .median-badge i { height: 0; background: transparent !important; border-top-color: #0a84ff !important; }
+html[data-audit-theme="dark"] :is(.benchmark-chart, .benchmark-chart-expanded) .median-badge i { height: 0; background: transparent !important; border-top-color: #ff597c !important; }
+
+/* Развернутый светлый переключатель повторяет небелую поверхность компактного варианта. */
+html[data-audit-theme="light"] :is(.chart-expand-dialog, .chart-expand-dialog-general) .chart-panzoom-touch-actions .chart-touch-mode-button:not(.active) { background: #f4f9ff !important; color: #51657d !important; box-shadow: none !important; }
+
+/* Темный развернутый график не получает iOS-синий focus/hover-контур: акцент относится к самой поверхности, а не к кнопкам. */
+html[data-audit-theme="dark"] :is(.chart-expand-dialog, .chart-expand-dialog-general) .chart-panzoom:is(:hover, :focus, :focus-visible) { border-color: #ff765f !important; outline: 2px solid #ff9179 !important; outline-offset: 3px !important; box-shadow: 0 0 0 2px rgba(255, 118, 95, .14) !important; }

@@ -51,4 +51,10 @@ describe("мобильный контракт графических контр�
     expect(chart).toContain('const dragThreshold=touchModeControl?0:2');
     expect(chart).toContain('data-chart-pan-x={pan.x}');
   });
+
+  it("измеряет положение высокого tooltip и включает плотную сетку только при большом числе рядов", () => {
+    expect(chart).toContain('useLayoutEffect');
+    expect(chart).toContain('wrapper.style.setProperty("--tiny-tooltip-shift-y"');
+    expect(chart).toContain('className={values.length>12?"tiny-tooltip tiny-tooltip-dense":"tiny-tooltip"}');
+  });
 });
