@@ -21,6 +21,7 @@ export const ALERT_THRESHOLD_DEFAULTS: AlertThresholdDefinition[] = [
   { ruleKey: "net_profit_drop", metricCode: "net_profit_delta", comparison: "lte", threshold: -30_000, severity: "warning", label: "Резкое снижение чистой прибыли", description: "снижение к предыдущей доступной дате", unit: "₽" },
   { ruleKey: "cashless_expense_daily", metricCode: "cashless_operating_costs", comparison: "gte", threshold: 20_000, severity: "warning", label: "Расходы безнал", description: "безналичные операционные расходы за день", unit: "₽" },
   { ruleKey: "payroll_cost_daily", metricCode: "payroll_costs", comparison: "gte", threshold: 35_000, severity: "warning", label: "ФОТ и отпускные", description: "зарплата, налоги и отпускные за день", unit: "₽" },
+  { ruleKey: "markup_median_deviation", metricCode: "markup_median_deviation_pp", comparison: "gte", threshold: 8, severity: "warning", label: "Наценка отклоняется от медианы", description: "абсолютный разрыв расчетной общей наценки с медианой сети за дату", unit: "п.п." },
 ];
 
 export const CASH_OPERATING_COMPONENT_CODES = ["household", "delivery", "cleaning", "bonus", "seniority", "supplement", "driver_cash", "utilities_cash", "operating_costs"] as const;
@@ -64,8 +65,55 @@ export function evaluateAlertThresholds(metricCode: string, amount: number, thre
   return thresholds.filter(rule => rule.isEnabled && rule.metricCode === metricCode && (rule.comparison === "gte" ? amount >= rule.threshold : amount <= rule.threshold));
 }
 
-export type ThresholdCandidate = { storeId: number; store: string; entryDate: string; metricCode: string; amount: number };
+export type ThresholdCandidate = { storeId: number; store: string; entryDate: string; metricCode: string; amount: number; context?: { markup: number; median: number; direction: "выше" | "ниже" } };
 export type ThresholdBreach = ThresholdCandidate & { rule: AlertThreshold };
+
+const median = (items: number[]) => {
+  const sorted = [...items].sort((left, right) => left - right);
+  if (!sorted.length) return 0;
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+};
+
+/** Adds the same total-markup formula that powers the analytics UI: (sales − purchases) ÷ purchases × 100. */
+export function withDerivedMarkupMedianDeviationCandidates(candidates: ThresholdCandidate[]) {
+  const byStoreDate = new Map<string, { storeId: number; store: string; entryDate: string; sales: number; purchases: number }>();
+  for (const candidate of candidates) {
+    if (!["sales_smoked", "sales_frozen", "purchase_smoked", "purchase_frozen"].includes(candidate.metricCode)) continue;
+    const key = `${candidate.storeId}:${candidate.entryDate}`;
+    const current = byStoreDate.get(key) ?? { storeId: candidate.storeId, store: candidate.store, entryDate: candidate.entryDate, sales: 0, purchases: 0 };
+    if (candidate.metricCode === "sales_smoked" || candidate.metricCode === "sales_frozen") current.sales += candidate.amount;
+    else current.purchases += candidate.amount;
+    byStoreDate.set(key, current);
+  }
+  const markupByDate = new Map<string, Array<{ storeId: number; store: string; entryDate: string; markup: number }>>();
+  for (const item of Array.from(byStoreDate.values())) {
+    if (item.purchases === 0) continue;
+    const markup = ((item.sales - item.purchases) / item.purchases) * 100;
+    if (!Number.isFinite(markup)) continue;
+    const values = markupByDate.get(item.entryDate) ?? [];
+    values.push({ ...item, markup });
+    markupByDate.set(item.entryDate, values);
+  }
+  const derived: ThresholdCandidate[] = [];
+  for (const values of Array.from(markupByDate.values())) {
+    if (values.length < 2) continue;
+    const networkMedian = median(values.map(item => item.markup));
+    for (const item of values) {
+      const difference = item.markup - networkMedian;
+      if (difference === 0) continue;
+      derived.push({
+        storeId: item.storeId,
+        store: item.store,
+        entryDate: item.entryDate,
+        metricCode: "markup_median_deviation_pp",
+        amount: Math.abs(difference),
+        context: { markup: item.markup, median: networkMedian, direction: difference > 0 ? "выше" : "ниже" },
+      });
+    }
+  }
+  return [...candidates, ...derived];
+}
 
 /** Converts the mutually independent cash articles into one controllable daily cash-expense candidate. */
 export function withDerivedCashOperatingCostCandidates(candidates: ThresholdCandidate[]) {

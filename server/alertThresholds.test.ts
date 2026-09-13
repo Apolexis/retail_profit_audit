@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ALERT_THRESHOLD_DEFAULTS, collectThresholdBreaches, evaluateAlertThresholds, type AlertThreshold, withDerivedCashOperatingCostCandidates } from "./alertThresholds";
+import { ALERT_THRESHOLD_DEFAULTS, collectThresholdBreaches, evaluateAlertThresholds, type AlertThreshold, withDerivedCashOperatingCostCandidates, withDerivedMarkupMedianDeviationCandidates } from "./alertThresholds";
 
 const thresholds: AlertThreshold[] = [
   { ruleKey: "cash", metricCode: "cash_operating_costs", comparison: "gte", threshold: 10_000, severity: "warning", label: "Траты нал", description: "расходы", unit: "₽", isEnabled: true },
@@ -63,5 +63,19 @@ describe("операционные пороги уведомлений", () => {
     expect(candidates).toContainEqual(expect.objectContaining({ metricCode: "net_profit_delta", amount: -35_000 }));
     expect(ALERT_THRESHOLD_DEFAULTS).toContainEqual(expect.objectContaining({ ruleKey: "gross_margin_low", unit: "%" }));
     expect(ALERT_THRESHOLD_DEFAULTS).toContainEqual(expect.objectContaining({ ruleKey: "net_profit_drop", metricCode: "net_profit_delta" }));
+  });
+
+  it("вычисляют абсолютное отклонение общей наценки от медианы сети и сохраняют направление", () => {
+    const candidates = withDerivedMarkupMedianDeviationCandidates([
+      { storeId: 1, store: "А", entryDate: "2026-09-02", metricCode: "sales_smoked", amount: 120 },
+      { storeId: 1, store: "А", entryDate: "2026-09-02", metricCode: "purchase_smoked", amount: 100 },
+      { storeId: 2, store: "Б", entryDate: "2026-09-02", metricCode: "sales_smoked", amount: 130 },
+      { storeId: 2, store: "Б", entryDate: "2026-09-02", metricCode: "purchase_smoked", amount: 100 },
+      { storeId: 3, store: "В", entryDate: "2026-09-02", metricCode: "sales_smoked", amount: 160 },
+      { storeId: 3, store: "В", entryDate: "2026-09-02", metricCode: "purchase_smoked", amount: 100 },
+    ]);
+    expect(candidates).toContainEqual(expect.objectContaining({ storeId: 1, metricCode: "markup_median_deviation_pp", amount: 10, context: expect.objectContaining({ median: 30, direction: "ниже" }) }));
+    expect(candidates).toContainEqual(expect.objectContaining({ storeId: 3, metricCode: "markup_median_deviation_pp", amount: 30, context: expect.objectContaining({ median: 30, direction: "выше" }) }));
+    expect(ALERT_THRESHOLD_DEFAULTS).toContainEqual(expect.objectContaining({ ruleKey: "markup_median_deviation", metricCode: "markup_median_deviation_pp", threshold: 8, unit: "п.п." }));
   });
 });

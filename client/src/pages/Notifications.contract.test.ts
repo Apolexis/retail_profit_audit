@@ -10,3 +10,9 @@ it("оставляет наличные траты и НДФЛ самостоя�
   expect(page).toContain('cashControlRules.map(rule => <ThresholdRuleCard');
   expect(overrides).toContain('html[data-audit-theme="light"] .packet .threshold-rule .threshold-amount > span { color: #61728a !important; }');
 });
+
+it("настраивает процентный порог отклонения наценки с дробным шагом", () => {
+  const page = readFileSync(resolve(process.cwd(), "client/src/pages/Notifications.tsx"), "utf8");
+  expect(page).toContain('const step = rule.unit === "₽" ? 100 : 0.5;');
+  expect(page).toContain('step={step}');
+});

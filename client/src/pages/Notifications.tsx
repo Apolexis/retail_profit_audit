@@ -19,10 +19,11 @@ const importIdFromAddress = () => {
 };
 
 function ThresholdRuleCard({ rule, draft, onDraftChange, onSave, isSaving }: { rule: ThresholdRule; draft: ThresholdDraft; onDraftChange: (next: ThresholdDraft) => void; onSave: () => void; isSaving: boolean }) {
+  const step = rule.unit === "₽" ? 100 : 0.5;
   return <form className={`threshold-rule ${draft.isEnabled ? "" : "is-disabled"}`} onSubmit={event => { event.preventDefault(); onSave(); }}>
     <div className="threshold-copy"><strong>{rule.label}</strong><small>{rule.comparison === "gte" ? "Сигнал при значении не ниже" : "Сигнал при значении не выше"} порога · {rule.description}</small></div>
     <label className="threshold-enabled"><input type="checkbox" checked={draft.isEnabled} onChange={event => onDraftChange({ ...draft, isEnabled: event.target.checked })}/><span>{draft.isEnabled ? "Включен" : "Отключен"}</span></label>
-    <label className="threshold-amount">Порог<input type="number" min="0" step="100" value={draft.threshold} onChange={event => onDraftChange({ ...draft, threshold: Number(event.target.value) || 0 })}/><span>{rule.unit}</span></label>
+    <label className="threshold-amount">Порог<input type="number" min="0" step={step} value={draft.threshold} onChange={event => onDraftChange({ ...draft, threshold: Number(event.target.value) || 0 })}/><span>{rule.unit}</span></label>
     <button className="packet-link compact" disabled={isSaving}>Сохранить</button>
   </form>;
 }
@@ -89,7 +90,7 @@ export default function Notifications() {
   return <AuditShell kicker="15 / УВЕДОМЛЕНИЯ" title="Сигналы и контроль">
     <section className="page-lede"><div><span>ЦЕНТР СОБЫТИЙ</span><h2>Критичные изменения под контролем</h2><p>Сигналы появляются при нарушении выбранных порогов, существенных ручных изменениях и замене периодов при импорте. Их получают администраторы и назначенные пользователи магазина.</p></div></section>
     <section className="packet-kpis equal"><article className="packet-kpi"><span>НЕПРОЧИТАННО</span><strong>{unread}</strong><small>событий требуют просмотра</small></article><article className="packet-kpi"><span>РУЧНЫЕ ИЗМЕНЕНИЯ</span><strong>25%</strong><small>при выполнении абсолютного порога метрики</small></article><article className="packet-kpi risk"><span>ПОРОГИ РИСКА</span><strong>{allRules.filter(rule => rule.isEnabled).length}</strong><small>включенных правил контроля</small></article><article className="packet-kpi"><span>ДОСТАВКА</span><strong>Сайт + телефон</strong><small>при включенных уведомлениях устройства</small></article></section>
-    {me.data?.role === "admin" && <section className="packet-card alert-thresholds"><div className="card-title"><div><span>НАСТРОЙКИ ПОРОГОВ</span><h3>Когда отправлять сигнал</h3></div></div><p className="packet-note">Порог применяется при ручном изменении факта и после импорта. Отключенное правило не формирует системные и телефонные уведомления.</p>
+    {me.data?.role === "admin" && <section className="packet-card alert-thresholds"><div className="card-title"><div><span>НАСТРОЙКИ ПОРОГОВ</span><h3>Когда отправлять сигнал</h3></div></div><p className="packet-note">Пороги базовых метрик проверяются при ручном изменении факта и после импорта. Отклонение наценки рассчитывается после импорта по доступным точкам на одну дату. Отключенное правило не формирует системные и телефонные уведомления.</p>
       {cashControlRules.length > 0 && <div className="threshold-grid threshold-grid-cash">{cashControlRules.map(rule => <ThresholdRuleCard key={rule.ruleKey} rule={rule} draft={draftFor(rule)} onDraftChange={next => setDraft(rule.ruleKey, next)} onSave={() => saveRule(rule)} isSaving={saveThreshold.isPending}/>)}</div>}
       <div className="threshold-grid">{otherRules.map(rule => <ThresholdRuleCard key={rule.ruleKey} rule={rule} draft={draftFor(rule)} onDraftChange={next => setDraft(rule.ruleKey, next)} onSave={() => saveRule(rule)} isSaving={saveThreshold.isPending}/>)}</div>
     </section>}
