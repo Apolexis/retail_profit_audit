@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { createPortal } from "react-dom";
 import { ArrowLeft, ArrowRight, ArrowUp, BellRing, ChevronDown, Menu, Moon, RefreshCw, Sun, X } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAudit } from "@/contexts/AuditContext";
@@ -52,7 +51,7 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
     return {...current,[title]:!open};
   });
 
-  return <><div className={standalone?"packet pwa-standalone":"packet"}>
+  return <div className={standalone?"packet pwa-standalone":"packet"}>
     <aside className="packet-spine">
       <Link href="/" className="packet-mark"><BrandMark theme={theme}/><span className="brand-title"><span>Аналитика</span><span>«Рыбный»</span></span></Link>
       <nav className="packet-nav-list" aria-label="Разделы системы">
@@ -73,9 +72,11 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
       </section>})}<Link href={profileItem[0]} onClick={event=>{event.currentTarget.blur();closeMenu();}} className={location===profileItem[0]?"drawer-link drawer-profile-link active":"drawer-link drawer-profile-link"}><span>{profileItem[2]}</span></Link></div><div className="drawer-period">Активный срез:<strong>{rangeLabel}</strong></div>
     </nav>
     <main className="packet-main">{analyticsSection&&<section className={`analysis-filter${kicker.startsWith("00")?" summary-period-filter":""}`}><div className="analysis-filter-copy"><span>ОБЩИЙ СРЕЗ</span><strong>{rangeLabel}</strong><small>Применяется ко всем графикам, сравнениям и итогам текущего раздела.</small></div><DateRangeControl/></section>}{children}<aside className="section-recommendation"><span>УПРАВЛЕНЧЕСКИЙ ФОКУС</span><div><h3>{guidance.title}</h3><p>{guidance.text}</p></div><strong>{guidance.action}</strong></aside></main>
-  </div>{createPortal(<>{standalone&&!menuOpen&&<nav className="mobile-quick-nav packet-fixed-control pwa-fixed-control" aria-label="Быстрые действия">
+    {standalone&&!menuOpen&&<nav className="mobile-quick-nav" aria-label="Быстрые действия">
       <button type="button" className="mobile-quick-action mobile-quick-back" onClick={()=>{window.history.length>1?window.history.back():setLocation("/")}} aria-label="Назад"><ArrowLeft size={16}/><span>Назад</span></button>
       <button type="button" className="mobile-quick-action mobile-quick-forward" onClick={()=>window.history.forward()} aria-label="Вперёд"><ArrowRight size={16}/><span>Вперёд</span></button>
       <button type="button" className="mobile-quick-action mobile-quick-refresh" onClick={refreshApp} aria-label="Обновить данные"><RefreshCw size={16}/><span>Обновить</span></button>
-    </nav>}{showTop&&!menuOpen&&<button className="scroll-top packet-fixed-control" aria-label="Вернуться к началу страницы" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}><ArrowUp size={18}/></button>}</>,document.body)}</>;
+    </nav>}
+    {showTop&&!menuOpen&&<button className="scroll-top" aria-label="Вернуться к началу страницы" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}><ArrowUp size={18}/></button>}
+  </div>;
 }

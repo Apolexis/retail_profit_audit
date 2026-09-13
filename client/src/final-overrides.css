@@ -2625,8 +2625,6 @@ html[data-audit-theme] .packet .packet-top::before { position: absolute; z-index
   .packet :is(.packet-split, .two-col, .report-layout, .inventory-profile-grid) > .packet-card:only-child { grid-column: 1 / -1; width: 100%; }
 }
 html[data-audit-theme="dark"] .packet .change-log-filters :is(input, select):focus { border-color: #ff937f; box-shadow: none; }
-html[data-audit-theme="light"] .chart-expand-dialog .chart-touch-mode-button.active,
-html[data-audit-theme="light"] .chart-expand-dialog .chart-touch-mode-button[aria-pressed="true"] { border-color: #0a84ff !important; background: #0a84ff !important; color: #ffffff !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .16) !important; }
 html[data-audit-theme="light"] .login-error { border-color: #bdd9f6 !important; background: #f5faff !important; color: #244864 !important; }
 .packet .pricing-markup-detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
 .packet .pricing-markup-detail-grid > article { display: grid; gap: 6px; min-width: 0; padding: 15px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface-2); }
@@ -2638,14 +2636,16 @@ html[data-audit-theme="light"] .login-error { border-color: #bdd9f6 !important; 
 html[data-audit-theme="light"] .packet .pricing-markup-detail-grid > article { border-color: #c6d9ec; background: #ffffff; }
 @media (max-width: 780px) { .packet .pricing-markup-detail-grid { grid-template-columns: 1fr; } }
 
-/* Финальная приемка: не меняем вид режима графика, а разделяем только touch-анализ, медиану и адаптивные блоки. */
-html[data-audit-theme="light"] .packet .benchmark-chart .median-badge { border-color: #c6d9ec; background: #ffffff; color: #42617d; box-shadow: none; }
-html[data-audit-theme="light"] .packet .benchmark-chart .median-badge i { background: #0a84ff !important; }
-html[data-audit-theme="light"] .packet .benchmark-chart .recharts-reference-line-line { stroke: #0a84ff !important; }
+/* Финальный тематический контракт: медиана и touch-кнопки следуют только фактической выбранной теме. */
+html[data-audit-theme="light"] :is(.chart-expand-dialog, .chart-expand-dialog-general, .metric-chart) .chart-touch-mode-button.active,
+html[data-audit-theme="light"] :is(.chart-expand-dialog, .chart-expand-dialog-general, .metric-chart) .chart-touch-mode-button[aria-pressed="true"] { border-color: #0a63c8 !important; background: #0a63c8 !important; color: #ffffff !important; box-shadow: none !important; }
+html[data-audit-theme="light"] :is(.benchmark-chart, .benchmark-chart-expanded) .median-badge { border-color: #c6d9ec; background: #ffffff; color: #42617d; box-shadow: none; }
+html[data-audit-theme="light"] :is(.benchmark-chart, .benchmark-chart-expanded) .median-badge i { background: #0a84ff !important; }
+html[data-audit-theme="light"] :is(.benchmark-chart, .benchmark-chart-expanded) .recharts-reference-line-line { stroke: #0a84ff !important; }
 .packet .cash-breakdown-card { margin-top: 20px; }
 .packet .chart-empty { padding-left: 8px; padding-right: 8px; overflow-wrap: anywhere; }
 .packet .change-log-filter-note { margin-inline: 6px; }
-.packet .change-log-more { margin-top: 16px; }
+.packet .change-log-more { margin-top: 21px; }
 @media (min-width: 721px) and (max-width: 1059px) {
   .packet .packet-split, .packet .two-col, .packet .report-layout, .packet .inventory-profile-grid { grid-template-columns: minmax(0, 1fr) !important; }
   .packet .push-settings { grid-template-columns: minmax(0, 1fr); gap: 14px; }
@@ -2655,37 +2655,10 @@ html[data-audit-theme="light"] .packet .benchmark-chart .recharts-reference-line
 @media (max-width: 560px) {
   .packet .card-title .chart-control { width: 100%; min-width: 0; margin-top: 8px; }
   .packet .card-title .chart-control :is(select, button) { width: 100%; min-width: 0; max-width: 100%; }
-  .packet .chart-controls { display: grid; grid-template-columns: minmax(0, 1fr); width: 100%; }
+  .packet .chart-controls { display: grid; grid-template-columns: minmax(0, 1fr); width: 100%; gap: 8px; }
   .packet .chart-controls .chart-control { width: 100%; min-width: 0; }
   .packet .chart-controls .chart-control select { width: 100%; min-width: 0; max-width: 100%; }
   .packet .control-comparison-note { padding-left: 18px; padding-right: 14px; }
-}
-
-/* Единый светлый контракт графиков и fixed-контролов, вынесенных из прокручиваемой оболочки. */
-html:not(.dark) :is(.chart-expand-dialog, .chart-expand-dialog-general) .chart-touch-mode-button,
-html:not(.dark) .metric-chart .chart-touch-mode-button {
-  background: #f7fbff !important;
-  border-color: #c7dcef !important;
-  color: #2e526d !important;
-  box-shadow: none !important;
-}
-html:not(.dark) :is(.chart-expand-dialog, .chart-expand-dialog-general) .chart-touch-mode-button.active,
-html:not(.dark) .metric-chart .chart-touch-mode-button.active {
-  background: #e7f2ff !important;
-  border-color: #0a84ff !important;
-  color: #0666bf !important;
-  box-shadow: none !important;
-}
-html:not(.dark) :is(.benchmark-chart, .benchmark-chart-expanded) .median-badge {
-  background: #f2f8ff !important;
-  border-color: #b9d9f7 !important;
-  color: #23506f !important;
-  box-shadow: none !important;
-}
-html:not(.dark) :is(.benchmark-chart, .benchmark-chart-expanded) .median-badge i,
-html:not(.dark) :is(.benchmark-chart, .benchmark-chart-expanded) .recharts-reference-line line {
-  background: #0a84ff !important;
-  stroke: #0a84ff !important;
 }
 .chart-controls { align-items: center; }
 .chart-store-series-toggle {
@@ -2704,29 +2677,8 @@ html:not(.dark) :is(.benchmark-chart, .benchmark-chart-expanded) .recharts-refer
 .chart-store-series-toggle b { color: var(--text); font-size: 11px; }
 .chart-store-series-toggle.active { border-color: var(--blue); background: color-mix(in srgb, var(--blue) 13%, var(--surface-2)); color: var(--blue); }
 .chart-store-series-toggle.active b { color: inherit; }
-.packet-fixed-control { position: fixed !important; isolation: isolate; }
-.pwa-fixed-control.mobile-quick-nav {
-  display: grid !important;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  left: max(12px, env(safe-area-inset-left, 0px)) !important;
-  right: max(12px, env(safe-area-inset-right, 0px)) !important;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 8px) !important;
-  top: auto !important;
-  inset: auto max(12px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 8px) max(12px, env(safe-area-inset-left, 0px)) !important;
-  z-index: 80 !important;
-  transform: none !important;
-}
-.packet-fixed-control.scroll-top {
-  position: fixed !important;
-  inset-block-start: auto !important;
-  top: auto !important;
-  z-index: 79 !important;
-  transform: none !important;
-}
-.pwa-fixed-control.mobile-quick-nav .mobile-quick-action { min-height: 39px; }
-body:has(.chart-expand-dialog[data-state="open"]) :is(.pwa-fixed-control.mobile-quick-nav, .packet-fixed-control.scroll-top) { display: none !important; }
+html[data-audit-theme="dark"] .chart-store-series-toggle.active { border-color: #ff765f; background: rgba(255, 118, 95, .12); color: #ff9b88; }
 @media (max-width: 560px) {
-  .chart-controls { gap: 8px; }
   .chart-controls > :is(.chart-view-control, .chart-store-series-toggle) { width: 100%; }
   .chart-store-series-toggle { justify-content: space-between; min-height: 40px; padding-inline: 12px; }
 }
