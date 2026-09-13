@@ -30,6 +30,7 @@ describe("компактный журнал изменений", () => {
     expect(journal).toContain('const [query,setQuery]=useState("")');
     expect(journal).toContain('const [filter,setFilter]=useState<ChangeFilter>("all")');
     expect(journal).toContain('className="packet-link compact notification-load-more change-log-more"');
+    expect(journal).toContain('className="change-log-more-wrap"');
     expect(journal).toContain('Поиск и фильтр применяются ко всей истории журнала');
     expect(journal).toContain('const deferredQuery=useDeferredValue(query.trim())');
   });

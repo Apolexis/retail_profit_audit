@@ -2682,3 +2682,23 @@ html[data-audit-theme="dark"] .chart-store-series-toggle.active { border-color: 
   .chart-controls > :is(.chart-view-control, .chart-store-series-toggle) { width: 100%; }
   .chart-store-series-toggle { justify-content: space-between; min-height: 40px; padding-inline: 12px; }
 }
+
+/* Финальные локальные исправления журнала и общих графиков: структурный gap не зависит от исторических margin. */
+.packet .change-log-more-wrap { display: block; width: 100%; padding-top: 26px; }
+.packet .change-log-more-wrap .change-log-more { width: calc(100% - 8px); margin: 0 4px 10px !important; }
+
+/* В светлой теме плашка и оба SVG-представления медианы используют один iOS-синий контракт. */
+html[data-audit-theme="light"] :is(.benchmark-chart, .benchmark-chart-expanded) .median-badge { border-color: #8bc2fb !important; background: #edf6ff !important; color: #075dbb !important; box-shadow: none !important; }
+html[data-audit-theme="light"] :is(.benchmark-chart, .benchmark-chart-expanded) .median-badge b { color: #075dbb !important; }
+html[data-audit-theme="light"] :is(.benchmark-chart, .benchmark-chart-expanded) .median-badge i { background: #0a84ff !important; }
+html[data-audit-theme="light"] :is(.benchmark-chart, .benchmark-chart-expanded) .recharts-reference-line :is(line, path),
+html[data-audit-theme="light"] :is(.benchmark-chart, .benchmark-chart-expanded) .recharts-reference-line-line { stroke: #0a84ff !important; }
+
+/* Короткий и широкий tooltip не теряет нижние строки на узком экране. */
+@media (max-width: 560px) {
+  .packet .metric-chart .recharts-tooltip-wrapper { max-width: calc(100% - 10px) !important; }
+  .packet .metric-chart .tiny-tooltip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 10px; width: min(280px, calc(100vw - 56px)); min-width: min(280px, calc(100vw - 56px)); max-width: min(280px, calc(100vw - 56px)); max-height: none !important; overflow: visible !important; box-sizing: border-box; }
+  .packet .metric-chart .tiny-tooltip > b { grid-column: 1 / -1; }
+  .packet .metric-chart .tiny-tooltip > span,
+  .packet .metric-chart .tiny-tooltip > span strong { min-width: 0; white-space: normal !important; overflow-wrap: anywhere; word-break: normal; }
+}

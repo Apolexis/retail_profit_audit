@@ -126,3 +126,23 @@ describe("длинные подписи адаптивных карточек", 
     expect(styles).toContain('.packet .card-title > div { flex: 1 1 100%; }');
   });
 });
+
+describe("финальные исправления журнала и медианных графиков", () => {
+  it("задает дозагрузке журнала структурный верхний отступ вместо конфликтующих margin", () => {
+    expect(styles).toContain('.packet .change-log-more-wrap { display: block; width: 100%; padding-top: 26px; }');
+    expect(styles).toContain('.packet .change-log-more-wrap .change-log-more { width: calc(100% - 8px); margin: 0 4px 10px !important; }');
+  });
+
+  it("унифицирует светлую медиану в компактном и развернутом графиках", () => {
+    expect(styles).toContain('html[data-audit-theme="light"] :is(.benchmark-chart, .benchmark-chart-expanded) .median-badge { border-color: #8bc2fb !important; background: #edf6ff !important; color: #075dbb !important; box-shadow: none !important; }');
+    expect(styles).toContain('.recharts-reference-line :is(line, path),');
+    expect(styles).toContain('.recharts-reference-line-line { stroke: #0a84ff !important; }');
+  });
+
+  it("делает мобильный tooltip двухколоночным без жесткого ограничения высоты", () => {
+    expect(styles).toContain('.packet .metric-chart .tiny-tooltip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 10px; width: min(280px, calc(100vw - 56px));');
+    expect(styles).toContain('max-height: none !important; overflow: visible !important;');
+    expect(styles).toContain('.packet .metric-chart .tiny-tooltip > b { grid-column: 1 / -1; }');
+    expect(styles).toContain('.packet .metric-chart .tiny-tooltip > span strong { min-width: 0; white-space: normal !important; overflow-wrap: anywhere; word-break: normal; }');
+  });
+});
