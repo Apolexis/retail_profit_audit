@@ -2660,3 +2660,73 @@ html[data-audit-theme="light"] .packet .benchmark-chart .recharts-reference-line
   .packet .chart-controls .chart-control select { width: 100%; min-width: 0; max-width: 100%; }
   .packet .control-comparison-note { padding-left: 18px; padding-right: 14px; }
 }
+
+/* Единый светлый контракт графиков и fixed-контролов, вынесенных из прокручиваемой оболочки. */
+html:not(.dark) :is(.chart-expand-dialog, .chart-expand-dialog-general) .chart-touch-mode-button,
+html:not(.dark) .metric-chart .chart-touch-mode-button {
+  background: #f7fbff !important;
+  border-color: #c7dcef !important;
+  color: #2e526d !important;
+  box-shadow: none !important;
+}
+html:not(.dark) :is(.chart-expand-dialog, .chart-expand-dialog-general) .chart-touch-mode-button.active,
+html:not(.dark) .metric-chart .chart-touch-mode-button.active {
+  background: #e7f2ff !important;
+  border-color: #0a84ff !important;
+  color: #0666bf !important;
+  box-shadow: none !important;
+}
+html:not(.dark) :is(.benchmark-chart, .benchmark-chart-expanded) .median-badge {
+  background: #f2f8ff !important;
+  border-color: #b9d9f7 !important;
+  color: #23506f !important;
+  box-shadow: none !important;
+}
+html:not(.dark) :is(.benchmark-chart, .benchmark-chart-expanded) .median-badge i,
+html:not(.dark) :is(.benchmark-chart, .benchmark-chart-expanded) .recharts-reference-line line {
+  background: #0a84ff !important;
+  stroke: #0a84ff !important;
+}
+.chart-controls { align-items: center; }
+.chart-store-series-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font: 700 10px Manrope, sans-serif;
+}
+.chart-store-series-toggle span { text-transform: uppercase; letter-spacing: .05em; }
+.chart-store-series-toggle b { color: var(--text); font-size: 11px; }
+.chart-store-series-toggle.active { border-color: var(--blue); background: color-mix(in srgb, var(--blue) 13%, var(--surface-2)); color: var(--blue); }
+.chart-store-series-toggle.active b { color: inherit; }
+.packet-fixed-control { position: fixed !important; isolation: isolate; }
+.pwa-fixed-control.mobile-quick-nav {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  left: max(12px, env(safe-area-inset-left, 0px)) !important;
+  right: max(12px, env(safe-area-inset-right, 0px)) !important;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 8px) !important;
+  top: auto !important;
+  inset: auto max(12px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 8px) max(12px, env(safe-area-inset-left, 0px)) !important;
+  z-index: 80 !important;
+  transform: none !important;
+}
+.packet-fixed-control.scroll-top {
+  position: fixed !important;
+  inset-block-start: auto !important;
+  top: auto !important;
+  z-index: 79 !important;
+  transform: none !important;
+}
+.pwa-fixed-control.mobile-quick-nav .mobile-quick-action { min-height: 39px; }
+body:has(.chart-expand-dialog[data-state="open"]) :is(.pwa-fixed-control.mobile-quick-nav, .packet-fixed-control.scroll-top) { display: none !important; }
+@media (max-width: 560px) {
+  .chart-controls { gap: 8px; }
+  .chart-controls > :is(.chart-view-control, .chart-store-series-toggle) { width: 100%; }
+  .chart-store-series-toggle { justify-content: space-between; min-height: 40px; padding-inline: 12px; }
+}

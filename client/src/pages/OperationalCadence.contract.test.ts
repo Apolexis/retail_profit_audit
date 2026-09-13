@@ -24,7 +24,7 @@ describe("страница «Ритм»", () => {
     expect(page).toContain("каждый магазин отдельно");
     expect(page).toContain("const [showStoreSeries, setShowStoreSeries] = useState(false);");
     expect(page).toContain("!showStoreSeries || !networkSelected || selectedMetrics.length !== 1");
-    expect(page).toContain("Магазины</button>");
+    expect(page).toContain('? "Магазины" : "Итого"');
   });
 
   it("выделяет наличные расходы и НДФЛ 22% в понятную группу", () => {

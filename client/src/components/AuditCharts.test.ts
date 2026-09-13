@@ -96,14 +96,14 @@ describe("форматирование денежных показателей",
     expect(source).not.toContain("if(activeZoom<=1)return");
     expect(source).toContain("const speed=chartPanSpeedForZoom(zoomRef.current)");
     expect(source).toContain("const queuePan=(delta:{x:number;y:number})");
-    expect(source).toContain("if(mouseAxisLock&&!gesture.current.axis)");
+    expect(source).toContain("if(mouseAxisLock&&!touchInput&&!gesture.current.axis)");
     expect(source).toContain("const mouseAxisThreshold=4");
     expect(source).toContain("mouseVerticalPanDirection=1");
     expect(source).toContain("mouseVerticalPanDirection={-1}");
     expect(source).toContain("touchVerticalPanDirection={-1}");
     expect(source).toContain("panDirection={-1}");
     expect(source).toContain('gesture.current.axis==="y"?0:-deltaX*speed');
-    expect(source).toContain('gesture.current.axis==="x"?0:deltaY*touchVerticalPanDirection*speed');
+    expect(source).toContain('queuePan({x:-deltaX*speed/Math.max(bounds.width,1),y:deltaY*touchVerticalPanDirection*speed');
     expect(source).toContain("event.currentTarget.setPointerCapture(event.pointerId)");
     expect(source).toContain("const renderPan=pan");
     expect(source).toContain("onLostPointerCapture={cancel}");
@@ -112,7 +112,7 @@ describe("форматирование денежных показателей",
     expect(source).toContain("event.preventDefault()");
     expect(source).toContain("const clampUnit=(value:number)=>Math.min(2.4,Math.max(-2.4,value))");
     expect(source).toContain("button,[data-chart-point='true']");
-    expect(source).toContain("resolveChartPanAxis(next.x-start.x,next.y-start.y,dragThreshold)");
+    expect(source).not.toContain("resolveChartPanAxis(next.x-start.x,next.y-start.y,dragThreshold)");
     expect(source).toContain("gesture.current.lastPoint=next;gesture.current.panning=true;event.preventDefault();event.stopPropagation();setDragging(true)");
     expect(source).not.toContain("onPointerDownOutside={event=>event.preventDefault()}");
     expect(source).toContain("const keepChartSurfaceInside");
@@ -131,7 +131,8 @@ describe("форматирование денежных показателей",
     expect(source).toContain('addEventListener("touchmove",touchMove,{passive:false,capture:true})');
     expect(source).toContain("const touchEnd=()=>clearGesture()");
     expect(source).toContain("function StableTinyTooltip");
-    expect(source).toContain("window.setTimeout(()=>setStable(props),72)");
+    expect(source).not.toContain("window.setTimeout(()=>setStable(props),72)");
+    expect(source).toContain("function StableTinyTooltip(props:TinyTooltipProps)");
     expect(source).toContain("isAnimationActive={false} animationDuration={0}");
     expect(source).toContain('const touchStart=(event:TouchEvent)=>{if(isControl(event.target)||!event.touches.length)return;');
     expect(source).toContain('if(!allowTouchPan&&active.length===1)return');
@@ -147,7 +148,7 @@ describe("форматирование денежных показателей",
     expect(source).toContain('const timelineMargin=compactChart?{top:12,right:8,left:0,bottom:4}');
     expect(source).toContain('const timelineAxisWidth=compactChart?55:78');
     expect(source).toContain('compactChart?322:306');
-    expect(source).toContain('<ChartPanZoomSurface compact touchModeControl={data.length>1} axisLock={false}>{compactViewport=><MetricLineChart');
+    expect(source).toContain('<ChartPanZoomSurface compact touchModeControl={data.length>1}>{compactViewport=><MetricLineChart');
     expect(source).toContain('<ChartPanZoomSurface compact touchModeControl mouseVerticalPanDirection={-1} touchVerticalPanDirection={-1}>{compactViewport=><BenchmarkBars');
     expect(source).toContain('<ChartExpandButton title={chartTitle} initialView={chartView} showViewControls={data.length>1} touchModeControl={data.length>1} protectGeneralChartSurface>');
     expect(source).not.toContain('<ChartPanZoomSurface compact touchModeControl={true}>');
