@@ -2684,7 +2684,7 @@ html[data-audit-theme="dark"] .chart-store-series-toggle.active { border-color: 
 }
 
 /* Финальные локальные исправления журнала и общих графиков: структурный gap не зависит от исторических margin. */
-.packet .change-log-more-wrap { display: block; width: 100%; padding-top: 26px; }
+.packet .change-log-more-wrap { display: block; width: 100%; padding-top: 23px; }
 .packet .change-log-more-wrap .change-log-more { width: calc(100% - 8px); margin: 0 4px 10px !important; }
 
 /* В светлой теме плашка и оба SVG-представления медианы используют один iOS-синий контракт. */
@@ -2694,11 +2694,29 @@ html[data-audit-theme="light"] :is(.benchmark-chart, .benchmark-chart-expanded) 
 html[data-audit-theme="light"] :is(.benchmark-chart, .benchmark-chart-expanded) .recharts-reference-line :is(line, path),
 html[data-audit-theme="light"] :is(.benchmark-chart, .benchmark-chart-expanded) .recharts-reference-line-line { stroke: #0a84ff !important; }
 
-/* Короткий и широкий tooltip не теряет нижние строки на узком экране. */
+/* Короткий и широкий tooltip не теряет нижние строки: правила действуют и в портальном детальном графике. */
 @media (max-width: 560px) {
-  .packet .metric-chart .recharts-tooltip-wrapper { max-width: calc(100% - 10px) !important; }
-  .packet .metric-chart .tiny-tooltip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 10px; width: min(280px, calc(100vw - 56px)); min-width: min(280px, calc(100vw - 56px)); max-width: min(280px, calc(100vw - 56px)); max-height: none !important; overflow: visible !important; box-sizing: border-box; }
-  .packet .metric-chart .tiny-tooltip > b { grid-column: 1 / -1; }
-  .packet .metric-chart .tiny-tooltip > span,
-  .packet .metric-chart .tiny-tooltip > span strong { min-width: 0; white-space: normal !important; overflow-wrap: anywhere; word-break: normal; }
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) .recharts-tooltip-wrapper { max-width: calc(100% - 10px) !important; }
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) .tiny-tooltip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 10px; width: min(280px, calc(100vw - 56px)); min-width: min(280px, calc(100vw - 56px)); max-width: min(280px, calc(100vw - 56px)); max-height: none !important; overflow: visible !important; box-sizing: border-box; }
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) .tiny-tooltip > b { grid-column: 1 / -1; }
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) .tiny-tooltip > span,
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) .tiny-tooltip > span strong { min-width: 0; white-space: normal !important; overflow-wrap: anywhere; word-break: normal; }
 }
+
+/* На средней ширине или коротком viewport многосерийная подсказка заранее переходит в две колонки и поднимается в безопасную зону. */
+@media (min-width: 561px) and (max-width: 1059px), (min-width: 561px) and (max-height: 780px) {
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) .recharts-tooltip-wrapper { max-width: calc(100% - 18px) !important; translate: 0 -10px; }
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) .tiny-tooltip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 12px; width: min(320px, calc(100vw - 56px)); min-width: min(320px, calc(100vw - 56px)); max-width: min(320px, calc(100vw - 56px)); max-height: none !important; overflow: visible !important; box-sizing: border-box; }
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) .tiny-tooltip > b { grid-column: 1 / -1; }
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) .tiny-tooltip > span,
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) .tiny-tooltip > span strong { min-width: 0; white-space: normal !important; overflow-wrap: anywhere; word-break: normal; }
+}
+
+/* В развернутом портальном графике светлая тема повторяет поверхность compact-кнопок режима касания. */
+html[data-audit-theme="light"] :is(.chart-expand-dialog, .chart-expand-dialog-general) .chart-panzoom-touch-actions .chart-touch-mode-control { border-color: #c4dffb !important; background: #f4f9ff !important; }
+html[data-audit-theme="light"] :is(.chart-expand-dialog, .chart-expand-dialog-general) .chart-panzoom-touch-actions .chart-touch-mode-button.active,
+html[data-audit-theme="light"] :is(.chart-expand-dialog, .chart-expand-dialog-general) .chart-panzoom-touch-actions .chart-touch-mode-button[aria-pressed="true"] { border-color: #0a63c8 !important; background: #0a63c8 !important; color: #ffffff !important; box-shadow: none !important; }
+
+/* Светлая карточка детализации цен сохраняет полную ширину длинного пояснения так же, как темная. */
+html[data-audit-theme="light"] .packet .pricing-markup-detail .card-title > div { min-width: 0; width: 100%; }
+html[data-audit-theme="light"] .packet .pricing-markup-detail .card-title :is(h3, small) { display: block; max-width: 100%; min-width: 0; white-space: normal !important; overflow-wrap: anywhere; word-break: normal; }

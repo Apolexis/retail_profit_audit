@@ -129,7 +129,7 @@ describe("длинные подписи адаптивных карточек", 
 
 describe("финальные исправления журнала и медианных графиков", () => {
   it("задает дозагрузке журнала структурный верхний отступ вместо конфликтующих margin", () => {
-    expect(styles).toContain('.packet .change-log-more-wrap { display: block; width: 100%; padding-top: 26px; }');
+    expect(styles).toContain('.packet .change-log-more-wrap { display: block; width: 100%; padding-top: 23px; }');
     expect(styles).toContain('.packet .change-log-more-wrap .change-log-more { width: calc(100% - 8px); margin: 0 4px 10px !important; }');
   });
 
@@ -139,10 +139,16 @@ describe("финальные исправления журнала и медиа
     expect(styles).toContain('.recharts-reference-line-line { stroke: #0a84ff !important; }');
   });
 
-  it("делает мобильный tooltip двухколоночным без жесткого ограничения высоты", () => {
-    expect(styles).toContain('.packet .metric-chart .tiny-tooltip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 10px; width: min(280px, calc(100vw - 56px));');
+  it("делает tooltip двухколоночным в compact и портальном детальном графике без жесткого ограничения высоты", () => {
+    expect(styles).toContain(':is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) .tiny-tooltip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 10px; width: min(280px, calc(100vw - 56px));');
     expect(styles).toContain('max-height: none !important; overflow: visible !important;');
-    expect(styles).toContain('.packet .metric-chart .tiny-tooltip > b { grid-column: 1 / -1; }');
-    expect(styles).toContain('.packet .metric-chart .tiny-tooltip > span strong { min-width: 0; white-space: normal !important; overflow-wrap: anywhere; word-break: normal; }');
+    expect(styles).toContain('@media (min-width: 561px) and (max-width: 1059px), (min-width: 561px) and (max-height: 780px)');
+    expect(styles).toContain('translate: 0 -10px;');
+  });
+
+  it("повторяет светлую поверхность compact-режимов и перенос пояснения в портальном графике и карточке цен", () => {
+    expect(styles).toContain('html[data-audit-theme="light"] :is(.chart-expand-dialog, .chart-expand-dialog-general) .chart-panzoom-touch-actions .chart-touch-mode-control { border-color: #c4dffb !important; background: #f4f9ff !important; }');
+    expect(styles).toContain('html[data-audit-theme="light"] :is(.chart-expand-dialog, .chart-expand-dialog-general) .chart-panzoom-touch-actions .chart-touch-mode-button.active,');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .pricing-markup-detail .card-title :is(h3, small) { display: block; max-width: 100%; min-width: 0; white-space: normal !important; overflow-wrap: anywhere; word-break: normal; }');
   });
 });
