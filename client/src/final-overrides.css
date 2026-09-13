@@ -2740,9 +2740,34 @@ html[data-audit-theme="dark"] :is(.chart-expand-dialog, .chart-expand-dialog-gen
 
 /* Компактная медиана на телефоне: режимы используют ту же голубую поверхность, а короткие коды магазинов не резервируют лишнее место слева. */
 @media (max-width: 560px) {
-  html[data-audit-theme="light"] .packet .benchmark-chart:not(.benchmark-chart-expanded) .chart-touch-mode-control { border-color: #c4dffb !important; background: #f4f9ff !important; }
-  html[data-audit-theme="light"] .packet .benchmark-chart:not(.benchmark-chart-expanded) .chart-touch-mode-button:not(.active) { background: #f4f9ff !important; color: #51657d !important; box-shadow: none !important; }
+html[data-audit-theme="light"] .packet .benchmark-chart:not(.benchmark-chart-expanded) .chart-touch-mode-control { border-color: #c4dffb !important; background: #f4f9ff !important; }
+html[data-audit-theme="light"] .packet .benchmark-chart:not(.benchmark-chart-expanded) .chart-touch-mode-button:not(.active) { background: #f4f9ff !important; color: #51657d !important; box-shadow: none !important; }
   .packet .chart-store-series-toggle { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 42px; padding: 7px 10px; }
   .packet .chart-store-series-toggle span { min-width: 0; white-space: normal; text-transform: none; letter-spacing: .015em; line-height: 1.24; font-size: 9px; }
   .packet .chart-store-series-toggle b { align-self: center; white-space: nowrap; }
+}
+
+/* Compact-медиана повторяет точный нейтральный фон обычного компактного переключателя. */
+@media (max-width: 560px) {
+  html[data-audit-theme="light"] .packet .benchmark-chart:not(.benchmark-chart-expanded) .chart-touch-mode-control { border-color: #cbdcff !important; background: #f7faff !important; }
+  html[data-audit-theme="light"] .packet .benchmark-chart:not(.benchmark-chart-expanded) .chart-touch-mode-button:not(.active) { background: transparent !important; color: #51657d !important; }
+}
+
+/* PDF открывается только после полной сборки внутри приложения; popup-блокировщик не участвует в основном сценарии. */
+.report-pdf-preview-dialog { width: min(980px, calc(100vw - 24px)) !important; max-width: none !important; height: min(86dvh, 860px); grid-template-rows: auto minmax(0, 1fr) auto; padding: 14px !important; }
+.report-pdf-preview-frame { width: 100%; min-height: 0; height: 100%; border: 1px solid var(--line); border-radius: 10px; background: #ffffff; }
+.report-pdf-preview-dialog [data-slot="dialog-footer"] { align-items: center; }
+.report-pdf-open-external { margin-top: 0; text-decoration: none; }
+
+/* Блок непрочитанных ведет к первому событию и выделяет только цель перехода. */
+.packet .notification-unread-kpi { width: 100%; text-align: left; color: inherit; cursor: pointer; font: inherit; }
+.packet .notification-unread-kpi:disabled { cursor: default; }
+.packet .notification-first-unread { scroll-margin-block: 104px; }
+.packet .notification-first-unread:focus { outline: 2px solid var(--blue); outline-offset: 3px; }
+
+/* iOS иногда неверно перерисовывает fixed-элемент с translate: центрируем навигацию расчетными inset без transform. */
+@media (hover: none), (pointer: coarse) {
+  .packet.pwa-standalone .mobile-quick-nav { position: fixed !important; left: max(16px, calc((100vw - 260px) / 2)) !important; right: max(16px, calc((100vw - 260px) / 2)) !important; width: auto !important; transform: none !important; -webkit-transform: none !important; }
+  .packet.pwa-standalone .scroll-top { position: fixed !important; transform: translateZ(0); -webkit-transform: translateZ(0); }
+  .packet.pwa-standalone .scroll-top:hover { transform: translateZ(0); -webkit-transform: translateZ(0); }
 }

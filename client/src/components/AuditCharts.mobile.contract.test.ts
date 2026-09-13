@@ -57,7 +57,9 @@ describe("мобильный контракт графических контр�
   it("измеряет положение высокого tooltip и включает плотную сетку только при большом числе рядов", () => {
     expect(chart).toContain('useLayoutEffect');
     expect(chart).toContain('wrapper.style.setProperty("--tiny-tooltip-shift-y"');
-    expect(chart).toContain('className={values.length>12?"tiny-tooltip tiny-tooltip-dense":"tiny-tooltip"}');
+    expect(chart).toContain('gridAutoFlow:"column"');
+    expect(chart).toContain('gridTemplateRows:`repeat(${Math.ceil(sortedValues.length/columnCount)}, auto)`');
+    expect(chart).toContain('className={sortedValues.length>12?"tiny-tooltip tiny-tooltip-dense":"tiny-tooltip"}');
   });
 
   it("сокращает левый резерв компактного медианного графика на телефоне и не меняет развернутый вариант", () => {
@@ -65,5 +67,6 @@ describe("мобильный контракт графических контр�
     expect(chart).toContain('const storeAxisWidth=compactBenchmark?72:128');
     expect(chart).toContain('left:compactBenchmark?0:18');
     expect(styles).toContain('html[data-audit-theme="light"] .packet .benchmark-chart:not(.benchmark-chart-expanded) .chart-touch-mode-control');
+    expect(styles).toContain('border-color: #cbdcff !important; background: #f7faff !important;');
   });
 });

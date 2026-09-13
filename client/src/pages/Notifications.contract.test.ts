@@ -17,3 +17,12 @@ it("настраивает процентный порог отклонения 
   expect(page).toContain('inputMode="decimal"');
   expect(page).toContain('threshold: event.target.value.replace(/[^0-9.,]/g, "")');
 });
+
+it("ведет из блока непрочитанных к первому непрочитанному событию", () => {
+  const page = readFileSync(resolve(process.cwd(), "client/src/pages/Notifications.tsx"), "utf8");
+  expect(page).toContain('const firstUnreadRef = useRef<HTMLElement | null>(null);');
+  expect(page).toContain('const revealFirstUnread = () => {');
+  expect(page).toContain('target.scrollIntoView({ behavior: "smooth", block: "center" });');
+  expect(page).toContain('className="packet-kpi notification-unread-kpi"');
+  expect(page).toContain('notification-first-unread');
+});
