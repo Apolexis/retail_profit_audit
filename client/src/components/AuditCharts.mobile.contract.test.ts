@@ -17,6 +17,8 @@ describe("мобильный контракт графических контр�
     expect(chart).toContain('function ChartTouchModeControls');
     expect(chart).toContain('onClick={()=>onChange("inspect")}');
     expect(chart).toContain('onClick={()=>onChange("pan")}');
+    expect(chart).toContain("export function StoreSeriesModeToggle");
+    expect(chart).toContain("Ряды (выбор режима отображения на графике)");
   });
 
   it("показывает режимы касания только при touch-вводе и использует анализ точек по умолчанию", () => {
@@ -56,5 +58,12 @@ describe("мобильный контракт графических контр�
     expect(chart).toContain('useLayoutEffect');
     expect(chart).toContain('wrapper.style.setProperty("--tiny-tooltip-shift-y"');
     expect(chart).toContain('className={values.length>12?"tiny-tooltip tiny-tooltip-dense":"tiny-tooltip"}');
+  });
+
+  it("сокращает левый резерв компактного медианного графика на телефоне и не меняет развернутый вариант", () => {
+    expect(chart).toContain('const compactBenchmark=compactViewport&&!expanded');
+    expect(chart).toContain('const storeAxisWidth=compactBenchmark?72:128');
+    expect(chart).toContain('left:compactBenchmark?0:18');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .benchmark-chart:not(.benchmark-chart-expanded) .chart-touch-mode-control');
   });
 });

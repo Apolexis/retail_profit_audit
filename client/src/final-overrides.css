@@ -2737,3 +2737,12 @@ html[data-audit-theme="light"] :is(.chart-expand-dialog, .chart-expand-dialog-ge
 
 /* Темный развернутый график не получает iOS-синий focus/hover-контур: акцент относится к самой поверхности, а не к кнопкам. */
 html[data-audit-theme="dark"] :is(.chart-expand-dialog, .chart-expand-dialog-general) .chart-panzoom:is(:hover, :focus, :focus-visible) { border-color: #ff765f !important; outline: 2px solid #ff9179 !important; outline-offset: 3px !important; box-shadow: 0 0 0 2px rgba(255, 118, 95, .14) !important; }
+
+/* Компактная медиана на телефоне: режимы используют ту же голубую поверхность, а короткие коды магазинов не резервируют лишнее место слева. */
+@media (max-width: 560px) {
+  html[data-audit-theme="light"] .packet .benchmark-chart:not(.benchmark-chart-expanded) .chart-touch-mode-control { border-color: #c4dffb !important; background: #f4f9ff !important; }
+  html[data-audit-theme="light"] .packet .benchmark-chart:not(.benchmark-chart-expanded) .chart-touch-mode-button:not(.active) { background: #f4f9ff !important; color: #51657d !important; box-shadow: none !important; }
+  .packet .chart-store-series-toggle { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 42px; padding: 7px 10px; }
+  .packet .chart-store-series-toggle span { min-width: 0; white-space: normal; text-transform: none; letter-spacing: .015em; line-height: 1.24; font-size: 9px; }
+  .packet .chart-store-series-toggle b { align-self: center; white-space: nowrap; }
+}

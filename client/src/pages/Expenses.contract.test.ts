@@ -25,7 +25,8 @@ describe("страница «Расходы»", () => {
     expect(page).toContain("const trendLines = storeComparisonTrend");
     expect(page).toContain("каждый магазин отдельно");
     expect(page).toContain("const [showStoreSeries, setShowStoreSeries] = useState(false);");
-    expect(page).toContain('? "Магазины" : "Итого"');
+    expect(page).toContain("StoreSeriesModeToggle");
+    expect(page).toContain('active={showStoreSeries}');
     expect(page).toContain("!showStoreSeries || !networkSelected || selectedFields.length !== 1");
   });
 

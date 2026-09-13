@@ -63,6 +63,8 @@ describe("WeeklyReports interaction contract",()=>{
     expect(page).toContain('const savePdfForDevice=async');
     expect(page).toContain('const delivery=await savePdfForDevice(pdf,fileName);');
     expect(page).toContain('navigator as Navigator');
+    expect(page).toContain('const preview=window.open(url,"_blank")');
+    expect(page).toContain('return "opened" as const');
     expect(page).toContain('className="report-pdf-source"');
     expect(page).toContain('aria-label="Выгрузить выбранный отчет в PDF"');
     expect(page).toContain('toast.success("PDF-отчет подготовлен"');
@@ -73,7 +75,7 @@ describe("WeeklyReports interaction contract",()=>{
 
   it("добавляет в PDF фирменный знак и первую локально рисуемую страницу без DOM-снимка",()=>{
     expect(page).toContain('const createReportWeeklySummaryCanvas=async');
-    expect(page).toContain('const [weeklySummary,dailySummary,weeklyDynamics,dailyDynamics,insights,weeklyLedgers,dailyLedgers]=await Promise.all([');
+    expect(page).toContain('const [weeklySummary,dailySummary,commerce,storeFocus,weeklyDynamics,dailyDynamics,insights,weeklyLedgers,dailyLedgers]=await Promise.all([');
     expect(page).not.toContain('window.open("about:blank","_blank")');
     expect(page).toContain('const reportPdfBrandIcon=');
     expect(page).toContain('const loadPdfBrand=async');
@@ -98,6 +100,14 @@ describe("WeeklyReports interaction contract",()=>{
     expect(page).toContain('"Риск-сигналы выбранного среза"');
     expect(page).toContain('"Состав и границы фактической базы"');
     expect(page).toContain('createReportInsightsCanvas(pdfSummary,timeline,pdfTheme,brandSource)');
+  });
+
+  it("дополняет PDF фактическими платежами, товарным потоком, наценкой и фокусом по магазинам",()=>{
+    expect(page).toContain('const createReportCommerceCanvas=async');
+    expect(page).toContain('"Платежи, товарный поток и наценка"');
+    expect(page).toContain('"Магазины: ориентиры и риск-фокус"');
+    expect(page).toContain('createReportCommerceCanvas(pdfSummary,timeline,pdfTheme,brandSource)');
+    expect(page).toContain('createReportStoreFocusCanvas(pdfSummary,pdfTheme,brandSource)');
   });
 
   it("добавляет полный недельный реестр с фактической разбивкой наличных и безналичных платежей",()=>{
