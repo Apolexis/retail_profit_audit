@@ -117,3 +117,12 @@ describe("активная поверхность развернутого гр�
     expect(styles).toContain('.chart-expand-dialog .chart-panzoom { isolation: isolate !important; z-index: 1 !important; pointer-events: auto !important; touch-action: none !important; }');
   });
 });
+
+describe("длинные подписи адаптивных карточек", () => {
+  it("дает карточкам полную доступную ширину и безопасный перенос текста на малых и средних экранах в обеих темах", () => {
+    expect(styles).toContain('@media (max-width: 1059px) {\n  .packet :is(.packet-card, .packet-kpi, .cover-note, .section-recommendation, .launch-card, .watch-card, .scenario-card, .report-history-item, .pricing-markup-detail-grid > article) { box-sizing: border-box; min-width: 0; max-width: 100%; }');
+    expect(styles).toContain('overflow-wrap: anywhere; word-break: normal;');
+    expect(styles).toContain('.packet .card-title { flex-wrap: wrap; gap: 9px; }');
+    expect(styles).toContain('.packet .card-title > div { flex: 1 1 100%; }');
+  });
+});

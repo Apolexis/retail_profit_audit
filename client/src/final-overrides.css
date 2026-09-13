@@ -2609,6 +2609,21 @@ html[data-audit-theme] .packet .packet-top::before { position: absolute; z-index
   html[data-audit-theme="dark"] .packet .control-month-table .card-title small { display: block; max-width: 100%; min-width: 0; white-space: normal !important; overflow-wrap: anywhere; word-break: normal; }
   html[data-audit-theme="dark"] .packet .control-month-table .card-title { align-items: flex-start; }
 }
+
+/* Единый контракт карточек: длинные деловые пояснения используют всю доступную ширину,
+   а flex/grid-дети могут сжиматься и переносить текст без выхода за экран. */
+@media (max-width: 1059px) {
+  .packet :is(.packet-card, .packet-kpi, .cover-note, .section-recommendation, .launch-card, .watch-card, .scenario-card, .report-history-item, .pricing-markup-detail-grid > article) { box-sizing: border-box; min-width: 0; max-width: 100%; }
+  .packet :is(.packet-card, .packet-kpi, .cover-note, .section-recommendation, .launch-card, .watch-card, .scenario-card, .report-history-item, .pricing-markup-detail-grid > article) :is(h1, h2, h3, h4, p, small, span, strong, b, em, label) { min-inline-size: 0; max-inline-size: 100%; overflow-wrap: anywhere; word-break: normal; }
+  .packet :is(.card-title, .analysis-filter, .page-lede, .report-history, .report-actions, .section-recommendation) > * { min-width: 0; }
+  .packet .card-title > small { white-space: normal; overflow-wrap: anywhere; }
+}
+@media (max-width: 560px) {
+  .packet .card-title { flex-wrap: wrap; gap: 9px; }
+  .packet .card-title > div { flex: 1 1 100%; }
+  .packet .card-title > small { flex: 0 1 auto; width: fit-content; max-width: 100%; }
+  .packet :is(.packet-split, .two-col, .report-layout, .inventory-profile-grid) > .packet-card:only-child { grid-column: 1 / -1; width: 100%; }
+}
 html[data-audit-theme="dark"] .packet .change-log-filters :is(input, select):focus { border-color: #ff937f; box-shadow: none; }
 html[data-audit-theme="light"] .chart-expand-dialog .chart-touch-mode-button.active,
 html[data-audit-theme="light"] .chart-expand-dialog .chart-touch-mode-button[aria-pressed="true"] { border-color: #0a84ff !important; background: #0a84ff !important; color: #ffffff !important; box-shadow: 0 0 0 2px rgba(10, 132, 255, .16) !important; }
