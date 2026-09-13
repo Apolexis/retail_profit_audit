@@ -793,6 +793,20 @@ html[data-audit-theme="light"] .packet .report-history-item.active { border-colo
 html[data-audit-theme="light"] .packet .report-history-item > b { color: #c9364c; }
 html[data-audit-theme="light"] .packet .report-history-item.active > b { color: #08745d; }
 @media (max-width: 720px) { .packet .report-schedule-controls .schedule-enabled { min-width: 0; } .packet .report-history-item { min-height: 48px; } }
+
+/* Финальная приемка графиков, журналов и focus: без кораллового наследования в светлой теме. */
+.packet .notification-list > .notification-load-more { align-self: start; margin: 18px 0 6px !important; }
+.packet .metric-chart .recharts-tooltip-wrapper { max-width: calc(100% - 18px) !important; }
+.packet .metric-chart .tiny-tooltip { max-width: min(280px, calc(100vw - 42px)); max-height: 176px; overflow-y: auto; overscroll-behavior: contain; }
+html[data-audit-theme="light"] .packet :is(.benchmark-chart, .benchmark-chart-expanded) .median-badge { border-color: #8bc2fb !important; background: #edf6ff !important; color: #075dbb !important; }
+html[data-audit-theme="light"] .packet :is(.benchmark-chart, .benchmark-chart-expanded) .median-badge b { color: #075dbb !important; }
+html[data-audit-theme="light"] .packet :is(.benchmark-chart, .benchmark-chart-expanded) .recharts-reference-line line { stroke: #0a84ff !important; }
+html[data-audit-theme="light"] .packet .chart-touch-mode-control { border-color: #c4dffb !important; background: #f4f9ff !important; }
+html[data-audit-theme="light"] .packet .chart-touch-mode-button.active { background: #0a84ff !important; color: #ffffff !important; box-shadow: 0 3px 8px rgba(10,132,255,.24) !important; }
+html[data-audit-theme="light"] :is(input, select, textarea):focus { outline: none !important; }
+html[data-audit-theme="light"] :is(input, select, textarea):focus-visible { outline: 2px solid #0a84ff !important; outline-offset: 1px; box-shadow: none !important; }
+html[data-audit-theme="dark"] :is(input, select, textarea):focus { outline: none !important; }
+html[data-audit-theme="dark"] :is(input, select, textarea):focus-visible { outline: 2px solid #ff9179 !important; outline-offset: 1px; box-shadow: none !important; }
 html:not([data-audit-theme="light"]) .packet .account-list > .account-choice:first-child { border-top: 1px solid rgba(255, 178, 162, .32); }
 .packet .packet-nav-group { display: grid; gap: 2px; }
 .packet .packet-nav-group + .packet-nav-group { margin-top: 8px; padding-top: 9px; border-top: 1px solid rgba(255, 255, 255, .07); }

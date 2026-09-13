@@ -20,4 +20,9 @@ describe("серверный журнал и регулярные сводки",
     expect(reports).toContain('const prunedReportIds=saved.slice(6).map(item=>item.id);');
     expect(reports).toContain('Math.min(6,Math.max(1,Math.floor(limit)))');
   });
+
+  it("отзывает устаревшие сводки после изменения видимости точки", () => {
+    expect(reports).toContain('invalidateWeeklyExecutiveReportsForVisibilityChange');
+    expect(reports).toContain('await db.delete(weeklyExecutiveReports)');
+  });
 });

@@ -10,7 +10,7 @@ const severityIcon = { critical: CircleAlert, warning: TriangleAlert, info: Info
 const severityLabel = { critical: "Критично", warning: "Контроль", info: "Информация" };
 const cashControlRuleKeys = new Set(["cash_expense_daily", "ndfl_22_daily"]);
 
-type ThresholdDraft = { threshold: number; isEnabled: boolean };
+type ThresholdDraft = { threshold: string; isEnabled: boolean };
 type ThresholdRule = { ruleKey: string; label: string; description: string; comparison: "gte" | "lte"; threshold: number; isEnabled: boolean; unit: string };
 const importIdFromAddress = () => {
   if (typeof window === "undefined") return null;
@@ -23,7 +23,7 @@ function ThresholdRuleCard({ rule, draft, onDraftChange, onSave, isSaving }: { r
   return <form className={`threshold-rule ${draft.isEnabled ? "" : "is-disabled"}`} onSubmit={event => { event.preventDefault(); onSave(); }}>
     <div className="threshold-copy"><strong>{rule.label}</strong><small>{rule.comparison === "gte" ? "Сигнал при значении не ниже" : "Сигнал при значении не выше"} порога · {rule.description}</small></div>
     <label className="threshold-enabled"><input type="checkbox" checked={draft.isEnabled} onChange={event => onDraftChange({ ...draft, isEnabled: event.target.checked })}/><span>{draft.isEnabled ? "Включен" : "Отключен"}</span></label>
-    <label className="threshold-amount">Порог<input type="number" min="0" step={step} value={draft.threshold} onChange={event => onDraftChange({ ...draft, threshold: Number(event.target.value) || 0 })}/><span>{rule.unit}</span></label>
+    <label className="threshold-amount">Порог<input type="text" inputMode="decimal" pattern="[0-9]*[.,]?[0-9]*" aria-label={`Порог: ${rule.label}`} value={draft.threshold} onChange={event => onDraftChange({ ...draft, threshold: event.target.value.replace(/[^0-9.,]/g, "") })}/><span>{rule.unit}</span></label>
     <button className="packet-link compact" disabled={isSaving}>Сохранить</button>
   </form>;
 }
@@ -42,7 +42,7 @@ export default function Notifications() {
   const [thresholdDrafts, setThresholdDrafts] = useState<Record<string, ThresholdDraft>>({});
 
   useEffect(() => {
-    if (thresholds.data) setThresholdDrafts(Object.fromEntries(thresholds.data.map(rule => [rule.ruleKey, { threshold: rule.threshold, isEnabled: rule.isEnabled }])));
+    if (thresholds.data) setThresholdDrafts(Object.fromEntries(thresholds.data.map(rule => [rule.ruleKey, { threshold: String(rule.threshold), isEnabled: rule.isEnabled }])));
   }, [thresholds.data]);
   useEffect(() => {
     const syncFromAddress = () => setActiveImportId(importIdFromAddress());
@@ -61,8 +61,8 @@ export default function Notifications() {
   const cashControlRules = allRules.filter(rule => cashControlRuleKeys.has(rule.ruleKey));
   const otherRules = allRules.filter(rule => !cashControlRuleKeys.has(rule.ruleKey));
   const setDraft = (ruleKey: string, next: ThresholdDraft) => setThresholdDrafts(current => ({ ...current, [ruleKey]: next }));
-  const draftFor = (rule: ThresholdRule) => thresholdDrafts[rule.ruleKey] ?? { threshold: rule.threshold, isEnabled: rule.isEnabled };
-  const saveRule = (rule: ThresholdRule) => { const draft = draftFor(rule); saveThreshold.mutate({ ruleKey: rule.ruleKey, threshold: draft.threshold, isEnabled: draft.isEnabled }); };
+  const draftFor = (rule: ThresholdRule) => thresholdDrafts[rule.ruleKey] ?? { threshold: String(rule.threshold), isEnabled: rule.isEnabled };
+  const saveRule = (rule: ThresholdRule) => { const draft = draftFor(rule); const threshold = Number(draft.threshold.replace(",", ".")); if (!Number.isFinite(threshold) || threshold < 0) { toast.error("Введите неотрицательное значение порога"); return; } saveThreshold.mutate({ ruleKey: rule.ruleKey, threshold, isEnabled: draft.isEnabled }); };
   const openImportDetails = (importId: string | null) => {
     if (!importId || !/^\d+$/.test(importId)) return;
     const next = Number(importId);

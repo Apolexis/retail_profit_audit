@@ -22,6 +22,8 @@ export const ALERT_THRESHOLD_DEFAULTS: AlertThresholdDefinition[] = [
   { ruleKey: "cashless_expense_daily", metricCode: "cashless_operating_costs", comparison: "gte", threshold: 20_000, severity: "warning", label: "Расходы безнал", description: "безналичные операционные расходы за день", unit: "₽" },
   { ruleKey: "payroll_cost_daily", metricCode: "payroll_costs", comparison: "gte", threshold: 35_000, severity: "warning", label: "ФОТ и отпускные", description: "зарплата, налоги и отпускные за день", unit: "₽" },
   { ruleKey: "markup_median_deviation", metricCode: "markup_median_deviation_pp", comparison: "gte", threshold: 8, severity: "warning", label: "Наценка отклоняется от медианы", description: "абсолютный разрыв расчетной общей наценки с медианой сети за дату", unit: "п.п." },
+  { ruleKey: "markup_smoked_median_deviation", metricCode: "markup_smoked_median_deviation_pp", comparison: "gte", threshold: 8, severity: "warning", label: "Наценка Коп. отклоняется от медианы", description: "абсолютный разрыв расчетной наценки Коп. с медианой сети за дату", unit: "п.п." },
+  { ruleKey: "markup_frozen_median_deviation", metricCode: "markup_frozen_median_deviation_pp", comparison: "gte", threshold: 8, severity: "warning", label: "Наценка Мор. отклоняется от медианы", description: "абсолютный разрыв расчетной наценки Мор. с медианой сети за дату", unit: "п.п." },
 ];
 
 export const CASH_OPERATING_COMPONENT_CODES = ["household", "delivery", "cleaning", "bonus", "seniority", "supplement", "driver_cash", "utilities_cash", "operating_costs"] as const;
@@ -77,40 +79,28 @@ const median = (items: number[]) => {
 
 /** Adds the same total-markup formula that powers the analytics UI: (sales − purchases) ÷ purchases × 100. */
 export function withDerivedMarkupMedianDeviationCandidates(candidates: ThresholdCandidate[]) {
-  const byStoreDate = new Map<string, { storeId: number; store: string; entryDate: string; sales: number; purchases: number }>();
+  type MarkupFacts = { storeId: number; store: string; entryDate: string; salesSmoked: number; salesFrozen: number; purchaseSmoked: number; purchaseFrozen: number };
+  const byStoreDate = new Map<string, MarkupFacts>();
   for (const candidate of candidates) {
     if (!["sales_smoked", "sales_frozen", "purchase_smoked", "purchase_frozen"].includes(candidate.metricCode)) continue;
     const key = `${candidate.storeId}:${candidate.entryDate}`;
-    const current = byStoreDate.get(key) ?? { storeId: candidate.storeId, store: candidate.store, entryDate: candidate.entryDate, sales: 0, purchases: 0 };
-    if (candidate.metricCode === "sales_smoked" || candidate.metricCode === "sales_frozen") current.sales += candidate.amount;
-    else current.purchases += candidate.amount;
+    const current = byStoreDate.get(key) ?? { storeId: candidate.storeId, store: candidate.store, entryDate: candidate.entryDate, salesSmoked: 0, salesFrozen: 0, purchaseSmoked: 0, purchaseFrozen: 0 };
+    if (candidate.metricCode === "sales_smoked") current.salesSmoked += candidate.amount;
+    if (candidate.metricCode === "sales_frozen") current.salesFrozen += candidate.amount;
+    if (candidate.metricCode === "purchase_smoked") current.purchaseSmoked += candidate.amount;
+    if (candidate.metricCode === "purchase_frozen") current.purchaseFrozen += candidate.amount;
     byStoreDate.set(key, current);
   }
-  const markupByDate = new Map<string, Array<{ storeId: number; store: string; entryDate: string; markup: number }>>();
-  for (const item of Array.from(byStoreDate.values())) {
-    if (item.purchases === 0) continue;
-    const markup = ((item.sales - item.purchases) / item.purchases) * 100;
-    if (!Number.isFinite(markup)) continue;
-    const values = markupByDate.get(item.entryDate) ?? [];
-    values.push({ ...item, markup });
-    markupByDate.set(item.entryDate, values);
-  }
   const derived: ThresholdCandidate[] = [];
-  for (const values of Array.from(markupByDate.values())) {
-    if (values.length < 2) continue;
-    const networkMedian = median(values.map(item => item.markup));
-    for (const item of values) {
-      const difference = item.markup - networkMedian;
-      if (difference === 0) continue;
-      derived.push({
-        storeId: item.storeId,
-        store: item.store,
-        entryDate: item.entryDate,
-        metricCode: "markup_median_deviation_pp",
-        amount: Math.abs(difference),
-        context: { markup: item.markup, median: networkMedian, direction: difference > 0 ? "выше" : "ниже" },
-      });
-    }
+  const variants: Array<{ metricCode: string; sales: (item: MarkupFacts) => number; purchases: (item: MarkupFacts) => number }> = [
+    { metricCode: "markup_smoked_median_deviation_pp", sales: item => item.salesSmoked, purchases: item => item.purchaseSmoked },
+    { metricCode: "markup_frozen_median_deviation_pp", sales: item => item.salesFrozen, purchases: item => item.purchaseFrozen },
+    { metricCode: "markup_median_deviation_pp", sales: item => item.salesSmoked + item.salesFrozen, purchases: item => item.purchaseSmoked + item.purchaseFrozen },
+  ];
+  for (const variant of variants) {
+    const byDate = new Map<string, Array<{ storeId: number; store: string; entryDate: string; markup: number }>>();
+    for (const item of Array.from(byStoreDate.values())) { const purchases = variant.purchases(item), sales = variant.sales(item); if (!purchases) continue; const markup = ((sales - purchases) / purchases) * 100; if (!Number.isFinite(markup)) continue; const values = byDate.get(item.entryDate) ?? []; values.push({ storeId: item.storeId, store: item.store, entryDate: item.entryDate, markup }); byDate.set(item.entryDate, values); }
+    for (const values of Array.from(byDate.values())) { if (values.length < 2) continue; const networkMedian = median(values.map(item => item.markup)); for (const item of values) { const difference = item.markup - networkMedian; if (difference !== 0) derived.push({ storeId: item.storeId, store: item.store, entryDate: item.entryDate, metricCode: variant.metricCode, amount: Math.abs(difference), context: { markup: item.markup, median: networkMedian, direction: difference > 0 ? "выше" : "ниже" } }); } }
   }
   return [...candidates, ...derived];
 }
