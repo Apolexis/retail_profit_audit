@@ -33,20 +33,32 @@ describe("Pilot scenario outcome contract",()=>{
     expect(page).toContain("formatPilotNumber");
   });
 
-  it("uses a separate utilities lever for the second fact-based recommendation without applying it automatically",()=>{
-    expect(page).toContain("const totalUtilities=Math.abs(store.expenseByCode.utilities_cash??0)");
-    expect(page).toContain("const utilitiesRatioMedian=median(facts.summaries.map");
-    expect(page).toContain("const utilitiesGapToMedian=utilitiesRatio>utilitiesRatioMedian");
-    expect(page).toContain("const recommendedUtilitiesShift=Math.min(15,utilitiesGapToMedian)");
-    expect(page).toContain('id:"utilities"');
-    expect(page).toContain("Пилот сокращения коммунальных платежей");
+  it("uses a separate rent lever for the second fact-based recommendation without applying it automatically",()=>{
+    expect(page).toContain("const totalRent=Math.abs(store.expenseByCode.rent??0)");
+    expect(page).toContain("const rentRatioMedian=median(facts.summaries.map");
+    expect(page).toContain("const rentGapToMedian=rentRatio>rentRatioMedian");
+    expect(page).toContain("const recommendedRentShift=Math.min(10,rentGapToMedian)");
+    expect(page).toContain('id:"rent"');
+    expect(page).toContain("Пилот пересмотра аренды б/нал");
     expect(page).toContain("Рекомендация по фактам");
     expect(page).toContain("не применяется автоматически");
-    expect(page).toContain('label="Сокращение коммунальных платежей"');
-    expect(page).toContain("Коммунальные → прибыль");
-    expect(page).toContain("utilitiesProfit");
+    expect(page).toContain('label="Сокращение аренды б/нал"');
+    expect(page).toContain("Аренда б/нал → прибыль");
+    expect(page).toContain("rentProfit");
+    expect(page).not.toContain("Коммунальные → прибыль");
+    expect(page).not.toContain("Пилот сокращения коммунальных платежей");
     expect(page).not.toContain('id:"writeoff-recommended"');
     expect(page).not.toContain("Рекомендованное сокращение списаний М.");
+  });
+
+  it("restores the separate evidence-based recommendation for managed operating expenses",()=>{
+    expect(page).toContain("const expenseRatio=store.revenue?");
+    expect(page).toContain("const expenseRatioMedian=median(facts.summaries.map");
+    expect(page).toContain("const recommendedOpexShift=expenseRatio>expenseRatioMedian");
+    expect(page).toContain('id:"cost"');
+    expect(page).toContain("Рекомендованное сокращение управляемых расходов");
+    expect(page).toContain("рычаг управляемых расходов");
+    expect(page).toContain("opex:recommendedOpexShift");
   });
 
   it("supports several store closures and explains an evidence-based priority",()=>{
