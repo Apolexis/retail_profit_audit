@@ -54,15 +54,21 @@ describe("мобильный контракт графических контр�
     expect(chart).toContain('data-chart-pan-x={pan.x}');
   });
 
-  it("измеряет положение высокого tooltip: деньги остаются в двух колонках, а плотная сетка доступна только коротким процентам", () => {
+  it("измеряет положение высокого tooltip: деньги выбирают две или три колонки по ширине графика, а проценты — три колонки", () => {
     expect(chart).toContain('useLayoutEffect');
     expect(chart).toContain('wrapper.style.setProperty("--tiny-tooltip-shift-y"');
     expect(chart).toContain('tiny-tooltip-values-${columns}');
     expect(chart).toContain('gridAutoFlow:"column"');
     expect(chart).toContain('data-tooltip-count={sortedValues.length}');
     expect(chart).toContain('const densePercent=mode==="percent"&&sortedValues.length>2');
-    expect(chart).toContain('className={`tiny-tooltip${densePercent?" tiny-tooltip-dense":""}${columns===2?" tiny-tooltip-monetary":""}`}');
+    expect(chart).toContain('const longestValueLabel=Math.max(0,...sortedValues.map(item=>`${item.name}: ${chartTick(item.value,mode)}`.length));');
+    expect(chart).toContain('const denseMoney=mode!=="percent"&&sortedValues.length>12&&chartWidth>=310&&longestValueLabel<=16');
+    expect(chart).toContain('const observer=typeof ResizeObserver!=="undefined"?new ResizeObserver(measure):undefined');
+    expect(chart).toContain('data-tooltip-columns={columns}');
+    expect(chart).toContain('className={`tiny-tooltip${densePercent?" tiny-tooltip-dense":""}${moneyTooltip?" tiny-tooltip-monetary":""}${denseMoney?" tiny-tooltip-monetary-dense":""}`}');
+    expect(styles).toContain('.tiny-tooltip-monetary { width: min(300px, calc(100vw - 32px)) !important;');
     expect(styles).toContain('.tiny-tooltip-monetary .tiny-tooltip-values-2 > span { white-space: nowrap; }');
+    expect(styles).toContain('.tiny-tooltip-monetary-dense { width: min(300px, calc(100vw - 32px)) !important;');
   });
 
   it("сокращает левый резерв компактного медианного графика на телефоне и не меняет развернутый вариант", () => {

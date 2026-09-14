@@ -2754,10 +2754,13 @@ html[data-audit-theme="light"] .packet .benchmark-chart:not(.benchmark-chart-exp
 .packet .notification-first-unread:focus { outline: 2px solid var(--blue); outline-offset: 3px; }
 html[data-audit-theme="dark"] .packet .notification-first-unread:focus { outline: 2px solid #ff9179; outline-offset: 3px; }
 
-/* Денежные значения длиннее процентов: всегда две широкие колонки без переноса, тогда как три колонки остаются только для коротких процентных рядов. */
+/* Денежные значения используют две или три колонки по фактической ширине графика и длине списка. */
 @media (max-width: 560px), (min-width: 561px) and (max-height: 780px) {
-  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip-monetary { width: min(358px, calc(100vw - 32px)) !important; min-width: min(358px, calc(100vw - 32px)) !important; max-width: min(358px, calc(100vw - 32px)) !important; }
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip-monetary { width: min(300px, calc(100vw - 32px)) !important; min-width: min(300px, calc(100vw - 32px)) !important; max-width: min(300px, calc(100vw - 32px)) !important; }
   :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip-monetary .tiny-tooltip-values-2 > span { white-space: nowrap; }
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip-monetary-dense { width: min(300px, calc(100vw - 32px)) !important; min-width: min(300px, calc(100vw - 32px)) !important; max-width: min(300px, calc(100vw - 32px)) !important; padding: 8px 9px; font-size: 10px; }
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip-monetary-dense .tiny-tooltip-values-3 { column-gap: 6px; }
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip-monetary-dense .tiny-tooltip-values-3 > span { white-space: nowrap; }
   html[data-audit-theme="light"] .packet .benchmark-chart:not(.benchmark-chart-expanded) .chart-touch-mode-button.active { border-color: #0a63c8 !important; background: #0a63c8 !important; color: #ffffff !important; }
 }
 
