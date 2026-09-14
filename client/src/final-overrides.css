@@ -816,7 +816,8 @@ html:not([data-audit-theme="light"]) .packet .account-list > .account-choice:fir
 .packet .drawer-nav-group > span { padding: 0 10px 4px; color: var(--faint); font: 800 9px "IBM Plex Mono", monospace; letter-spacing: .12em; }
 html[data-audit-theme="light"] .packet .packet-nav-group + .packet-nav-group { border-color: #e5e8ec; }
 @media (max-width: 980px) { .packet .packet-nav-heading { display: none; } .packet .packet-nav-group + .packet-nav-group { margin-top: 3px; padding-top: 4px; } }
-.packet .closure-planner { display: grid; gap: 13px; border-bottom-color: transparent; }
+.packet .closure-planner { display: grid; gap: 13px; }
+.packet .scenario-strip { border-top: 0; }
 .packet .closure-planner .card-title { margin-bottom: 0; }
 .packet .closure-disclaimer { max-width: 68ch; margin: -4px 0 0; color: var(--muted); font-size: 11px; line-height: 1.45; overflow-wrap: anywhere; }
 .packet .closure-actions { display: flex; flex-wrap: wrap; gap: 8px; }

@@ -101,8 +101,9 @@ describe("Pilot scenario outcome contract",()=>{
     expect(page).toContain('чистая прибыль {isNetwork?"сети":"контура"}');
   });
 
-  it("does not draw an extra outer divider below the closure planner",()=>{
-    expect(styles).toContain(".packet .closure-planner { display: grid; gap: 13px; border-bottom-color: transparent; }");
+  it("keeps the closure card frame intact and removes only the following recommendations divider",()=>{
+    expect(styles).toContain(".packet .closure-planner { display: grid; gap: 13px; }");
+    expect(styles).toContain(".packet .scenario-strip { border-top: 0; }");
     expect(styles).toContain(".packet .closure-overview > div { display: grid;");
   });
 
