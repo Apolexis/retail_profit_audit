@@ -2747,32 +2747,9 @@ html[data-audit-theme="light"] .packet .benchmark-chart:not(.benchmark-chart-exp
   .packet .chart-store-series-toggle b { align-self: center; white-space: nowrap; }
 }
 
-/* Compact-медиана повторяет точный нейтральный фон обычного компактного переключателя. */
-@media (max-width: 560px) {
-  html[data-audit-theme="light"] .packet .benchmark-chart:not(.benchmark-chart-expanded) .chart-touch-mode-control { border-color: #cbdcff !important; background: #f7faff !important; }
-  html[data-audit-theme="light"] .packet .benchmark-chart:not(.benchmark-chart-expanded) .chart-touch-mode-button:not(.active) { background: transparent !important; color: #51657d !important; }
-}
-
-/* PDF открывается только после полной сборки внутри приложения; popup-блокировщик не участвует в основном сценарии. */
-.report-pdf-preview-dialog { width: min(980px, calc(100vw - 24px)) !important; max-width: none !important; height: min(86dvh, 860px); grid-template-rows: auto minmax(0, 1fr) auto; padding: 14px !important; }
-.report-pdf-preview-frame { width: 100%; min-height: 0; height: 100%; border: 1px solid var(--line); border-radius: 10px; background: #ffffff; }
-.report-pdf-preview-dialog [data-slot="dialog-footer"] { align-items: center; }
-.report-pdf-open-external { margin-top: 0; text-decoration: none; }
-
 /* Блок непрочитанных ведет к первому событию и выделяет только цель перехода. */
 .packet .notification-unread-kpi { width: 100%; text-align: left; color: inherit; cursor: pointer; font: inherit; }
 .packet .notification-unread-kpi:disabled { cursor: default; }
 .packet .notification-first-unread { scroll-margin-block: 104px; }
 .packet .notification-first-unread:focus { outline: 2px solid var(--blue); outline-offset: 3px; }
-
-/* iOS иногда неверно перерисовывает fixed-элемент с translate: центрируем навигацию расчетными inset без transform. */
-@media (hover: none), (pointer: coarse) {
-  .packet.pwa-standalone .mobile-quick-nav { position: fixed !important; left: max(16px, calc((100vw - 260px) / 2)) !important; right: max(16px, calc((100vw - 260px) / 2)) !important; width: auto !important; transform: none !important; -webkit-transform: none !important; }
-  .packet.pwa-standalone .scroll-top { position: fixed !important; transform: translateZ(0); -webkit-transform: translateZ(0); }
-  .packet.pwa-standalone .scroll-top:hover { transform: translateZ(0); -webkit-transform: translateZ(0); }
-}
-
-/* ERP roadmap: authenticated project documentation. */
-.erp-roadmap-page{display:grid;gap:18px;max-width:1180px;margin-inline:auto;padding-bottom:32px}.erp-roadmap-page h3{margin:8px 0 0;font-size:clamp(16px,2vw,20px);letter-spacing:.02em}.erp-roadmap-page .section-lead{max-width:860px;line-height:1.55}.erp-callout,.erp-next-step{display:grid;gap:6px;padding:16px 18px;border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--ink)}.erp-callout strong,.erp-next-step strong{font-size:14px}.erp-callout span,.erp-next-step span,.erp-grid span,.erp-stage-list span,.erp-stage-list small{line-height:1.5}.erp-callout.warning{border-color:color-mix(in srgb,var(--coral) 45%,var(--line))}.erp-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:16px;background:var(--surface)}.erp-table{width:100%;min-width:720px;border-collapse:collapse}.erp-table th,.erp-table td{padding:13px 15px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line);line-height:1.45}.erp-table thead th{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.erp-table tbody tr:last-child th,.erp-table tbody tr:last-child td{border-bottom:0}.erp-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.erp-grid article{display:grid;gap:7px;min-width:0;padding:15px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}.erp-grid strong{font-size:14px}.erp-stage-list{display:grid;gap:10px}.erp-stage-list article{display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;align-items:start;padding:13px 15px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}.erp-stage-list b{display:grid;place-items:center;width:28px;height:28px;border-radius:9px;background:var(--blue);color:#fff}.erp-stage-list div{display:grid;gap:4px}.erp-stage-list small{color:var(--muted)}
-@media (max-width:760px){.erp-roadmap-page{gap:14px}.erp-roadmap-page .section-heading{align-items:flex-start;gap:10px}.erp-roadmap-page .section-heading .packet-link{flex:0 0 auto}.erp-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.erp-callout,.erp-next-step{padding:14px}.erp-table th,.erp-table td{padding:11px 12px}}
-@media (max-width:430px){.erp-roadmap-page .section-heading{display:grid}.erp-roadmap-page .section-heading .packet-link{justify-self:start}.erp-grid{grid-template-columns:1fr}.erp-roadmap-page h2{font-size:24px;line-height:1.08}}
+html[data-audit-theme="dark"] .packet .notification-first-unread:focus { outline: 2px solid #ff9179; outline-offset: 3px; }

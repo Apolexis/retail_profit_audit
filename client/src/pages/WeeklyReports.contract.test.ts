@@ -61,25 +61,24 @@ describe("WeeklyReports interaction contract",()=>{
     expect(page).toContain('import("jspdf")');
     expect(page).toContain('const exportPdf=async()=>');
     expect(page).toContain('const preparePdfPreview=');
-    expect(page).toContain('setPdfPreview(preparePdfPreview(pdf,fileName));');
     expect(page).toContain('navigator as Navigator');
-    expect(page).toContain('className="report-pdf-preview-dialog"');
-    expect(page).toContain('title="Предпросмотр готового PDF-отчета"');
-    expect(page).toContain('target="_blank"');
+    expect(page).toContain('window.open(prepared.url,"_blank","noopener")');
+    expect(page).not.toContain('className="report-pdf-preview-dialog"');
+    expect(page).not.toContain('title="Предпросмотр готового PDF-отчета"');
     expect(page).toContain('className="report-pdf-source"');
     expect(page).toContain('aria-label="Выгрузить выбранный отчет в PDF"');
     expect(page).toContain('toast.success("PDF-отчет подготовлен"');
     expect(page).toContain('loadPdfBrand(pdfTheme).catch');
     expect(styles).toContain('html[data-audit-theme="light"] .packet .report-export-button');
     expect(styles).toContain('html[data-audit-theme="dark"] .packet .report-export-button');
-    expect(styles).toContain('.report-pdf-preview-dialog');
+    expect(styles).not.toContain('.report-pdf-preview-dialog');
   });
 
   it("добавляет в PDF фирменный знак и первую локально рисуемую страницу без DOM-снимка",()=>{
     expect(page).toContain('const createReportWeeklySummaryCanvas=async');
     expect(page).toContain('const [weeklySummary,dailySummary,commerce,storeFocus,weeklyDynamics,dailyDynamics,insights,weeklyLedgers,dailyLedgers]=await Promise.all([');
     expect(page).not.toContain('window.open("about:blank","_blank")');
-    expect(page).not.toContain('window.open(url,"_blank")');
+    expect(page).toContain('window.open(prepared.url,"_blank","noopener")');
     expect(page).toContain('const reportPdfBrandIcon=');
     expect(page).toContain('const loadPdfBrand=async');
     expect(page).not.toContain('previewWindow.location.replace(url)');
