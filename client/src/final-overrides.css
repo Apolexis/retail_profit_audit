@@ -2740,8 +2740,8 @@ html[data-audit-theme="dark"] :is(.chart-expand-dialog, .chart-expand-dialog-gen
 
 /* Компактная медиана на телефоне: режимы используют ту же голубую поверхность, а короткие коды магазинов не резервируют лишнее место слева. */
 @media (max-width: 560px) {
-html[data-audit-theme="light"] .packet .benchmark-chart:not(.benchmark-chart-expanded) .chart-touch-mode-control { border-color: #c4dffb !important; background: #f4f9ff !important; }
-html[data-audit-theme="light"] .packet .benchmark-chart:not(.benchmark-chart-expanded) .chart-touch-mode-button:not(.active) { background: #f4f9ff !important; color: #51657d !important; box-shadow: none !important; }
+html[data-audit-theme="light"] .packet .benchmark-chart:not(.benchmark-chart-expanded) .chart-touch-mode-control { border-color: #cbdcff !important; background: #f7faff !important; }
+html[data-audit-theme="light"] .packet .benchmark-chart:not(.benchmark-chart-expanded) .chart-touch-mode-button:not(.active) { background: transparent !important; color: #51657d !important; box-shadow: none !important; }
   .packet .chart-store-series-toggle { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 42px; padding: 7px 10px; }
   .packet .chart-store-series-toggle span { min-width: 0; white-space: normal; text-transform: none; letter-spacing: .015em; line-height: 1.24; font-size: 9px; }
   .packet .chart-store-series-toggle b { align-self: center; white-space: nowrap; }
@@ -2753,3 +2753,11 @@ html[data-audit-theme="light"] .packet .benchmark-chart:not(.benchmark-chart-exp
 .packet .notification-first-unread { scroll-margin-block: 104px; }
 .packet .notification-first-unread:focus { outline: 2px solid var(--blue); outline-offset: 3px; }
 html[data-audit-theme="dark"] .packet .notification-first-unread:focus { outline: 2px solid #ff9179; outline-offset: 3px; }
+
+/* Tooltip точек: один ряд всегда сохраняет естественную компактную ширину; два и более ряда делятся на колонки после заголовка. */
+@media (max-width: 560px), (min-width: 561px) and (max-height: 780px) {
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) .tiny-tooltip[data-tooltip-count="1"] { display: block; width: max-content !important; min-width: 0 !important; max-width: calc(100vw - 56px) !important; }
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) .tiny-tooltip .tiny-tooltip-values { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 10px; }
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) .tiny-tooltip .tiny-tooltip-values-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 8px; }
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) .tiny-tooltip[data-tooltip-count="1"] .tiny-tooltip-values { display: block; }
+}

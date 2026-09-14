@@ -32,9 +32,11 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
   const [showTop,setShowTop]=useState(false);
   const [expandedSections,setExpandedSections]=useState<Record<string,boolean>>({});
   const [standalone,setStandalone]=useState(isStandalonePwa);
+  const [fixedEpoch,setFixedEpoch]=useState(0);
   const gestureStart=useRef<number|null>(null);
   useEffect(()=>{const update=()=>setShowTop(window.scrollY>280);update();window.addEventListener("scroll",update,{passive:true});return()=>window.removeEventListener("scroll",update)},[]);
   useEffect(()=>{const media=window.matchMedia("(display-mode: standalone)");const update=()=>setStandalone(isStandalonePwa());update();media.addEventListener("change",update);window.addEventListener("pageshow",update);document.addEventListener("visibilitychange",update);return()=>{media.removeEventListener("change",update);window.removeEventListener("pageshow",update);document.removeEventListener("visibilitychange",update)}},[]);
+  useEffect(()=>{if(!standalone)return;let firstFrame:number|undefined;let secondFrame:number|undefined;const refreshFixedControls=()=>{if(document.visibilityState==="hidden")return;if(firstFrame!==undefined)window.cancelAnimationFrame(firstFrame);if(secondFrame!==undefined)window.cancelAnimationFrame(secondFrame);firstFrame=window.requestAnimationFrame(()=>{secondFrame=window.requestAnimationFrame(()=>setFixedEpoch(epoch=>epoch+1));});};const viewport=window.visualViewport;const onVisible=()=>{if(document.visibilityState==="visible")refreshFixedControls();};refreshFixedControls();window.addEventListener("pageshow",refreshFixedControls);window.addEventListener("focus",refreshFixedControls);document.addEventListener("visibilitychange",onVisible);viewport?.addEventListener("resize",refreshFixedControls);return()=>{if(firstFrame!==undefined)window.cancelAnimationFrame(firstFrame);if(secondFrame!==undefined)window.cancelAnimationFrame(secondFrame);window.removeEventListener("pageshow",refreshFixedControls);window.removeEventListener("focus",refreshFixedControls);document.removeEventListener("visibilitychange",onVisible);viewport?.removeEventListener("resize",refreshFixedControls);};},[standalone]);
   const isAdmin=me.data?.role==="admin";
   const visibleNav=navSections.map(section=>({...section,items:section.items.filter(([, , ,adminOnly])=>!adminOnly||isAdmin)})).filter(section=>section.items.length>0);
   const closeMenu=()=>{if(document.activeElement instanceof HTMLElement)document.activeElement.blur();setMenuOpen(false)};
@@ -72,11 +74,11 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
       </section>})}<Link href={profileItem[0]} onClick={event=>{event.currentTarget.blur();closeMenu();}} className={location===profileItem[0]?"drawer-link drawer-profile-link active":"drawer-link drawer-profile-link"}><span>{profileItem[2]}</span></Link></div><div className="drawer-period">Активный срез:<strong>{rangeLabel}</strong></div>
     </nav>
     <main className="packet-main">{analyticsSection&&<section className={`analysis-filter${kicker.startsWith("00")?" summary-period-filter":""}`}><div className="analysis-filter-copy"><span>ОБЩИЙ СРЕЗ</span><strong>{rangeLabel}</strong><small>Применяется ко всем графикам, сравнениям и итогам текущего раздела.</small></div><DateRangeControl/></section>}{children}<aside className="section-recommendation"><span>УПРАВЛЕНЧЕСКИЙ ФОКУС</span><div><h3>{guidance.title}</h3><p>{guidance.text}</p></div><strong>{guidance.action}</strong></aside></main>
-    {standalone&&!menuOpen&&<nav className="mobile-quick-nav" aria-label="Быстрые действия">
+    {standalone&&!menuOpen&&<nav key={`mobile-quick-nav-${fixedEpoch}`} className="mobile-quick-nav" aria-label="Быстрые действия">
       <button type="button" className="mobile-quick-action mobile-quick-back" onClick={()=>{window.history.length>1?window.history.back():setLocation("/")}} aria-label="Назад"><ArrowLeft size={16}/><span>Назад</span></button>
       <button type="button" className="mobile-quick-action mobile-quick-forward" onClick={()=>window.history.forward()} aria-label="Вперёд"><ArrowRight size={16}/><span>Вперёд</span></button>
       <button type="button" className="mobile-quick-action mobile-quick-refresh" onClick={refreshApp} aria-label="Обновить данные"><RefreshCw size={16}/><span>Обновить</span></button>
     </nav>}
-    {showTop&&!menuOpen&&<button className="scroll-top" aria-label="Вернуться к началу страницы" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}><ArrowUp size={18}/></button>}
+    {showTop&&!menuOpen&&<button key={`scroll-top-${fixedEpoch}`} className="scroll-top" aria-label="Вернуться к началу страницы" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}><ArrowUp size={18}/></button>}
   </div>;
 }

@@ -43,7 +43,7 @@ describe("базовые управляющие элементы", () => {
     expect(shell).not.toContain('aria-label="Домой"');
     expect(shell).toContain('aria-label="Вперёд"');
     expect(shell).toContain('aria-label="Обновить данные"');
-    expect(shell).toContain("{standalone&&!menuOpen&&<nav className=\"mobile-quick-nav\"");
+    expect(shell).toContain('key={`mobile-quick-nav-${fixedEpoch}`} className="mobile-quick-nav"');
     expect(shell).toContain('className="mobile-quick-action mobile-quick-back"');
     expect(shell).toContain('className="mobile-quick-action mobile-quick-forward"');
     expect(shell).toContain('className="mobile-quick-action mobile-quick-refresh"');
@@ -64,7 +64,7 @@ describe("базовые управляющие элементы", () => {
     expect(css).not.toContain('.packet .mobile-quick-nav button[data-pointer-action="true"]');
     expect(shell).toContain('href={profileItem[0]} onClick={event=>event.currentTarget.blur()}');
     expect(shell).toContain("event.currentTarget.blur();setMenuOpen(value=>!value)");
-    expect(shell).toContain("{showTop&&!menuOpen&&<button className=\"scroll-top\"");
+    expect(shell).toContain('key={`scroll-top-${fixedEpoch}`} className="scroll-top"');
     expect(shell).not.toContain("createPortal(");
     expect(css).toContain('body:has(.chart-expand-dialog[data-state="open"]) .packet .scroll-top');
     expect(css).toContain('body:has(.chart-expand-dialog[data-state="open"]) .packet .mobile-quick-nav');
