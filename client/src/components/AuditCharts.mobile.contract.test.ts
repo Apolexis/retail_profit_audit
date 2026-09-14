@@ -61,8 +61,8 @@ describe("мобильный контракт графических контр�
     expect(chart).toContain('gridAutoFlow:"column"');
     expect(chart).toContain('data-tooltip-count={sortedValues.length}');
     expect(chart).toContain('const densePercent=mode==="percent"&&sortedValues.length>2');
-    expect(chart).toContain('const longestValueLabel=Math.max(0,...sortedValues.map(item=>`${item.name}: ${chartTick(item.value,mode)}`.length));');
-    expect(chart).toContain('const denseMoney=mode!=="percent"&&sortedValues.length>12&&longestValueLabel<=16');
+    expect(chart).toContain('const denseMoney=mode!=="percent"&&sortedValues.length>12');
+    expect(chart).not.toContain('longestValueLabel');
     expect(chart).not.toContain('const [chartWidth,setChartWidth]=useState(0)');
     expect(chart).toContain('data-tooltip-columns={columns}');
     expect(chart).toContain('className={`tiny-tooltip${densePercent?" tiny-tooltip-dense":""}${moneyTooltip?" tiny-tooltip-monetary":""}${denseMoney?" tiny-tooltip-monetary-dense":""}`}');
