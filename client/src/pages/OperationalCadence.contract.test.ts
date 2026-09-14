@@ -23,7 +23,7 @@ describe("страница «Ритм»", () => {
     expect(page).toContain("ДАННЫЕ ПОД ГРАФИКОМ");
     expect(page).toContain("каждый магазин отдельно");
     expect(page).toContain("const [showStoreSeries, setShowStoreSeries] = useState(false);");
-    expect(page).toContain("!showStoreSeries || !networkSelected || selectedMetrics.length !== 1");
+    expect(page).toContain("!showStoreSeries || seriesStores.length < 2 || selectedMetrics.length !== 1");
     expect(page).toContain("StoreSeriesModeToggle");
     expect(page).toContain('active={showStoreSeries}');
   });
@@ -40,6 +40,13 @@ describe("страница «Ритм»", () => {
     expect(page).toContain('selectedMetrics.includes("expenses")');
     expect(page).toContain("СОСТАВ РАСХОДОВ");
     expect(page).toContain("без двойного учета агрегатов");
+  });
+
+  it("показывает общие безналичные траты и их исходный состав", () => {
+    expect(page).toContain('cashlessExpenses: { label: "Общие траты б/нал"');
+    expect(page).toContain("cashlessBreakdownMetrics");
+    expect(page).toContain('selectedMetrics.includes("cashlessExpenses")');
+    expect(page).toContain("СОСТАВ ТРАТ Б/НАЛ");
   });
 
   it("использует для группы наличных расходов обычный цвет заголовков в обеих темах", () => {

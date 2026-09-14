@@ -37,6 +37,14 @@ describe("buildOperationalCadence", () => {
     expect(result.daily[0].expenses).toBe(5_400);
   });
 
+  it("показывает общие траты б/нал отдельной суммой без наличных и НДФЛ 22%", () => {
+    const result = buildOperationalCadence([{ monthDate: "2026-09", entryDate: "2026-09-08", importId: 3, metrics: { rent: -2_000, salary_cashless: -3_000, driver_cashless: -400, bank_fee: -100, household: -900, personal_income_tax_22: -132 } }], { from: "2026-09-08", to: "2026-09-08" });
+    expect(result.daily[0].cashlessExpenses).toBe(5_500);
+    expect(result.daily[0].cashExpenses).toBe(900);
+    expect(result.daily[0].cashTaxes).toBe(132);
+    expect(result.daily[0].expenses).toBe(6_532);
+  });
+
   it("формирует помесячный ряд из уже материализованных дневных фактов", () => {
     const result = buildOperationalCadence([{ monthDate: "2026-08", entryDate: "2026-08-30", importId: 8, metrics: { revenue: 1_200 } }, { monthDate: "2026-09", entryDate: "2026-09-01", importId: 8, metrics: { revenue: 3_400 } }], { from: "2026-08-30", to: "2026-09-02" });
     expect(result.monthly).toHaveLength(2);

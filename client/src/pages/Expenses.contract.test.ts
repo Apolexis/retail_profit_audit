@@ -27,7 +27,7 @@ describe("страница «Расходы»", () => {
     expect(page).toContain("const [showStoreSeries, setShowStoreSeries] = useState(false);");
     expect(page).toContain("StoreSeriesModeToggle");
     expect(page).toContain('active={showStoreSeries}');
-    expect(page).toContain("!showStoreSeries || !networkSelected || selectedFields.length !== 1");
+    expect(page).toContain("!showStoreSeries || seriesStores.length < 2 || selectedFields.length !== 1");
   });
 
   it("всегда показывает состав наличных расходов по статьям", () => {

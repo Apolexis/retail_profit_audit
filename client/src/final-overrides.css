@@ -2822,3 +2822,30 @@ html[data-audit-theme="light"] .packet .chart-controls > small { color: #365b7c;
 /* После возврата iOS-PWA визуальный viewport может пересчитываться позже pageshow: на время reflow отключаем переходы и фиксируем нижние контролы в compositor. */
 html.pwa-fixed-reflow .mobile-quick-nav,
 html.pwa-fixed-reflow .scroll-top { position: fixed !important; transform: translate3d(0,0,0) !important; transition: none !important; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+
+/* Широкие и средние графики: подпись и значение не пересекаются даже в плотной подсказке. */
+@media (min-width: 561px) {
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .metric-chart .tiny-tooltip {
+    max-width: min(520px, calc(100% - 26px)) !important;
+  }
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .metric-chart .tiny-tooltip-values {
+    column-gap: 18px;
+    row-gap: 6px;
+  }
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .metric-chart .tiny-tooltip-values > span {
+    display: grid;
+    grid-template-columns: 9px minmax(0, 1fr) auto;
+    align-items: baseline;
+    column-gap: 5px;
+    min-width: 0;
+  }
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .metric-chart .tiny-tooltip-values > span .tiny-tooltip-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .metric-chart .tiny-tooltip-values > span strong {
+    white-space: nowrap;
+  }
+}
