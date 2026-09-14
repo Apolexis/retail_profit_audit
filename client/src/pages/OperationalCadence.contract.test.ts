@@ -56,6 +56,16 @@ describe("страница «Ритм»", () => {
     expect(page).toContain("СОСТАВ ТРАТ Б/НАЛ");
   });
 
+  it("использует согласованные краткие подписи без изменения кодов расходных статей", () => {
+    expect(page).toContain('driverCashless: { label: "Водитель б/нал"');
+    expect(page).toContain('utilitiesCashless: { label: "Коммуналка б/нал"');
+    expect(page).toContain('bankFee: { label: "% банку"');
+    expect(page).toContain('salaryCashless: { label: "Зарплата б/нал"');
+    expect(page).toContain('payrollTax: { label: "Налоги зарплатные"');
+    expect(page).toContain('vacationCashless: { label: "Отпускные б/нал"');
+    expect(page).toContain('vacationTax: { label: "Налоги на отпускные"');
+  });
+
   it("использует для группы наличных расходов обычный цвет заголовков в обеих темах", () => {
     expect(styles).toContain(".packet .cadence-group-label > span { color: var(--faint);");
     expect(styles).not.toContain(".cash-control-group .cadence-group-label > span { color:");
