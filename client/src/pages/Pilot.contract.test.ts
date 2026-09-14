@@ -33,6 +33,14 @@ describe("Pilot scenario outcome contract",()=>{
     expect(page).toContain("formatPilotNumber");
   });
 
+  it("adds a second fact-based recommended scenario for frozen writeoff control without applying it automatically",()=>{
+    expect(page).toContain("const recommendedWriteoffShift=frozenWriteoff>0");
+    expect(page).toContain('id:"writeoff-recommended"');
+    expect(page).toContain("Рекомендованное сокращение списаний М.");
+    expect(page).toContain("Рекомендация по фактам");
+    expect(page).toContain("не применяется автоматически");
+  });
+
   it("supports several store closures and explains an evidence-based priority",()=>{
     expect(page).toContain("closingStores");
     expect(page).toContain("Выбрать убыточные");

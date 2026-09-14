@@ -80,4 +80,11 @@ describe("мобильный контракт графических контр�
     expect(styles).toContain('.benchmark-chart:not(.benchmark-chart-expanded) .chart-touch-mode-button.active { border-color: #0a63c8 !important; background: #0a63c8 !important;');
     expect(styles).toContain('.tiny-tooltip[data-tooltip-count="1"]');
   });
+
+  it("держит маркер, подпись и значение tooltip в одной строке с безопасным сокращением подписи", () => {
+    expect(styles).toContain('grid-template-columns: 8px minmax(0, 1fr) max-content;');
+    expect(styles).toContain('text-overflow: ellipsis;');
+    expect(styles).toContain('font-variant-numeric: tabular-nums;');
+    expect(styles).toContain('white-space: nowrap !important;');
+  });
 });

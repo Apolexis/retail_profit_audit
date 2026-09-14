@@ -2849,3 +2849,54 @@ html.pwa-fixed-reflow .scroll-top { position: fixed !important; transform: trans
     white-space: nowrap;
   }
 }
+
+/* Tooltip: каждая запись является цельной строкой; подписи при нехватке места сокращаются многоточием, а значение не разрывается. */
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip .tiny-tooltip-values {
+  grid-column: 1 / -1;
+  row-gap: 5px;
+  align-items: start;
+}
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip .tiny-tooltip-values > span {
+  display: grid !important;
+  grid-template-columns: 8px minmax(0, 1fr) max-content;
+  align-items: center;
+  column-gap: 5px;
+  min-width: 0;
+  max-width: 100%;
+  white-space: nowrap !important;
+  line-height: 1.28;
+}
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip .tiny-tooltip-values > span > i {
+  grid-column: 1;
+  width: 8px;
+  height: 8px;
+  margin: 0;
+  align-self: center;
+}
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip .tiny-tooltip-name {
+  grid-column: 2;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap !important;
+}
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip .tiny-tooltip-values > span > strong {
+  grid-column: 3;
+  display: block;
+  min-width: max-content;
+  white-space: nowrap !important;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 560px) {
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip .tiny-tooltip-values > span { column-gap: 4px; font-size: 10px; }
+}
+
+/* Длинное пояснение сопоставления периодов не покидает карточку на узком темном экране. */
+html[data-audit-theme="dark"] .packet .comparison-chart-stack .card-title small {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}

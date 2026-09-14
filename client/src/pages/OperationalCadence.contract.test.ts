@@ -30,6 +30,9 @@ describe("страница «Ритм»", () => {
 
   it("выделяет наличные расходы и НДФЛ 22% в понятную группу", () => {
     expect(page).toContain("Наличные расходы и налоги");
+    expect(page).toContain('expenses: { label: "Общие расходы"');
+    expect(page).toContain('{ label: "Итоговые расходы", keys: ["expenses", "cashExpenses", "cashlessExpenses"] }');
+    expect(page).toContain('{ label: "Наличные расходы и налоги", keys: ["cashTaxes", "household"');
     expect(page).toContain("cash-control-group");
     expect(page).not.toContain("нал + НДФЛ 22%");
     expect(page).toContain("cadence-group-label");

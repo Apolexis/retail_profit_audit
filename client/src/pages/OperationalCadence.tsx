@@ -19,7 +19,7 @@ const metrics: Record<CadenceMetric, { label: string; color: string; note: strin
   purchaseFrozen: { label: "Закупка Мор.", color: "#7eb9df", note: "Закупка мороженой продукции по фактическим дням." },
   salesSmoked: { label: "Продажи Коп.", color: "#ffab62", note: "Продажи копченой продукции по фактическим дням." },
   salesFrozen: { label: "Продажи Мор.", color: "#49b6d8", note: "Продажи мороженой продукции по фактическим дням." },
-  expenses: { label: "Расходы общие", color: "#ff6d8c", note: "Сумма абсолютных значений всех расходных статей." },
+  expenses: { label: "Общие расходы", color: "#ff6d8c", note: "Сумма абсолютных значений всех расходных статей." },
   cashExpenses: { label: "Общие траты нал", color: "#ff8b6f", note: "Наличные операционные расходы: хоз. нужды, доставка, уборка, премия, выслуга, доплата, водитель, коммунальные и прочие расходы." },
   cashlessExpenses: { label: "Общие траты б/нал", color: "#7aa9ff", note: "Безналичные операционные, ФОТ, налоговые, банковские и арендные расходы." },
   cashTaxes: { label: "НДФЛ 22%", color: "#e46ba9", note: "Налоговая нагрузка наличных выплат; контролируется вместе с тратами нал." },
@@ -52,8 +52,8 @@ const metrics: Record<CadenceMetric, { label: string; color: string; note: strin
 
 const metricGroups: Array<{ label: string; keys: CadenceMetric[] }> = [
   { label: "Выручка, результат и товар", keys: ["receiptsTotal", "cashRevenue", "cashlessRevenue", "revenue", "grossProfit", "netProfit", "purchases", "purchaseSmoked", "purchaseFrozen", "salesSmoked", "salesFrozen"] },
-  { label: "Итоговые расходы", keys: ["expenses", "cashExpenses", "cashlessExpenses", "cashTaxes"] },
-  { label: "Наличные расходы и налоги", keys: ["cashExpenses", "cashTaxes", "household", "delivery", "cleaning", "bonus", "seniority", "supplement", "driverCash", "utilitiesCash", "operatingCosts"] },
+  { label: "Итоговые расходы", keys: ["expenses", "cashExpenses", "cashlessExpenses"] },
+  { label: "Наличные расходы и налоги", keys: ["cashTaxes", "household", "delivery", "cleaning", "bonus", "seniority", "supplement", "driverCash", "utilitiesCash", "operatingCosts"] },
   { label: "Безналичные, ФОТ и налоги", keys: ["cashlessOperatingCosts", "driverCashless", "utilitiesCashless", "rent", "bankFee", "grossProfitTax", "salaryCashless", "payrollTax", "vacationCashless", "vacationTax", "salaryCash", "vacationCash"] },
   { label: "Товарный поток", keys: ["writeoffSmoked", "writeoffFrozen", "movement", "discount"] },
 ];
