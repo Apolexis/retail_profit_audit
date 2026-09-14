@@ -101,6 +101,11 @@ describe("Pilot scenario outcome contract",()=>{
     expect(page).toContain('чистая прибыль {isNetwork?"сети":"контура"}');
   });
 
+  it("does not draw an extra outer divider below the closure planner",()=>{
+    expect(styles).toContain(".packet .closure-planner { display: grid; gap: 13px; border-bottom-color: transparent; }");
+    expect(styles).toContain(".packet .closure-overview > div { display: grid;");
+  });
+
   it("uses sign-aware light result surfaces and keeps scenario cards interactive",()=>{
     expect(styles).toContain('html[data-audit-theme="light"] .packet .scenario-result.neutral .scenario-profit-step.total,');
     expect(styles).toContain('html[data-audit-theme="light"] .packet .scenario-result.positive .scenario-profit-step.total { border-color: #8ccfb5 !important; background: #effaf6 !important; }');
