@@ -43,6 +43,10 @@ describe("страница «Ритм»", () => {
     expect(page).toContain('selectedMetrics.includes("expenses")');
     expect(page).toContain("СОСТАВ РАСХОДОВ");
     expect(page).toContain("без двойного учета агрегатов");
+    expect(page).toContain('className="expense-breakdown-note"');
+    expect(styles).toContain(".packet .expense-breakdown-card .expense-breakdown-note {");
+    expect(styles).toContain("text-wrap: pretty;");
+    expect(styles).toContain("background: transparent !important;");
   });
 
   it("показывает общие безналичные траты и их исходный состав", () => {

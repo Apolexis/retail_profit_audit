@@ -2624,6 +2624,29 @@ html[data-audit-theme] .packet .packet-top::before { position: absolute; z-index
   .packet .card-title > small { flex: 0 1 auto; width: fit-content; max-width: 100%; }
   .packet :is(.packet-split, .two-col, .report-layout, .inventory-profile-grid) > .packet-card:only-child { grid-column: 1 / -1; width: 100%; }
 }
+.packet .expense-breakdown-card .expense-breakdown-note {
+  display: block !important;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin-top: 7px;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  white-space: normal !important;
+  overflow-wrap: normal;
+  word-break: normal;
+  text-wrap: pretty;
+  line-height: 1.45;
+}
+html[data-audit-theme="light"] .packet .expense-breakdown-card .expense-breakdown-note,
+html[data-audit-theme="dark"] .packet .expense-breakdown-card .expense-breakdown-note {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: var(--faint) !important;
+}
 html[data-audit-theme="dark"] .packet .change-log-filters :is(input, select):focus { border-color: #ff937f; box-shadow: none; }
 html[data-audit-theme="light"] .login-error { border-color: #bdd9f6 !important; background: #f5faff !important; color: #244864 !important; }
 .packet .pricing-markup-detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
