@@ -2771,3 +2771,36 @@ html[data-audit-theme="dark"] .packet .notification-first-unread:focus { outline
   :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) .tiny-tooltip .tiny-tooltip-values-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 8px; }
   :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) .tiny-tooltip[data-tooltip-count="1"] .tiny-tooltip-values { display: block; }
 }
+
+/* Документированные desktop/medium-правки: независимые графики располагаются последовательно, а KPI не образуют непредсказуемую последнюю строку. */
+.packet .home-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; gap: 14px; }
+.packet :is(.pricing-chart-stack, .monthly-chart-stack, .comparison-chart-stack) { grid-template-columns: minmax(0, 1fr) !important; }
+.packet :is(.pricing-chart-stack, .monthly-chart-stack, .comparison-chart-stack) > .packet-card { grid-column: 1 / -1; min-width: 0; }
+.packet .chart-controls { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 10px; min-width: 0; }
+.packet .chart-controls .chart-store-series-toggle { flex: 0 1 360px; min-width: min(100%, 250px); }
+.packet .chart-controls > small { flex: 0 0 auto; white-space: nowrap; }
+html[data-audit-theme="light"] .packet .card-title > small,
+html[data-audit-theme="light"] .packet .chart-controls > small { color: #365b7c; }
+
+/* Tooltip одинаково использует колонки на широком, среднем и узком полотне; отступы внутри диаграммы симметричны. */
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip .tiny-tooltip-values { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 12px; }
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip .tiny-tooltip-values-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 8px; }
+@media (min-width: 561px) {
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip:not([data-tooltip-count="1"]) { width: min(420px, calc(100vw - 56px)); min-width: min(320px, calc(100vw - 56px)); max-width: min(420px, calc(100vw - 56px)); max-height: none !important; overflow: visible !important; box-sizing: border-box; }
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip-monetary-dense { width: min(420px, calc(100vw - 56px)) !important; min-width: min(320px, calc(100vw - 56px)) !important; max-width: min(420px, calc(100vw - 56px)) !important; }
+}
+
+/* Range и точная дата открываются в доступном viewport, а длинные варианты прокручиваются внутри popover. */
+.date-popover { max-block-size: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; }
+.date-popover :is(.date-shortcuts, .date-popover-hint) { flex: 0 0 auto; }
+
+@media (max-width: 1059px) {
+  .packet .home-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .packet .chart-controls { justify-content: flex-start; width: 100%; }
+  .packet .chart-controls .chart-store-series-toggle { flex: 1 1 300px; }
+}
+@media (max-width: 560px) {
+  .packet .home-kpis { grid-template-columns: minmax(0, 1fr); }
+  .packet .chart-controls .chart-store-series-toggle { min-width: 0; }
+  .date-popover { max-block-size: calc(100dvh - 16px); }
+}

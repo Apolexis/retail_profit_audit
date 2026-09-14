@@ -145,7 +145,7 @@ describe("форматирование денежных показателей",
     expect(source).toContain('compact?:boolean;axisLock?:boolean;mouseAxisLock?:boolean;mouseVerticalPanDirection?:1|-1;touchVerticalPanDirection?:1|-1;touchModeControl?:boolean}');
     expect(source).not.toContain("invertX");
     expect(source).toContain('function useSmallChartViewport()');
-    expect(source).toContain('const tooltipInset=touchInput?58:18;');
+    expect(source).toContain('const tooltipInset=touchInput?58:34;');
     expect(source).toContain('const timelineMargin=compactChart?{top:tooltipInset,right:8,left:0,bottom:tooltipInset}');
     expect(source).toContain('allowEscapeViewBox={{x:false,y:false}}');
     expect(source).not.toContain('translate3d(8px, -86px, 0)');

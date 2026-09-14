@@ -93,7 +93,7 @@ export function MetricLineChart({data,lines,percent=false,unit="k",displayMode,c
   const chartLayout=resolveMetricChartLayout(data.length,visibleLines.length);
   const compactViewport=useSmallChartViewport();
   const compactChart=compactViewport&&!expanded;
-  const tooltipInset=touchInput?58:18;
+  const tooltipInset=touchInput?58:34;
   const timelineMargin=compactChart?{top:tooltipInset,right:8,left:0,bottom:tooltipInset}:{top:tooltipInset,right:32,left:20,bottom:tooltipInset};
   const timelineAxisWidth=compactChart?55:78;
   const singleMargin=compactChart?{top:tooltipInset,right:8,left:0,bottom:tooltipInset}:{top:tooltipInset,right:32,left:12,bottom:tooltipInset};
