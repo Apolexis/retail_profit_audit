@@ -11,6 +11,7 @@ import { sdk } from "./sdk";
 import { serveStatic, setupVite } from "./vite";
 import { createScheduledExecutiveReport, findWeeklyScheduleByTaskUid, isWeeklyReportDue } from "../weeklyReports";
 import { registerImportBinaryRoutes } from "../importBinaryRoutes";
+import { registerPriceImportBinaryRoutes } from "../priceImportBinaryRoutes";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -40,6 +41,7 @@ async function startServer() {
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   registerImportBinaryRoutes(app);
+  registerPriceImportBinaryRoutes(app);
   // tRPC API
   app.use(
     "/api/trpc",

@@ -4,6 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { auditRouter } from "./routers/audit";
 import { localAuthRouter } from "./routers/localAuth";
+import { priceControlRouter } from "./routers/priceControl";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -20,6 +21,7 @@ export const appRouter = router({
   }),
   audit: auditRouter,
   localAuth: localAuthRouter,
+  priceControl: priceControlRouter,
 
   // TODO: add feature routers here, e.g.
   // todo: router({

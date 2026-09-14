@@ -33,6 +33,12 @@ describe("матрица доступа к импорту",()=>{
     expect(overrides).toContain('@media (max-width: 980px) {\n  .packet .access-import-row,\n  .packet .access-store-list > div { grid-template-columns: minmax(0, 1fr) !important; }');
   });
 
+  it("дает прайс‑контролю отдельный уровень доступа без изменения права финансового импорта",()=>{
+    const page=readFileSync(resolve(process.cwd(),"client/src/pages/AccessAdmin.tsx"),"utf8");
+    expect(page).toContain("Прайс‑контроль");
+    expect(page).toContain("priceAccessLevel");
+  });
+
   it("дает администратору адресную push-рассылку с честным итогом доставки",()=>{
     const page=readFileSync(resolve(process.cwd(),"client/src/pages/AccessAdmin.tsx"),"utf8");
     expect(page).toContain("Push по выбранной аудитории");

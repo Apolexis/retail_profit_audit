@@ -106,6 +106,7 @@ export const localAccounts = mysqlTable("audit_local_accounts", {
   passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
   role: mysqlEnum("role", ["admin", "analyst"]).default("analyst").notNull(),
   importAccessLevel: mysqlEnum("importAccessLevel", ["none", "upload", "edit"]).default("none").notNull(),
+  priceAccessLevel: mysqlEnum("priceAccessLevel", ["none", "view", "upload", "edit"]).default("none").notNull(),
   canViewImportControls: boolean("canViewImportControls").default(false).notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -236,3 +237,100 @@ export type AuditPushSubscription = typeof auditPushSubscriptions.$inferSelect;
 export type AuditAlertThreshold = typeof auditAlertThresholds.$inferSelect;
 export type ExecutiveReportSchedule = typeof executiveReportSchedules.$inferSelect;
 export type WeeklyExecutiveReport = typeof weeklyExecutiveReports.$inferSelect;
+
+/** Supplier catalog is deliberately isolated from financial facts and financial workbook imports. */
+export const priceSuppliers = mysqlTable("price_suppliers", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 160 }).notNull(),
+  normalizedName: varchar("normalizedName", { length: 180 }).notNull().unique(),
+  contactNote: text("contactNote"),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+/** The internal code is the durable target for supplier aliases and later ERP integrations. */
+export const priceProducts = mysqlTable("price_products", {
+  id: int("id").autoincrement().primaryKey(),
+  internalCode: varchar("internalCode", { length: 64 }).notNull().unique(),
+  canonicalName: varchar("canonicalName", { length: 255 }).notNull(),
+  normalizedSignature: varchar("normalizedSignature", { length: 512 }).notNull().unique(),
+  category: varchar("category", { length: 160 }),
+  variant: varchar("variant", { length: 255 }),
+  sizeText: varchar("sizeText", { length: 120 }),
+  baseUnit: mysqlEnum("baseUnit", ["kg", "l", "piece", "unknown"]).default("unknown").notNull(),
+  defaultWeightGrams: decimal("defaultWeightGrams", { precision: 12, scale: 2 }),
+  defaultVolumeMl: decimal("defaultVolumeMl", { precision: 12, scale: 2 }),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const priceImports = mysqlTable("price_imports", {
+  id: int("id").autoincrement().primaryKey(),
+  supplierId: int("supplierId").notNull(),
+  fileName: varchar("fileName", { length: 255 }).notNull(),
+  fileKey: varchar("fileKey", { length: 512 }).notNull(),
+  sourceDate: varchar("sourceDate", { length: 10 }),
+  sourceType: mysqlEnum("sourceType", ["xls", "xlsx", "pdf", "docx"]).notNull(),
+  status: mysqlEnum("status", ["completed", "failed"]).default("completed").notNull(),
+  rowCount: int("rowCount").default(0).notNull(),
+  importedByAccountId: int("importedByAccountId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+/** Original product line and parser outcome; source text is preserved for audit and later rematching. */
+export const priceImportRows = mysqlTable("price_import_rows", {
+  id: int("id").autoincrement().primaryKey(),
+  importId: int("importId").notNull(),
+  sourceSheet: varchar("sourceSheet", { length: 128 }),
+  sourceRowNumber: int("sourceRowNumber").notNull(),
+  sourceSku: varchar("sourceSku", { length: 128 }),
+  rawName: text("rawName").notNull(),
+  normalizedName: varchar("normalizedName", { length: 512 }).notNull(),
+  rawCategory: varchar("rawCategory", { length: 180 }),
+  rawPackaging: varchar("rawPackaging", { length: 255 }),
+  rawAvailability: varchar("rawAvailability", { length: 128 }),
+  rawPayload: json("rawPayload"),
+  productId: int("productId"),
+  mappingStatus: mysqlEnum("mappingStatus", ["linked", "suggested", "unmapped", "ignored"]).default("unmapped").notNull(),
+  matchedBy: mysqlEnum("matchedBy", ["supplier_alias", "signature", "manual", "new_product", "none"]).default("none").notNull(),
+  matchConfidence: decimal("matchConfidence", { precision: 5, scale: 2 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => [unique("price_import_row_source_uq").on(table.importId, table.sourceSheet, table.sourceRowNumber)]);
+
+/** Each available price option is stored separately: city, payment form and purchase threshold stay explicit. */
+export const priceOfferPrices = mysqlTable("price_offer_prices", {
+  id: int("id").autoincrement().primaryKey(),
+  importRowId: int("importRowId").notNull(),
+  priceMode: mysqlEnum("priceMode", ["standard", "cash", "cashless_no_vat", "cashless_vat", "spb", "moscow", "special", "threshold"]).default("standard").notNull(),
+  priceAmount: decimal("priceAmount", { precision: 18, scale: 2 }).notNull(),
+  priceBasis: mysqlEnum("priceBasis", ["kg", "l", "piece", "package", "unknown"]).default("unknown").notNull(),
+  normalizedPrice: decimal("normalizedPrice", { precision: 18, scale: 2 }),
+  normalizedUnit: mysqlEnum("normalizedUnit", ["kg", "l", "piece", "unknown"]).default("unknown").notNull(),
+  minimumQuantityKg: decimal("minimumQuantityKg", { precision: 12, scale: 2 }),
+  includesVat: boolean("includesVat"),
+  sourcePriceText: varchar("sourcePriceText", { length: 255 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+/** Exact supplier naming is higher priority than fuzzy matching on future imports. */
+export const priceSupplierAliases = mysqlTable("price_supplier_aliases", {
+  id: int("id").autoincrement().primaryKey(),
+  supplierId: int("supplierId").notNull(),
+  productId: int("productId").notNull(),
+  normalizedName: varchar("normalizedName", { length: 512 }).notNull(),
+  sourceSku: varchar("sourceSku", { length: 128 }),
+  packagingSignature: varchar("packagingSignature", { length: 255 }),
+  isConfirmed: boolean("isConfirmed").default(true).notNull(),
+  createdByAccountId: int("createdByAccountId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [unique("price_supplier_alias_uq").on(table.supplierId, table.normalizedName, table.packagingSignature)]);
+
+export type PriceSupplier = typeof priceSuppliers.$inferSelect;
+export type PriceProduct = typeof priceProducts.$inferSelect;
+export type PriceImport = typeof priceImports.$inferSelect;
+export type PriceImportRow = typeof priceImportRows.$inferSelect;
+export type PriceOfferPrice = typeof priceOfferPrices.$inferSelect;
+export type PriceSupplierAlias = typeof priceSupplierAliases.$inferSelect;

@@ -11,6 +11,7 @@ import { PASSKEY_ATTEMPT_COOKIE, beginPasskeyAuthentication, beginPasskeyRegistr
 const password = z.string().min(10, "Пароль должен содержать не менее 10 символов").max(128);
 const role = z.enum(["admin", "analyst"]);
 const importAccessLevel = z.enum(["none", "upload", "edit"]);
+const priceAccessLevel = z.enum(["none", "view", "upload", "edit"]);
 const broadcastAudience = z.discriminatedUnion("kind", [z.object({ kind: z.literal("all") }), z.object({ kind: z.literal("account"), accountId: z.number().int().positive() }), z.object({ kind: z.literal("role"), role })]);
 const passkeyResponse = z.any();
 
@@ -31,6 +32,7 @@ const accountResponse = (account: Awaited<ReturnType<typeof localAccountFromCont
   displayName: account.displayName,
   role: account.role,
   importAccessLevel: account.role === "admin" ? "edit" : account.importAccessLevel,
+  priceAccessLevel: account.role === "admin" ? "edit" : account.priceAccessLevel,
   canViewImportControls: account.role === "admin" || account.canViewImportControls,
 });
 
@@ -91,7 +93,7 @@ export const localAuthRouter = router({
     const actor = await localAccountFromContext(ctx.user?.openId);
     return { id: await createLocalAccount(input, actor.id) };
   }),
-  update: adminProcedure.input(z.object({ id: z.number().int(), role: role.optional(), isActive: z.boolean().optional(), importAccessLevel: importAccessLevel.optional(), canViewImportControls: z.boolean().optional() })).mutation(async ({ input, ctx }) => {
+  update: adminProcedure.input(z.object({ id: z.number().int(), role: role.optional(), isActive: z.boolean().optional(), importAccessLevel: importAccessLevel.optional(), priceAccessLevel: priceAccessLevel.optional(), canViewImportControls: z.boolean().optional() })).mutation(async ({ input, ctx }) => {
     const actor = await localAccountFromContext(ctx.user?.openId);
     return updateLocalAccount(input, actor.id);
   }),

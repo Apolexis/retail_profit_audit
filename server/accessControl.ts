@@ -5,6 +5,7 @@ import { getLocalAccountByOpenId } from "./localAuth";
 
 export type StoreAccessLevel = "view" | "edit";
 export type ImportAccessLevel = "none" | "upload" | "edit";
+export type PriceAccessLevel = "none" | "view" | "upload" | "edit";
 
 export function isAccessLevelAllowed(granted: StoreAccessLevel | undefined, required: StoreAccessLevel) {
   return granted === "edit" || (granted === "view" && required === "view");
@@ -12,6 +13,10 @@ export function isAccessLevelAllowed(granted: StoreAccessLevel | undefined, requ
 
 export function isImportAccessAllowed(granted: ImportAccessLevel | undefined, required: Exclude<ImportAccessLevel, "none">) {
   return granted === "edit" || (granted === "upload" && required === "upload");
+}
+
+export function isPriceAccessAllowed(granted: PriceAccessLevel | undefined, required: Exclude<PriceAccessLevel, "none">) {
+  return granted === "edit" || granted === required || (granted === "upload" && required === "view");
 }
 
 export async function getCurrentLocalAccount(openId?: string | null) {
@@ -43,6 +48,14 @@ export async function hasImportAccess(openId: string | null | undefined, require
   if (!account) return false;
   if (account.role === "admin") return true;
   return isImportAccessAllowed(account.importAccessLevel, required);
+}
+
+/** Price-list access is deliberately independent from financial workbook permissions. */
+export async function hasPriceAccess(openId: string | null | undefined, required: Exclude<PriceAccessLevel, "none">) {
+  const account = await getCurrentLocalAccount(openId);
+  if (!account) return false;
+  if (account.role === "admin") return true;
+  return isPriceAccessAllowed(account.priceAccessLevel, required);
 }
 
 /** Importing a workbook and viewing its financial control preview are separate permissions. */
