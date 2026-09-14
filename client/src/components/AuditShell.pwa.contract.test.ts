@@ -10,7 +10,10 @@ describe("PWA fixed controls after application return",()=>{
     expect(shell).toContain('window.visualViewport');
     expect(shell).toContain('window.addEventListener("pageshow",refreshFixedControls)');
     expect(shell).toContain('window.addEventListener("focus",refreshFixedControls)');
+    expect(shell).toContain('window.addEventListener("orientationchange",refreshFixedControls)');
     expect(shell).toContain('document.addEventListener("visibilitychange",onVisible)');
+    expect(shell).toContain('viewport?.addEventListener("scroll",refreshFixedControls)');
+    expect(shell).toContain('document.documentElement.classList.add("pwa-fixed-reflow")');
     expect(shell).toContain('key={`mobile-quick-nav-${fixedEpoch}`}');
     expect(shell).toContain('key={`scroll-top-${fixedEpoch}`}');
   });

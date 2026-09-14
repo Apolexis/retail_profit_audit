@@ -35,6 +35,13 @@ describe("страница «Ритм»", () => {
     expect(page).toContain("cadence-group-label");
   });
 
+  it("показывает состав всех исходных расходных статей при выборе показателя «Расходы»", () => {
+    expect(page).toContain("expenseBreakdownMetrics");
+    expect(page).toContain('selectedMetrics.includes("expenses")');
+    expect(page).toContain("СОСТАВ РАСХОДОВ");
+    expect(page).toContain("без двойного учета агрегатов");
+  });
+
   it("использует для группы наличных расходов обычный цвет заголовков в обеих темах", () => {
     expect(styles).toContain(".packet .cadence-group-label > span { color: var(--faint);");
     expect(styles).not.toContain(".cash-control-group .cadence-group-label > span { color:");

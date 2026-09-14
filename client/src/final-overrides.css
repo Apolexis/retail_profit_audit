@@ -2804,3 +2804,21 @@ html[data-audit-theme="light"] .packet .chart-controls > small { color: #365b7c;
   .packet .chart-controls .chart-store-series-toggle { min-width: 0; }
   .date-popover { max-block-size: calc(100dvh - 16px); }
 }
+
+/* Повторно приложенный документ: тематические hover-контуры и устойчивый режим рядов. */
+@media (hover: hover) {
+  html[data-audit-theme="light"] .packet .scenario-result { border: 1px solid #cbdcff; transition: border-color .16s ease, box-shadow .16s ease, background .16s ease; }
+  html[data-audit-theme="light"] .packet .scenario-result:hover { border-color: #0a84ff; box-shadow: 0 0 0 3px rgba(10,132,255,.12); background: #f4f9ff; }
+  html[data-audit-theme="dark"] .packet .scenario-result { border: 1px solid #5d3347; transition: border-color .16s ease, box-shadow .16s ease; }
+  html[data-audit-theme="dark"] .packet .scenario-result:hover { border-color: #ff765f; box-shadow: 0 0 0 3px rgba(255,118,95,.14); }
+  html[data-audit-theme="light"] .packet .comparison-periods article:hover { border-color: #0a84ff; box-shadow: 0 0 0 3px rgba(10,132,255,.12); }
+  html[data-audit-theme="dark"] .packet .comparison-periods article:hover { border-color: #ff765f; box-shadow: 0 0 0 3px rgba(255,118,95,.14); }
+}
+
+.packet .chart-store-series-toggle { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.packet .chart-store-series-toggle > span { flex: 1 1 auto; min-width: 0; }
+.packet .chart-store-series-toggle > b { flex: 0 0 auto; min-width: max-content; white-space: nowrap; overflow-wrap: normal; word-break: keep-all; }
+
+/* После возврата iOS-PWA визуальный viewport может пересчитываться позже pageshow: на время reflow отключаем переходы и фиксируем нижние контролы в compositor. */
+html.pwa-fixed-reflow .mobile-quick-nav,
+html.pwa-fixed-reflow .scroll-top { position: fixed !important; transform: translate3d(0,0,0) !important; transition: none !important; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
