@@ -54,13 +54,15 @@ describe("мобильный контракт графических контр�
     expect(chart).toContain('data-chart-pan-x={pan.x}');
   });
 
-  it("измеряет положение высокого tooltip и включает плотную сетку только при большом числе рядов", () => {
+  it("измеряет положение высокого tooltip: деньги остаются в двух колонках, а плотная сетка доступна только коротким процентам", () => {
     expect(chart).toContain('useLayoutEffect');
     expect(chart).toContain('wrapper.style.setProperty("--tiny-tooltip-shift-y"');
     expect(chart).toContain('tiny-tooltip-values-${columns}');
     expect(chart).toContain('gridAutoFlow:"column"');
     expect(chart).toContain('data-tooltip-count={sortedValues.length}');
-    expect(chart).toContain('className={sortedValues.length>12?"tiny-tooltip tiny-tooltip-dense":"tiny-tooltip"}');
+    expect(chart).toContain('const densePercent=mode==="percent"&&sortedValues.length>2');
+    expect(chart).toContain('className={`tiny-tooltip${densePercent?" tiny-tooltip-dense":""}${columns===2?" tiny-tooltip-monetary":""}`}');
+    expect(styles).toContain('.tiny-tooltip-monetary .tiny-tooltip-values-2 > span { white-space: nowrap; }');
   });
 
   it("сокращает левый резерв компактного медианного графика на телефоне и не меняет развернутый вариант", () => {
@@ -69,6 +71,7 @@ describe("мобильный контракт графических контр�
     expect(chart).toContain('left:compactBenchmark?0:18');
     expect(styles).toContain('html[data-audit-theme="light"] .packet .benchmark-chart:not(.benchmark-chart-expanded) .chart-touch-mode-control');
     expect(styles).toContain('border-color: #cbdcff !important; background: #f7faff !important;');
+    expect(styles).toContain('.benchmark-chart:not(.benchmark-chart-expanded) .chart-touch-mode-button.active { border-color: #0a63c8 !important; background: #0a63c8 !important;');
     expect(styles).toContain('.tiny-tooltip[data-tooltip-count="1"]');
   });
 });
