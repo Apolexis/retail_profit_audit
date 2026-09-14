@@ -54,7 +54,8 @@ const metricGroups: Array<{ label: string; keys: CadenceMetric[] }> = [
   { label: "Выручка, результат и товар", keys: ["receiptsTotal", "cashRevenue", "cashlessRevenue", "revenue", "grossProfit", "netProfit", "purchases", "purchaseSmoked", "purchaseFrozen", "salesSmoked", "salesFrozen"] },
   { label: "Итоговые расходы", keys: ["expenses", "cashExpenses", "cashlessExpenses"] },
   { label: "Наличные расходы и налоги", keys: ["cashTaxes", "household", "delivery", "cleaning", "bonus", "seniority", "supplement", "driverCash", "utilitiesCash", "operatingCosts"] },
-  { label: "Безналичные, ФОТ и налоги", keys: ["cashlessOperatingCosts", "driverCashless", "utilitiesCashless", "rent", "bankFee", "grossProfitTax", "salaryCashless", "payrollTax", "vacationCashless", "vacationTax", "salaryCash", "vacationCash"] },
+  { label: "Безналичные", keys: ["cashlessOperatingCosts", "driverCashless", "utilitiesCashless", "rent", "bankFee", "grossProfitTax"] },
+  { label: "ФОТ и налоги", keys: ["salaryCashless", "payrollTax", "vacationCashless", "vacationTax", "salaryCash", "vacationCash"] },
   { label: "Товарный поток", keys: ["writeoffSmoked", "writeoffFrozen", "movement", "discount"] },
 ];
 

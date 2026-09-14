@@ -66,6 +66,12 @@ describe("страница «Ритм»", () => {
     expect(page).toContain('vacationTax: { label: "Налоги на отпускные"');
   });
 
+  it("разделяет безналичные расходы и ФОТ на две плоские группы без потери выбора статей", () => {
+    expect(page).toContain('{ label: "Безналичные", keys: ["cashlessOperatingCosts", "driverCashless", "utilitiesCashless", "rent", "bankFee", "grossProfitTax"] }');
+    expect(page).toContain('{ label: "ФОТ и налоги", keys: ["salaryCashless", "payrollTax", "vacationCashless", "vacationTax", "salaryCash", "vacationCash"] }');
+    expect(page).not.toContain('label: "Безналичные, ФОТ и налоги"');
+  });
+
   it("использует для группы наличных расходов обычный цвет заголовков в обеих темах", () => {
     expect(styles).toContain(".packet .cadence-group-label > span { color: var(--faint);");
     expect(styles).not.toContain(".cash-control-group .cadence-group-label > span { color:");

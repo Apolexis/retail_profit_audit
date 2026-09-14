@@ -47,8 +47,18 @@ describe("Pilot scenario outcome contract",()=>{
     expect(page).toContain("rentProfit");
     expect(page).not.toContain("Коммунальные → прибыль");
     expect(page).not.toContain("Пилот сокращения коммунальных платежей");
-    expect(page).not.toContain('id:"writeoff-recommended"');
-    expect(page).not.toContain("Рекомендованное сокращение списаний М.");
+    expect(page).not.toContain("Пилот сокращения коммунальных платежей");
+  });
+
+  it("derives the frozen-writeoff recommendation from the median share instead of a fixed scenario",()=>{
+    expect(page).toContain("const writeoffShareMedian=median(facts.summaries.map");
+    expect(page).toContain("const writeoffGapToMedian=writeoffShare>writeoffShareMedian");
+    expect(page).toContain("const recommendedWriteoffShift=Math.min(15,writeoffGapToMedian)");
+    expect(page).toContain('id:"writeoff"');
+    expect(page).toContain("Рекомендованное сокращение списаний М.");
+    expect(page).toContain("рычаг списаний М.");
+    expect(page).toContain("writeoff:recommendedWriteoffShift");
+    expect(page).not.toContain("writeoff:15");
   });
 
   it("restores the separate evidence-based recommendation for managed operating expenses",()=>{
