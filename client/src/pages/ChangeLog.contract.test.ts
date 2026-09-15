@@ -44,4 +44,19 @@ describe("компактный журнал изменений", () => {
     expect(journal).toContain('supplierProductName:"Название поставщика"');
     expect(overrides).toContain('.packet .audit-price-alias-context');
   });
+
+  it("показывает в том же журнале все операции прайс‑контроля с понятными названиями и значениями до/после", () => {
+    expect(journal).toContain('"price_product.update":"Изменение товара"');
+    expect(journal).toContain('"price_category.update":"Изменение категории"');
+    expect(journal).toContain('"price_supplier.update":"Изменение поставщика"');
+    expect(journal).toContain('"price_import.commit":"Сохранение прайс‑листа"');
+    expect(journal).toContain('"price_offer.update":"Изменение цены поставщика"');
+    expect(journal).toContain('"price_product.import_create":"Создание товаров при импорте"');
+    expect(journal).toContain('"price_alias.import_link":"Создание соответствий при импорте"');
+    expect(journal).toContain('categoryName:"Категория"');
+    expect(journal).toContain('priceAmount:"Цена, ₽"');
+    expect(journal).toContain('audit-price-import-products');
+    expect(journal).toContain('audit-price-import-product-list');
+    expect(overrides).toContain('.packet .audit-price-import-product-list');
+  });
 });

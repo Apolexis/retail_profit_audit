@@ -17,6 +17,9 @@ describe("базовые управляющие элементы", () => {
     expect(css).toContain(".packet .access-switch button:not(.active):hover");
     expect(css).toContain("transform: none !important;");
     expect(home).toContain("home-portfolio-link");
+    expect(shell).toContain('className={demoMode?"demo-data-button active":"demo-data-button"}');
+    expect(shell).toContain('aria-pressed={demoMode}');
+    expect(css).toContain('.packet .demo-data-button.active');
   });
 
   it("не допускает горизонтального переполнения шапки на ширине 360 px", () => {

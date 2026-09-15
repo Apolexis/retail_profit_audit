@@ -41,10 +41,82 @@ function sortTableByHeader(header: HTMLTableCellElement) {
   });
 }
 
+function canStartTableDrag(target: EventTarget | null) {
+  return !(target instanceof Element && target.closest("button, a, input, select, textarea, label, [contenteditable='true']"));
+}
+
+function bindMouseDragScroll(wrap: HTMLElement) {
+  if (wrap.dataset.mouseDragScrollBound === "true") return () => {};
+  wrap.dataset.mouseDragScrollBound = "true";
+  let pointerId: number | null = null;
+  let startX = 0;
+  let startScrollLeft = 0;
+  let dragging = false;
+  let clearClickTimer: number | undefined;
+  const finish = () => {
+    if (pointerId !== null && wrap.hasPointerCapture(pointerId)) wrap.releasePointerCapture(pointerId);
+    pointerId = null;
+    wrap.classList.remove("table-mouse-dragging");
+    if (dragging) {
+      wrap.dataset.mouseDragScrollMoved = "true";
+      clearClickTimer = window.setTimeout(() => delete wrap.dataset.mouseDragScrollMoved, 0);
+    }
+    dragging = false;
+  };
+  const onPointerDown = (event: PointerEvent) => {
+    if (event.pointerType !== "mouse" || event.button !== 0 || wrap.scrollWidth <= wrap.clientWidth || !canStartTableDrag(event.target)) return;
+    pointerId = event.pointerId;
+    startX = event.clientX;
+    startScrollLeft = wrap.scrollLeft;
+    dragging = false;
+    wrap.setPointerCapture(event.pointerId);
+  };
+  const onPointerMove = (event: PointerEvent) => {
+    if (event.pointerId !== pointerId) return;
+    const delta = event.clientX - startX;
+    if (!dragging && Math.abs(delta) < 4) return;
+    if (!dragging) window.getSelection()?.removeAllRanges();
+    dragging = true;
+    wrap.classList.add("table-mouse-dragging");
+    wrap.scrollLeft = startScrollLeft - delta;
+    event.preventDefault();
+  };
+  const onClickCapture = (event: MouseEvent) => {
+    if (wrap.dataset.mouseDragScrollMoved !== "true") return;
+    event.preventDefault();
+    event.stopPropagation();
+  };
+  wrap.addEventListener("pointerdown", onPointerDown);
+  wrap.addEventListener("pointermove", onPointerMove);
+  wrap.addEventListener("pointerup", finish);
+  wrap.addEventListener("pointercancel", finish);
+  wrap.addEventListener("lostpointercapture", finish);
+  wrap.addEventListener("click", onClickCapture, true);
+  return () => {
+    if (clearClickTimer) window.clearTimeout(clearClickTimer);
+    wrap.removeEventListener("pointerdown", onPointerDown);
+    wrap.removeEventListener("pointermove", onPointerMove);
+    wrap.removeEventListener("pointerup", finish);
+    wrap.removeEventListener("pointercancel", finish);
+    wrap.removeEventListener("lostpointercapture", finish);
+    wrap.removeEventListener("click", onClickCapture, true);
+    delete wrap.dataset.mouseDragScrollBound;
+  };
+}
+
 /** Делает все аналитические таблицы кликабельно сортируемыми без изменения расчетных данных. */
 export function SortableTablesBootstrap() {
   useEffect(() => {
-    const hydrate = () => document.querySelectorAll<HTMLTableElement>(tableSelector).forEach(hydrateTable);
+    const dragCleanups = new Map<HTMLElement, () => void>();
+    const hydrate = () => {
+      document.querySelectorAll<HTMLTableElement>(tableSelector).forEach(hydrateTable);
+      document.querySelectorAll<HTMLElement>(".data-table-wrap").forEach(wrap => {
+        if (!dragCleanups.has(wrap)) dragCleanups.set(wrap, bindMouseDragScroll(wrap));
+      });
+      dragCleanups.forEach((cleanup, wrap) => {
+        if (!document.body.contains(wrap)) { cleanup(); dragCleanups.delete(wrap); }
+      });
+    };
     const onClick = (event: MouseEvent) => {
       const target = event.target as Element | null;
       const header = target?.closest<HTMLTableCellElement>("table.data-table th[data-sortable='true']");
@@ -63,7 +135,7 @@ export function SortableTablesBootstrap() {
     observer.observe(document.body, { childList: true, subtree: true });
     document.addEventListener("click", onClick);
     document.addEventListener("keydown", onKeyDown);
-    return () => { observer.disconnect(); document.removeEventListener("click", onClick); document.removeEventListener("keydown", onKeyDown); };
+    return () => { observer.disconnect(); document.removeEventListener("click", onClick); document.removeEventListener("keydown", onKeyDown); dragCleanups.forEach(cleanup => cleanup()); };
   }, []);
   return null;
 }

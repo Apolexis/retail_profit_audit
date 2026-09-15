@@ -903,16 +903,6 @@ export default function PriceControl({
                 имеют приоритет.
               </p>
             </div>
-            <div className="price-scope">
-              <span>Контур доступа</span>
-              <strong>
-                {level === "edit"
-                  ? "Изменение"
-                  : level === "upload"
-                    ? "Загрузка"
-                    : "Просмотр"}
-              </strong>
-            </div>
           </section>
           <section
             className="price-summary-grid"
@@ -1352,10 +1342,6 @@ export default function PriceControl({
                 и не изменяет старую страницу импорта финансовых фактов.
               </p>
             </div>
-            <div className="price-scope">
-              <span>Контур доступа</span>
-              <strong>{canUpload ? "Загрузка" : "Просмотр"}</strong>
-            </div>
           </section>
           {canUpload && (
             <section className="price-import-workbench">
@@ -1759,10 +1745,6 @@ export default function PriceControl({
                 Финансовая «База» и ее показатели остаются отдельными и не
                 изменяются.
               </p>
-            </div>
-            <div className="price-scope">
-              <span>Контур доступа</span>
-              <strong>{canEdit ? "Изменение" : "Просмотр"}</strong>
             </div>
           </section>
           <nav className="price-directory-tabs" aria-label="Разделы справочника">
@@ -2178,7 +2160,7 @@ export default function PriceControl({
               {canEdit ? (
                 <button
                   type="button"
-                  className="packet-link compact"
+                  className="price-directory-new-action"
                   onClick={() =>
                     setSupplierDraft({
                       id: null,
@@ -2233,9 +2215,12 @@ export default function PriceControl({
                       })
                     }
                   />
-                  Активен в фильтрах
+                  <span>
+                    <strong>Активен в фильтрах</strong>
+                    <small>Доступен при выборе поставщика</small>
+                  </span>
                 </label>
-                <div>
+                <div className="price-directory-editor-actions">
                   <button
                     type="button"
                     className="packet-link compact"

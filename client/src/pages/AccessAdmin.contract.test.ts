@@ -37,6 +37,8 @@ describe("матрица доступа к импорту",()=>{
     const page=readFileSync(resolve(process.cwd(),"client/src/pages/AccessAdmin.tsx"),"utf8");
     expect(page).toContain("Прайс‑контроль");
     expect(page).toContain("priceAccessLevel");
+    expect(page).toContain('className="access-switch access-switch-four"');
+    expect(overrides).toContain('.packet .access-import-row .access-switch.access-switch-four');
   });
 
   it("сохраняет индивидуальные пояснения строк прав и не заменяет их общим текстом",()=>{

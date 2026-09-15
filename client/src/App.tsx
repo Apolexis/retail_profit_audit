@@ -1,6 +1,5 @@
 import { Toaster } from "@/components/ui/sonner";
 import { OceanLoader } from "@/components/OceanLoader";
-import { PlanFactControlsBootstrap } from "@/components/PlanFactControlsBootstrap";
 import { SortableTablesBootstrap } from "@/components/SortableTablesBootstrap";
 import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
@@ -142,7 +141,6 @@ export default function App() {
           <TooltipProvider>
             <Toaster />
             <SortableTablesBootstrap />
-            <PlanFactControlsBootstrap />
             <LocalAccessGate />
           </TooltipProvider>
         </AuditProvider>

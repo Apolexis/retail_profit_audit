@@ -3,14 +3,14 @@ type OceanLoaderProps = { overlay?: boolean; label?: string };
 type FishPath = { id: string; x: number; y: number; rotation: number; scale: number };
 
 const SCHOOL_PATHS: FishPath[] = [
-  { id: "a", x: 73, y: 10, rotation: 90, scale: .70 },
-  { id: "b", x: 117, y: 32, rotation: 138, scale: .53 },
-  { id: "c", x: 132, y: 75, rotation: 184, scale: .74 },
-  { id: "d", x: 104, y: 119, rotation: 228, scale: .49 },
-  { id: "e", x: 56, y: 124, rotation: 274, scale: .63 },
-  { id: "f", x: 19, y: 90, rotation: 318, scale: .56 },
-  { id: "g", x: 18, y: 47, rotation: 5, scale: .46 },
-  { id: "h", x: 47, y: 19, rotation: 48, scale: .40 },
+  { id: "a", x: 73, y: 10, rotation: 90, scale: .86 },
+  { id: "b", x: 117, y: 32, rotation: 138, scale: .68 },
+  { id: "c", x: 132, y: 75, rotation: 184, scale: .90 },
+  { id: "d", x: 104, y: 119, rotation: 228, scale: .64 },
+  { id: "e", x: 56, y: 124, rotation: 274, scale: .80 },
+  { id: "f", x: 19, y: 90, rotation: 318, scale: .72 },
+  { id: "g", x: 18, y: 47, rotation: 5, scale: .62 },
+  { id: "h", x: 47, y: 19, rotation: 48, scale: .56 },
 ];
 
 function OrbitFish({ id, x, y, rotation, scale }: FishPath) {

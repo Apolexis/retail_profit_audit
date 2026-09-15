@@ -22,6 +22,9 @@ type AuditState = {
   setRange: (value: DateRangeValue) => void;
   theme: Theme;
   toggleTheme: () => void;
+  demoMode: boolean;
+  demoSeed: number;
+  toggleDemoMode: () => void;
   rangeLabel: string;
   months: string[];
   includesMonth: (value: string) => boolean;
@@ -92,12 +95,16 @@ export function AuditProvider({ children }: { children: ReactNode }) {
     }
   });
   const [theme, setTheme] = useState<Theme>(() => storedTheme() ?? systemTheme());
+  const [demoMode, setDemoMode] = useState(() => localStorage.getItem("audit-demo-mode") === "true");
+  const [demoSeed, setDemoSeed] = useState(() => Number(localStorage.getItem("audit-demo-seed")) || Date.now());
   const themeRef = useRef(theme);
   const [location] = useLocation();
   const setRange = (value: DateRangeValue) => setRangeState(normalizeRange(value));
 
   useEffect(() => { localStorage.setItem("audit-store", selectedStore); }, [selectedStore]);
   useEffect(() => { localStorage.setItem("audit-range", JSON.stringify(range)); }, [range]);
+  useEffect(() => { localStorage.setItem("audit-demo-mode", String(demoMode)); }, [demoMode]);
+  useEffect(() => { localStorage.setItem("audit-demo-seed", String(demoSeed)); }, [demoSeed]);
   useLayoutEffect(() => {
     themeRef.current = theme;
     applyPwaTheme(theme);
@@ -124,6 +131,12 @@ export function AuditProvider({ children }: { children: ReactNode }) {
       setRange,
       theme,
       toggleTheme,
+      demoMode,
+      demoSeed,
+      toggleDemoMode: () => {
+        if (!demoMode) setDemoSeed(Date.now());
+        setDemoMode(current => !current);
+      },
       rangeLabel: `${pretty(range.from)} — ${pretty(range.to)}`,
       months,
       includesMonth: (value: string) => {
@@ -131,7 +144,7 @@ export function AuditProvider({ children }: { children: ReactNode }) {
         return normalized >= range.from.slice(0, 7) && normalized <= range.to.slice(0, 7);
       },
     };
-  }, [selectedStore, range, theme]);
+  }, [selectedStore, range, theme, demoMode, demoSeed]);
 
   return <AuditContext.Provider value={value}>{children}</AuditContext.Provider>;
 }

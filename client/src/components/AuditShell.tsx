@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowRight, ArrowUp, BellRing, ChevronDown, Menu, Moon, RefreshCw, Sun, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUp, BellRing, ChevronDown, Menu, Moon, Presentation, RefreshCw, Sun, X } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAudit } from "@/contexts/AuditContext";
 import { trpc } from "@/lib/trpc";
@@ -25,7 +25,7 @@ recommendations["20"]={title:"Прайс‑контроль: сравнивай�
 
 export function AuditShell({title,kicker,children}:{title:string;kicker:string;children:ReactNode}){
   const [location,setLocation]=useLocation();
-  const {theme,toggleTheme,rangeLabel,setSelectedStore}=useAudit();
+  const {theme,toggleTheme,demoMode,toggleDemoMode,rangeLabel,setSelectedStore}=useAudit();
   const me=trpc.localAuth.me.useQuery(undefined,{retry:false});
   const notificationSummary=trpc.localAuth.notificationSummary.useQuery(undefined,{retry:false});
   const availableStores=trpc.audit.stores.useQuery(undefined,{retry:false});
@@ -56,7 +56,7 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
     return {...current,[title]:!open};
   });
 
-  return <div className={standalone?"packet pwa-standalone":"packet"}>
+  return <div className={standalone?"packet pwa-standalone":"packet"} data-demo-mode={demoMode?"true":"false"}>
     <aside className="packet-spine">
       <Link href="/" className="packet-mark"><BrandMark theme={theme}/><span className="brand-title"><span>Аналитика</span><span>«Рыбный»</span></span></Link>
       <nav className="packet-nav-list" aria-label="Разделы системы">
@@ -67,7 +67,7 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
       </nav>
       <div className="packet-period"><span>АКТИВНЫЙ СРЕЗ</span><strong>{rangeLabel}</strong></div>
     </aside>
-    <header key={`packet-top-${theme}`} className="packet-top" data-audit-theme={theme} style={{backgroundColor:theme==="dark"?"#0c0b12":"#ffffff",colorScheme:theme}}><div><span className="packet-kicker">{kicker.replace(/^\d+\s*\/\s*/,"")}</span><h1>{title}</h1></div><div className="packet-actions"><Link href="/notifications" className="alert-link" aria-label={`Уведомления${unread?`, ${unread} непрочитанных`:""}`}><BellRing size={17}/>{unread>0&&<i>{unread>99?"99+":unread}</i>}</Link><button className="theme-button" aria-label="Переключить тему" onClick={toggleTheme}>{theme==="dark"?<Sun size={17}/>:<Moon size={17}/>}</button><button className="packet-mobile menu-button" aria-label={menuOpen?"Закрыть меню":"Открыть меню"} aria-expanded={menuOpen} onClick={event=>{event.currentTarget.blur();setMenuOpen(value=>!value)}}>{menuOpen?<X size={18}/>:<Menu size={18}/>}</button></div></header>
+    <header key={`packet-top-${theme}`} className="packet-top" data-audit-theme={theme} style={{backgroundColor:theme==="dark"?"#0c0b12":"#ffffff",colorScheme:theme}}><div><span className="packet-kicker">{kicker.replace(/^\d+\s*\/\s*/,"")}</span><h1>{title}</h1></div><div className="packet-actions"><Link href="/notifications" className="alert-link" aria-label={`Уведомления${unread?`, ${unread} непрочитанных`:""}`}><BellRing size={17}/>{unread>0&&<i>{unread>99?"99+":unread}</i>}</Link><button className="theme-button" aria-label="Переключить тему" onClick={toggleTheme}>{theme==="dark"?<Sun size={17}/>:<Moon size={17}/>}</button><button className={demoMode?"demo-data-button active":"demo-data-button"} type="button" aria-label="Включить или выключить демонстрационные данные" aria-pressed={demoMode} onClick={toggleDemoMode}><Presentation size={17}/><span>Демо</span></button><button className="packet-mobile menu-button" aria-label={menuOpen?"Закрыть меню":"Открыть меню"} aria-expanded={menuOpen} onClick={event=>{event.currentTarget.blur();setMenuOpen(value=>!value)}}>{menuOpen?<X size={18}/>:<Menu size={18}/>}</button></div></header>
     {menuOpen&&<button className="mobile-backdrop" aria-label="Закрыть меню" onClick={closeMenu}/>}<nav className={menuOpen?"mobile-drawer open":"mobile-drawer"} aria-label="Мобильная навигация" onPointerDown={event=>{gestureStart.current=event.clientX}} onPointerUp={event=>{if(gestureStart.current!==null&&event.clientX-gestureStart.current>60)closeMenu();gestureStart.current=null}}>
       <div className="drawer-top"><span>НАВИГАЦИЯ</span><button aria-label="Закрыть меню" onClick={closeMenu}><X size={20}/></button></div>
       <div className="drawer-search"><input value={storeSearch} onChange={event=>setStoreSearch(event.target.value)} placeholder="Найти назначенный магазин…"/>{matches.length>0&&<div>{matches.map(store=><button key={store.id} onClick={()=>chooseStore(store.name)}>{store.name}</button>)}</div>}</div>

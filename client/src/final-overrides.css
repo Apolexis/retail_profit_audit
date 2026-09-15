@@ -730,11 +730,49 @@ html[data-audit-theme="light"] .packet .chart-view-button.active { background: #
 }
 
 /* План‑факт: месяц открывается по клику в любую точку поля, сумма оформлена тем же контролом. */
-.packet .plan-editor input[type="month"], .packet .plan-editor input[type="number"] { border: 1px solid #4c3040 !important; border-radius: 8px !important; background: #14101a !important; color: #f7e8ed !important; color-scheme: dark; padding: 0 10px !important; }
-.packet .plan-editor input[type="month"] { cursor: pointer; }
-.packet .plan-editor input[type="month"]:hover, .packet .plan-editor input[type="month"]:focus, .packet .plan-editor input[type="number"]:hover, .packet .plan-editor input[type="number"]:focus { border-color: #ff765f !important; box-shadow: 0 0 0 2px rgba(255,118,95,.24) !important; outline: none; }
-html[data-audit-theme="light"] .packet .plan-editor input[type="month"], html[data-audit-theme="light"] .packet .plan-editor input[type="number"] { border-color: #cbd9ee !important; background: #fff !important; color: #17171b !important; color-scheme: light; }
-html[data-audit-theme="light"] .packet .plan-editor input[type="month"]:hover, html[data-audit-theme="light"] .packet .plan-editor input[type="month"]:focus, html[data-audit-theme="light"] .packet .plan-editor input[type="number"]:hover, html[data-audit-theme="light"] .packet .plan-editor input[type="number"]:focus { border-color: #0a84ff !important; box-shadow: 0 0 0 3px rgba(10,132,255,.14) !important; }
+.packet .plan-editor input[type="number"] { border: 1px solid #4c3040 !important; border-radius: 8px !important; background: #14101a !important; color: #f7e8ed !important; padding: 0 10px !important; }
+.packet .plan-editor input[type="number"]:hover, .packet .plan-editor input[type="number"]:focus { border-color: #ff765f !important; box-shadow: 0 0 0 2px rgba(255,118,95,.24) !important; outline: none; }
+html[data-audit-theme="light"] .packet .plan-editor input[type="number"] { border-color: #cbd9ee !important; background: #fff !important; color: #17171b !important; }
+html[data-audit-theme="light"] .packet .plan-editor input[type="number"]:hover, html[data-audit-theme="light"] .packet .plan-editor input[type="number"]:focus { border-color: #0a84ff !important; box-shadow: 0 0 0 3px rgba(10,132,255,.14) !important; }
+
+/* План‑факт: только тематичный выбор месяца — без серого системного month-picker. */
+.packet .plan-editor .plan-month-picker { position: relative; width: 100%; }
+.packet .plan-editor .plan-month-picker-trigger { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 42px; padding: 0 11px; border: 1px solid #4c3040; border-radius: 11px; background: #14101a; color: #f7e8ed; font: 700 12px Manrope, sans-serif; text-align: left; transition: border-color 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease); }
+.packet .plan-editor .plan-month-picker-trigger:hover, .packet .plan-editor .plan-month-picker-trigger:focus-visible, .packet .plan-editor .plan-month-picker-trigger.is-open { outline: none; border-color: #ff856d; background: #1b1119; }
+.plan-month-picker-popover { position: absolute; z-index: 70; top: calc(100% + 6px); left: 0; width: 250px; padding: 10px; border: 1px solid #5b3446; border-radius: 13px; background: #171019; color: #f8e9ef; box-shadow: 0 18px 42px rgba(0,0,0,.34); }
+.plan-month-picker-heading { display: grid; grid-template-columns: 32px minmax(0, 1fr) 32px; align-items: center; gap: 5px; margin-bottom: 9px; text-align: center; }
+.plan-month-picker-heading strong { font: 800 12px "IBM Plex Mono", monospace; letter-spacing: .06em; }
+.plan-month-picker-heading button { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid transparent; border-radius: 9px; background: transparent; color: #f4ccd9; }
+.plan-month-picker-heading button:hover, .plan-month-picker-heading button:focus-visible { border-color: #a95570; background: #281521; color: #fff; outline: none; }
+.plan-month-picker-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+.plan-month-picker-grid button { min-height: 34px; padding: 0 6px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: #d4b7c1; font: 750 11px Manrope, sans-serif; }
+.plan-month-picker-grid button:hover, .plan-month-picker-grid button:focus-visible { border-color: #a95570; background: #281521; color: #fff; outline: none; }
+.plan-month-picker-grid button.active { border-color: #ff856d; background: #732345; color: #fff7fa; }
+html[data-audit-theme="light"] .packet .plan-editor .plan-month-picker-trigger { border-color: #cbd9ee; background: #fff; color: #17171b; }
+html[data-audit-theme="light"] .packet .plan-editor .plan-month-picker-trigger:hover, html[data-audit-theme="light"] .packet .plan-editor .plan-month-picker-trigger:focus-visible, html[data-audit-theme="light"] .packet .plan-editor .plan-month-picker-trigger.is-open { border-color: #0a84ff; background: #f4f9ff; }
+html[data-audit-theme="light"] .plan-month-picker-popover { border-color: #bdd9f6; background: #fff; color: #172233; box-shadow: 0 18px 42px rgba(24,45,74,.18); }
+html[data-audit-theme="light"] .plan-month-picker-heading button { color: #075dbb; }
+html[data-audit-theme="light"] .plan-month-picker-heading button:hover, html[data-audit-theme="light"] .plan-month-picker-heading button:focus-visible { border-color: #0a84ff; background: #edf6ff; color: #075dbb; }
+html[data-audit-theme="light"] .plan-month-picker-grid button { color: #536176; }
+html[data-audit-theme="light"] .plan-month-picker-grid button:hover, html[data-audit-theme="light"] .plan-month-picker-grid button:focus-visible { border-color: #79b8ef; background: #edf6ff; color: #075dbb; }
+html[data-audit-theme="light"] .plan-month-picker-grid button.active { border-color: #0a63c8; background: #0a63c8; color: #fff; }
+@media (max-width: 560px) { .plan-month-picker-popover { width: min(250px, calc(100vw - 32px)); } }
+
+/* Демо-режим виден в шапке и подменяет только клиентские факты. */
+.packet .demo-data-button { display: inline-flex; align-items: center; gap: 7px; min-height: 39px; padding: 0 11px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--muted); font: 800 11px Manrope, sans-serif; }
+.packet .demo-data-button:hover, .packet .demo-data-button:focus-visible { border-color: var(--accent); color: var(--text); outline: none; }
+.packet .demo-data-button.active { border-color: #ff856d; background: color-mix(in srgb, #ff765f 16%, var(--surface)); color: var(--text); }
+html[data-audit-theme="light"] .packet .demo-data-button { border-color: #cbd9ee; background: #ffffff; color: #365b7c; }
+html[data-audit-theme="light"] .packet .demo-data-button:hover, html[data-audit-theme="light"] .packet .demo-data-button:focus-visible { border-color: #0a84ff; color: #075dbb; }
+html[data-audit-theme="light"] .packet .demo-data-button.active { border-color: #0a63c8; background: #edf6ff; color: #075dbb; }
+.packet[data-demo-mode="true"] .analysis-filter-copy::after { content: "ДЕМО-ДАННЫЕ"; display: inline-flex; width: max-content; margin-top: 3px; padding: 3px 6px; border: 1px solid color-mix(in srgb, var(--accent) 50%, var(--line)); border-radius: 999px; color: var(--accent); font: 800 8px "IBM Plex Mono", monospace; letter-spacing: .08em; }
+@media (max-width: 560px) { .packet .demo-data-button { width: 39px; justify-content: center; padding: 0; } .packet .demo-data-button span { display: none; } }
+
+/* Широкие таблицы поддерживают естественное перетаскивание мышью, не отменяя touch‑скролл и выбор текста до начала drag. */
+@media (hover: hover) and (pointer: fine) { .packet .data-table-wrap { cursor: grab; overscroll-behavior-inline: contain; } .packet .data-table-wrap.table-mouse-dragging { cursor: grabbing; user-select: none; } }
+
+/* На широком полотне сценарии читаются тройками; на средних и мобильных размерах сохраняется существующая адаптация. */
+@media (min-width: 981px) { .packet .scenario-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
 /* База: отдельные режимы «новый показатель» и «редактирование», единый ритм формы. */
 .packet .manage-editor .card-title { align-items: center; gap: 14px; }
@@ -1274,6 +1312,16 @@ html[data-audit-theme="light"] .packet .chart-view-button.active:hover { box-sha
 /* Тёмный базовый hover кнопок не должен переопределять единый контракт верхней панели. */
 html[data-audit-theme="dark"] .packet .packet-actions button.theme-button:hover,
 html[data-audit-theme="dark"] .packet .packet-actions a.alert-link:hover { transform:none!important; }
+
+/* Детали автоматически созданных в прайс‑импорте товаров и соответствий остаются компактными в общем журнале. */
+.packet .audit-price-import-products { display: grid; gap: 8px; }
+.packet .audit-price-import-product-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px 14px; color: var(--muted); font-size: 11px; line-height: 1.35; }
+.packet .audit-price-import-product-list > span { min-width: 0; overflow-wrap: anywhere; }
+.packet .audit-price-import-product-list > span:has(svg) { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+@media (max-width: 620px) { .packet .audit-price-import-product-list { grid-template-columns: minmax(0, 1fr); gap: 6px; } }
+
+/* Интерактивный выбор месяца не вкладывается в label: контейнер сохраняет геометрию остальных полей формы. */
+.packet .plan-editor > .plan-editor-field { display: grid; gap: 6px; min-width: 0; color: var(--muted); font: 10px "IBM Plex Mono", monospace; letter-spacing: .05em; }
 
 /* На очень узких телефонах заголовок уступает место трем постоянным действиям, а шапка не создает горизонтальную прокрутку. */
 @media (max-width: 390px) {
@@ -2748,7 +2796,7 @@ html[data-audit-theme="light"] .packet .pricing-markup-detail .card-title > div 
 html[data-audit-theme="light"] .packet .pricing-markup-detail .card-title :is(h3, small) { display: block; max-width: 100%; min-width: 0; white-space: normal !important; overflow-wrap: anywhere; word-break: normal; }
 
 /* Последний слой: положение высокого tooltip измеряется в границах конкретного графика. */
-:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .recharts-tooltip-wrapper { translate: 0 var(--tiny-tooltip-shift-y, 0px); }
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .recharts-tooltip-wrapper { translate: var(--tiny-tooltip-shift-x, 0px) var(--tiny-tooltip-shift-y, 0px); }
 @media (max-width: 1059px) {
   :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip-dense { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 8px; width: min(354px, calc(100vw - 24px)); min-width: min(354px, calc(100vw - 24px)); max-width: min(354px, calc(100vw - 24px)); padding: 8px 9px; font-size: 10px; max-height: none !important; overflow: visible !important; }
   :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip-dense > span { line-height: 1.42; }
@@ -2762,7 +2810,11 @@ html[data-audit-theme="dark"] :is(.benchmark-chart, .benchmark-chart-expanded) .
 html[data-audit-theme="light"] :is(.chart-expand-dialog, .chart-expand-dialog-general) .chart-panzoom-touch-actions .chart-touch-mode-button:not(.active) { background: #f4f9ff !important; color: #51657d !important; box-shadow: none !important; }
 
 /* Темный развернутый график не получает iOS-синий focus/hover-контур: акцент относится к самой поверхности, а не к кнопкам. */
-html[data-audit-theme="dark"] :is(.chart-expand-dialog, .chart-expand-dialog-general) .chart-panzoom:is(:hover, :focus, :focus-visible) { border-color: #ff765f !important; outline: 2px solid #ff9179 !important; outline-offset: 3px !important; box-shadow: 0 0 0 2px rgba(255, 118, 95, .14) !important; }
+html[data-audit-theme="dark"] :is(.chart-expand-dialog, .chart-expand-dialog-general) .chart-panzoom:is(:hover, :focus, :focus-visible) { border-color: #ff765f !important; outline: none !important; box-shadow: none !important; }
+
+/* Открытый портал графика перехватывает все pointer‑события: фоновый график не двигается. */
+body[data-chart-dialog-open="true"] .packet .chart-panzoom-compact { pointer-events: none !important; }
+body[data-chart-dialog-open="true"] .packet :is(.scroll-top, .mobile-quick-nav) { pointer-events: none !important; }
 
 /* Компактная медиана на телефоне: режимы используют ту же голубую поверхность, а короткие коды магазинов не резервируют лишнее место слева. */
 @media (max-width: 560px) {
@@ -3038,9 +3090,15 @@ html[data-audit-theme="dark"] .packet .subtle-danger:hover { border-color: #ff85
 .packet .price-directory-editor label { display: grid; min-width: 0; gap: 6px; color: var(--price-muted); font-size: 11px; font-weight: 700; }
 .packet .price-directory-editor textarea { min-height: 72px; resize: vertical; }
 .packet .price-directory-editor > div { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; }
-.packet .price-directory-editor.supplier { grid-template-columns: minmax(170px, .8fr) minmax(260px, 1.5fr) minmax(150px, .7fr) auto; }
-.packet .price-active-toggle { align-content: center; grid-template-columns: auto 1fr; align-items: center; }
-.packet .price-active-toggle input { width: auto; min-height: auto; accent-color: var(--price-accent); }
+.packet .price-directory-editor.supplier { grid-template-columns: minmax(190px, .85fr) minmax(270px, 1.4fr) minmax(190px, .75fr); align-items: end; gap: 12px 14px; padding: 15px; }
+.packet .price-active-toggle { min-height: 62px; align-content: center; grid-template-columns: auto minmax(0, 1fr); align-items: center; padding: 9px 11px; border: 1px solid var(--price-border); border-radius: 11px; background: color-mix(in srgb, var(--price-surface) 84%, var(--price-accent) 16%); cursor: pointer; }
+.packet .price-active-toggle input { width: 18px; min-width: 18px; height: 18px; min-height: 18px; margin: 0; accent-color: var(--price-accent); }
+.packet .price-active-toggle span { display: grid; min-width: 0; gap: 3px; }
+.packet .price-active-toggle strong { color: var(--price-ink); font-size: 12px; }
+.packet .price-active-toggle small { color: var(--price-muted); font-size: 10px; line-height: 1.3; }
+.packet .price-directory-editor.supplier .price-directory-editor-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding-top: 11px; border-top: 1px solid var(--price-border); }
+.packet .price-directory-new-action { display: inline-flex; align-items: center; gap: 7px; min-height: 38px; padding: 0 12px; border: 1px solid var(--price-accent); border-radius: 10px; background: transparent; color: var(--price-ink); font: 800 12px Manrope, sans-serif; }
+.packet .price-directory-new-action:hover, .packet .price-directory-new-action:focus-visible { border-color: var(--price-accent-strong); background: color-mix(in srgb, var(--price-accent) 12%, var(--price-surface)); color: var(--price-ink); outline: none; }
 .packet .price-directory-list { display: grid; gap: 8px; margin-top: 14px; }
 .packet .price-directory-list article { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 11px 12px; border: 1px solid var(--price-border); border-radius: 13px; background: var(--price-surface); }
 .packet .price-directory-list article > div { display: grid; min-width: 0; gap: 3px; }
@@ -3087,6 +3145,8 @@ html[data-audit-theme="dark"] .packet .subtle-danger:hover { border-color: #ff85
   .packet .price-import-meta { display: grid; grid-template-columns: minmax(0, 1fr); }
   .packet .price-import-meta label { min-width: 0; }
   .packet .price-directory-editor, .packet .price-directory-editor.supplier { grid-template-columns: minmax(0, 1fr); }
+  .packet .price-directory-editor.supplier .price-directory-editor-actions { justify-content: stretch; }
+  .packet .price-directory-editor.supplier .price-directory-editor-actions .packet-link { flex: 1 1 0; justify-content: center; }
   .packet .price-directory-editor > div { align-items: stretch; }
 }
 
@@ -3543,6 +3603,13 @@ html[data-audit-theme] .packet .packet-card:focus-within {
   .packet .access-import-control-row .access-control-toggle { width: 100% !important; justify-self: stretch !important; }
 }
 
+/* Верхние права визуально повторяют компактные сегменты магазинов, включая четырехуровневый прайс‑контроль. */
+.packet .access-import-row .access-switch { min-height: 38px; padding: 3px; border-radius: 12px; background: color-mix(in srgb, var(--surface) 84%, var(--line) 16%); }
+.packet .access-import-row .access-switch button { min-height: 32px !important; border-radius: 8px; font-size: 10px; }
+.packet .access-import-row .access-switch.access-switch-four { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; grid-auto-flow: unset !important; grid-auto-columns: unset !important; }
+.packet .access-import-control-row .access-control-toggle { min-height: 38px; border-radius: 12px; font-size: 10px; }
+@media (max-width: 760px) { .packet .access-import-row .access-switch.access-switch-four { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; grid-auto-flow: row !important; } }
+
 /* Портфель: мягкие скругленные кнопки изменения порога, а не квадратные части поля. */
 .packet .portfolio-thresholds .threshold-stepper > div { grid-template-columns: 32px minmax(0, 1fr) 32px; gap: 4px; min-height: 40px; padding: 3px; border-radius: 12px; }
 .packet .portfolio-thresholds .threshold-stepper button { align-self: center; width: 30px; height: 30px; min-height: 30px; padding: 0; border: 1px solid transparent; border-radius: 9px; background: color-mix(in srgb, var(--surface) 72%, transparent); color: var(--muted); font-size: 18px; line-height: 1; transition: border-color 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease), color 160ms var(--audit-hover-ease), transform 160ms var(--audit-hover-ease); }
@@ -3583,3 +3650,12 @@ html[data-audit-theme="dark"] .packet .portfolio-thresholds .threshold-stepper b
 .packet .price-preview-supplier > input { width: 100%; }
 .packet .price-preview-supplier > .packet-link { justify-self: start; }
 @media (max-width: 560px) { .packet .price-preview-supplier > .packet-link { width: 100%; justify-content: center; } }
+
+/* Круговой загрузчик: исходное расположение уже показывает весь косяк, затем он движется как единая орбита. */
+.facts-loader .facts-loader-art { width: 176px; height: 176px; }
+.facts-loader .facts-school { transform-origin: 80px 80px; animation: facts-school-spin 7.2s linear infinite !important; will-change: transform; }
+.facts-loader .facts-fish-level { animation: none !important; transform: none !important; }
+.facts-loader .facts-fish-body { animation: facts-fish-glide 1.6s var(--audit-hover-ease) infinite alternate !important; }
+.ocean-loader .facts-loader-art { width: min(292px, 72vw); height: min(292px, 72vw); }
+@media (max-width: 520px) { .facts-loader .facts-loader-art { width: 156px; height: 156px; } .ocean-loader .facts-loader-art { width: min(258px, 76vw); height: min(258px, 76vw); } }
+@media (prefers-reduced-motion: reduce) { .facts-loader .facts-school, .facts-loader .facts-fish-body { animation: none !important; } }

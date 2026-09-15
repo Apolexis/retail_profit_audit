@@ -134,6 +134,17 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain(".packet .price-preview-supplier");
   });
 
+  it("оформляет создание поставщика компактной формой с отдельными действиями", () => {
+    expect(page).toContain("price-directory-new-action");
+    expect(page).toContain("price-directory-editor-actions");
+    expect(page).toContain("Доступен при выборе поставщика");
+    expect(styles).toContain(".packet .price-directory-editor.supplier .price-directory-editor-actions");
+  });
+
+  it("не выводит лишнюю декоративную карточку уровня доступа", () => {
+    expect(page).not.toContain("Контур доступа");
+  });
+
   it("показывает изменение цены относительно предыдущего предложения", () => {
     expect(page).toContain("PriceChangeBadge");
     expect(page).toContain("Подорожало");

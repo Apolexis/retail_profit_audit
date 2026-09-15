@@ -247,10 +247,10 @@ async function ensureSupplier(name: string) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
   const normalizedName = normalizeSupplierName(name);
   const [existing] = await db.select().from(priceSuppliers).where(eq(priceSuppliers.normalizedName, normalizedName)).limit(1);
-  if (existing) return existing;
+  if (existing) return { supplier: existing, created: false };
   const [inserted] = await db.insert(priceSuppliers).values({ name: text(name), normalizedName }).$returningId();
   const [supplier] = await db.select().from(priceSuppliers).where(eq(priceSuppliers.id, inserted.id)).limit(1);
-  return supplier!;
+  return { supplier: supplier!, created: true };
 }
 export async function createPriceSupplier(input: { name: string; contactNote?: string | null }) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
@@ -278,12 +278,15 @@ export async function commitPriceImport(input: { buffer: Buffer; fileName: strin
   if (selectedCategories.length !== categoryIds.length) throw new Error("Одна из выбранных категорий прайс‑контроля не найдена.");
   if (selectedCategories.some(category => !category.isActive)) throw new Error("Для импорта можно выбрать только активную существующую категорию.");
   const categoryMap = new Map(selectedCategories.map(category => [category.id, category]));
-  const supplier = await ensureSupplier(input.supplierName);
+  const ensuredSupplier = await ensureSupplier(input.supplierName);
+  const supplier = ensuredSupplier.supplier;
   const stored = await storagePut(`price-imports/${supplier.id}/${Date.now()}_${input.fileName}`, input.buffer, sourceMimeType(preview.sourceType));
   const [inserted] = await db.insert(priceImports).values({ supplierId: supplier.id, fileName: input.fileName, fileKey: stored.key, sourceDate: input.sourceDate || preview.detectedSourceDate, sourceType: preview.sourceType, status: "completed", rowCount: preview.rows.length, importedByAccountId: input.actorId }).$returningId();
   const aliases = await db.select({ supplierId: priceSupplierAliases.supplierId, productId: priceSupplierAliases.productId, normalizedName: priceSupplierAliases.normalizedName, packagingSignature: priceSupplierAliases.packagingSignature }).from(priceSupplierAliases).where(eq(priceSupplierAliases.supplierId, supplier.id));
   const products = await db.select({ id: priceProducts.id, normalizedSignature: priceProducts.normalizedSignature }).from(priceProducts).where(eq(priceProducts.isActive, true));
   let linked = 0, suggested = 0, createdProducts = 0, categorizedRows = 0;
+  const createdProductDetails: Array<{ productName: string; internalCode: string; categoryName: string | null }> = [];
+  const createdAliasDetails: Array<{ supplierProductName: string; productLabel: string; packaging: string | null }> = [];
   for (let rowIndex = 0; rowIndex < preview.rows.length; rowIndex += 1) {
     const row = preview.rows[rowIndex]!;
     const category = categoryMap.get(categoryByRow.get(rowIndex) ?? -1);
@@ -296,13 +299,15 @@ export async function commitPriceImport(input: { buffer: Buffer; fileName: strin
       mapping = { productId: product.id, mappingStatus: "linked", matchedBy: "new_product", matchConfidence: 100 };
       createdProducts += 1;
       categorizedRows += 1;
+      createdProductDetails.push({ productName: product.canonicalName, internalCode: product.internalCode, categoryName: category.name });
+      createdAliasDetails.push({ supplierProductName: row.rawName, productLabel: `${product.canonicalName} · ${product.internalCode}`, packaging: row.packaging });
     }
     if (mapping.mappingStatus === "linked") linked += 1;
     if (mapping.mappingStatus === "suggested") suggested += 1;
     const [rowInserted] = await db.insert(priceImportRows).values({ importId: inserted.id, sourceSheet: row.sourceSheet, sourceRowNumber: row.sourceRowNumber, sourceSku: row.sourceSku, rawName: row.rawName, normalizedName: row.normalizedName, rawCategory: row.category, rawPackaging: row.packaging, rawAvailability: row.availability, rawPayload: row.rawPayload, productId: mapping.productId, mappingStatus: mapping.mappingStatus, matchedBy: mapping.matchedBy, matchConfidence: mapping.matchConfidence === null ? null : mapping.matchConfidence.toFixed(2) }).$returningId();
     await db.insert(priceOfferPrices).values(row.priceOptions.map(option => ({ importRowId: rowInserted.id, priceMode: option.priceMode, priceAmount: option.priceAmount.toFixed(2), priceBasis: option.priceBasis, normalizedPrice: option.normalizedPrice === null ? null : option.normalizedPrice.toFixed(2), normalizedUnit: option.normalizedUnit, minimumQuantityKg: option.minimumQuantityKg === null ? null : option.minimumQuantityKg.toFixed(2), includesVat: option.includesVat, sourcePriceText: option.sourcePriceText })));
   }
-  return { importId: inserted.id, supplier: { id: supplier.id, name: supplier.name }, rowCount: preview.rows.length, linked, suggested, unmapped: preview.rows.length - linked - suggested, createdProducts, categorizedRows, warningCount: preview.warningCount };
+  return { importId: inserted.id, supplier: { id: supplier.id, name: supplier.name }, supplierWasCreated: ensuredSupplier.created, rowCount: preview.rows.length, linked, suggested, unmapped: preview.rows.length - linked - suggested, createdProducts, createdProductDetails, createdAliasDetails, categorizedRows, warningCount: preview.warningCount };
 }
 function sourceMimeType(sourceType: PriceImportPreview["sourceType"]) { return sourceType === "pdf" ? "application/pdf" : sourceType === "docx" ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "application/vnd.ms-excel"; }
 export async function listPriceControlData() {
@@ -377,6 +382,54 @@ async function getPriceCategory(categoryId: number | null | undefined) {
   const [category] = await db.select().from(priceCategories).where(eq(priceCategories.id, categoryId)).limit(1);
   if (!category) throw new Error("Категория прайс‑контроля не найдена.");
   return category;
+}
+
+export async function getPriceProductAuditState(productId: number) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const [product] = await db.select({
+    productName: priceProducts.canonicalName, internalCode: priceProducts.internalCode,
+    categoryName: priceCategories.name, legacyCategory: priceProducts.category,
+    variant: priceProducts.variant, packaging: priceProducts.sizeText,
+    baseUnit: priceProducts.baseUnit, isActive: priceProducts.isActive,
+  }).from(priceProducts).leftJoin(priceCategories, eq(priceProducts.categoryId, priceCategories.id)).where(eq(priceProducts.id, productId)).limit(1);
+  if (!product) return null;
+  return { productName: product.productName, internalCode: product.internalCode, categoryName: product.categoryName ?? product.legacyCategory ?? null, variant: product.variant, packaging: product.packaging, baseUnit: product.baseUnit, isActive: product.isActive };
+}
+
+export async function getPriceCategoryAuditState(categoryId: number) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const [category] = await db.select({ categoryName: priceCategories.name, isActive: priceCategories.isActive }).from(priceCategories).where(eq(priceCategories.id, categoryId)).limit(1);
+  return category ?? null;
+}
+
+export async function getPriceSupplierAuditState(supplierId: number) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const [supplier] = await db.select({ supplierName: priceSuppliers.name, contactNote: priceSuppliers.contactNote, isActive: priceSuppliers.isActive }).from(priceSuppliers).where(eq(priceSuppliers.id, supplierId)).limit(1);
+  return supplier ?? null;
+}
+
+export async function getPriceOfferAuditState(priceId: number) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const [offer] = await db.select({
+    supplierName: priceSuppliers.name, supplierProductName: priceImportRows.rawName,
+    packaging: priceImportRows.rawPackaging, priceMode: priceOfferPrices.priceMode,
+    priceAmount: priceOfferPrices.priceAmount, priceBasis: priceOfferPrices.priceBasis,
+    normalizedPrice: priceOfferPrices.normalizedPrice, normalizedUnit: priceOfferPrices.normalizedUnit,
+  }).from(priceOfferPrices).innerJoin(priceImportRows, eq(priceOfferPrices.importRowId, priceImportRows.id)).innerJoin(priceImports, eq(priceImportRows.importId, priceImports.id)).innerJoin(priceSuppliers, eq(priceImports.supplierId, priceSuppliers.id)).where(eq(priceOfferPrices.id, priceId)).limit(1);
+  return offer ? { ...offer, priceAmount: Number(offer.priceAmount), normalizedPrice: offer.normalizedPrice === null ? null : Number(offer.normalizedPrice) } : null;
+}
+
+export async function getPriceImportAuditState(importId: number) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const [record] = await db.select({ fileName: priceImports.fileName, supplierName: priceSuppliers.name, sourceDate: priceImports.sourceDate, sourceType: priceImports.sourceType, rowCount: priceImports.rowCount }).from(priceImports).innerJoin(priceSuppliers, eq(priceImports.supplierId, priceSuppliers.id)).where(eq(priceImports.id, importId)).limit(1);
+  return record ?? null;
+}
+
+export async function getPriceProductsAuditStates(productIds: number[]) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  if (!productIds.length) return [];
+  const products = await db.select({ productName: priceProducts.canonicalName, internalCode: priceProducts.internalCode, categoryName: priceCategories.name, legacyCategory: priceProducts.category }).from(priceProducts).leftJoin(priceCategories, eq(priceProducts.categoryId, priceCategories.id)).where(inArray(priceProducts.id, productIds));
+  return products.map(product => ({ productName: product.productName, internalCode: product.internalCode, categoryName: product.categoryName ?? product.legacyCategory ?? null }));
 }
 
 export async function createPriceCategory(input: { name: string }) {

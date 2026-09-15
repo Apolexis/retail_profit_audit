@@ -4,6 +4,8 @@ import { chartPanSpeedForZoom, clampChartZoom, formatK, nonZeroLines, normalizeO
 describe("форматирование денежных показателей", () => {
   it("не скрывает малые ненулевые суммы округлением до нуля", () => {
     expect(formatK(0.4)).toBe("0,4 тыс. ₽");
+    expect(formatK(0.004)).toBe("4 ₽");
+    expect(formatK(0.00366)).toBe("3,7 ₽");
     expect(formatK(65.2)).toBe("65,2 тыс. ₽");
   });
   it("показывает крупные значения в миллионах", () => {
@@ -123,7 +125,8 @@ describe("форматирование денежных показателей",
     expect(source).toContain('document.body.dataset.generalChartDialogOpen="true"');
     expect(source).toContain('pointInsideRect(point,dialog.getBoundingClientRect())');
     expect(source).toContain('document.body.dataset.generalChartDialogOpen="true"');
-    expect(source).toContain('className={protectGeneralChartSurface?"chart-expand-dialog chart-expand-dialog-general":"chart-expand-dialog"}');
+    expect(source).toContain('className="chart-expand-dialog chart-expand-dialog-general"');
+    expect(source).toContain('document.body.dataset.chartDialogOpen="true"');
     expect(source).toContain('const chartRenderKey=`${chartView}-${visibleLines.map(line=>line.key).join("-")}`');
     expect(source).toContain('<ResponsiveContainer key={chartRenderKey} width="100%" height={chartHeight}>');
     expect(source).toContain("isAnimationActive={false}");
@@ -142,7 +145,7 @@ describe("форматирование денежных показателей",
     expect(source).toContain('onPointerDownOutside={protectGeneralChartSurface?keepChartSurfaceInside:undefined}');
     expect(source).toContain('const keepChartSurfaceInside');
     expect(source).toContain('aria-label={compact?"Интерактивный график":"Интерактивный увеличенный график"}');
-    expect(source).toContain('compact?:boolean;axisLock?:boolean;mouseAxisLock?:boolean;mouseVerticalPanDirection?:1|-1;touchVerticalPanDirection?:1|-1;touchModeControl?:boolean}');
+    expect(source).toContain('compact?:boolean;axisLock?:boolean;mouseAxisLock?:boolean;mouseVerticalPanDirection?:1|-1;touchVerticalPanDirection?:1|-1;touchModeControl?:boolean;panSpeed?:number;zoomStep?:number;controlZoomStep?:number}');
     expect(source).not.toContain("invertX");
     expect(source).toContain('function useSmallChartViewport()');
     expect(source).toContain('const tooltipInset=touchInput?58:34;');

@@ -73,4 +73,16 @@ describe("прайс‑контроль: нормализация товарны
     expect(source).toContain("Поставщика с сохраненными прайс‑листами или товарными связями удалять нельзя.");
     expect(source).toContain("Скройте его в справочнике");
   });
+
+  it("сохраняет для общего журнала подробности автоматически созданных при импорте поставщика и товаров", () => {
+    const source = readFileSync(new URL("./priceControl.ts", import.meta.url), "utf8");
+    const route = readFileSync(new URL("./priceImportBinaryRoutes.ts", import.meta.url), "utf8");
+    expect(source).toContain("supplierWasCreated: ensuredSupplier.created");
+    expect(source).toContain("createdProductDetails.push");
+    expect(source).toContain("createdAliasDetails.push");
+    expect(route).toContain('action: "price_supplier.import_create"');
+    expect(route).toContain('action: "price_product.import_create"');
+    expect(route).toContain('action: "price_alias.import_link"');
+    expect(route).toContain('action: "price_import.commit"');
+  });
 });

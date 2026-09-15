@@ -153,7 +153,7 @@ describe("финальные исправления журнала и медиа
   });
 
   it("держит плотный tooltip внутри области графика и исключает смешение цветов медианы и dark-hover", () => {
-    expect(styles).toContain('.recharts-tooltip-wrapper { translate: 0 var(--tiny-tooltip-shift-y, 0px); }');
+    expect(styles).toContain('.recharts-tooltip-wrapper { translate: var(--tiny-tooltip-shift-x, 0px) var(--tiny-tooltip-shift-y, 0px); }');
     expect(styles).toContain('.tiny-tooltip-dense { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));');
     expect(styles).toContain('html[data-audit-theme="light"] :is(.benchmark-chart, .benchmark-chart-expanded) .median-badge i { height: 0; background: transparent !important; border-top-color: #0a84ff !important; }');
     expect(styles).toContain('html[data-audit-theme="dark"] :is(.chart-expand-dialog, .chart-expand-dialog-general) .chart-panzoom:is(:hover, :focus, :focus-visible)');
