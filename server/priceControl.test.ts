@@ -82,6 +82,24 @@ describe("прайс‑контроль: нормализация товарны
     expect(() => preparePriceImportRows(rows, [{ rowIndex: 0, optionIndex: 0, priceAmount: 120 }, { rowIndex: 0, optionIndex: 0, priceAmount: 130 }])).toThrow("Одна цена прайс‑листа изменена повторно.");
   });
 
+  it("применяет исправленное имя только к текущей импортной строке и пересчитывает ее сигнатуру", () => {
+    const rows = [{ rawName: "Семга 2-3", normalizedName: normalizeProductName("Семга 2-3"), normalizedSignature: productSignature("Семга 2-3"), canonicalHint: "Семга 2-3", variant: null, sizeText: "2-3", packaging: null, priceOptions: [{ priceAmount: 100, priceBasis: "kg", normalizedPrice: 100, normalizedUnit: "kg" }] }] as any;
+    const prepared = preparePriceImportRows(rows, [], [], [{ rowIndex: 0, rawName: "Лосось 2-3" }]);
+    expect(prepared.rows[0]?.row).toMatchObject({ rawName: "Лосось 2-3", normalizedName: "лосось 2-3", normalizedSignature: productSignature("Лосось 2-3") });
+    expect(prepared.editedNames).toBe(1);
+    expect(() => preparePriceImportRows(rows, [], [0], [{ rowIndex: 0, rawName: "Лосось 2-3" }])).toThrow("Нельзя менять название исключенной из импорта строки.");
+  });
+
+  it("дает явно связать строку с существующим товаром и сохраняет связь поставщика в общем журнале", () => {
+    const source = readFileSync(new URL("./priceControl.ts", import.meta.url), "utf8");
+    const route = readFileSync(new URL("./priceImportBinaryRoutes.ts", import.meta.url), "utf8");
+    expect(source).toContain("productLinks?: PriceImportProductLink[]");
+    expect(source).toContain("Для связанной позиции нельзя одновременно назначать новую категорию.");
+    expect(source).toContain("explicitlyLinked += 1");
+    expect(route).toContain("productLinks: Array<{ rowIndex: number; productId: number }>");
+    expect(route).toContain("explicitlyLinked: result.explicitlyLinked");
+  });
+
   it("собирает для общего журнала поставщика, исходное название и переход нашего товара", () => {
     const source = readFileSync(new URL("./priceControl.ts", import.meta.url), "utf8");
     expect(source).toContain("supplierName: row.supplierName");

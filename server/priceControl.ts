@@ -16,10 +16,13 @@ export type PriceImportPreview = { fileName: string; sourceType: "xls" | "xlsx" 
 export type PriceChange = { previousPrice: number; previousDate: string | null; delta: number; percent: number; direction: "up" | "down" | "same" };
 export type PriceImportCategorySelection = { rowIndex: number; categoryId: number };
 export type PriceImportPriceEdit = { rowIndex: number; optionIndex: number; priceAmount: number; priceBasis?: PriceBasis };
+export type PriceImportRowEdit = { rowIndex: number; rawName: string };
+export type PriceImportProductLink = { rowIndex: number; productId: number };
 export type PreparedPriceImportRows = {
   rows: Array<{ rowIndex: number; row: ParsedPriceRow }>;
   excludedRowIndexes: number[];
   editedPriceOptions: number;
+  editedNames: number;
 };
 type PriceChangeSource = { priceId: number; importId: number; productId: number | null; supplierId: number; priceMode: string | null; normalizedUnit: string | null; normalizedPrice: string | number | null; sourceDate: string | null; importedAt: Date | string };
 export const SIGNIFICANT_PRICE_INCREASE_PERCENT = 10;
@@ -134,10 +137,12 @@ const editablePriceBases: PriceBasis[] = ["kg", "l", "piece", "package", "unknow
 export function preparePriceImportRows(
   rows: ParsedPriceRow[],
   priceEdits: PriceImportPriceEdit[] = [],
-  excludedRowIndexes: number[] = []
+  excludedRowIndexes: number[] = [],
+  rowEdits: PriceImportRowEdit[] = []
 ): PreparedPriceImportRows {
   if (priceEdits.length > MAX_IMPORT_ROWS * 12) throw new Error("Слишком много ручных правок цен для одного прайс‑листа.");
   if (excludedRowIndexes.length > MAX_IMPORT_ROWS) throw new Error("Слишком много исключенных строк прайс‑листа.");
+  if (rowEdits.length > MAX_IMPORT_ROWS) throw new Error("Слишком много ручных правок названий для одного прайс‑листа.");
 
   const excluded = new Set<number>();
   excludedRowIndexes.forEach(rowIndex => {
@@ -164,12 +169,24 @@ export function preparePriceImportRows(
     editsByRow.set(edit.rowIndex, rowEdits);
   });
 
+  const nameEditsByRow = new Map<number, string>();
+  rowEdits.forEach(edit => {
+    const rawName = text(edit.rawName);
+    if (!Number.isInteger(edit.rowIndex) || edit.rowIndex < 0 || edit.rowIndex >= rows.length || rawName.length < 2 || rawName.length > 255) {
+      throw new Error("Передана некорректная правка названия позиции прайс‑листа.");
+    }
+    if (excluded.has(edit.rowIndex)) throw new Error("Нельзя менять название исключенной из импорта строки.");
+    if (nameEditsByRow.has(edit.rowIndex)) throw new Error("Название позиции прайс‑листа изменено повторно.");
+    nameEditsByRow.set(edit.rowIndex, rawName);
+  });
+
   const preparedRows = rows.flatMap((sourceRow, rowIndex) => {
     if (excluded.has(rowIndex)) return [];
-    const rowEdits = editsByRow.get(rowIndex);
-    if (!rowEdits?.size) return [{ rowIndex, row: sourceRow }];
+    const rowPriceEdits = editsByRow.get(rowIndex);
+    const rawName = nameEditsByRow.get(rowIndex);
+    if (!rowPriceEdits?.size && !rawName) return [{ rowIndex, row: sourceRow }];
     const priceOptions = sourceRow.priceOptions.map((option, optionIndex) => {
-      const edit = rowEdits.get(optionIndex);
+      const edit = rowPriceEdits?.get(optionIndex);
       if (!edit) return option;
       const priceBasis = edit.priceBasis ?? option.priceBasis;
       const normalized = normalizePrice(edit.priceAmount, priceBasis, sourceRow.packaging || sourceRow.rawName);
@@ -181,13 +198,27 @@ export function preparePriceImportRows(
         sourcePriceText: String(Number(edit.priceAmount.toFixed(2))),
       };
     });
-    return [{ rowIndex, row: { ...sourceRow, priceOptions } }];
+    const nextName = rawName ?? sourceRow.rawName;
+    return [{
+      rowIndex,
+      row: {
+        ...sourceRow,
+        rawName: nextName,
+        normalizedName: rawName ? normalizeProductName(nextName) : sourceRow.normalizedName,
+        canonicalHint: rawName ? nextName : sourceRow.canonicalHint,
+        normalizedSignature: rawName ? productSignature(nextName) : sourceRow.normalizedSignature,
+        variant: rawName ? extractVariant(nextName) : sourceRow.variant,
+        sizeText: rawName ? extractSizeText(nextName) : sourceRow.sizeText,
+        priceOptions,
+      },
+    }];
   });
 
   return {
     rows: preparedRows,
     excludedRowIndexes: Array.from(excluded).sort((left, right) => left - right),
     editedPriceOptions: priceEdits.length,
+    editedNames: rowEdits.length,
   };
 }
 
@@ -333,10 +364,10 @@ export async function createPriceSupplier(input: { name: string; contactNote?: s
   const [supplier] = await db.select().from(priceSuppliers).where(eq(priceSuppliers.id, inserted.id)).limit(1);
   return supplier!;
 }
-export async function commitPriceImport(input: { buffer: Buffer; fileName: string; supplierName: string; sourceDate?: string | null; actorId: number; categorySelections?: PriceImportCategorySelection[]; priceEdits?: PriceImportPriceEdit[]; excludedRowIndexes?: number[] }) {
+export async function commitPriceImport(input: { buffer: Buffer; fileName: string; supplierName: string; sourceDate?: string | null; actorId: number; categorySelections?: PriceImportCategorySelection[]; priceEdits?: PriceImportPriceEdit[]; rowEdits?: PriceImportRowEdit[]; productLinks?: PriceImportProductLink[]; excludedRowIndexes?: number[] }) {
   const preview = await previewPriceImport(input.buffer, input.fileName);
   if (!preview.rows.length) throw new Error("Импорт не сохранен: в документе не найдено ни одной товарной строки с ценой.");
-  const preparedRows = preparePriceImportRows(preview.rows, input.priceEdits, input.excludedRowIndexes);
+  const preparedRows = preparePriceImportRows(preview.rows, input.priceEdits, input.excludedRowIndexes, input.rowEdits);
   if (!preparedRows.rows.length) throw new Error("Импорт не сохранен: все распознанные строки исключены до сохранения.");
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
   const categoryByRow = new Map<number, number>();
@@ -351,18 +382,44 @@ export async function commitPriceImport(input: { buffer: Buffer; fileName: strin
   if (selectedCategories.length !== categoryIds.length) throw new Error("Одна из выбранных категорий прайс‑контроля не найдена.");
   if (selectedCategories.some(category => !category.isActive)) throw new Error("Для импорта можно выбрать только активную существующую категорию.");
   const categoryMap = new Map(selectedCategories.map(category => [category.id, category]));
+  const productByRow = new Map<number, number>();
+  for (const link of input.productLinks ?? []) {
+    if (!Number.isInteger(link.rowIndex) || link.rowIndex < 0 || link.rowIndex >= preview.rows.length || !Number.isInteger(link.productId) || link.productId < 1) {
+      throw new Error("Передана некорректная связь товара для строки прайс‑листа.");
+    }
+    if (preparedRows.excludedRowIndexes.includes(link.rowIndex)) throw new Error("Нельзя связать исключенную из импорта строку.");
+    if (productByRow.has(link.rowIndex)) throw new Error("Товар повторно выбран для одной строки прайс‑листа.");
+    if (categoryByRow.has(link.rowIndex)) throw new Error("Для связанной позиции нельзя одновременно назначать новую категорию.");
+    productByRow.set(link.rowIndex, link.productId);
+  }
+  const linkedProductIds = Array.from(new Set(productByRow.values()));
+  const explicitlyLinkedProducts = linkedProductIds.length
+    ? await db.select({ id: priceProducts.id, canonicalName: priceProducts.canonicalName, normalizedSignature: priceProducts.normalizedSignature }).from(priceProducts).where(inArray(priceProducts.id, linkedProductIds))
+    : [];
+  if (explicitlyLinkedProducts.length !== linkedProductIds.length) throw new Error("Один из выбранных внутренних товаров не найден.");
+  const explicitProductMap = new Map(explicitlyLinkedProducts.map(product => [product.id, product]));
   const ensuredSupplier = await ensureSupplier(input.supplierName);
   const supplier = ensuredSupplier.supplier;
   const stored = await storagePut(`price-imports/${supplier.id}/${Date.now()}_${input.fileName}`, input.buffer, sourceMimeType(preview.sourceType));
   const [inserted] = await db.insert(priceImports).values({ supplierId: supplier.id, fileName: input.fileName, fileKey: stored.key, sourceDate: input.sourceDate || preview.detectedSourceDate, sourceType: preview.sourceType, status: "completed", rowCount: preparedRows.rows.length, importedByAccountId: input.actorId }).$returningId();
   const aliases = await db.select({ supplierId: priceSupplierAliases.supplierId, productId: priceSupplierAliases.productId, normalizedName: priceSupplierAliases.normalizedName, packagingSignature: priceSupplierAliases.packagingSignature }).from(priceSupplierAliases).where(eq(priceSupplierAliases.supplierId, supplier.id));
   const products = await db.select({ id: priceProducts.id, normalizedSignature: priceProducts.normalizedSignature }).from(priceProducts).where(eq(priceProducts.isActive, true));
-  let linked = 0, suggested = 0, createdProducts = 0, categorizedRows = 0;
+  let linked = 0, suggested = 0, createdProducts = 0, categorizedRows = 0, explicitlyLinked = 0;
   const createdProductDetails: Array<{ productName: string; internalCode: string; categoryName: string | null }> = [];
   const createdAliasDetails: Array<{ supplierProductName: string; productLabel: string; packaging: string | null }> = [];
   for (const { rowIndex, row } of preparedRows.rows) {
     const category = categoryMap.get(categoryByRow.get(rowIndex) ?? -1);
-    let mapping = resolvePriceMapping(row, supplier.id, aliases, products);
+    const selectedProductId = productByRow.get(rowIndex);
+    let mapping = selectedProductId
+      ? { productId: selectedProductId, mappingStatus: "linked" as const, matchedBy: "supplier_alias" as const, matchConfidence: 100 }
+      : resolvePriceMapping(row, supplier.id, aliases, products);
+    if (selectedProductId) {
+      const product = explicitProductMap.get(selectedProductId)!;
+      await db.insert(priceSupplierAliases).values({ supplierId: supplier.id, productId: product.id, normalizedName: row.normalizedName, sourceSku: row.sourceSku, packagingSignature: row.packagingSignature, isConfirmed: true, createdByAccountId: input.actorId }).onDuplicateKeyUpdate({ set: { productId: product.id, sourceSku: row.sourceSku, isConfirmed: true, createdByAccountId: input.actorId } });
+      aliases.push({ supplierId: supplier.id, productId: product.id, normalizedName: row.normalizedName, packagingSignature: row.packagingSignature });
+      createdAliasDetails.push({ supplierProductName: row.rawName, productLabel: `${product.canonicalName} · выбран вручную`, packaging: row.packaging });
+      explicitlyLinked += 1;
+    }
     if (mapping.productId === null && category) {
       const product = await createPriceProduct({ canonicalName: row.canonicalHint, categoryId: category.id });
       products.push({ id: product.id, normalizedSignature: product.normalizedSignature });
@@ -379,7 +436,7 @@ export async function commitPriceImport(input: { buffer: Buffer; fileName: strin
     const [rowInserted] = await db.insert(priceImportRows).values({ importId: inserted.id, sourceSheet: row.sourceSheet, sourceRowNumber: row.sourceRowNumber, sourceSku: row.sourceSku, rawName: row.rawName, normalizedName: row.normalizedName, rawCategory: row.category, rawPackaging: row.packaging, rawAvailability: row.availability, rawPayload: row.rawPayload, productId: mapping.productId, mappingStatus: mapping.mappingStatus, matchedBy: mapping.matchedBy, matchConfidence: mapping.matchConfidence === null ? null : mapping.matchConfidence.toFixed(2) }).$returningId();
     await db.insert(priceOfferPrices).values(row.priceOptions.map(option => ({ importRowId: rowInserted.id, priceMode: option.priceMode, priceAmount: option.priceAmount.toFixed(2), priceBasis: option.priceBasis, normalizedPrice: option.normalizedPrice === null ? null : option.normalizedPrice.toFixed(2), normalizedUnit: option.normalizedUnit, minimumQuantityKg: option.minimumQuantityKg === null ? null : option.minimumQuantityKg.toFixed(2), includesVat: option.includesVat, sourcePriceText: option.sourcePriceText })));
   }
-  return { importId: inserted.id, supplier: { id: supplier.id, name: supplier.name }, supplierWasCreated: ensuredSupplier.created, rowCount: preparedRows.rows.length, linked, suggested, unmapped: preparedRows.rows.length - linked - suggested, createdProducts, createdProductDetails, createdAliasDetails, categorizedRows, warningCount: preview.warningCount, excludedRows: preparedRows.excludedRowIndexes.length, editedPriceOptions: preparedRows.editedPriceOptions };
+  return { importId: inserted.id, supplier: { id: supplier.id, name: supplier.name }, supplierWasCreated: ensuredSupplier.created, rowCount: preparedRows.rows.length, linked, suggested, unmapped: preparedRows.rows.length - linked - suggested, createdProducts, createdProductDetails, createdAliasDetails, categorizedRows, explicitlyLinked, warningCount: preview.warningCount, excludedRows: preparedRows.excludedRowIndexes.length, editedPriceOptions: preparedRows.editedPriceOptions, editedNames: preparedRows.editedNames };
 }
 function sourceMimeType(sourceType: PriceImportPreview["sourceType"]) { return sourceType === "pdf" ? "application/pdf" : sourceType === "docx" ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "application/vnd.ms-excel"; }
 export async function listPriceControlData() {

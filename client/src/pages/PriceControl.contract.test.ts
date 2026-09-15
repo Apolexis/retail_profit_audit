@@ -157,6 +157,25 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain(".packet .price-preview-table > div.price-preview-row.is-selected");
   });
 
+  it("дает до сохранения исправить имя и явно выбрать внутренний товар для связи поставщика", () => {
+    expect(page).toContain("previewNameEdits");
+    expect(page).toContain("previewProductLinks");
+    expect(page).toContain("Название в этом прайсе");
+    expect(page).toContain("Связать с внутренним товаром");
+    expect(page).toContain("productLinks:");
+    expect(page).toContain("rowEdits,");
+  });
+
+  it("на телефоне показывает одну позицию preview с навигацией и использует компактную отмеченную галочку", () => {
+    expect(page).toContain("price-preview-mobile-pager");
+    expect(page).toContain("Позиция {currentMobilePreviewPosition + 1}");
+    expect(page).toContain("is-mobile-current");
+    expect(page).toContain("<Check size={12} />");
+    expect(styles).toContain(".packet .price-preview-mobile-pager { display: none; }");
+    expect(styles).toContain(".packet .price-preview-table > div.is-mobile-current { display: grid; }");
+    expect(styles).toContain(".packet .price-preview-check:has(input:checked)");
+  });
+
   it("делает скрытие товара явным состоянием формы, а не только кнопкой списка", () => {
     expect(page).toContain("Скрыт из фильтров");
     expect(page).toContain("История цен и связи сохраняются в обоих состояниях");

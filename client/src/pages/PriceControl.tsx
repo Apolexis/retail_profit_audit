@@ -31,7 +31,10 @@ import {
 } from "@/components/ui/select";
 import {
   BookOpenCheck,
+  Check,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Download,
   Eye,
   EyeOff,
@@ -210,6 +213,8 @@ async function postPriceFile(
   commitOptions?: {
     categorySelections: Array<{ rowIndex: number; categoryId: number }>;
     priceEdits: Array<{ rowIndex: number; optionIndex: number; priceAmount: number; priceBasis: PriceBasis }>;
+    rowEdits: Array<{ rowIndex: number; rawName: string }>;
+    productLinks: Array<{ rowIndex: number; productId: number }>;
     excludedRowIndexes: number[];
   }
 ) {
@@ -238,6 +243,8 @@ async function packPriceImportCommitBody(
   options: {
     categorySelections: Array<{ rowIndex: number; categoryId: number }>;
     priceEdits: Array<{ rowIndex: number; optionIndex: number; priceAmount: number; priceBasis: PriceBasis }>;
+    rowEdits: Array<{ rowIndex: number; rawName: string }>;
+    productLinks: Array<{ rowIndex: number; productId: number }>;
     excludedRowIndexes: number[];
   }
 ) {
@@ -431,7 +438,10 @@ export default function PriceControl({
   const [previewPriceEdits, setPreviewPriceEdits] = useState<
     Record<string, { priceAmount: string; priceBasis: PriceBasis }>
   >({});
+  const [previewNameEdits, setPreviewNameEdits] = useState<Record<number, string>>({});
+  const [previewProductLinks, setPreviewProductLinks] = useState<Record<number, string>>({});
   const [excludedPreviewRowIndexes, setExcludedPreviewRowIndexes] = useState<number[]>([]);
+  const [mobilePreviewPosition, setMobilePreviewPosition] = useState(0);
   const [productDraft, setProductDraft] = useState<ProductDraft | null>(null);
   const [categoryDraft, setCategoryDraft] = useState<CategoryDraft | null>(
     null
@@ -649,12 +659,13 @@ export default function PriceControl({
         .map((row, index) => ({ row, index }))
         .filter(({ index }) => !excludedPreviewRowIndexes.includes(index))
         .filter(
-          ({ row }) =>
+          ({ row, index }) =>
+            !previewProductLinks[index] &&
             !catalogProducts.some(
               product => product.normalizedSignature === row.normalizedSignature
             )
         ),
-    [preview?.rows, catalogProducts, excludedPreviewRowIndexes]
+    [preview?.rows, catalogProducts, excludedPreviewRowIndexes, previewProductLinks]
   );
   const previewNewRowIndexes = useMemo(
     () => new Set(previewNewRows.map(item => item.index)),
@@ -667,6 +678,11 @@ export default function PriceControl({
         .filter(({ index }) => !excludedPreviewRowIndexes.includes(index)),
     [preview?.rows, excludedPreviewRowIndexes]
   );
+  const currentMobilePreviewPosition = Math.min(
+    mobilePreviewPosition,
+    Math.max(0, previewActiveRows.length - 1)
+  );
+  const currentMobilePreviewRowIndex = previewActiveRows[currentMobilePreviewPosition]?.index ?? null;
 
   const resetPreviewState = () => {
     setPreview(null);
@@ -678,7 +694,10 @@ export default function PriceControl({
     setPreviewBulkCategoryId("");
     setPreviewNewCategoryName("");
     setPreviewPriceEdits({});
+    setPreviewNameEdits({});
+    setPreviewProductLinks({});
     setExcludedPreviewRowIndexes([]);
+    setMobilePreviewPosition(0);
   };
   const inspectFile = async (selectedFile: File) => {
     const requestToken = ++previewRequestToken.current;
@@ -735,6 +754,13 @@ export default function PriceControl({
       toast.error("Проверьте измененные цены: допустимо значение от 0 до 10 000 000 ₽.");
       return;
     }
+    const rowEdits = Object.entries(previewNameEdits)
+      .map(([rowIndex, rawName]) => ({ rowIndex: Number(rowIndex), rawName: rawName.trim() }))
+      .filter(edit => edit.rawName && edit.rawName !== preview.rows[edit.rowIndex]?.rawName);
+    if (rowEdits.some(edit => edit.rawName.length < 2 || edit.rawName.length > 255)) {
+      toast.error("Проверьте измененные названия: от 2 до 255 символов.");
+      return;
+    }
     setCommitting(true);
     try {
       const result = await postPriceFile("/api/price-import/commit", file, {
@@ -746,6 +772,10 @@ export default function PriceControl({
           .filter(([rowIndex, categoryId]) => !excludedPreviewRowIndexes.includes(Number(rowIndex)) && Number(categoryId) > 0)
           .map(([rowIndex, categoryId]) => ({ rowIndex: Number(rowIndex), categoryId: Number(categoryId) })),
         priceEdits,
+        rowEdits,
+        productLinks: Object.entries(previewProductLinks)
+          .filter(([rowIndex, productId]) => !excludedPreviewRowIndexes.includes(Number(rowIndex)) && Number(productId) > 0)
+          .map(([rowIndex, productId]) => ({ rowIndex: Number(rowIndex), productId: Number(productId) })),
         excludedRowIndexes: excludedPreviewRowIndexes,
       });
       await invalidate();
@@ -870,6 +900,8 @@ export default function PriceControl({
     setSelectedPreviewRowIndexes(current => current.filter(index => !removing.has(index)));
     setPreviewCategoryTargets(current => Object.fromEntries(Object.entries(current).filter(([rowIndex]) => !removing.has(Number(rowIndex)))));
     setPreviewPriceEdits(current => Object.fromEntries(Object.entries(current).filter(([key]) => !removing.has(Number(key.split(":" )[0])))));
+    setPreviewNameEdits(current => Object.fromEntries(Object.entries(current).filter(([rowIndex]) => !removing.has(Number(rowIndex)))));
+    setPreviewProductLinks(current => Object.fromEntries(Object.entries(current).filter(([rowIndex]) => !removing.has(Number(rowIndex)))));
     toast.success(removing.size === 1 ? "Позиция исключена из этого импорта" : `Исключено из этого импорта: ${removing.size} позиций`, {
       description: "Исходный файл не меняется; исключенные строки не будут сохранены.",
     });
@@ -927,6 +959,25 @@ export default function PriceControl({
         priceBasis: patch.priceBasis ?? current[key]?.priceBasis ?? fallback.priceBasis,
       },
     }));
+  };
+  const updatePreviewNameDraft = (rowIndex: number, rawName: string) => {
+    setPreviewNameEdits(current => ({ ...current, [rowIndex]: rawName }));
+  };
+  const setPreviewProductLink = (rowIndex: number, productId: string) => {
+    setPreviewProductLinks(current => {
+      const next = { ...current };
+      if (productId === "__unlinked") delete next[rowIndex];
+      else next[rowIndex] = productId;
+      return next;
+    });
+    if (productId !== "__unlinked") {
+      setPreviewCategoryTargets(current => {
+        const next = { ...current };
+        delete next[rowIndex];
+        return next;
+      });
+      setSelectedPreviewRowIndexes(current => current.filter(index => index !== rowIndex));
+    }
   };
   const selectPreviewSupplier = (value: string) => {
     setPreviewSupplierChoice(value);
@@ -1696,12 +1747,33 @@ export default function PriceControl({
                       )}
                     </div>
                   )}
+                  {previewActiveRows.length > 1 && (
+                    <div className="price-preview-mobile-pager" aria-label="Навигация по позициям предпросмотра">
+                      <button
+                        type="button"
+                        aria-label="Предыдущая позиция"
+                        disabled={currentMobilePreviewPosition === 0}
+                        onClick={() => setMobilePreviewPosition(current => Math.max(0, current - 1))}
+                      >
+                        <ChevronLeft size={17} />
+                      </button>
+                      <span>Позиция {currentMobilePreviewPosition + 1} из {previewActiveRows.length}</span>
+                      <button
+                        type="button"
+                        aria-label="Следующая позиция"
+                        disabled={currentMobilePreviewPosition >= previewActiveRows.length - 1}
+                        onClick={() => setMobilePreviewPosition(current => Math.min(previewActiveRows.length - 1, current + 1))}
+                      >
+                        <ChevronRight size={17} />
+                      </button>
+                    </div>
+                  )}
                   <div className="price-preview-table">
                     {previewActiveRows.map(({ row, index }) => (
                       <div
                         key={`${row.rawName}-${index}`}
                         className={
-                          `${canEdit && previewNewRowIndexes.has(index) ? "price-preview-new-row" : "price-preview-row"}${selectedPreviewRowIndexes.includes(index) ? " is-selected" : ""}`
+                          `${canEdit && previewNewRowIndexes.has(index) ? "price-preview-new-row" : "price-preview-row"}${selectedPreviewRowIndexes.includes(index) ? " is-selected" : ""}${currentMobilePreviewRowIndex === index ? " is-mobile-current" : ""}`
                         }
                       >
                         {canEdit && previewNewRowIndexes.has(index) && (
@@ -1712,10 +1784,21 @@ export default function PriceControl({
                               onChange={() => togglePreviewRow(index)}
                               aria-label={`Выбрать новую позицию «${row.rawName}»`}
                             />
+                            <span aria-hidden="true"><Check size={12} /></span>
                           </label>
                         )}
                         <div className="price-preview-product">
-                          <strong>{row.rawName}</strong>
+                          {canUpload ? (
+                            <label className="price-preview-name-edit">
+                              <span>Название в этом прайсе</span>
+                              <input
+                                value={previewNameEdits[index] ?? row.rawName}
+                                onChange={event => updatePreviewNameDraft(index, event.target.value)}
+                                maxLength={255}
+                                aria-label={`Название позиции ${row.rawName}`}
+                              />
+                            </label>
+                          ) : <strong>{row.rawName}</strong>}
                           <span>
                             {row.category || "Без категории"} ·{" "}
                             {row.packaging || "фасовка не указана"}
@@ -1750,6 +1833,21 @@ export default function PriceControl({
                             );
                           })}
                         </div>
+                        {canEdit && (
+                          <PriceSelect
+                            value={previewProductLinks[index] ?? "__unlinked"}
+                            onValueChange={value => setPreviewProductLink(index, value)}
+                            placeholder="Связать с внутренним товаром"
+                            className="price-preview-product-link"
+                            options={[
+                              { value: "__unlinked", label: "Не связывать сейчас" },
+                              ...catalogProducts.filter(product => product.isActive).map(product => ({
+                                value: String(product.id),
+                                label: `${product.internalCode} · ${product.canonicalName}`,
+                              })),
+                            ]}
+                          />
+                        )}
                         {canEdit && previewNewRowIndexes.has(index) && (
                           <PriceSelect
                             value={previewCategoryTargets[index] ?? "__no_category"}
