@@ -3659,3 +3659,6 @@ html[data-audit-theme="dark"] .packet .portfolio-thresholds .threshold-stepper b
 .ocean-loader .facts-loader-art { width: min(292px, 72vw); height: min(292px, 72vw); }
 @media (max-width: 520px) { .facts-loader .facts-loader-art { width: 156px; height: 156px; } .ocean-loader .facts-loader-art { width: min(258px, 76vw); height: min(258px, 76vw); } }
 @media (prefers-reduced-motion: reduce) { .facts-loader .facts-school, .facts-loader .facts-fish-body { animation: none !important; } }
+
+/* Tooltip: отсутствие числового факта показано отдельно и не маскируется ложным нулем. */
+.tiny-tooltip .tiny-tooltip-no-fact { margin: 7px 0 0; padding-top: 6px; border-top: 1px solid color-mix(in srgb, currentColor 18%, transparent); color: var(--muted); font-size: 11px; line-height: 1.35; }

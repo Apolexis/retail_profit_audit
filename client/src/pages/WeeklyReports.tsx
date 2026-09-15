@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { BarChart3, CalendarDays, CircleAlert, Clock3, Download, FileText, RefreshCw, Save, ShieldAlert, Trash2, TrendingDown, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { AuditShell } from "@/components/AuditShell";
+import { formatFactAmount } from "@/components/AuditCharts";
 import { DateRangeControl } from "@/components/DateRangeControl";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useAudit, type DateRangeValue } from "@/contexts/AuditContext";
@@ -12,7 +13,7 @@ type Summary={periodStart:string;periodEnd:string;snapshotMonth:string|null;peri
 type SavedReport={id:number;periodStart:string;periodEnd:string;summary:unknown;createdAt:string|Date};
 type ReportTimelinePeriod={entryDate:string;store:string;isHidden:boolean;metrics:Record<string,unknown>};
 export type ReportTimelinePoint={date:string;revenue:number;cashRevenue:number;cashlessRevenue:number;netProfit:number;stores:number;purchaseSmoked:number;purchaseFrozen:number;salesSmoked:number;salesFrozen:number};
-const money=(value:number)=>new Intl.NumberFormat("ru-RU",{maximumFractionDigits:0}).format(value)+" ₽";
+const money=(value:number)=>formatFactAmount(value);
 const date=(value:string)=>new Date(`${value}T12:00:00`).toLocaleDateString("ru-RU",{day:"2-digit",month:"long",year:"numeric"});
 const weekdays=["Понедельник","Вторник","Среда","Четверг","Пятница","Суббота","Воскресенье"];
 const moneyClass=(value:number)=>value>0?"positive":value<0?"negative":"neutral";

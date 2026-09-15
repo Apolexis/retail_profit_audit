@@ -2,7 +2,7 @@ import { ThemedSelect } from "@/components/ui/themed-select";
 import { useMemo, useState } from "react";
 import { BarChart3, CalendarClock, ChartNoAxesCombined, Info, TrendingDown, TrendingUp } from "lucide-react";
 import { AuditShell } from "@/components/AuditShell";
-import { MetricLineChart, formatK, formatPct } from "@/components/AuditCharts";
+import { MetricLineChart, formatFactAmount, formatPct } from "@/components/AuditCharts";
 import { FactsLoader } from "@/components/OceanLoader";
 import { useAudit } from "@/contexts/AuditContext";
 import { useImportedAudit } from "@/hooks/useImportedAudit";
@@ -33,7 +33,7 @@ const metricGroups: Array<{ label: string; metrics: ForecastMetric[] }> = [
 ];
 const metrics = metricGroups.flatMap(group => group.metrics);
 
-const money = (value: number | null) => value === null ? "—" : formatK(value / 1000);
+const money = (value: number | null) => formatFactAmount(value);
 const numberClass = (value: number) => value > 0 ? "positive" : value < 0 ? "negative" : "neutral";
 
 export default function Forecast() {

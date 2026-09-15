@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chartPanSpeedForZoom, chartTick, clampChartZoom, formatK, formatM, nonZeroLines, normalizeOverlayBarRect, panChartRows, pointInsideRect, resolveChartPanAxis, resolveMetricChartLayout, resolveMetricChartView, resolveOverlayBarGeometry, sortTooltipPayload, viewportChartDomain, windowChartRows, zeroAwareTicks } from "./AuditCharts";
+import { chartPanSpeedForZoom, chartTick, clampChartZoom, formatFactAmount, formatK, formatM, formatTableAmount, missingTooltipLines, nonZeroLines, normalizeOverlayBarRect, panChartRows, pointInsideRect, resolveChartPanAxis, resolveMetricChartLayout, resolveMetricChartView, resolveOverlayBarGeometry, sortTooltipPayload, viewportChartDomain, windowChartRows, zeroAwareTicks } from "./AuditCharts";
 
 describe("форматирование денежных показателей", () => {
   it("не скрывает малые ненулевые суммы округлением до нуля", () => {
@@ -16,6 +16,18 @@ describe("форматирование денежных показателей",
     expect(formatM(0.05)).toBe("0,05 млн ₽");
     expect(chartTick(0.00366,"million")).toBe("3,66 тыс.");
     expect(chartTick(0,"million")).toBe("0");
+  });
+  it("дает таблицам единый точный формат и сохраняет отдельное состояние отсутствующего факта", () => {
+    expect(formatFactAmount(3.66)).toBe("3,66 ₽");
+    expect(formatFactAmount(3_660)).toBe("3,7 тыс. ₽");
+    expect(formatTableAmount(0.00366)).toBe("3,66 ₽");
+    expect(formatTableAmount(0)).toBe("0 ₽");
+    expect(formatFactAmount(null)).toBe("—");
+    expect(formatTableAmount(undefined)).toBe("—");
+  });
+  it("показывает только действительно отсутствующие линии как «Нет факта», а не фактический ноль", () => {
+    const lines=[{key:"a",name:"А",color:"#111"},{key:"b",name:"Б",color:"#222"},{key:"c",name:"В",color:"#333"}];
+    expect(missingTooltipLines([{name:"А",value:0,payload:{a:0,b:null}}],lines)).toEqual(["Б","В"]);
   });
   it("показывает крупные значения в миллионах", () => {
     expect(formatK(1540)).toBe("1,5 млн ₽");
