@@ -15,7 +15,7 @@ export type ParsedPriceRow = { sourceSheet: string; sourceRowNumber: number; sou
 export type PriceImportPreview = { fileName: string; sourceType: "xls" | "xlsx" | "pdf" | "docx"; detectedSupplierName: string | null; detectedSourceDate: string | null; rows: ParsedPriceRow[]; warningCount: number; warnings: string[] };
 export type PriceChange = { previousPrice: number; previousDate: string | null; delta: number; percent: number; direction: "up" | "down" | "same" };
 export type PriceImportCategorySelection = { rowIndex: number; categoryId: number };
-export type PriceImportPriceEdit = { rowIndex: number; optionIndex: number; priceAmount: number; priceBasis?: PriceBasis };
+export type PriceImportPriceEdit = { rowIndex: number; optionIndex: number; priceAmount: number; priceBasis?: PriceBasis; priceMode?: PriceMode };
 export type PriceImportRowEdit = { rowIndex: number; rawName: string };
 export type PriceImportProductLink = { rowIndex: number; productId: number };
 export type PreparedPriceImportRows = {
@@ -135,6 +135,7 @@ export function normalizePrice(priceAmount: number, priceBasis: PriceBasis, pack
 }
 
 const editablePriceBases: PriceBasis[] = ["kg", "l", "piece", "package", "unknown"];
+const editablePriceModes: PriceMode[] = ["standard", "cash", "cashless_no_vat", "cashless_vat", "spb", "moscow", "special", "threshold"];
 
 /** Applies explicit user corrections only to the in-memory preview that will be committed. */
 export function preparePriceImportRows(
@@ -160,7 +161,8 @@ export function preparePriceImportRows(
     if (!Number.isInteger(edit.rowIndex) || edit.rowIndex < 0 || edit.rowIndex >= rows.length ||
       !Number.isInteger(edit.optionIndex) || edit.optionIndex < 0 ||
       !Number.isFinite(edit.priceAmount) || edit.priceAmount <= 0 || edit.priceAmount >= 10_000_000 ||
-      (edit.priceBasis !== undefined && !editablePriceBases.includes(edit.priceBasis))) {
+      (edit.priceBasis !== undefined && !editablePriceBases.includes(edit.priceBasis)) ||
+      (edit.priceMode !== undefined && !editablePriceModes.includes(edit.priceMode))) {
       throw new Error("Передана некорректная ручная правка цены прайс‑листа.");
     }
     if (excluded.has(edit.rowIndex)) throw new Error("Нельзя менять цену у исключенной из импорта строки.");
@@ -197,6 +199,7 @@ export function preparePriceImportRows(
         ...option,
         priceAmount: Number(edit.priceAmount.toFixed(2)),
         priceBasis,
+        priceMode: edit.priceMode ?? option.priceMode,
         ...normalized,
         sourcePriceText: String(Number(edit.priceAmount.toFixed(2))),
       };
@@ -444,7 +447,9 @@ export async function previewPriceImport(buffer: Buffer, fileName: string): Prom
 
 type Mapping = { productId: number | null; mappingStatus: "linked" | "suggested" | "unmapped"; matchedBy: "supplier_alias" | "signature" | "new_product" | "none"; matchConfidence: number | null };
 export function resolvePriceMapping(row: ParsedPriceRow, supplierId: number, aliases: Array<{ supplierId: number; productId: number; normalizedName: string; packagingSignature: string | null }>, products: Array<{ id: number; normalizedSignature: string }>): Mapping {
-  const direct = aliases.find(alias => alias.supplierId === supplierId && alias.normalizedName === row.normalizedName && (alias.packagingSignature || "") === row.packagingSignature);
+  const aliasesWithSameName = aliases.filter(alias => alias.supplierId === supplierId && alias.normalizedName === row.normalizedName);
+  const direct = aliasesWithSameName.find(alias => (alias.packagingSignature || "") === row.packagingSignature)
+    ?? (new Set(aliasesWithSameName.map(alias => alias.productId)).size === 1 ? aliasesWithSameName[0] : undefined);
   if (direct) return { productId: direct.productId, mappingStatus: "linked", matchedBy: "supplier_alias", matchConfidence: 100 };
   const signature = products.find(product => product.normalizedSignature === row.normalizedSignature);
   if (signature) return { productId: signature.id, mappingStatus: "suggested", matchedBy: "signature", matchConfidence: 92 };
@@ -781,12 +786,12 @@ export async function deletePriceSupplier(supplierId: number) {
   return { id: supplier.id, name: supplier.name };
 }
 
-export async function updatePriceOffer(input: { priceId: number; priceAmount: number; priceBasis: PriceBasis }) {
+export async function updatePriceOffer(input: { priceId: number; priceAmount: number; priceBasis: PriceBasis; priceMode?: PriceMode }) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
   const [price] = await db.select({ id: priceOfferPrices.id, rawPackaging: priceImportRows.rawPackaging }).from(priceOfferPrices).innerJoin(priceImportRows, eq(priceOfferPrices.importRowId, priceImportRows.id)).where(eq(priceOfferPrices.id, input.priceId)).limit(1);
   if (!price) throw new Error("Цена прайс‑листа не найдена.");
   const normalized = normalizePrice(input.priceAmount, input.priceBasis, price.rawPackaging);
-  await db.update(priceOfferPrices).set({ priceAmount: input.priceAmount.toFixed(2), priceBasis: input.priceBasis, normalizedPrice: normalized.normalizedPrice === null ? null : normalized.normalizedPrice.toFixed(2), normalizedUnit: normalized.normalizedUnit }).where(eq(priceOfferPrices.id, input.priceId));
+  await db.update(priceOfferPrices).set({ priceAmount: input.priceAmount.toFixed(2), priceBasis: input.priceBasis, ...(input.priceMode === undefined ? {} : { priceMode: input.priceMode }), normalizedPrice: normalized.normalizedPrice === null ? null : normalized.normalizedPrice.toFixed(2), normalizedUnit: normalized.normalizedUnit }).where(eq(priceOfferPrices.id, input.priceId));
   return { success: true, normalized };
 }
 

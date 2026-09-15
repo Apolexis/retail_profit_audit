@@ -2975,6 +2975,11 @@ html.pwa-fixed-reflow .scroll-top { position: fixed !important; transform: trans
 :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip .tiny-tooltip-values { column-gap: 9px !important; }
 @media (min-width: 561px) { :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .metric-chart .tiny-tooltip-values { column-gap: 12px; row-gap: 3px; } }
 
+/* Tooltip: одинаковый воздух вокруг периода и строк значений на всех ширинах. */
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip { padding: 10px 12px 11px !important; }
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip > b { display: block; margin-bottom: 6px !important; line-height: 1.2; }
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip .tiny-tooltip-values { row-gap: 4px; }
+
 /* Длинное пояснение сопоставления периодов не покидает карточку на узком темном экране. */
 html[data-audit-theme="dark"] .packet .comparison-chart-stack .card-title small {
   display: block;
@@ -3478,9 +3483,9 @@ html[data-audit-theme="light"] { --app-select-surface: #ffffff; --app-select-bor
 
 /* Единый эталон полей и тематичных списков: новые страницы наследуют его автоматически. */
 .packet .price-directory-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 14px 0 10px; }
-.packet .price-directory-search { display: flex; align-items: center; flex: 1 1 260px; min-width: 0; min-height: 42px; padding: 0 12px; border: 1px solid var(--price-border); border-radius: 11px; background: var(--price-surface); color: var(--price-muted); transition: border-color 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease); }
+.packet .price-directory-search { display: flex; align-items: center; flex: 1 1 360px; width: 100%; min-width: 0; min-height: 42px; padding: 0 12px; border: 1px solid var(--price-border); border-radius: 11px; background: var(--price-surface); color: var(--price-muted); transition: border-color 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease); }
 .packet .price-directory-search:focus-within { border-color: var(--price-accent); background: color-mix(in srgb, var(--price-accent) 6%, var(--price-surface)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--price-accent) 16%, transparent); }
-.packet .price-directory-search input { min-width: 0; min-height: 40px; margin: 0; padding: 0 0 0 8px !important; border: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; }
+.packet .price-directory-search input { flex: 1 1 auto; width: 100%; min-width: 0; max-width: none; min-height: 40px; margin: 0; padding: 0 0 0 8px !important; border: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; text-overflow: clip; }
 .packet .price-directory-toolbar > small { color: var(--price-muted); font-size: 11px; white-space: nowrap; }
 .packet .price-bulk-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 11px; padding: 10px; border: 1px solid var(--price-border); border-radius: 12px; background: color-mix(in srgb, var(--price-accent) 5%, var(--price-surface)); color: var(--price-ink); }
 .packet .price-bulk-actions > span { margin-right: auto; font-size: 11px; font-weight: 750; }
@@ -3903,14 +3908,13 @@ html[data-audit-theme="light"] .packet .price-preview-name-edit input { border-c
   .packet .price-preview-remove { grid-column: 3; grid-row: 1; width: 32px; height: 32px; min-height: 32px; }
 }
 
-/* Единый загрузочный косяк: SVG‑орбита работает надежно и не зависит от CSS transform у группы. */
+/* Загрузочный косяк: каждая рыба начинает из своей точки и движется по собственной SVG‑орбите. */
 .facts-loader .facts-loader-art { width: 176px !important; height: 176px !important; }
-.facts-loader .facts-school-orbit { transform-box: fill-box; transform-origin: center; }
-.facts-loader .facts-school { animation: none !important; }
+.facts-loader .facts-school { transform-box: view-box; transform-origin: 80px 80px; animation: facts-school-spin 5.6s linear infinite !important; will-change: transform; }
 .facts-loader .facts-fish-body { animation: facts-fish-glide 1.6s var(--audit-hover-ease) infinite alternate !important; }
 .ocean-loader .facts-loader-art { width: min(292px, 72vw) !important; height: min(292px, 72vw) !important; }
 @media (max-width: 520px) { .facts-loader .facts-loader-art { width: 156px !important; height: 156px !important; } .ocean-loader .facts-loader-art { width: min(258px, 76vw) !important; height: min(258px, 76vw) !important; } }
-@media (prefers-reduced-motion: reduce) { .facts-loader .facts-school-orbit .facts-school { transform: translate(0 -10px); } .facts-loader .facts-fish-body { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .facts-loader .facts-school, .facts-loader .facts-fish-body { animation: none !important; } }
 
 /* Справочник на телефоне: основная область не резервирует скрытую боковую колонку. */
 @media (max-width: 560px) {
@@ -3921,3 +3925,101 @@ html[data-audit-theme="light"] .packet .price-preview-name-edit input { border-c
   .packet .price-directory-editor.supplier > * { min-width: 0; width: 100%; }
   .packet .price-directory-editor.supplier .price-active-toggle { align-self: stretch; }
 }
+
+/* Демо‑режим находится у нижней границы навигации, а не конкурирует с действиями шапки. */
+.packet .packet-demo-toggle,
+.packet .drawer-demo-toggle { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 38px; margin-top: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); color: var(--muted); font: 800 11px Manrope, Arial, sans-serif; text-align: left; }
+.packet .packet-demo-toggle svg,
+.packet .drawer-demo-toggle svg { flex: 0 0 auto; color: var(--faint); }
+.packet .packet-demo-toggle em,
+.packet .drawer-demo-toggle em { margin-left: auto; color: var(--faint); font: 800 9px "IBM Plex Mono", monospace; font-style: normal; letter-spacing: .04em; text-transform: uppercase; }
+.packet .packet-demo-toggle.is-active,
+.packet .drawer-demo-toggle.is-active { border-color: var(--price-accent); background: color-mix(in srgb, var(--price-accent) 9%, var(--surface-2)); color: var(--text); }
+.packet .packet-demo-toggle.is-active svg,
+.packet .drawer-demo-toggle.is-active svg,
+.packet .packet-demo-toggle.is-active em,
+.packet .drawer-demo-toggle.is-active em { color: var(--price-accent); }
+html[data-audit-theme="light"] .packet .packet-demo-toggle,
+html[data-audit-theme="light"] .packet .drawer-demo-toggle { border-color: #c9dceb; background: #ffffff; color: #244864; }
+html[data-audit-theme="dark"] .packet .packet-demo-toggle,
+html[data-audit-theme="dark"] .packet .drawer-demo-toggle { border-color: #3c3645; background: #1b1922; color: #e6e1ec; }
+@media (min-width: 721px) and (max-width: 1050px) { .packet .packet-demo-toggle { justify-content: center; width: 38px; min-height: 38px; margin-inline: auto; padding: 0; } .packet .packet-demo-toggle > :not(svg) { display: none; } }
+@media (max-width: 720px) { .packet .packet-demo-toggle { display: none; } .packet .drawer-demo-toggle { flex: 0 0 auto; margin: 0 2px 8px; } }
+
+/* Кнопка «Наверх» использует ту же темную поверхность, что и действия нижнего PWA‑меню. */
+html[data-audit-theme="dark"] .packet .scroll-top { border-color: #3c3645 !important; background: #1b1922 !important; color: #e6e1ec !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .055), 0 1px 2px rgba(0, 0, 0, .16) !important; }
+html[data-audit-theme="dark"] .packet .scroll-top svg { color: #ff9b88; }
+
+/* Заголовки таблиц остаются компактными, но заметнее и читаются как настоящая шапка таблицы. */
+.packet .data-table thead th { font: 800 12px/1.3 Manrope, Arial, sans-serif; letter-spacing: .015em; }
+@media (max-width: 560px) { .packet .data-table thead th { font-size: 11px; } }
+
+/* До успешной проверки импорт и требования читаются рядом; после preview рабочая область становится широкой. */
+@media (min-width: 901px) {
+  .packet .price-import-workbench { grid-template-columns: minmax(0, 1.18fr) minmax(270px, .62fr) !important; align-items: start; gap: 16px !important; }
+  .packet .price-import-workbench > .price-upload { min-width: 0; }
+  .packet .price-import-workbench .price-import-guide { align-self: stretch; margin: 0; }
+  .packet .price-import-workbench.is-preview-ready { grid-template-columns: minmax(0, 1fr) !important; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-actions { display: flex; align-items: flex-end; justify-content: flex-end; gap: 10px; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-actions small { max-width: 270px; margin-right: auto; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-actions .packet-link { width: auto; min-height: 40px; margin: 0; padding-inline: 15px; white-space: nowrap; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-bulk-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-bulk-actions > span { flex: 1 1 100%; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-bulk-actions [data-slot="select-trigger"] { flex: 0 1 280px; width: min(280px, 100%); }
+  .packet .price-import-workbench.is-preview-ready .price-preview-bulk-actions .packet-link { width: auto; min-height: 38px; margin: 0; padding-inline: 12px; white-space: nowrap; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-create-category { flex: 0 1 380px; }
+}
+
+/* Preview не обрезает список до трех строк: вся выборка доступна обычной прокруткой страницы. */
+.packet .price-preview-table { max-height: none; overflow: visible; }
+.packet .price-preview-table > div.price-preview-row,
+.packet .price-preview-table > div.price-preview-new-row { align-items: start; min-height: 0; }
+.packet .price-preview-date { display: grid; min-width: 0; gap: 6px; color: var(--price-muted); font-size: 11px; font-weight: 700; }
+.packet .price-preview-date .fact-date-trigger { width: 100%; min-height: 39px; justify-content: space-between; }
+
+/* Права импорта и прайс-контроля держат тот же спокойный ритм, что и нижние права магазинов. */
+.packet .access-import-row + .access-import-row { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+.packet .access-import-control-row { margin-top: 16px; padding-top: 16px; }
+.packet .access-import-row .access-switch,
+.packet .access-import-control-row .access-control-toggle { width: min(100%, 480px); justify-self: end; }
+.packet .access-import-control-row .access-control-toggle { margin-top: 2px; }
+@media (min-width: 721px) and (max-width: 900px) {
+  .packet .access-import-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 480px); align-items: center; gap: 14px; }
+  .packet .access-import-row .access-switch { width: 100%; align-self: center; }
+  .packet .access-import-control-row .access-control-toggle { grid-column: 2; width: 100%; }
+}
+@media (max-width: 720px) {
+  .packet .access-import-row .access-switch,
+  .packet .access-import-control-row .access-control-toggle { width: 100%; justify-self: stretch; }
+}
+
+/* На средней ширине связь и категория уходят во вторую строку, а ценовые режимы не пересекаются с ними. */
+@media (min-width: 761px) and (max-width: 1200px) {
+  .packet .price-import-workbench.is-preview-ready .price-preview-table > div.price-preview-new-row { grid-template-columns: 28px minmax(220px, 1fr) minmax(250px, 1.1fr) 36px; grid-template-rows: auto auto; gap: 10px 12px; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-check { grid-column: 1; grid-row: 1; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-product { grid-column: 2; grid-row: 1; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-prices { grid-column: 3; grid-row: 1 / span 2; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-product-link { grid-column: 2; grid-row: 2; min-width: 0; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-category-select { grid-column: 3; grid-row: 2; min-width: 0; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-remove { grid-column: 4; grid-row: 1; }
+}
+
+/* На широкой версии каждая логическая группа остается в собственной колонке и не имеет права сжимать соседнюю. */
+@media (min-width: 1201px) {
+  .packet .price-import-workbench.is-preview-ready .price-preview-table > div.price-preview-new-row { grid-template-columns: 28px minmax(250px, 1.05fr) minmax(245px, 1.02fr) minmax(210px, .88fr) minmax(190px, .78fr) 36px; gap: 10px 14px; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row > :is(.price-preview-product, .price-preview-prices, .price-preview-product-link, .price-preview-category-select) { min-width: 0; width: 100%; }
+}
+
+/* На телефоне сохраняется постраничный просмотр одной полной позиции. */
+@media (max-width: 720px) {
+  .packet .price-preview-name-edit { min-width: 0; }
+  .packet .price-preview-name-edit > span { margin-bottom: 4px; font-size: 9px; }
+  .packet .price-preview-name-edit input { min-width: 0; padding-inline: 7px; font-size: 12px; font-weight: 700; letter-spacing: -.01em; }
+}
+@media (max-width: 420px) {
+  .packet .price-preview-name-edit input { font-size: 11px; }
+}
+@media (max-width: 560px) { .packet .price-preview-table { overflow: visible; } }
+
+.packet .price-preview-price-edit { grid-template-columns: minmax(0, 1fr) minmax(116px, .72fr); }
+.packet .price-preview-price-edit .price-preview-mode-select { grid-column: 1 / -1; }

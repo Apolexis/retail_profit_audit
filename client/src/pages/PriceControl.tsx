@@ -61,6 +61,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { AuditShell } from "@/components/AuditShell";
+import { ExactDateControl } from "@/components/DateRangeControl";
 import { trpc } from "@/lib/trpc";
 
 type Preview = {
@@ -76,7 +77,7 @@ type Preview = {
     priceOptions: Array<{
       priceAmount: number;
       priceBasis: PriceBasis;
-      priceMode: string;
+      priceMode: PriceMode;
       normalizedPrice: number | null;
       normalizedUnit: string;
     }>;
@@ -87,11 +88,14 @@ type Preview = {
 type PriceLevel = "none" | "view" | "upload" | "edit";
 export type PriceControlSection = "compare" | "import" | "directory";
 type PriceBasis = "kg" | "l" | "piece" | "package" | "unknown";
+type PriceMode = "standard" | "cash" | "cashless_no_vat" | "cashless_vat" | "spb" | "moscow" | "special" | "threshold";
 type ProductDraft = {
   id: number | null;
   canonicalName: string;
   internalCode: string;
   categoryId: string;
+  variant: string;
+  sizeText: string;
   baseUnit: "kg" | "l" | "piece" | "unknown";
   isActive: boolean;
 };
@@ -152,7 +156,7 @@ const dateLabel = (value: string | null) => {
     ? new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" }).format(date)
     : "дата не указана";
 };
-const modeLabel: Record<string, string> = {
+const modeLabel: Record<PriceMode, string> = {
   standard: "основная",
   cash: "наличные",
   cashless_no_vat: "б/нал без НДС",
@@ -181,8 +185,19 @@ const basisLabel: Record<PriceBasis, string> = {
   kg: "за кг",
   l: "за л",
   piece: "за шт",
-  package: "за уп.",
+  package: "за шт",
   unknown: "не указана",
+};
+const priceBasisOptions = (packaging: string | null | undefined) => {
+  const isMeasuredPackage = /\d+(?:[.,]\d+)?\s*(?:кг|kg|г|гр|gr|g|л|литр|l|мл|ml)(?![a-zа-я])/i.test(String(packaging ?? ""));
+  return [
+    { value: "kg", label: basisLabel.kg },
+    { value: "l", label: basisLabel.l },
+    ...(isMeasuredPackage
+      ? [{ value: "package", label: basisLabel.package }]
+      : [{ value: "piece", label: basisLabel.piece }]),
+    { value: "unknown", label: basisLabel.unknown },
+  ] as Array<{ value: PriceBasis; label: string }>;
 };
 const sectionMeta: Record<
   PriceControlSection,
@@ -214,7 +229,7 @@ async function postPriceFile(
   query: Record<string, string>,
   commitOptions?: {
     categorySelections: Array<{ rowIndex: number; categoryId: number }>;
-    priceEdits: Array<{ rowIndex: number; optionIndex: number; priceAmount: number; priceBasis: PriceBasis }>;
+    priceEdits: Array<{ rowIndex: number; optionIndex: number; priceAmount: number; priceBasis: PriceBasis; priceMode: string }>;
     rowEdits: Array<{ rowIndex: number; rawName: string }>;
     productLinks: Array<{ rowIndex: number; productId: number }>;
     excludedRowIndexes: number[];
@@ -244,7 +259,7 @@ async function packPriceImportCommitBody(
   file: File,
   options: {
     categorySelections: Array<{ rowIndex: number; categoryId: number }>;
-    priceEdits: Array<{ rowIndex: number; optionIndex: number; priceAmount: number; priceBasis: PriceBasis }>;
+    priceEdits: Array<{ rowIndex: number; optionIndex: number; priceAmount: number; priceBasis: PriceBasis; priceMode: string }>;
     rowEdits: Array<{ rowIndex: number; rawName: string }>;
     productLinks: Array<{ rowIndex: number; productId: number }>;
     excludedRowIndexes: number[];
@@ -414,6 +429,7 @@ export default function PriceControl({
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [supplierFilter, setSupplierFilter] = useState("");
+  const [offerMarketFilter, setOfferMarketFilter] = useState<"" | "moscow" | "spb">("");
   const [visibilityFilter, setVisibilityFilter] =
     useState<VisibilityFilter>("active");
   const [selectedProductId, setSelectedProductId] = useState<number | null>(
@@ -438,7 +454,7 @@ export default function PriceControl({
   const [previewBulkCategoryId, setPreviewBulkCategoryId] = useState("");
   const [previewNewCategoryName, setPreviewNewCategoryName] = useState("");
   const [previewPriceEdits, setPreviewPriceEdits] = useState<
-    Record<string, { priceAmount: string; priceBasis: PriceBasis }>
+    Record<string, { priceAmount: string; priceBasis: PriceBasis; priceMode: string }>
   >({});
   const [previewNameEdits, setPreviewNameEdits] = useState<Record<number, string>>({});
   const [previewProductLinks, setPreviewProductLinks] = useState<Record<number, string>>({});
@@ -464,7 +480,7 @@ export default function PriceControl({
     name: string;
   } | null>(null);
   const [offerDrafts, setOfferDrafts] = useState<
-    Record<number, { priceAmount: string; priceBasis: PriceBasis }>
+    Record<number, { priceAmount: string; priceBasis: PriceBasis; priceMode: PriceMode }>
   >({});
   const [dateDrafts, setDateDrafts] = useState<Record<number, string>>({});
   const [deleteSavedRowCandidate, setDeleteSavedRowCandidate] = useState<{
@@ -548,6 +564,7 @@ export default function PriceControl({
               )
             : item.offers
         )
+          .filter(offer => !offerMarketFilter || offer.priceMode === offerMarketFilter)
           .filter(
             offer =>
               offer.importId !== null &&
@@ -578,7 +595,8 @@ export default function PriceControl({
         const next = offers.find(
           offer =>
             offer.supplierId !== best?.supplierId &&
-            offer.normalizedUnit === best?.normalizedUnit
+            offer.normalizedUnit === best?.normalizedUnit &&
+            offer.priceMode === best?.priceMode
         );
         const savings =
           best && next
@@ -603,7 +621,7 @@ export default function PriceControl({
         };
       })
       .filter(item => item.offers.length);
-  }, [overview.data?.comparisons, search, categoryFilter, supplierFilter, visibilityFilter]);
+  }, [overview.data?.comparisons, search, categoryFilter, supplierFilter, offerMarketFilter, visibilityFilter]);
   const selected =
     filteredComparisons.find(item => item.product.id === selectedProductId) ??
     filteredComparisons[0] ??
@@ -750,7 +768,7 @@ export default function PriceControl({
     const priceEdits = Object.entries(previewPriceEdits).map(([key, draft]) => {
       const [rowIndexText, optionIndexText] = key.split(":");
       const priceAmount = Number(draft.priceAmount.replace(/\s/g, "").replace(",", "."));
-      return { rowIndex: Number(rowIndexText), optionIndex: Number(optionIndexText), priceAmount, priceBasis: draft.priceBasis };
+      return { rowIndex: Number(rowIndexText), optionIndex: Number(optionIndexText), priceAmount, priceBasis: draft.priceBasis, priceMode: draft.priceMode };
     });
     if (priceEdits.some(edit => !Number.isFinite(edit.priceAmount) || edit.priceAmount <= 0 || edit.priceAmount >= 10_000_000)) {
       toast.error("Проверьте измененные цены: допустимо значение от 0 до 10 000 000 ₽.");
@@ -852,6 +870,8 @@ export default function PriceControl({
         canonicalName: productDraft.canonicalName.trim(),
         internalCode: productDraft.internalCode.trim(),
         categoryId: Number(productDraft.categoryId) || null,
+        variant: productDraft.variant.trim() || null,
+        sizeText: productDraft.sizeText.trim() || null,
         baseUnit: productDraft.baseUnit,
         isActive: productDraft.isActive,
       });
@@ -863,6 +883,12 @@ export default function PriceControl({
           : {}),
         ...(Number(productDraft.categoryId)
           ? { categoryId: Number(productDraft.categoryId) }
+          : {}),
+        ...(productDraft.variant.trim()
+          ? { variant: productDraft.variant.trim() }
+          : {}),
+        ...(productDraft.sizeText.trim()
+          ? { sizeText: productDraft.sizeText.trim() }
           : {}),
         baseUnit: productDraft.baseUnit,
         isActive: productDraft.isActive,
@@ -877,6 +903,8 @@ export default function PriceControl({
       canonicalName: product.canonicalName,
       internalCode: product.internalCode,
       categoryId: String(product.categoryId ?? ""),
+      variant: product.variant ?? "",
+      sizeText: product.sizeText ?? "",
       baseUnit: product.baseUnit,
       isActive: product.isActive,
     });
@@ -952,13 +980,14 @@ export default function PriceControl({
     }
   };
   const previewPriceKey = (rowIndex: number, optionIndex: number) => `${rowIndex}:${optionIndex}`;
-  const updatePreviewPriceDraft = (rowIndex: number, optionIndex: number, fallback: Preview["rows"][number]["priceOptions"][number], patch: Partial<{ priceAmount: string; priceBasis: PriceBasis }>) => {
+  const updatePreviewPriceDraft = (rowIndex: number, optionIndex: number, fallback: Preview["rows"][number]["priceOptions"][number], patch: Partial<{ priceAmount: string; priceBasis: PriceBasis; priceMode: string }>) => {
     const key = previewPriceKey(rowIndex, optionIndex);
     setPreviewPriceEdits(current => ({
       ...current,
       [key]: {
         priceAmount: patch.priceAmount ?? current[key]?.priceAmount ?? String(fallback.priceAmount),
         priceBasis: patch.priceBasis ?? current[key]?.priceBasis ?? fallback.priceBasis,
+        priceMode: patch.priceMode ?? current[key]?.priceMode ?? fallback.priceMode,
       },
     }));
   };
@@ -1177,6 +1206,22 @@ export default function PriceControl({
                 />
               </label>
               <label>
+                Город предложения
+                <PriceSelect
+                  value={offerMarketFilter}
+                  onValueChange={value => {
+                    setOfferMarketFilter(value === "__all_markets" ? "" : value as "moscow" | "spb");
+                    setSelectedProductId(null);
+                  }}
+                  placeholder="Все города"
+                  options={[
+                    { value: "__all_markets", label: "Все города" },
+                    { value: "moscow", label: "Москва" },
+                    { value: "spb", label: "СПБ" },
+                  ]}
+                />
+              </label>
+              <label>
                 Позиции
                 <PriceSelect
                   value={visibilityFilter}
@@ -1200,7 +1245,8 @@ export default function PriceControl({
               </label>
               <small>
                 Фильтры применяются одновременно к списку, таблице, графику и
-                рекомендации. Данные не меняются.
+                рекомендации. Фасовка пересчитывается в цену за кг или литр;
+                предложения Москвы и СПБ не сравниваются между собой.
               </small>
             </div>
             {overview.isLoading ? (
@@ -1439,6 +1485,9 @@ export default function PriceControl({
                                         priceBasis:
                                           current[offer.priceId]?.priceBasis ??
                                           offer.priceBasis,
+                                        priceMode:
+                                          current[offer.priceId]?.priceMode ??
+                                          offer.priceMode,
                                       },
                                     }))
                                   }
@@ -1456,17 +1505,31 @@ export default function PriceControl({
                                           current[offer.priceId]?.priceAmount ??
                                           String(offer.priceAmount),
                                         priceBasis: value as PriceBasis,
+                                        priceMode:
+                                          current[offer.priceId]?.priceMode ??
+                                          offer.priceMode as PriceMode,
                                       },
                                     }))
                                   }
                                   placeholder="База цены"
                                   className="price-select-compact"
-                                  options={(
-                                    Object.keys(basisLabel) as PriceBasis[]
-                                  ).map(basis => ({
-                                    value: basis,
-                                    label: basisLabel[basis],
-                                  }))}
+                                  options={priceBasisOptions(offer.packaging ?? offer.rawName)}
+                                />
+                                <PriceSelect
+                                  value={offerDrafts[offer.priceId]?.priceMode ?? offer.priceMode}
+                                  onValueChange={value =>
+                                    setOfferDrafts(current => ({
+                                      ...current,
+                                      [offer.priceId]: {
+                                        priceAmount: current[offer.priceId]?.priceAmount ?? String(offer.priceAmount),
+                                        priceBasis: current[offer.priceId]?.priceBasis ?? offer.priceBasis,
+                                        priceMode: value as PriceMode,
+                                      },
+                                    }))
+                                  }
+                                  placeholder="Условие цены"
+                                  className="price-select-compact"
+                                  options={Object.entries(modeLabel).map(([value, label]) => ({ value, label }))}
                                 />
                                 <button
                                   type="button"
@@ -1484,6 +1547,8 @@ export default function PriceControl({
                                         priceAmount: value,
                                         priceBasis:
                                           draft?.priceBasis ?? offer.priceBasis,
+                                        priceMode:
+                                          draft?.priceMode ?? offer.priceMode as PriceMode,
                                       });
                                   }}
                                   disabled={updateOffer.isPending}
@@ -1535,7 +1600,7 @@ export default function PriceControl({
           </section>
           {canUpload && (
             <>
-            <section className="price-import-workbench">
+            <section className={preview ? "price-import-workbench is-preview-ready" : "price-import-workbench"}>
               <div className="packet-card price-upload">
               <div className="card-title">
                 <div>
@@ -1624,15 +1689,14 @@ export default function PriceControl({
                         })),
                       ]}
                     />
-                    <input
-                      value={supplierName}
-                      onChange={event => {
-                        setPreviewSupplierChoice("__manual");
-                        setSupplierName(event.target.value);
-                      }}
-                      placeholder="Укажите нового поставщика"
-                      maxLength={160}
-                    />
+                    {previewSupplierChoice === "__manual" && (
+                      <input
+                        value={supplierName}
+                        onChange={event => setSupplierName(event.target.value)}
+                        placeholder="Укажите нового поставщика"
+                        maxLength={160}
+                      />
+                    )}
                     {canEdit && previewSupplierChoice === "__manual" && supplierName.trim() && (
                       <button type="button" className="packet-link compact subtle" onClick={createPreviewSupplier} disabled={createSupplier.isPending}>
                         <Plus size={14} />
@@ -1640,14 +1704,15 @@ export default function PriceControl({
                       </button>
                     )}
                   </label>
-                  <label>
-                    Дата прайса
-                    <input
-                      type="date"
+                  <div className="price-preview-date">
+                    <span>Дата прайса</span>
+                    <ExactDateControl
                       value={sourceDate}
-                      onChange={event => setSourceDate(event.target.value)}
+                      onChange={setSourceDate}
+                      title="ДАТА ПРАЙСА"
+                      ariaLabel="Изменить дату прайс-листа"
                     />
-                  </label>
+                  </div>
                   <div className="price-preview-actions">
                     <small>
                       {preview.warningCount
@@ -1825,7 +1890,14 @@ export default function PriceControl({
                                       onValueChange={value => updatePreviewPriceDraft(index, optionIndex, option, { priceBasis: value as PriceBasis })}
                                       placeholder="База цены"
                                       className="price-preview-basis-select"
-                                      options={(Object.keys(basisLabel) as PriceBasis[]).map(basis => ({ value: basis, label: basisLabel[basis] }))}
+                                      options={priceBasisOptions(row.packaging || row.rawName)}
+                                    />
+                                    <PriceSelect
+                                      value={draft?.priceMode ?? option.priceMode}
+                                      onValueChange={value => updatePreviewPriceDraft(index, optionIndex, option, { priceMode: value })}
+                                      placeholder="Условие цены"
+                                      className="price-preview-mode-select"
+                                      options={Object.entries(modeLabel).map(([value, label]) => ({ value, label }))}
                                     />
                                   </div>
                                 ) : (
@@ -1900,8 +1972,7 @@ export default function PriceControl({
                 </div>
               )}
               </div>
-            </section>
-            <aside className="packet-card price-import-guide">
+              {!preview && <aside className="packet-card price-import-guide">
                 <span>ТРЕБОВАНИЯ К ПРАЙСУ</span>
                 <h3>Как система читает файл</h3>
                 <ol>
@@ -1912,7 +1983,8 @@ export default function PriceControl({
                   <li><b>5</b><span>Показывает предпросмотр: до подтверждения ничего не сохраняется.</span></li>
                 </ol>
                 <p>Проверка запускается сразу после выбора файла. До явного сохранения можно исправить цену, исключить позицию и назначить категорию; исходный файл при этом не меняется.</p>
-            </aside>
+              </aside>}
+            </section>
             </>
           )}
           <section className="packet-card price-history">
@@ -2120,6 +2192,8 @@ export default function PriceControl({
                     canonicalName: "",
                     internalCode: "",
                     categoryId: "",
+                    variant: "",
+                    sizeText: "",
                     baseUnit: "unknown",
                     isActive: true,
                   })
@@ -2190,6 +2264,26 @@ export default function PriceControl({
                       { value: "l", label: "Литр" },
                       { value: "piece", label: "Штука" },
                     ]}
+                  />
+                </label>
+                <label>
+                  Характеристика товара
+                  <input
+                    value={productDraft.variant}
+                    onChange={event =>
+                      setProductDraft({ ...productDraft, variant: event.target.value })
+                    }
+                    placeholder="Например: IQF, филе, тушка"
+                  />
+                </label>
+                <label>
+                  Фасовка / вес
+                  <input
+                    value={productDraft.sizeText}
+                    onChange={event =>
+                      setProductDraft({ ...productDraft, sizeText: event.target.value })
+                    }
+                    placeholder="Например: 5 кг или 400 г"
                   />
                 </label>
                 <button

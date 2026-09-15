@@ -88,4 +88,10 @@ describe("мобильный контракт графических контр�
     expect(styles).toContain('font-variant-numeric: tabular-nums;');
     expect(styles).toContain('white-space: nowrap !important;');
   });
+
+  it("дает периоду и строкам значений одинаковый вертикальный воздух", () => {
+    expect(styles).toContain('.tiny-tooltip { padding: 10px 12px 11px !important; }');
+    expect(styles).toContain('.tiny-tooltip > b { display: block; margin-bottom: 6px !important; line-height: 1.2; }');
+    expect(styles).toContain('.tiny-tooltip .tiny-tooltip-values { row-gap: 4px; }');
+  });
 });

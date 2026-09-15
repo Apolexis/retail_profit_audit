@@ -86,7 +86,11 @@ describe("форматирование денежных показателей",
   it("масштабирует домен и видимый срез данных, а не SVG-поверхность", () => {
     expect(clampChartZoom(.5)).toBe(1);
     expect(clampChartZoom(4)).toBe(3);
-    expect(chartPanSpeedForZoom(1)).toBeCloseTo(3.4);
+    expect(chartPanSpeedForZoom(1)).toBeCloseTo(5.27,2);
+    expect(chartPanSpeedForZoom(1)).toBeGreaterThan(chartPanSpeedForZoom(1.5));
+    expect(chartPanSpeedForZoom(1.5)).toBeGreaterThan(chartPanSpeedForZoom(2));
+    expect(chartPanSpeedForZoom(2)).toBeGreaterThan(chartPanSpeedForZoom(2.5));
+    expect(chartPanSpeedForZoom(2.5)).toBeGreaterThan(chartPanSpeedForZoom(3));
     expect(chartPanSpeedForZoom(3)).toBeCloseTo(3.4/Math.sqrt(3));
     expect(resolveChartPanAxis(1,0)).toBeNull();
     expect(resolveChartPanAxis(14,5)).toBe("x");

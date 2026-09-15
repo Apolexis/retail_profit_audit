@@ -12,7 +12,7 @@ const IMPORT_OPTIONS_MAGIC = Buffer.from("PRICE-IMPORT-OPTIONS-V1\n", "utf8");
 const MAX_IMPORT_OPTIONS_BYTES = 500_000;
 type ImportCommitOptions = {
   categorySelections: Array<{ rowIndex: number; categoryId: number }>;
-  priceEdits: Array<{ rowIndex: number; optionIndex: number; priceAmount: number; priceBasis?: "kg" | "l" | "piece" | "package" | "unknown" }>;
+  priceEdits: Array<{ rowIndex: number; optionIndex: number; priceAmount: number; priceBasis?: "kg" | "l" | "piece" | "package" | "unknown"; priceMode?: "standard" | "cash" | "cashless_no_vat" | "cashless_vat" | "spb" | "moscow" | "special" | "threshold" }>;
   rowEdits: Array<{ rowIndex: number; rawName: string }>;
   productLinks: Array<{ rowIndex: number; productId: number }>;
   excludedRowIndexes: number[];
@@ -45,6 +45,7 @@ function normalizeCommitOptions(value: unknown): ImportCommitOptions {
     throw new Error("Передано слишком много изменений для одного прайс‑листа.");
   }
   const allowedBases = new Set(["kg", "l", "piece", "package", "unknown"]);
+  const allowedModes = new Set(["standard", "cash", "cashless_no_vat", "cashless_vat", "spb", "moscow", "special", "threshold"]);
   return {
     categorySelections: categorySelections.map(item => {
       if (!item || typeof item !== "object") throw new Error("Передана некорректная категория для строки прайс‑листа.");
@@ -60,10 +61,11 @@ function normalizeCommitOptions(value: unknown): ImportCommitOptions {
       const optionIndex = Number(sourceEdit.optionIndex);
       const priceAmount = Number(sourceEdit.priceAmount);
       const priceBasis = sourceEdit.priceBasis;
-      if (!Number.isInteger(rowIndex) || rowIndex < 0 || !Number.isInteger(optionIndex) || optionIndex < 0 || !Number.isFinite(priceAmount) || priceAmount <= 0 || priceAmount >= 10_000_000 || (priceBasis !== undefined && (typeof priceBasis !== "string" || !allowedBases.has(priceBasis)))) {
+      const priceMode = sourceEdit.priceMode;
+      if (!Number.isInteger(rowIndex) || rowIndex < 0 || !Number.isInteger(optionIndex) || optionIndex < 0 || !Number.isFinite(priceAmount) || priceAmount <= 0 || priceAmount >= 10_000_000 || (priceBasis !== undefined && (typeof priceBasis !== "string" || !allowedBases.has(priceBasis))) || (priceMode !== undefined && (typeof priceMode !== "string" || !allowedModes.has(priceMode)))) {
         throw new Error("Передана некорректная ручная правка цены прайс‑листа.");
       }
-      return { rowIndex, optionIndex, priceAmount, ...(priceBasis === undefined ? {} : { priceBasis: priceBasis as ImportCommitOptions["priceEdits"][number]["priceBasis"] }) };
+      return { rowIndex, optionIndex, priceAmount, ...(priceBasis === undefined ? {} : { priceBasis: priceBasis as ImportCommitOptions["priceEdits"][number]["priceBasis"] }), ...(priceMode === undefined ? {} : { priceMode: priceMode as ImportCommitOptions["priceEdits"][number]["priceMode"] }) };
     }),
     rowEdits: rowEdits.map(item => {
       if (!item || typeof item !== "object") throw new Error("Передана некорректная правка названия позиции прайс‑листа.");

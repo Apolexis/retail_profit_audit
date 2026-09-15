@@ -17,9 +17,12 @@ describe("базовые управляющие элементы", () => {
     expect(css).toContain(".packet .access-switch button:not(.active):hover");
     expect(css).toContain("transform: none !important;");
     expect(home).toContain("home-portfolio-link");
-    expect(shell).toContain('className={demoMode?"demo-data-button active":"demo-data-button"}');
+    expect(shell).toContain('className={demoMode?"packet-demo-toggle is-active":"packet-demo-toggle"}');
+    expect(shell).toContain('className={demoMode?"drawer-demo-toggle is-active":"drawer-demo-toggle"}');
     expect(shell).toContain('aria-pressed={demoMode}');
-    expect(css).toContain('.packet .demo-data-button.active');
+    expect(shell).toContain('toast(nextMode?"Демо‑режим включен":"Демо‑режим выключен"');
+    expect(shell).not.toContain('demo-data-button');
+    expect(css).toContain('.packet .packet-demo-toggle');
   });
 
   it("не допускает горизонтального переполнения шапки на ширине 360 px", () => {
@@ -28,6 +31,20 @@ describe("базовые управляющие элементы", () => {
     expect(css).toContain(".packet .packet-actions { flex: 0 0 auto; gap: 5px; }");
     expect(css).toContain(".packet .packet-mobile.menu-button { width: 36px !important;");
     expect(shell).toContain('key={`packet-top-${theme}`} className="packet-top" data-audit-theme={theme} style={{backgroundColor:theme==="dark"?"#0c0b12":"#ffffff",colorScheme:theme}}');
+  });
+
+  it("размещает демо‑режим в нижней части навигации", () => {
+    expect(shell).toContain("const toggleDemo=");
+    expect(shell).toContain("В интерфейсе показаны демонстрационные данные текущего сеанса.");
+    expect(shell).toContain('<div className="packet-period">');
+    expect(shell.indexOf('className={demoMode?"packet-demo-toggle is-active":"packet-demo-toggle"}')).toBeLessThan(shell.indexOf('<div className="packet-period">'));
+  });
+
+  it("сохраняет ритм и рабочую ширину сегментов импортных прав", () => {
+    expect(css).toContain(".packet .access-import-row + .access-import-row { margin-top: 16px; padding-top: 16px;");
+    expect(css).toContain(".packet .access-import-control-row { margin-top: 16px; padding-top: 16px; }");
+    expect(css).toContain("width: min(100%, 480px)");
+    expect(css).toContain("@media (min-width: 721px) and (max-width: 900px)");
   });
 
   it("выводит контекст периода отдельными строками", () => {

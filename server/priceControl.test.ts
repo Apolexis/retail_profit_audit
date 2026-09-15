@@ -27,6 +27,12 @@ describe("прайс‑контроль: нормализация товарны
     expect(resolvePriceMapping(row, 7, aliases, products)).toMatchObject({ productId: 42, mappingStatus: "linked", matchedBy: "supplier_alias", matchConfidence: 100 });
   });
 
+  it("сохраняет подтвержденную связь при другой фасовке, если у названия один внутренний товар", () => {
+    const row = { normalizedName: normalizeProductName("Палтус тушка"), normalizedSignature: productSignature("Палтус тушка"), packagingSignature: "g23000" } as any;
+    const aliases = [{ supplierId: 7, productId: 42, normalizedName: row.normalizedName, packagingSignature: "g21000" }];
+    expect(resolvePriceMapping(row, 7, aliases, [])).toMatchObject({ productId: 42, mappingStatus: "linked", matchedBy: "supplier_alias", matchConfidence: 100 });
+  });
+
   it("предлагает, но не подтверждает автоматически новую сигнатуру", () => {
     const row = { normalizedName: normalizeProductName("Лосось 2-3"), normalizedSignature: productSignature("Лосось 2-3"), packagingSignature: "" } as any;
     expect(resolvePriceMapping(row, 1, [], [{ id: 12, normalizedSignature: row.normalizedSignature }])).toMatchObject({ productId: 12, mappingStatus: "suggested", matchedBy: "signature", matchConfidence: 92 });
@@ -63,6 +69,12 @@ describe("прайс‑контроль: нормализация товарны
     expect(prepared.rows).toHaveLength(1);
     expect(prepared.rows[0]?.row.priceOptions[0]).toMatchObject({ priceAmount: 430, priceBasis: "package", normalizedPrice: 1000, normalizedUnit: "kg" });
     expect(prepared.editedPriceOptions).toBe(1);
+  });
+
+  it("сохраняет вручную уточненный город предложения вместе с ценой", () => {
+    const rows = [{ rawName: "Палтус", packaging: "21 кг", priceOptions: [{ priceAmount: 530, priceBasis: "kg", priceMode: "moscow", normalizedPrice: 530, normalizedUnit: "kg" }] }] as any;
+    const prepared = preparePriceImportRows(rows, [{ rowIndex: 0, optionIndex: 0, priceAmount: 525, priceMode: "spb" }]);
+    expect(prepared.rows[0]?.row.priceOptions[0]).toMatchObject({ priceAmount: 525, priceMode: "spb", normalizedPrice: 525, normalizedUnit: "kg" });
   });
 
   it("исключает строки только из текущего сохранения и запрещает править исключенную строку", () => {

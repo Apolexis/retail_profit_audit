@@ -57,8 +57,11 @@ describe("страница «Прайс‑контроль»", () => {
   it("добавляет категории, независимые фильтры, редактирование и историю цен", () => {
     expect(page).toContain("Категория");
     expect(page).toContain("Все поставщики");
+    expect(page).toContain("Город предложения");
+    expect(page).toContain("offerMarketFilter");
+    expect(page).toContain("предложения Москвы и СПБ не сравниваются между собой");
     expect(page).toContain("Фильтры применяются одновременно");
-    expect(page).toContain("Данные не меняются.");
+    expect(page).toContain("предложения Москвы и СПБ не сравниваются между собой");
     expect(page).toContain("ИСТОРИЯ ЦЕН");
     expect(page).toContain("updateProduct");
     expect(page).toContain("updateSupplier");
@@ -108,6 +111,9 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain("color-scheme: dark");
     expect(styles).toContain("outline: none !important");
     expect(styles).toContain(".packet .price-summary-grid article:hover");
+    expect(page).toContain('className={preview ? "price-import-workbench is-preview-ready" : "price-import-workbench"}');
+    expect(page).toContain('{!preview && <aside className="packet-card price-import-guide">');
+    expect(styles).toContain(".packet .price-import-workbench.is-preview-ready");
   });
 
   it("заменяет нативные селекты тематичными списками приложения", () => {
@@ -166,6 +172,13 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("rowEdits,");
   });
 
+  it("дает уточнить город или условие предложения вместе с ручной ценой", () => {
+    expect(page).toContain("price-preview-mode-select");
+    expect(page).toContain("Условие цены");
+    expect(page).toContain("priceMode: draft.priceMode");
+    expect(page).toContain("draft?.priceMode ?? offer.priceMode as PriceMode");
+  });
+
   it("на телефоне показывает одну позицию preview с навигацией и использует компактную отмеченную галочку", () => {
     expect(page).toContain("price-preview-mobile-pager");
     expect(page).toContain("Позиция {currentMobilePreviewPosition + 1}");
@@ -176,10 +189,37 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain(".packet .price-preview-check:has(input:checked)");
   });
 
+  it("отдает названию позиции приоритетную ширину и не обрезает нижние поля карточки на телефоне", () => {
+    expect(styles).toContain(".packet .price-preview-name-edit input { min-width: 0; padding-inline: 7px; font-size: 12px;");
+    expect(styles).toContain("@media (max-width: 420px)");
+    expect(styles).toContain("@media (max-width: 560px) { .packet .price-preview-table { overflow: visible; } }");
+  });
+
+  it("не ограничивает широкий preview тремя строками и перестраивает связь с категорией без наложений", () => {
+    expect(styles).toContain(".packet .price-preview-table { max-height: none; overflow: visible; }");
+    expect(styles).toContain("@media (min-width: 761px) and (max-width: 1200px)");
+    expect(styles).toContain(".price-preview-new-row .price-preview-product-link { grid-column: 2; grid-row: 2;");
+    expect(styles).toContain(".price-preview-new-row .price-preview-category-select { grid-column: 3; grid-row: 2;");
+  });
+
+  it("использует тематичный выбор даты прайса вместо системного поля даты", () => {
+    expect(page).toContain('import { ExactDateControl } from "@/components/DateRangeControl";');
+    expect(page).toContain('<ExactDateControl');
+    expect(page).toContain('title="ДАТА ПРАЙСА"');
+    expect(page).toContain('value={sourceDate}');
+  });
+
   it("делает скрытие товара явным состоянием формы, а не только кнопкой списка", () => {
     expect(page).toContain("Скрыт из фильтров");
     expect(page).toContain("История цен и связи сохраняются в обоих состояниях");
     expect(page).toContain("isActive: productDraft.isActive");
+  });
+
+  it("дает редактировать постоянные характеристику и фасовку товара в справочнике", () => {
+    expect(page).toContain("Характеристика товара");
+    expect(page).toContain("Фасовка / вес");
+    expect(page).toContain("variant: productDraft.variant.trim() || null");
+    expect(page).toContain("sizeText: productDraft.sizeText.trim() || null");
   });
 
   it("не блокирует импорт без распознанной шапки: поставщика можно выбрать или создать, дату — указать вручную", () => {
@@ -192,6 +232,7 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("Удалить поставщика?");
     expect(page).toContain("Если у него есть сохраненные прайс‑листы или товарные связи");
     expect(styles).toContain(".packet .price-preview-supplier");
+    expect(page).toContain('{previewSupplierChoice === "__manual" && (');
   });
 
   it("оформляет создание поставщика компактной формой с отдельными действиями", () => {

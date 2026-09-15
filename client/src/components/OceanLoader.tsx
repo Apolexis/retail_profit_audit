@@ -2,15 +2,17 @@ type OceanLoaderProps = { overlay?: boolean; label?: string };
 
 type FishPath = { id: string; x: number; y: number; rotation: number; scale: number };
 
+// The base transform makes all fish visible at distinct orbital positions before
+// SVG animation produces its first frame; it prevents the flash of stacked fish.
 const SCHOOL_PATHS: FishPath[] = [
-  { id: "a", x: 73, y: 10, rotation: 90, scale: .86 },
-  { id: "b", x: 117, y: 32, rotation: 138, scale: .68 },
-  { id: "c", x: 132, y: 75, rotation: 184, scale: .90 },
-  { id: "d", x: 104, y: 119, rotation: 228, scale: .64 },
-  { id: "e", x: 56, y: 124, rotation: 274, scale: .80 },
-  { id: "f", x: 19, y: 90, rotation: 318, scale: .72 },
-  { id: "g", x: 18, y: 47, rotation: 5, scale: .62 },
-  { id: "h", x: 47, y: 19, rotation: 48, scale: .56 },
+  { id: "a", x: 73, y: 10, rotation: 90, scale: .70 },
+  { id: "b", x: 117, y: 32, rotation: 138, scale: .53 },
+  { id: "c", x: 132, y: 75, rotation: 184, scale: .74 },
+  { id: "d", x: 104, y: 119, rotation: 228, scale: .49 },
+  { id: "e", x: 56, y: 124, rotation: 274, scale: .63 },
+  { id: "f", x: 19, y: 90, rotation: 318, scale: .56 },
+  { id: "g", x: 18, y: 47, rotation: 5, scale: .46 },
+  { id: "h", x: 47, y: 19, rotation: 48, scale: .40 },
 ];
 
 function OrbitFish({ id, x, y, rotation, scale }: FishPath) {
@@ -26,10 +28,7 @@ function OrbitFish({ id, x, y, rotation, scale }: FishPath) {
 
 function FishSpinner({ className, label }: { className: string; label: string }) {
   return <section className={className} role="status" aria-live="polite"><p>{label}</p><svg className="facts-loader-art" viewBox="0 0 160 160" aria-hidden="true" focusable="false">
-    <g className="facts-school-orbit">
-      <animateTransform attributeName="transform" type="rotate" from="0 80 80" to="360 80 80" dur="4.8s" repeatCount="indefinite" />
-      <g className="facts-school" transform="translate(0 -10)">{SCHOOL_PATHS.map(fish => <OrbitFish key={fish.id} {...fish}/>)}</g>
-    </g>
+    <g className="facts-school">{SCHOOL_PATHS.map(fish => <OrbitFish key={fish.id} {...fish}/>)}</g>
   </svg></section>;
 }
 

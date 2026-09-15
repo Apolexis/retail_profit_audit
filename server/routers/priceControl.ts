@@ -80,7 +80,7 @@ export const priceControlRouter = router({
     await recordChange({ actorId: actor.id, action: "price_supplier.delete", entityType: "price_supplier", entityId: String(input.id), beforeState: supplier, afterState: null });
     return { success: true };
   }),
-  updateOffer: protectedProcedure.input(z.object({ priceId: z.number().int().positive(), priceAmount: z.number().positive().max(10_000_000), priceBasis: z.enum(["kg", "l", "piece", "package", "unknown"]) })).mutation(async ({ ctx, input }) => {
+  updateOffer: protectedProcedure.input(z.object({ priceId: z.number().int().positive(), priceAmount: z.number().positive().max(10_000_000), priceBasis: z.enum(["kg", "l", "piece", "package", "unknown"]), priceMode: z.enum(["standard", "cash", "cashless_no_vat", "cashless_vat", "spb", "moscow", "special", "threshold"]).optional() })).mutation(async ({ ctx, input }) => {
     await requirePricePermission(ctx.user.openId, "edit");
     const actor = await localActor(ctx.user.openId); const before = await getPriceOfferAuditState(input.priceId); const result = await updatePriceOffer(input);
     await recordChange({ actorId: actor.id, action: "price_offer.update", entityType: "price_offer", entityId: String(input.priceId), beforeState: before, afterState: await getPriceOfferAuditState(input.priceId) });
