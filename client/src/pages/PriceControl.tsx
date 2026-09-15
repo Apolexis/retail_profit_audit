@@ -23,6 +23,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   BookOpenCheck,
   CheckCircle2,
   Download,
@@ -48,7 +55,6 @@ import {
   WandSparkles,
   X,
 } from "lucide-react";
-import { Link } from "wouter";
 import { toast } from "sonner";
 import { AuditShell } from "@/components/AuditShell";
 import { trpc } from "@/lib/trpc";
@@ -91,6 +97,39 @@ type SupplierDraft = {
   contactNote: string;
   isActive: boolean;
 };
+
+function PriceSelect({
+  value,
+  onValueChange,
+  placeholder,
+  options,
+  className = "",
+}: {
+  value: string;
+  onValueChange: (value: string) => void;
+  placeholder: string;
+  options: Array<{ value: string; label: string; disabled?: boolean }>;
+  className?: string;
+}) {
+  return (
+    <Select value={value || undefined} onValueChange={onValueChange}>
+      <SelectTrigger className={`price-select-trigger ${className}`}>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent className="price-select-content" align="start">
+        {options.map(option => (
+          <SelectItem
+            key={option.value}
+            value={option.value}
+            disabled={option.disabled}
+          >
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
 
 const formatMoney = (value: number) =>
   new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 2 }).format(value);
@@ -175,33 +214,6 @@ async function postPriceFile(
   if (!response.ok)
     throw new Error(body.error ?? "Не удалось обработать прайс‑лист.");
   return body;
-}
-
-function PriceSectionNav({ active }: { active: PriceControlSection }) {
-  return (
-    <nav className="price-section-nav" aria-label="Разделы прайс-контроля">
-      {(
-        Object.entries(sectionMeta) as Array<
-          [PriceControlSection, typeof sectionMeta.compare]
-        >
-      ).map(([key, item]) => (
-        <Link
-          key={key}
-          href={item.href}
-          className={active === key ? "active" : ""}
-        >
-          {key === "compare" ? (
-            <GitCompareArrows size={15} />
-          ) : key === "import" ? (
-            <Upload size={15} />
-          ) : (
-            <BookOpenCheck size={15} />
-          )}
-          <span>{item.label}</span>
-        </Link>
-      ))}
-    </nav>
-  );
 }
 
 export default function PriceControl({
@@ -661,7 +673,6 @@ export default function PriceControl({
 
   return (
     <AuditShell kicker={meta.kicker} title={meta.title}>
-      <PriceSectionNav active={section} />
       {section === "compare" && (
         <>
           <section className="page-lede price-lede">
@@ -732,55 +743,57 @@ export default function PriceControl({
               </label>
               <label>
                 Категория
-                <select
+                <PriceSelect
                   value={categoryFilter}
-                  onChange={event => {
-                    setCategoryFilter(event.target.value);
+                  onValueChange={value => {
+                    setCategoryFilter(value === "__all_categories" ? "" : value);
                     setSelectedProductId(null);
                   }}
-                >
-                  <option value="">Все категории</option>
-                  {categories.map(category => (
-                    <option value={category.id} key={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="Все категории"
+                  options={[
+                    { value: "__all_categories", label: "Все категории" },
+                    ...categories.map(category => ({
+                      value: String(category.id),
+                      label: category.name,
+                    })),
+                  ]}
+                />
               </label>
               <label>
                 Поставщик
-                <select
+                <PriceSelect
                   value={supplierFilter}
-                  onChange={event => {
-                    setSupplierFilter(event.target.value);
+                  onValueChange={value => {
+                    setSupplierFilter(value === "__all_suppliers" ? "" : value);
                     setSelectedProductId(null);
                   }}
-                >
-                  <option value="">Все поставщики</option>
-                  {overview.data?.suppliers
-                    .filter(supplier => supplier.isActive)
-                    .map(supplier => (
-                      <option value={supplier.id} key={supplier.id}>
-                        {supplier.name}
-                      </option>
-                  ))}
-                </select>
+                  placeholder="Все поставщики"
+                  options={[
+                    { value: "__all_suppliers", label: "Все поставщики" },
+                    ...(overview.data?.suppliers
+                      .filter(supplier => supplier.isActive)
+                      .map(supplier => ({
+                        value: String(supplier.id),
+                        label: supplier.name,
+                      })) ?? []),
+                  ]}
+                />
               </label>
               <label>
                 Позиции
-                <select
+                <PriceSelect
                   value={visibilityFilter}
-                  onChange={event => {
-                    setVisibilityFilter(
-                      event.target.value as VisibilityFilter
-                    );
+                  onValueChange={value => {
+                    setVisibilityFilter(value as VisibilityFilter);
                     setSelectedProductId(null);
                   }}
-                >
-                  <option value="active">Без скрытых</option>
-                  <option value="all">Все</option>
-                  <option value="hidden">Только скрытые</option>
-                </select>
+                  placeholder="Без скрытых"
+                  options={[
+                    { value: "active", label: "Без скрытых" },
+                    { value: "all", label: "Все" },
+                    { value: "hidden", label: "Только скрытые" },
+                  ]}
+                />
               </label>
               <small>
                 Фильтры применяются одновременно к списку, таблице, графику и
@@ -1027,32 +1040,31 @@ export default function PriceControl({
                                     }))
                                   }
                                 />
-                                <select
+                                <PriceSelect
                                   value={
                                     offerDrafts[offer.priceId]?.priceBasis ??
                                     offer.priceBasis
                                   }
-                                  onChange={event =>
+                                  onValueChange={value =>
                                     setOfferDrafts(current => ({
                                       ...current,
                                       [offer.priceId]: {
                                         priceAmount:
                                           current[offer.priceId]?.priceAmount ??
                                           String(offer.priceAmount),
-                                        priceBasis: event.target
-                                          .value as PriceBasis,
+                                        priceBasis: value as PriceBasis,
                                       },
                                     }))
                                   }
-                                >
-                                  {(
+                                  placeholder="База цены"
+                                  className="price-select-compact"
+                                  options={(
                                     Object.keys(basisLabel) as PriceBasis[]
-                                  ).map(basis => (
-                                    <option key={basis} value={basis}>
-                                      {basisLabel[basis]}
-                                    </option>
-                                  ))}
-                                </select>
+                                  ).map(basis => ({
+                                    value: basis,
+                                    label: basisLabel[basis],
+                                  }))}
+                                />
                                 <button
                                   type="button"
                                   className="packet-link compact"
@@ -1509,40 +1521,39 @@ export default function PriceControl({
                 </label>
                 <label>
                   Категория
-                  <select
+                  <PriceSelect
                     value={productDraft.categoryId}
-                    onChange={event =>
+                    onValueChange={value =>
                       setProductDraft({
                         ...productDraft,
-                        categoryId: event.target.value,
+                        categoryId: value,
                       })
                     }
-                  >
-                    <option value="">Выберите существующую категорию</option>
-                    {selectableCategories.map(category => (
-                      <option value={category.id} key={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="Выберите существующую категорию"
+                    options={selectableCategories.map(category => ({
+                      value: String(category.id),
+                      label: category.name,
+                    }))}
+                  />
                 </label>
                 <label>
                   Базовая единица
-                  <select
+                  <PriceSelect
                     value={productDraft.baseUnit}
-                    onChange={event =>
+                    onValueChange={value =>
                       setProductDraft({
                         ...productDraft,
-                        baseUnit: event.target
-                          .value as ProductDraft["baseUnit"],
+                        baseUnit: value as ProductDraft["baseUnit"],
                       })
                     }
-                  >
-                    <option value="unknown">Не задана</option>
-                    <option value="kg">Килограмм</option>
-                    <option value="l">Литр</option>
-                    <option value="piece">Штука</option>
-                  </select>
+                    placeholder="Не задана"
+                    options={[
+                      { value: "unknown", label: "Не задана" },
+                      { value: "kg", label: "Килограмм" },
+                      { value: "l", label: "Литр" },
+                      { value: "piece", label: "Штука" },
+                    ]}
+                  />
                 </label>
                 <div>
                   <button
@@ -1910,26 +1921,24 @@ export default function PriceControl({
                         </small>
                       </div>
                       <div className="price-map-actions">
-                        <select
+                        <PriceSelect
                           value={
                             linkTargets[row.rowId] ??
                             row.suggestedProduct?.id ??
                             ""
                           }
-                          onChange={event =>
+                          onValueChange={value =>
                             setLinkTargets(current => ({
                               ...current,
-                              [row.rowId]: event.target.value,
+                              [row.rowId]: value,
                             }))
                           }
-                        >
-                          <option value="">Выберите наш товар</option>
-                          {overview.data?.products.map(product => (
-                            <option value={product.id} key={product.id}>
-                              {product.internalCode} · {product.canonicalName}
-                            </option>
-                          ))}
-                        </select>
+                          placeholder="Выберите наш товар"
+                          options={(overview.data?.products ?? []).map(product => ({
+                            value: String(product.id),
+                            label: `${product.internalCode} · ${product.canonicalName}`,
+                          }))}
+                        />
                         <button
                           type="button"
                           className="packet-link compact"
@@ -1955,22 +1964,20 @@ export default function PriceControl({
                                 }))
                               }
                             />
-                            <select
+                            <PriceSelect
                               value={newCategoryTargets[row.rowId] ?? ""}
-                              onChange={event =>
+                              onValueChange={value =>
                                 setNewCategoryTargets(current => ({
                                   ...current,
-                                  [row.rowId]: event.target.value,
+                                  [row.rowId]: value,
                                 }))
                               }
-                            >
-                              <option value="">Выберите категорию</option>
-                              {selectableCategories.map(category => (
-                                <option value={category.id} key={category.id}>
-                                  {category.name}
-                                </option>
-                              ))}
-                            </select>
+                              placeholder="Выберите категорию"
+                              options={selectableCategories.map(category => ({
+                                value: String(category.id),
+                                label: category.name,
+                              }))}
+                            />
                             <button
                               type="button"
                               className="packet-link compact"
@@ -2025,21 +2032,20 @@ export default function PriceControl({
                       </small>
                     </div>
                     <div className="price-alias-actions">
-                      <select
+                      <PriceSelect
                         value={aliasTargets[alias.aliasId] ?? alias.productId}
-                        onChange={event =>
+                        onValueChange={value =>
                           setAliasTargets(current => ({
                             ...current,
-                            [alias.aliasId]: event.target.value,
+                            [alias.aliasId]: value,
                           }))
                         }
-                      >
-                        {overview.data?.products.map(product => (
-                          <option value={product.id} key={product.id}>
-                            {product.internalCode} · {product.canonicalName}
-                          </option>
-                        ))}
-                      </select>
+                        placeholder="Выберите наш товар"
+                        options={(overview.data?.products ?? []).map(product => ({
+                          value: String(product.id),
+                          label: `${product.internalCode} · ${product.canonicalName}`,
+                        }))}
+                      />
                       <button
                         type="button"
                         className="packet-link compact"

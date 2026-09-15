@@ -14,12 +14,13 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain('accept=".xls,.xlsx,.pdf,.docx');
   });
 
-  it("разделяет контур на сравнение, импорт прайсов и справочник", () => {
+  it("разделяет контур на самостоятельные маршруты без дублирующего внутреннего меню", () => {
     expect(page).toContain('label: "Сравнение"');
     expect(page).toContain('label: "Импорт прайсов"');
     expect(page).toContain('label: "Справочник"');
     expect(page).toContain('href: "/price-control/import"');
     expect(page).toContain('href: "/price-control/directory"');
+    expect(page).not.toContain("PriceSectionNav");
     expect(page).toContain("Финансовая «База» и ее показатели остаются отдельными");
   });
 
@@ -62,7 +63,6 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("updateProduct");
     expect(page).toContain("updateSupplier");
     expect(page).toContain("updateOffer");
-    expect(styles).toContain(".packet .price-section-nav");
     expect(styles).toContain(".packet .price-history-chart");
   });
 
@@ -86,6 +86,18 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain(".packet .price-file-drop");
     expect(styles).toContain(".packet .price-directory-tabs");
     expect(styles).toContain(".packet .price-directory :is(input, select, textarea):focus");
+    expect(styles).toContain("color-scheme: dark");
+    expect(styles).toContain("outline: none !important");
+    expect(styles).toContain(".packet .price-summary-grid article:hover");
+  });
+
+  it("заменяет нативные селекты тематичными списками приложения", () => {
+    expect(page).toContain("function PriceSelect");
+    expect(page).toContain("<SelectTrigger");
+    expect(page).toContain("price-select-content");
+    expect(page).not.toContain("<select");
+    expect(styles).toContain(".packet .price-select-trigger");
+    expect(styles).toContain(".price-select-content");
   });
 
   it("показывает изменение цены относительно предыдущего предложения", () => {

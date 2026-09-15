@@ -3001,10 +3001,6 @@ html[data-audit-theme="dark"] .packet .price-offer.winner { background: #211925;
 .packet .price-history article span, .packet .price-history article small { overflow: hidden; color: var(--price-muted); text-overflow: ellipsis; white-space: nowrap; }
 .packet .price-empty { min-height: 190px; color: var(--price-muted); }
 .packet .price-empty h2 { color: var(--price-ink); }
-.packet .price-section-nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; padding: 7px; border: 1px solid var(--price-border); border-radius: 15px; background: var(--price-surface); }
-.packet .price-section-nav a { display: inline-flex; align-items: center; gap: 7px; min-height: 38px; padding: 0 13px; border: 1px solid transparent; border-radius: 10px; color: var(--price-muted); font-size: 12px; font-weight: 750; text-decoration: none; transition: color .16s ease, background .16s ease, border-color .16s ease; }
-html[data-audit-theme="light"] .packet .price-section-nav a.active { border-color: #0a72d5; background: #edf6ff; color: #075cb3; }
-html[data-audit-theme="dark"] .packet .price-section-nav a.active { border-color: #ff856d; background: #211925; color: #ffd0c5; }
 .packet .price-toolbar { display: grid; grid-template-columns: minmax(190px, 1.5fr) repeat(2, minmax(150px, .82fr)) minmax(190px, 1.1fr); align-items: end; }
 .packet .price-toolbar label { min-width: 0; }
 .packet .price-toolbar input, .packet .price-toolbar select, .packet .price-directory-editor input, .packet .price-directory-editor select, .packet .price-directory-editor textarea, .packet .price-import-meta input { width: 100%; min-height: 39px; border-color: var(--price-border); color: var(--price-ink); background: var(--price-surface); }
@@ -3072,9 +3068,6 @@ html[data-audit-theme="dark"] .packet .subtle-danger:hover { border-color: #ff85
   .packet .price-preview-actions .packet-link { justify-content: center; }
   .packet .price-toolbar { display: grid; gap: 9px; }
   .packet .price-toolbar label { min-width: 0; }
-  .packet .price-section-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; padding: 5px; }
-  .packet .price-section-nav a { justify-content: center; padding: 0 8px; font-size: 11px; }
-  .packet .price-section-nav a span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .packet .price-toolbar { grid-template-columns: minmax(0, 1fr); }
   .packet .price-toolbar > small { grid-column: auto; }
   .packet .price-detail-heading { display: grid; }
@@ -3246,6 +3239,168 @@ html[data-audit-theme="dark"] .packet .price-directory :is(input, select, textar
 html[data-audit-theme="dark"] .packet .price-toolbar :is(input, select),
 html[data-audit-theme="dark"] .packet .price-import-meta input,
 html[data-audit-theme="dark"] .packet .price-preview :is(input, select) { background: #15131c; color: #f5eaf0; }
+
+/* Прайс‑контроль: единый контракт интерактивных поверхностей без native‑фокуса и вложенных рамок. */
+.packet .price-directory :is(input, select, textarea),
+.packet .price-toolbar :is(input, select),
+.packet .price-import-meta input,
+.packet .price-preview :is(input, select) {
+  min-height: 42px;
+  padding: 0 13px;
+  border-radius: 11px;
+  appearance: none;
+  -webkit-appearance: none;
+  box-shadow: none;
+  color-scheme: dark;
+}
+.packet .price-directory textarea { min-height: 92px; padding: 11px 13px; resize: vertical; }
+.packet .price-directory :is(input, select, textarea)::placeholder,
+.packet .price-toolbar :is(input, select)::placeholder,
+.packet .price-import-meta input::placeholder,
+.packet .price-preview :is(input, select)::placeholder { color: var(--price-muted); opacity: 1; }
+.packet .price-directory select,
+.packet .price-toolbar select,
+.packet .price-preview select {
+  padding-right: 37px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--price-accent) 50%), linear-gradient(135deg, var(--price-accent) 50%, transparent 50%);
+  background-position: calc(100% - 17px) 18px, calc(100% - 12px) 18px;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+.packet .price-directory :is(input, select, textarea):focus-visible,
+.packet .price-toolbar :is(input, select):focus-visible,
+.packet .price-import-meta input:focus-visible,
+.packet .price-preview :is(input, select):focus-visible {
+  outline: none !important;
+  border-color: var(--price-accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--price-accent) 16%, transparent) !important;
+}
+.packet .price-summary-grid article,
+.packet :is(.price-comparison, .price-history, .price-directory, .price-upload, .price-import-guide),
+.packet :is(.price-directory-list, .price-import-list) article {
+  transition: border-color 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease);
+}
+@media (hover: hover) {
+  .packet .price-summary-grid article:hover,
+  .packet :is(.price-comparison, .price-history, .price-directory, .price-upload, .price-import-guide):hover,
+  .packet :is(.price-directory-list, .price-import-list) article:hover {
+    border-color: var(--price-accent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--price-accent) 18%, transparent), 0 10px 24px color-mix(in srgb, var(--price-accent) 7%, transparent);
+  }
+}
+html[data-audit-theme="light"] .packet .price-directory :is(input, select, textarea),
+html[data-audit-theme="light"] .packet .price-toolbar :is(input, select),
+html[data-audit-theme="light"] .packet .price-import-meta input,
+html[data-audit-theme="light"] .packet .price-preview :is(input, select) { color-scheme: light; }
+html[data-audit-theme="dark"] .packet .price-directory select option,
+html[data-audit-theme="dark"] .packet .price-toolbar select option,
+html[data-audit-theme="dark"] .packet .price-preview select option { background: #15131c; color: #f5eaf0; }
+
+/* Исторический `.packet select` использовал !important: здесь он адресно нейтрализован для единого прайс‑контроля. */
+.packet .price-directory select,
+.packet .price-toolbar select,
+.packet .price-preview select {
+  min-height: 42px !important;
+  padding: 0 37px 0 13px !important;
+  border-radius: 11px !important;
+  background-color: var(--price-surface) !important;
+  color: var(--price-ink) !important;
+  box-shadow: none !important;
+}
+.packet .price-directory :is(input, select, textarea):focus,
+.packet .price-toolbar :is(input, select):focus,
+.packet .price-import-meta input:focus,
+.packet .price-preview :is(input, select):focus {
+  outline: none !important;
+  border-color: var(--price-accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--price-accent) 16%, transparent) !important;
+}
+.packet :is(.price-comparison, .price-history, .price-directory, .price-upload, .price-import-guide, .price-directory-list, .price-import-list) .packet-link {
+  min-height: 36px;
+  border: 1px solid var(--price-border);
+  border-radius: 10px;
+  background: var(--price-surface);
+  color: var(--price-ink);
+  box-shadow: none;
+  transition: border-color 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease), transform 160ms var(--audit-hover-ease);
+}
+@media (hover: hover) {
+  .packet :is(.price-comparison, .price-history, .price-directory, .price-upload, .price-import-guide, .price-directory-list, .price-import-list) .packet-link:hover {
+    border-color: var(--price-accent);
+    background: color-mix(in srgb, var(--price-accent) 9%, var(--price-surface));
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--price-accent) 12%, transparent);
+  }
+}
+.packet :is(.price-comparison, .price-history, .price-directory, .price-upload, .price-import-guide, .price-directory-list, .price-import-list) .packet-link:focus-visible {
+  outline: none !important;
+  border-color: var(--price-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--price-accent) 16%, transparent) !important;
+}
+.packet .price-select-trigger {
+  width: 100% !important;
+  min-height: 42px;
+  height: 42px;
+  padding: 0 13px !important;
+  border: 1px solid var(--price-border) !important;
+  border-radius: 11px !important;
+  background: var(--price-surface) !important;
+  color: var(--price-ink) !important;
+  box-shadow: none !important;
+  font: 700 12px Manrope, Arial, sans-serif;
+}
+.packet .price-select-trigger[data-placeholder] { color: var(--price-muted) !important; }
+.packet .price-select-trigger svg { color: var(--price-accent) !important; opacity: 1; }
+.packet .price-select-trigger:hover,
+.packet .price-select-trigger[data-state="open"],
+.packet .price-select-trigger:focus-visible {
+  outline: none !important;
+  border-color: var(--price-accent) !important;
+  background: color-mix(in srgb, var(--price-accent) 6%, var(--price-surface)) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--price-accent) 16%, transparent) !important;
+}
+.packet .price-select-trigger.price-select-compact {
+  min-height: 33px;
+  height: 33px;
+  padding: 0 10px !important;
+  border-radius: 9px !important;
+  font-size: 11px;
+}
+.price-select-content {
+  z-index: 90 !important;
+  min-width: var(--radix-select-trigger-width) !important;
+  border: 1px solid var(--price-menu-border) !important;
+  border-radius: 12px !important;
+  background: var(--price-menu-surface) !important;
+  color: var(--price-menu-ink) !important;
+  box-shadow: 0 16px 38px color-mix(in srgb, var(--price-menu-shadow) 28%, transparent) !important;
+}
+.price-select-content [data-slot="select-item"] {
+  min-height: 35px;
+  padding: 0 30px 0 10px !important;
+  border-radius: 8px;
+  color: var(--price-menu-ink) !important;
+  font: 700 12px Manrope, Arial, sans-serif;
+}
+.price-select-content [data-slot="select-item"][data-highlighted],
+.price-select-content [data-slot="select-item"][data-state="checked"] {
+  background: color-mix(in srgb, var(--price-menu-accent) 16%, var(--price-menu-surface)) !important;
+  color: var(--price-menu-accent) !important;
+}
+.price-select-content [data-slot="select-item"] svg { color: var(--price-menu-accent) !important; }
+html[data-audit-theme="light"] {
+  --price-menu-surface: #ffffff;
+  --price-menu-border: #c7d9ee;
+  --price-menu-ink: #142b43;
+  --price-menu-accent: #0a72d5;
+  --price-menu-shadow: #0a72d5;
+}
+html[data-audit-theme="dark"] {
+  --price-menu-surface: #171923;
+  --price-menu-border: #593448;
+  --price-menu-ink: #f6edf2;
+  --price-menu-accent: #ff856d;
+  --price-menu-shadow: #06050a;
+}
 
 @media (max-width: 900px) {
   .packet .price-import-workbench { grid-template-columns: minmax(0, 1fr); }
