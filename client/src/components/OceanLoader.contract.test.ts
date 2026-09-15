@@ -24,7 +24,8 @@ describe("векторная загрузка", () => {
     expect(component).not.toContain("facts-school-orbit");
     expect(component).not.toContain("animateTransform");
     expect(styles).toContain(".facts-loader .facts-school { transform: none !important; animation: none !important; }");
-    expect(styles).toContain(".facts-loader .facts-fish-body { animation: facts-fish-glide");
+    expect(styles).toContain(".facts-loader .facts-fish-body { transform-box: fill-box; transform-origin: 50% 50%; animation: facts-fish-pulse");
+    expect(styles).toContain("@keyframes facts-fish-pulse");
     expect(styles).toContain(".facts-loader .facts-loader-art { width: 150px !important; height: 150px !important; }");
     expect(styles).toContain(".ocean-loader .facts-loader-art { width: min(268px, 68vw) !important;");
   });

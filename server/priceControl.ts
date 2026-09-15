@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import mammoth from "mammoth";
 import { PDFParse } from "pdf-parse";
+import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import * as XLSX from "xlsx";
 import { priceCategories, priceImports, priceImportRows, priceOfferPrices, priceProducts, priceSupplierAliases, priceSuppliers } from "../drizzle/schema";
 import { getDb } from "./db";
@@ -10,7 +11,7 @@ import { storageGet, storagePut } from "./storage";
 export type PriceBasis = "kg" | "l" | "piece" | "package" | "unknown";
 export type NormalizedUnit = "kg" | "l" | "piece" | "unknown";
 export type PriceMode = "standard" | "cash" | "cashless_no_vat" | "cashless_vat" | "spb" | "moscow" | "special" | "threshold";
-export type ParsedPriceOption = { priceAmount: number; priceBasis: PriceBasis; normalizedPrice: number | null; normalizedUnit: NormalizedUnit; priceMode: PriceMode; minimumQuantityKg: number | null; includesVat: boolean | null; sourcePriceText: string };
+export type ParsedPriceOption = { priceAmount: number | null; priceBasis: PriceBasis; normalizedPrice: number | null; normalizedUnit: NormalizedUnit; priceMode: PriceMode; minimumQuantityKg: number | null; includesVat: boolean | null; sourcePriceText: string };
 export type ParsedPriceRow = { sourceSheet: string; sourceRowNumber: number; sourceSku: string | null; rawName: string; normalizedName: string; canonicalHint: string; normalizedSignature: string; category: string | null; packaging: string | null; packagingSignature: string; availability: string | null; variant: string | null; sizeText: string | null; priceOptions: ParsedPriceOption[]; rawPayload: Record<string, string> };
 export type PriceImportPreview = { fileName: string; sourceType: "xls" | "xlsx" | "pdf" | "docx"; detectedSupplierName: string | null; detectedSourceDate: string | null; rows: ParsedPriceRow[]; warningCount: number; warnings: string[] };
 export type PriceChange = { previousPrice: number; previousDate: string | null; delta: number; percent: number; direction: "up" | "down" | "same" };
@@ -28,7 +29,7 @@ type PriceChangeSource = { priceId: number; importId: number; productId: number 
 export const SIGNIFICANT_PRICE_INCREASE_PERCENT = 10;
 
 const MAX_IMPORT_ROWS = 3000;
-const supplierHints: Array<[RegExp, string]> = [[/moreodor|мореодор/i, "Мореодор"], [/lucky\s*fish/i, "Lucky Fish"], [/купеческ/i, "Купеческий"], [/атлантид/i, "Атлантида"], [/вкус\s*север/i, "Вкус Севера"], [/mir\s*delicatesov|мир\s*деликатес/i, "Mir Delicatesov"], [/redgm/i, "RedGM"], [/арктическ.*вкус/i, "Арктический Вкус"], [/даллос/i, "Даллос"]];
+const supplierHints: Array<[RegExp, string]> = [[/moreodor|мореодор/i, "Мореодор"], [/lucky\s*fish/i, "Lucky Fish"], [/купеческ/i, "Купеческий"], [/атлантид/i, "Атлантида"], [/вкус\s*север/i, "Вкус Севера"], [/mir\s*delicatesov|мир\s*деликатес/i, "Mir Delicatesov"], [/redgm|красн(?:ый|ого)\s+жемчуг/i, "Красный Жемчуг"], [/арктическ.*вкус/i, "Арктический Вкус"], [/даллос/i, "Даллос"]];
 const synonymTokens: Record<string, string> = { "семга": "лосось", "сёмга": "лосось", "лососевая": "лосось", "лососевые": "лосось" };
 
 function text(value: unknown) { return String(value ?? "").replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim(); }
@@ -65,7 +66,7 @@ export function calculatePriceChanges<T extends PriceChangeSource>(offers: T[]) 
 function numberFromText(value: unknown) {
   const raw = text(value);
   if (!raw || /дог|запрос|уточн|нет\s*цен|n\/a/i.test(raw)) return null;
-  const match = raw.match(/-?\d{1,3}(?:[\s.,]\d{3})*(?:[.,]\d{1,2})?|-?\d+(?:[.,]\d{1,2})?/);
+  const match = raw.match(/-?(?:\d{1,3}(?:[\s.,]\d{3})+|\d+)(?:[.,]\d{1,2})?/);
   if (!match) return null;
   const parsed = Number(match[0].replace(/[\s]/g, "").replace(",", "."));
   return Number.isFinite(parsed) && parsed > 0 && parsed < 10_000_000 ? parsed : null;
@@ -419,6 +420,190 @@ function parseRedgmPdfText(lines: string[]) {
   });
   return rows;
 }
+
+type PdfTextFragment = { x: number; y: number; value: string };
+type PdfPositionedLine = { y: number; items: PdfTextFragment[] };
+type PdfColumnSection = {
+  headerY: number;
+  bottomY: number;
+  nameX: number;
+  specificationX: number | null;
+  manufacturerX: number | null;
+  packagingX: number | null;
+  priceX: number;
+  priceEnd: number;
+  includesVat: boolean;
+};
+
+function pdfPositionedLines(items: PdfTextFragment[]) {
+  const lines: PdfPositionedLine[] = [];
+  items
+    .filter(item => item.value.trim())
+    .sort((left, right) => right.y - left.y || left.x - right.x)
+    .forEach(item => {
+      const existing = lines.find(line => Math.abs(line.y - item.y) <= 3);
+      if (existing) existing.items.push(item);
+      else lines.push({ y: item.y, items: [item] });
+    });
+  return lines.map(line => ({ ...line, items: line.items.sort((left, right) => left.x - right.x) }));
+}
+
+function pdfLineText(line: PdfPositionedLine) { return text(line.items.map(item => item.value).join(" ")); }
+function pdfColumnText(items: PdfTextFragment[], start: number, end: number) {
+  return text(items
+    .filter(item => item.x >= start && item.x < end)
+    .sort((left, right) => right.y - left.y || left.x - right.x)
+    .map(item => item.value)
+    .join(" "));
+}
+function isPdfPriceQuote(value: string) {
+  return /(?:уточняйте|по\s+запросу|(?:\d{1,3}(?:[\s.,]\d{3})*|\d{1,7})(?:[.,]\d{1,2})?\s*(?:₽|руб|р\.|\(в\s*(?:спб|мск)\)|за\s*(?:1\s*)?(?:кг|л|шт)|\/(?:кг|л|шт)|с\s*ндс))/i.test(value);
+}
+function stripPdfSpecification(value: string) {
+  const normalized = normalizePdfName(value)
+    .replace(/\s*\((?:пл\.?\s*б|ст\.?\s*б|вакуу?м|ключ|куб|короб)[^)]*\)/gi, " ")
+    .replace(/\s*(?:qr\s*честный\s*знак|честный\s*знак|qr)\b.*$/i, " ")
+    .replace(/\b!new!\b/gi, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  const words = normalized.split(" ");
+  if (words.length >= 4 && fold(words[0]) === fold(words[2]) && fold(words[1]) === fold(words[3])) return words.slice(2).join(" ");
+  return normalized;
+}
+function pdfPriceOptionsFromQuote(quote: string, priceContext: string, rawName: string, packaging: string | null, includesVat: boolean) {
+  const cleanedQuote = text(quote)
+    .replace(/[\uE000-\uF8FF]/g, " ")
+    .replace(/(?<!\d)([\d\s]+)(?=\s*(?:₽|руб|р\.))/g, (_match, amount) => amount.replace(/\s+/g, ""))
+    .replace(/\s{2,}/g, " ");
+  const context = `${priceContext} ${includesVat ? "с НДС" : ""}`;
+  if (/(?:спец(?:предлож|цен)|акци|от\s+(?:объем|\d+\s*(?:кг|шт))|при\s+заказе)/i.test(context)) return [];
+  const matches = Array.from(cleanedQuote.matchAll(/(?:\d{1,3}(?:[\s.,]\d{3})+|\d{1,7})(?:[.,]\d{1,2})?(?:\s*\(в\s*(?:спб|мск)\))?(?:\s*с\s*ндс)?(?:\s*(?:(?:за\s*(?:1\s*)?|\/)\s*)?(?:кг|л|шт))?/gi));
+  const options = matches
+    .map(match => makeOption(match[0], `${match[0]} ${includesVat ? "с НДС" : ""}`, rawName, packaging || rawName))
+    .filter((option): option is ParsedPriceOption => option !== null)
+    .map(option => ({ ...option, includesVat: includesVat || option.includesVat }));
+  if (options.length) return options;
+  if (!/(?:уточняйте|по\s+запросу)/i.test(quote)) return [];
+  return [{
+    priceAmount: null,
+    priceBasis: packaging ? "package" as const : "unknown" as const,
+    normalizedPrice: null,
+    normalizedUnit: "unknown" as const,
+    priceMode: priceModeFromHeader(context),
+    minimumQuantityKg: null,
+    includesVat: includesVat || null,
+    sourcePriceText: cleanedQuote,
+  }];
+}
+
+/**
+ * Parses ordinary column-based PDF price lists by coordinates. The algorithm is
+ * supplier-agnostic: it finds repeated product/price headers, then combines text
+ * from one vertical row while excluding the specification and manufacturer columns.
+ */
+export function parsePdfPositionedPages(pages: PdfTextFragment[][]) {
+  const rows: ParsedPriceRow[] = [];
+  let sourceRowNumber = 0;
+  pages.forEach(pageItems => {
+    const lines = pdfPositionedLines(pageItems);
+    const allItems = lines.flatMap(line => line.items);
+    const headerCandidates: Array<Omit<PdfColumnSection, "bottomY">> = [];
+    lines.forEach(line => {
+      const nameItem = line.items.find(item => /наименовани|товар|номенклатур|позици|продукт/i.test(item.value));
+      if (!nameItem) return;
+      const nearby = lines
+        .filter(other => Math.abs(other.y - line.y) <= 18)
+        .flatMap(other => other.items);
+      const priceItem = nearby.find(item => /цен|стоим|прайс/i.test(item.value));
+      if (!priceItem) return;
+      const specificationItem = nearby.find(item => /специфик/i.test(item.value));
+      const manufacturerItem = nearby.find(item => /производител/i.test(item.value));
+      const packagingItem = nearby.find(item => /упаковк|нетто|фасовк|вес/i.test(item.value));
+      const priceEnd = nearby
+        .filter(item => item.x > priceItem.x && /изменени|остат|медиа|налич|статус/i.test(item.value))
+        .map(item => item.x)
+        .sort((left, right) => left - right)[0] ?? Infinity;
+      headerCandidates.push({
+        headerY: Math.min(line.y, ...nearby.filter(item => /цен|стоим|прайс/i.test(item.value)).map(item => item.y)),
+        nameX: nameItem.x,
+        specificationX: specificationItem?.x ?? null,
+        manufacturerX: manufacturerItem?.x ?? null,
+        packagingX: packagingItem?.x ?? null,
+        priceX: priceItem.x,
+        priceEnd,
+        includesVat: /с\s*ндс/i.test(text(nearby.map(item => item.value).join(" "))),
+      });
+    });
+    const sections = headerCandidates
+      .sort((left, right) => right.headerY - left.headerY)
+      .filter((header, index, list) => index === 0 || Math.abs(header.headerY - list[index - 1].headerY) > 24)
+      .map((header, index, list) => ({ ...header, bottomY: list[index + 1]?.headerY ?? -Infinity }));
+
+    sections.forEach(section => {
+      const priceStart = section.priceX - 62;
+      const quoteLines = lines
+        .filter(line => line.y < section.headerY - 5 && line.y > section.bottomY + 5)
+        .map(line => ({ line, quote: pdfColumnText(line.items, priceStart, section.priceEnd) }))
+        .filter(({ quote }) => isPdfPriceQuote(quote))
+        .sort((left, right) => right.line.y - left.line.y);
+      quoteLines.forEach(({ line, quote }, quoteIndex) => {
+        const above = quoteLines[quoteIndex - 1]?.line.y ?? section.headerY;
+        const below = quoteLines[quoteIndex + 1]?.line.y ?? section.bottomY;
+        const bandTop = (above + line.y) / 2;
+        const bandBottom = (line.y + below) / 2;
+        const rowItems = allItems.filter(item => item.y <= bandTop && item.y > bandBottom);
+        const manufacturerStart = section.manufacturerX === null ? Infinity : section.manufacturerX - 12;
+        const specificationStart = section.specificationX === null ? manufacturerStart : section.specificationX - 52;
+        const packagingStart = section.packagingX === null ? priceStart : section.packagingX - 14;
+        const nameEnd = Math.min(specificationStart - 1, manufacturerStart, packagingStart, priceStart);
+        const rawName = stripPdfSpecification(pdfColumnText(rowItems, section.nameX - 22, nameEnd));
+        const specification = section.specificationX === null ? "" : pdfColumnText(rowItems, specificationStart, manufacturerStart);
+        const manufacturer = section.manufacturerX === null ? "" : pdfColumnText(rowItems, manufacturerStart, packagingStart);
+        const placeWeight = section.packagingX === null ? "" : pdfColumnText(rowItems, packagingStart, section.priceX - 16);
+        const packaging = pdfPackagingFromText(`${rawName} ${placeWeight}`);
+        const options = pdfPriceOptionsFromQuote(quote, quote, rawName, packaging, section.includesVat || /с\s*ндс/i.test(quote));
+        if (!rawName || !options.length || isPdfSectionLine(rawName) || isPdfDeliveryOrContacts(rawName)) return;
+        sourceRowNumber += 1;
+        rows.push({
+          sourceSheet: "PDF",
+          sourceRowNumber,
+          sourceSku: null,
+          rawName,
+          normalizedName: normalizeProductName(rawName),
+          canonicalHint: rawName,
+          normalizedSignature: productSignature(rawName),
+          category: null,
+          packaging,
+          packagingSignature: packagingSignature(packaging || rawName),
+          availability: null,
+          variant: extractVariant(rawName),
+          sizeText: extractSizeText(rawName),
+          priceOptions: options,
+          rawPayload: { specification, manufacturer, placeWeight, priceText: quote },
+        });
+      });
+    });
+  });
+  return rows;
+}
+
+async function parsePdfByCoordinates(buffer: Buffer) {
+  const document = await getDocument({ data: new Uint8Array(buffer) }).promise;
+  try {
+    const pages: PdfTextFragment[][] = [];
+    for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
+      const page = await document.getPage(pageNumber);
+      const content = await page.getTextContent();
+      pages.push(content.items.flatMap(item => {
+        if (!("str" in item) || !text(item.str)) return [];
+        return [{ x: item.transform[4], y: item.transform[5], value: item.str }];
+      }));
+    }
+    return parsePdfPositionedPages(pages);
+  } finally {
+    await document.destroy();
+  }
+}
 function sourceTypeFromName(fileName: string) {
   const extension = fileName.toLowerCase().match(/\.([a-z0-9]+)$/)?.[1];
   if (extension === "xls" || extension === "xlsx" || extension === "pdf" || extension === "docx") return extension;
@@ -445,11 +630,18 @@ export async function previewPriceImport(buffer: Buffer, fileName: string): Prom
   let rows: ParsedPriceRow[] = [];
   if (sourceType === "xls" || sourceType === "xlsx") { documentText = extractExcelText(buffer); rows = parseExcel(buffer); }
   if (sourceType === "docx") { documentText = (await mammoth.extractRawText({ buffer })).value; rows = parseExtractedText(documentText); }
-  if (sourceType === "pdf") { const parser = new PDFParse({ data: buffer }); try { documentText = (await parser.getText()).text; } finally { await parser.destroy(); } rows = parsePdfExtractedText(documentText); }
+  if (sourceType === "pdf") {
+    const parser = new PDFParse({ data: buffer });
+    try { documentText = (await parser.getText()).text; } finally { await parser.destroy(); }
+    const positionedRows = await parsePdfByCoordinates(buffer);
+    rows = positionedRows.length ? positionedRows : parsePdfExtractedText(documentText);
+  }
   const trimmedRows = rows.slice(0, MAX_IMPORT_ROWS);
   const warnings: string[] = [];
   if (!trimmedRows.length) warnings.push("Товарные строки с распознанной ценой не найдены. Проверьте документ и разметку прайс‑листа.");
   if (rows.length > MAX_IMPORT_ROWS) warnings.push(`Обработаны первые ${MAX_IMPORT_ROWS} строк из ${rows.length}.`);
+  const manualPriceRows = trimmedRows.filter(row => row.priceOptions.some(option => option.priceAmount === null));
+  if (manualPriceRows.length) warnings.push(`У ${manualPriceRows.length} поз. цена не указана поставщиком: заполните ее вручную перед сохранением.`);
   const source = `${fileName}\n${documentText.slice(0, 6000)}`;
   return { fileName, sourceType, detectedSupplierName: findSupplierName(source), detectedSourceDate: sourceDateFromText(source), rows: trimmedRows, warningCount: warnings.length + trimmedRows.filter(row => row.priceOptions.some(option => option.normalizedPrice === null)).length, warnings };
 }
@@ -554,7 +746,8 @@ export async function commitPriceImport(input: { buffer: Buffer; fileName: strin
     if (mapping.mappingStatus === "linked") linked += 1;
     if (mapping.mappingStatus === "suggested") suggested += 1;
     const [rowInserted] = await db.insert(priceImportRows).values({ importId: inserted.id, sourceSheet: row.sourceSheet, sourceRowNumber: row.sourceRowNumber, sourceSku: row.sourceSku, rawName: row.rawName, normalizedName: row.normalizedName, rawCategory: row.category, rawPackaging: row.packaging, rawAvailability: row.availability, rawPayload: row.rawPayload, productId: mapping.productId, mappingStatus: mapping.mappingStatus, matchedBy: mapping.matchedBy, matchConfidence: mapping.matchConfidence === null ? null : mapping.matchConfidence.toFixed(2) }).$returningId();
-    await db.insert(priceOfferPrices).values(row.priceOptions.map(option => ({ importRowId: rowInserted.id, priceMode: option.priceMode, priceAmount: option.priceAmount.toFixed(2), priceBasis: option.priceBasis, normalizedPrice: option.normalizedPrice === null ? null : option.normalizedPrice.toFixed(2), normalizedUnit: option.normalizedUnit, minimumQuantityKg: option.minimumQuantityKg === null ? null : option.minimumQuantityKg.toFixed(2), includesVat: option.includesVat, sourcePriceText: option.sourcePriceText })));
+    const storedOptions = row.priceOptions.filter((option): option is ParsedPriceOption & { priceAmount: number } => option.priceAmount !== null);
+    if (storedOptions.length) await db.insert(priceOfferPrices).values(storedOptions.map(option => ({ importRowId: rowInserted.id, priceMode: option.priceMode, priceAmount: option.priceAmount.toFixed(2), priceBasis: option.priceBasis, normalizedPrice: option.normalizedPrice === null ? null : option.normalizedPrice.toFixed(2), normalizedUnit: option.normalizedUnit, minimumQuantityKg: option.minimumQuantityKg === null ? null : option.minimumQuantityKg.toFixed(2), includesVat: option.includesVat, sourcePriceText: option.sourcePriceText })));
   }
   return { importId: inserted.id, supplier: { id: supplier.id, name: supplier.name }, supplierWasCreated: ensuredSupplier.created, rowCount: preparedRows.rows.length, linked, suggested, unmapped: preparedRows.rows.length - linked - suggested, createdProducts, createdProductDetails, createdAliasDetails, categorizedRows, explicitlyLinked, warningCount: preview.warningCount, excludedRows: preparedRows.excludedRowIndexes.length, editedPriceOptions: preparedRows.editedPriceOptions, editedNames: preparedRows.editedNames };
 }

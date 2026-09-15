@@ -190,7 +190,9 @@ describe("страница «Прайс‑контроль»", () => {
   });
 
   it("отдает названию позиции приоритетную ширину и не обрезает нижние поля карточки на телефоне", () => {
-    expect(styles).toContain(".packet .price-preview-name-edit input { min-width: 0; padding-inline: 7px; font-size: 12px;");
+    expect(page).toContain("<textarea");
+    expect(styles).toContain(".packet .price-preview-name-edit :is(input, textarea) { min-width: 0; padding-inline: 7px; font-size: 12px;");
+    expect(styles).toContain(".packet .price-preview-name-edit textarea { resize: vertical;");
     expect(styles).toContain("@media (max-width: 420px)");
     expect(styles).toContain("@media (max-width: 560px) { .packet .price-preview-table { overflow: visible; } }");
   });

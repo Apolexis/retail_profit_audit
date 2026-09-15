@@ -36,6 +36,7 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
   const [expandedSections,setExpandedSections]=useState<Record<string,boolean>>({});
   const [standalone,setStandalone]=useState(isStandalonePwa);
   const [fixedEpoch,setFixedEpoch]=useState(0);
+  const [isRefreshing,setIsRefreshing]=useState(false);
   const gestureStart=useRef<number|null>(null);
   useEffect(()=>{const update=()=>setShowTop(window.scrollY>280);update();window.addEventListener("scroll",update,{passive:true});return()=>window.removeEventListener("scroll",update)},[]);
   useEffect(()=>{const media=window.matchMedia("(display-mode: standalone)");const update=()=>setStandalone(isStandalonePwa());update();media.addEventListener("change",update);window.addEventListener("pageshow",update);document.addEventListener("visibilitychange",update);return()=>{media.removeEventListener("change",update);window.removeEventListener("pageshow",update);document.removeEventListener("visibilitychange",update)}},[]);
@@ -44,7 +45,11 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
   const hasPriceAccess=isAdmin||Boolean(me.data?.priceAccessLevel&&me.data.priceAccessLevel!=="none");
   const visibleNav=navSections.map(section=>({...section,items:section.items.filter(([, , ,access])=>access===true?isAdmin:access==="price"?hasPriceAccess:true)})).filter(section=>section.items.length>0);
   const closeMenu=()=>{if(document.activeElement instanceof HTMLElement)document.activeElement.blur();setMenuOpen(false)};
-  const refreshApp=()=>{window.location.reload();};
+  const refreshApp=()=>{
+    if(isRefreshing)return;
+    setIsRefreshing(true);
+    window.requestAnimationFrame(()=>window.setTimeout(()=>window.location.reload(),140));
+  };
   const toggleDemo=()=>{const nextMode=!demoMode;toggleDemoMode();toast(nextMode?"Демо‑режим включен":"Демо‑режим выключен",{description:nextMode?"В интерфейсе показаны демонстрационные данные текущего сеанса.":"В интерфейсе снова показаны рабочие данные."});};
   const matches=storeSearch.trim()?((availableStores.data??[]).filter(store=>store.name.toLowerCase().includes(storeSearch.trim().toLowerCase())).slice(0,6)):[];
   const chooseStore=(store:string)=>{setSelectedStore(store);setStoreSearch("");closeMenu();setLocation("/stores")};
@@ -83,7 +88,7 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
     {standalone&&!menuOpen&&<nav key={`mobile-quick-nav-${fixedEpoch}`} className="mobile-quick-nav" aria-label="Быстрые действия">
       <button type="button" className="mobile-quick-action mobile-quick-back" onClick={()=>{window.history.length>1?window.history.back():setLocation("/")}} aria-label="Назад"><ArrowLeft size={16}/><span>Назад</span></button>
       <button type="button" className="mobile-quick-action mobile-quick-forward" onClick={()=>window.history.forward()} aria-label="Вперёд"><ArrowRight size={16}/><span>Вперёд</span></button>
-      <button type="button" className="mobile-quick-action mobile-quick-refresh" onClick={refreshApp} aria-label="Обновить данные"><RefreshCw size={16}/><span>Обновить</span></button>
+      <button type="button" className={isRefreshing?"mobile-quick-action mobile-quick-refresh is-refreshing":"mobile-quick-action mobile-quick-refresh"} onClick={refreshApp} disabled={isRefreshing} aria-label="Обновить данные"> <RefreshCw size={16}/><span>{isRefreshing?"Обновляем":"Обновить"}</span></button>
     </nav>}
     {showTop&&!menuOpen&&<button key={`scroll-top-${fixedEpoch}`} className="scroll-top" aria-label="Вернуться к началу страницы" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}><ArrowUp size={18}/></button>}
   </div>;

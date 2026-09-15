@@ -737,7 +737,7 @@ export default function PriceControl({
       setPreviewSupplierChoice(knownSupplier ? String(knownSupplier.id) : "__manual");
       setSourceDate(result.detectedSourceDate ?? "");
       toast.success("Прайс‑лист разобран", {
-        description: `Распознано строк с ценой: ${result.rows.length}.`,
+        description: `Распознано позиций: ${result.rows.length}.`,
       });
     } catch (error) {
       if (requestToken !== previewRequestToken.current) return;
@@ -765,6 +765,15 @@ export default function PriceControl({
   };
   const commitFile = async () => {
     if (!file || !preview || !supplierName.trim()) return;
+    const missingManualPrice = preview.rows.some((row, rowIndex) =>
+      !excludedPreviewRowIndexes.includes(rowIndex) && row.priceOptions.some((option, optionIndex) =>
+        option.priceAmount === null && !previewPriceEdits[previewPriceKey(rowIndex, optionIndex)]?.priceAmount.trim()
+      )
+    );
+    if (missingManualPrice) {
+      toast.error("Заполните вручную цены, отмеченные «цена не указана поставщиком».");
+      return;
+    }
     const priceEdits = Object.entries(previewPriceEdits).map(([key, draft]) => {
       const [rowIndexText, optionIndexText] = key.split(":");
       const priceAmount = Number(draft.priceAmount.replace(/\s/g, "").replace(",", "."));
@@ -985,7 +994,7 @@ export default function PriceControl({
     setPreviewPriceEdits(current => ({
       ...current,
       [key]: {
-        priceAmount: patch.priceAmount ?? current[key]?.priceAmount ?? String(fallback.priceAmount),
+        priceAmount: patch.priceAmount ?? current[key]?.priceAmount ?? (fallback.priceAmount === null ? "" : String(fallback.priceAmount)),
         priceBasis: patch.priceBasis ?? current[key]?.priceBasis ?? fallback.priceBasis,
         priceMode: patch.priceMode ?? current[key]?.priceMode ?? fallback.priceMode,
       },
@@ -1858,7 +1867,8 @@ export default function PriceControl({
                           {canUpload ? (
                             <label className="price-preview-name-edit">
                               <span>Название в этом прайсе</span>
-                              <input
+                              <textarea
+                                rows={2}
                                 value={previewNameEdits[index] ?? row.rawName}
                                 onChange={event => updatePreviewNameDraft(index, event.target.value)}
                                 maxLength={255}
@@ -1876,12 +1886,12 @@ export default function PriceControl({
                             const draft = previewPriceEdits[previewPriceKey(index, optionIndex)];
                             return (
                               <div key={previewPriceKey(index, optionIndex)}>
-                                <small>{modeLabel[option.priceMode] ?? "цена"}</small>
+                                <small>{option.priceAmount === null ? "цена не указана поставщиком" : modeLabel[option.priceMode] ?? "цена"}</small>
                                 {canUpload ? (
                                   <div className="price-preview-price-edit">
                                     <input
                                       inputMode="decimal"
-                                      value={draft?.priceAmount ?? String(option.priceAmount)}
+                                      value={draft?.priceAmount ?? (option.priceAmount === null ? "" : String(option.priceAmount))}
                                       onChange={event => updatePreviewPriceDraft(index, optionIndex, option, { priceAmount: event.target.value })}
                                       aria-label={`Цена «${row.rawName}», ${modeLabel[option.priceMode] ?? "основная"}`}
                                     />
@@ -1901,7 +1911,9 @@ export default function PriceControl({
                                     />
                                   </div>
                                 ) : (
-                                  <b>{formatMoney(option.priceAmount)} ₽/{basisLabel[option.priceBasis].replace("за ", "")}</b>
+                                  option.priceAmount === null
+                                    ? <b>Цена уточняется</b>
+                                    : <b>{formatMoney(option.priceAmount)} ₽/{basisLabel[option.priceBasis].replace("за ", "")}</b>
                                 )}
                               </div>
                             );

@@ -66,7 +66,8 @@ describe("базовые управляющие элементы", () => {
     expect(shell).toContain('key={`mobile-quick-nav-${fixedEpoch}`} className="mobile-quick-nav"');
     expect(shell).toContain('className="mobile-quick-action mobile-quick-back"');
     expect(shell).toContain('className="mobile-quick-action mobile-quick-forward"');
-    expect(shell).toContain('className="mobile-quick-action mobile-quick-refresh"');
+    expect(shell).toContain('mobile-quick-action mobile-quick-refresh is-refreshing');
+    expect(shell).toContain('isRefreshing?"Обновляем":"Обновить"');
     expect(css).toContain("grid-template-columns: repeat(3, minmax(0, 1fr))");
     expect(css).toContain(".packet.pwa-standalone .packet-main { padding-bottom: 112px; }");
     expect(css).toContain(".packet.pwa-standalone .scroll-top { bottom: calc(env(safe-area-inset-bottom, 0px) + 80px) !important; }");
@@ -75,11 +76,14 @@ describe("базовые управляющие элементы", () => {
     expect(css).toContain(".packet .mobile-quick-nav .mobile-quick-action:focus-visible");
     expect(css).toContain("min-height: 39px;");
     expect(css).toContain(".packet .mobile-quick-nav .mobile-quick-refresh { border-color: color-mix(in srgb, var(--blue) 48%, var(--line)); background: transparent; }");
+    expect(css).toContain(".packet .mobile-quick-refresh.is-refreshing");
     expect(css).toContain(".mobile-quick-refresh { border-color: #c9dceb !important; background: #ffffff !important;");
     expect(shell).not.toContain("clearActionFocus");
     expect(shell).not.toContain("data-pointer-action");
     expect(shell).toContain('onClick={()=>window.history.forward()}');
-    expect(shell).toContain('const refreshApp=()=>{window.location.reload();};');
+    expect(shell).toContain('const refreshApp=()=>{');
+    expect(shell).toContain('setIsRefreshing(true);');
+    expect(shell).toContain('window.requestAnimationFrame(()=>window.setTimeout(()=>window.location.reload(),140));');
     expect(shell).toContain('onClick={refreshApp}');
     expect(css).not.toContain('.packet .mobile-quick-nav button[data-pointer-action="true"]');
     expect(shell).toContain('href={profileItem[0]} onClick={event=>event.currentTarget.blur()}');

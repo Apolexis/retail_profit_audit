@@ -3856,7 +3856,7 @@ html[data-audit-theme="dark"] .packet .visibility-toggle.active { border-color: 
 .packet .price-preview-mobile-pager { display: none; }
 .packet .price-preview-name-edit { display: grid; gap: 4px; min-width: 0; }
 .packet .price-preview-name-edit > span { color: var(--price-muted); font: 750 9px "IBM Plex Mono", monospace; letter-spacing: .05em; text-transform: uppercase; }
-.packet .price-preview-name-edit input { min-width: 0; width: 100%; font-weight: 750; }
+.packet .price-preview-name-edit :is(input, textarea) { min-width: 0; width: 100%; font-weight: 750; }
 .packet .price-preview-product-link { min-width: 180px; width: 100%; }
 .packet .price-preview-table > div.price-preview-row { grid-template-columns: minmax(180px, 1.05fr) minmax(240px, 1.28fr) minmax(195px, .92fr) 36px; }
 .packet .price-preview-table > div.price-preview-new-row { grid-template-columns: 28px minmax(165px, .88fr) minmax(225px, 1.13fr) minmax(190px, .84fr) minmax(172px, .72fr) 36px; }
@@ -3871,7 +3871,7 @@ html[data-audit-theme="light"] .packet .price-preview-categorization { border-co
 html[data-audit-theme="light"] .packet .price-preview-table { overflow: hidden; border: 1px solid #c9d9e8; border-radius: 13px; background: #ffffff; }
 html[data-audit-theme="light"] .packet .price-preview-table > div { background: #ffffff; }
 html[data-audit-theme="light"] .packet .price-preview-table > div.is-selected { background: #e9f4ff; }
-html[data-audit-theme="light"] .packet .price-preview-name-edit input { border-color: #c8d9e9; background: #fff; }
+html[data-audit-theme="light"] .packet .price-preview-name-edit :is(input, textarea) { border-color: #c8d9e9; background: #fff; }
 @media (max-width: 560px) {
   .packet .price-preview { gap: 9px; padding: 9px; }
   .packet .price-preview-categorization { gap: 8px; padding: 9px; }
@@ -3900,7 +3900,7 @@ html[data-audit-theme="light"] .packet .price-preview-name-edit input { border-c
   .packet .price-preview-prices { grid-row: 2; }
   .packet .price-preview-product-link { grid-row: 3; min-width: 0; }
   .packet .price-preview-category-select { grid-row: 4; }
-  .packet .price-preview-name-edit input { min-height: 34px; padding: 6px 8px; font-size: 13px; }
+  .packet .price-preview-name-edit :is(input, textarea) { min-height: 34px; padding: 6px 8px; font-size: 13px; }
   .packet .price-preview-price-edit input,
   .packet .price-preview-price-edit [data-slot="select-trigger"],
   .packet .price-preview-product-link [data-slot="select-trigger"],
@@ -3914,7 +3914,15 @@ html[data-audit-theme="light"] .packet .price-preview-name-edit input { border-c
 .facts-loader .facts-school { transform: none !important; animation: none !important; }
 .facts-loader .facts-fish { transform: none !important; transform-box: fill-box; transform-origin: 0 0; }
 .facts-loader .facts-fish-size { transform-box: fill-box; transform-origin: 0 0; }
-.facts-loader .facts-fish-body { animation: facts-fish-glide 1.6s var(--audit-hover-ease) infinite alternate !important; }
+.facts-loader .facts-fish-body { transform-box: fill-box; transform-origin: 50% 50%; animation: facts-fish-pulse 2.8s ease-in-out infinite alternate !important; }
+.facts-loader .facts-fish-b .facts-fish-body { animation-delay: -.7s !important; }
+.facts-loader .facts-fish-c .facts-fish-body { animation-delay: -1.35s !important; }
+.facts-loader .facts-fish-d .facts-fish-body { animation-delay: -.35s !important; }
+.facts-loader .facts-fish-e .facts-fish-body { animation-delay: -1.9s !important; }
+.facts-loader .facts-fish-f .facts-fish-body { animation-delay: -1.05s !important; }
+.facts-loader .facts-fish-g .facts-fish-body { animation-delay: -2.35s !important; }
+.facts-loader .facts-fish-h .facts-fish-body { animation-delay: -1.65s !important; }
+@keyframes facts-fish-pulse { from { transform: scale(.94); opacity: .82; } to { transform: scale(1.08); opacity: 1; } }
 .ocean-loader .facts-loader-art { width: min(268px, 68vw) !important; height: min(268px, 68vw) !important; }
 @media (max-width: 520px) { .facts-loader .facts-loader-art { width: 128px !important; height: 128px !important; } .ocean-loader .facts-loader-art { width: min(242px, 72vw) !important; height: min(242px, 72vw) !important; } }
 @media (prefers-reduced-motion: reduce) { .facts-loader .facts-school, .facts-loader .facts-fish-body { animation: none !important; } }
@@ -4017,11 +4025,15 @@ html[data-audit-theme="dark"] .packet .scroll-top svg { color: #ff9b88; }
 @media (max-width: 720px) {
   .packet .price-preview-name-edit { min-width: 0; }
   .packet .price-preview-name-edit > span { margin-bottom: 4px; font-size: 9px; }
-  .packet .price-preview-name-edit input { min-width: 0; padding-inline: 7px; font-size: 12px; font-weight: 700; letter-spacing: -.01em; }
+  .packet .price-preview-name-edit :is(input, textarea) { min-width: 0; padding-inline: 7px; font-size: 12px; font-weight: 700; letter-spacing: -.01em; }
 }
 @media (max-width: 420px) {
-  .packet .price-preview-name-edit input { font-size: 11px; }
+  .packet .price-preview-name-edit :is(input, textarea) { font-size: 11px; }
 }
+.packet .price-preview-name-edit textarea { resize: vertical; min-height: 44px; max-height: 96px; line-height: 1.35; overflow-y: auto; }
+.packet .mobile-quick-refresh.is-refreshing { pointer-events: none; border-color: var(--blue) !important; background: color-mix(in srgb, var(--blue) 13%, var(--surface-2)) !important; }
+.packet .mobile-quick-refresh.is-refreshing svg { animation: mobile-refresh-spin 720ms linear infinite; }
+@keyframes mobile-refresh-spin { to { transform: rotate(360deg); } }
 @media (max-width: 560px) { .packet .price-preview-table { overflow: visible; } }
 
 .packet .price-preview-price-edit { grid-template-columns: minmax(0, 1fr) minmax(116px, .72fr); }

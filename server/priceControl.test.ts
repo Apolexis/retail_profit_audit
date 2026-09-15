@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculatePriceChanges, normalizePackagingDisplay, normalizePrice, normalizeProductName, packagingSignature, parsePdfExtractedText, preparePriceImportRows, productSignature, resolvePriceMapping, sourceDateFromText } from "./priceControl";
+import { calculatePriceChanges, normalizePackagingDisplay, normalizePrice, normalizeProductName, packagingSignature, parsePdfExtractedText, parsePdfPositionedPages, preparePriceImportRows, productSignature, resolvePriceMapping, sourceDateFromText } from "./priceControl";
 import { readFileSync } from "node:fs";
 
 describe("прайс‑контроль: нормализация товарных строк", () => {
@@ -207,6 +207,32 @@ describe("прайс‑контроль: нормализация товарны
     ].join("\n"));
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ rawName: "Палтус тушка", packaging: null });
+  });
+
+  it("разбирает общую PDF-таблицу по координатам: исключает спецификацию и не берет цену соседней позиции", () => {
+    const rows = parsePdfPositionedPages([[
+      { x: 25, y: 400, value: "Наименование" }, { x: 182, y: 400, value: "Спецификация" }, { x: 289, y: 400, value: "Производитель" }, { x: 347, y: 400, value: "Упаковка" }, { x: 444, y: 400, value: "Цена" }, { x: 444, y: 388, value: "с НДС" },
+      { x: 67, y: 360, value: "Икра горбуши" }, { x: 99, y: 360, value: "пл/б 125 гр" }, { x: 131, y: 360, value: "Икра горбуши, QR Честный знак, пл. банка 125 гр, 2026" }, { x: 287, y: 360, value: "Красный Жемчуг" }, { x: 354, y: 360, value: "1/24" }, { x: 392, y: 360, value: "1 966" }, { x: 405, y: 360, value: "(в СПб)" }, { x: 458, y: 360, value: "15 730 за 1 кг" },
+      { x: 67, y: 340, value: "Икра нерки" }, { x: 99, y: 340, value: "пл/б 125 гр" }, { x: 131, y: 340, value: "Икра нерки, QR Честный знак" }, { x: 287, y: 340, value: "Красный Жемчуг" }, { x: 354, y: 340, value: "1/24" }, { x: 392, y: 340, value: "1 879" }, { x: 405, y: 340, value: "(в СПб)" },
+    ]]);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({ rawName: "Икра горбуши пл/б 125 гр", packaging: "125 гр" });
+    expect(rows[0]?.rawPayload).toMatchObject({ manufacturer: "Красный Жемчуг", specification: "Икра горбуши, QR Честный знак, пл. банка 125 гр, 2026" });
+    expect(rows[0]?.priceOptions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ priceAmount: 1966, priceMode: "spb", priceBasis: "package", includesVat: true }),
+      expect.objectContaining({ priceAmount: 15730, priceBasis: "kg", includesVat: true }),
+    ]));
+    expect(rows[1]?.priceOptions[0]).toMatchObject({ priceAmount: 1879 });
+  });
+
+  it("сохраняет строку PDF без цены для ручного заполнения и исключает спецификацию из имени", () => {
+    const rows = parsePdfPositionedPages([[
+      { x: 25, y: 400, value: "Наименование" }, { x: 246, y: 400, value: "Производитель" }, { x: 330, y: 400, value: "Упаковка" }, { x: 396, y: 400, value: "Цена" }, { x: 394, y: 388, value: "с НДС" },
+      { x: 25, y: 360, value: "Икра горбуши соленая мороженая" }, { x: 25, y: 348, value: "(пл.б, вакуум, ключ, 210 г) 2026" }, { x: 258, y: 360, value: "ТМ Даллос" }, { x: 340, y: 348, value: "210 г" }, { x: 387, y: 360, value: "по запросу" },
+    ]]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ rawName: "Икра горбуши соленая мороженая", packaging: "210 г" });
+    expect(rows[0]?.priceOptions[0]).toMatchObject({ priceAmount: null, sourcePriceText: "по запросу", includesVat: true });
   });
 
   it("показывает фасовку «уп.» как «шт.» и использует ее как единицу цены за штуку", () => {
