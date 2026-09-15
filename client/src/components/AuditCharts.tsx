@@ -5,15 +5,16 @@ import { useAudit } from "@/contexts/AuditContext";
 import { chartPalette } from "@/lib/chartPalette";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
-export const formatK = (value:number,digits?:number) => { const absolute=Math.abs(value); if(absolute===0)return "0 ₽"; if(absolute<.01)return `${(value*1000).toLocaleString("ru-RU",{minimumFractionDigits:absolute<.001?1:0,maximumFractionDigits:1})} ₽`; if(absolute>=1000)return `${(value/1000).toLocaleString("ru-RU",{minimumFractionDigits:1,maximumFractionDigits:1})} млн ₽`; const precision=digits??(absolute<100?1:0); return `${value.toLocaleString("ru-RU",{minimumFractionDigits:precision,maximumFractionDigits:precision})} тыс. ₽`; };
-export const formatM = (value:number,digits=1) => `${value.toLocaleString("ru-RU",{minimumFractionDigits:digits,maximumFractionDigits:digits})} млн ₽`;
+const formatRubles = (value:number) => { const absolute=Math.abs(value); if(absolute===0)return "0 ₽"; if(absolute<.0001)return `${value<0?"−":""}<0,0001 ₽`; const fractionDigits=absolute>=1?2:Math.min(4,Math.max(2,-Math.floor(Math.log10(absolute)))); return `${value.toLocaleString("ru-RU",{maximumFractionDigits:fractionDigits})} ₽`; };
+export const formatK = (value:number,digits?:number) => { const absolute=Math.abs(value); if(!Number.isFinite(value))return "—"; if(absolute===0)return "0 ₽"; if(absolute<.01)return formatRubles(value*1000); if(absolute>=1000)return `${(value/1000).toLocaleString("ru-RU",{minimumFractionDigits:1,maximumFractionDigits:1})} млн ₽`; const precision=digits??(absolute<100?1:0); return `${value.toLocaleString("ru-RU",{minimumFractionDigits:precision,maximumFractionDigits:precision})} тыс. ₽`; };
+export const formatM = (value:number,digits=1) => { if(!Number.isFinite(value))return "—"; const absolute=Math.abs(value); if(absolute===0)return "0 ₽"; if(absolute<.01)return formatK(value*1000,2); const precision=absolute<1?Math.max(2,digits):digits; return `${value.toLocaleString("ru-RU",{minimumFractionDigits:precision,maximumFractionDigits:precision})} млн ₽`; };
 export const formatPct = (value:number,digits=1) => `${value.toFixed(digits)}%`;
 
 export type MetricChartTooltipMode="amount"|"million"|"percent"|"number";
 export type MetricChartView="line"|"bar"|"overlay";
 type MetricLine={key:string;name:string;color:string};
 const iosPalette=["#5E5CE6","#00A3A3","#34C759","#FF9F0A","#FF375F","#64D2FF"];
-const chartTick=(value:number,mode:MetricChartTooltipMode)=>mode==="percent"?`${value.toFixed(1)}%`:mode==="million"?`${value.toLocaleString("ru-RU",{maximumFractionDigits:1})} млн`:mode==="number"?value.toLocaleString("ru-RU",{maximumFractionDigits:1}):formatK(value).replace(" ₽","");
+export const chartTick=(value:number,mode:MetricChartTooltipMode)=>mode==="percent"?`${value.toFixed(1)}%`:mode==="million"?formatM(value).replace(" ₽",""):mode==="number"?value.toLocaleString("ru-RU",{maximumFractionDigits:1}):formatK(value).replace(" ₽","");
 
 export const sortTooltipPayload=<T extends {value:number}>(payload:T[])=>[...payload].sort((a,b)=>b.value-a.value);
 export const nonZeroLines=(data:readonly Record<string,unknown>[],lines:MetricLine[])=>lines.filter(line=>data.some(row=>{const value=row[line.key];return typeof value==="number"?value!==0:Number(value??0)!==0;}));

@@ -1,12 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { chartPanSpeedForZoom, clampChartZoom, formatK, nonZeroLines, normalizeOverlayBarRect, panChartRows, pointInsideRect, resolveChartPanAxis, resolveMetricChartLayout, resolveMetricChartView, resolveOverlayBarGeometry, sortTooltipPayload, viewportChartDomain, windowChartRows, zeroAwareTicks } from "./AuditCharts";
+import { chartPanSpeedForZoom, chartTick, clampChartZoom, formatK, formatM, nonZeroLines, normalizeOverlayBarRect, panChartRows, pointInsideRect, resolveChartPanAxis, resolveMetricChartLayout, resolveMetricChartView, resolveOverlayBarGeometry, sortTooltipPayload, viewportChartDomain, windowChartRows, zeroAwareTicks } from "./AuditCharts";
 
 describe("форматирование денежных показателей", () => {
   it("не скрывает малые ненулевые суммы округлением до нуля", () => {
     expect(formatK(0.4)).toBe("0,4 тыс. ₽");
     expect(formatK(0.004)).toBe("4 ₽");
-    expect(formatK(0.00366)).toBe("3,7 ₽");
+    expect(formatK(0.00366)).toBe("3,66 ₽");
+    expect(formatK(0.00004)).toBe("0,04 ₽");
+    expect(formatK(0.00000003)).toBe("<0,0001 ₽");
     expect(formatK(65.2)).toBe("65,2 тыс. ₽");
+  });
+  it("не превращает малые значения миллионов в 0,0 млн на осях и в tooltip", () => {
+    expect(formatM(0.00366)).toBe("3,66 тыс. ₽");
+    expect(formatM(-0.000004)).toBe("-4 ₽");
+    expect(formatM(0.05)).toBe("0,05 млн ₽");
+    expect(chartTick(0.00366,"million")).toBe("3,66 тыс.");
+    expect(chartTick(0,"million")).toBe("0");
   });
   it("показывает крупные значения в миллионах", () => {
     expect(formatK(1540)).toBe("1,5 млн ₽");
