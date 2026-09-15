@@ -5,28 +5,27 @@ const component = readFileSync(new URL("./OceanLoader.tsx", import.meta.url), "u
 const styles = readFileSync(new URL("../final-overrides.css", import.meta.url), "utf8");
 
 describe("векторная загрузка", () => {
-  it("использует общий круговой SVG с видимым в первом кадре косяком без растровых изображений", () => {
+  it("использует SVG-орбиты версии 1c6f03bd без растровых изображений", () => {
     expect(component).toContain("<svg className=\"facts-loader-art\"");
     expect(component).toContain("FishSpinner");
     expect(component).toContain('{ id: "h"');
     expect(component).toContain("SCHOOL_PATHS.map");
-    expect(component).toContain("x: 73, y: 10");
-    expect(component).toContain("rotation: 138");
-    expect(component).toContain("transform={`translate(${x} ${y}) rotate(${rotation})`}");
+    expect(component).toContain('const SCHOOL_RING = "M80 18 A62 62 0 1 1 80 142 A62 62 0 1 1 80 18"');
+    expect(component).toContain('begin: "-7.70s", duration: "8.8s"');
+    expect(component).toContain('<animateMotion path={SCHOOL_RING} dur={duration} begin={begin} repeatCount="indefinite" rotate="auto" />');
     expect(component).not.toContain("<img");
   });
 
-  it("вращает разнесенный в стартовом кадре косяк и отключает движение при системном уменьшении анимации", () => {
+  it("сохраняет траекторию версии 1c6f03bd, скрывает только нерассчитанный стартовый кадр и уважает системное уменьшение анимации", () => {
     expect(styles).toContain("@media (prefers-reduced-motion: reduce)");
     expect(component).toContain('className="facts-school"');
-    expect(component).toContain('x: 73, y: 10');
-    expect(component).toContain('x: 117, y: 32');
+    expect(component).toContain('className="facts-school" opacity="0"');
+    expect(component).toContain('<animate attributeName="opacity" from="0" to="1" dur="0.08s" begin="0s" fill="freeze" />');
     expect(component).not.toContain("facts-school-orbit");
     expect(component).not.toContain("animateTransform");
-    expect(component).not.toContain("animateMotion");
-    expect(styles).toContain(".facts-loader .facts-school { transform-box: view-box; transform-origin: 80px 80px; animation: facts-school-spin 5.6s linear infinite !important;");
+    expect(styles).toContain(".facts-loader .facts-school { transform: none !important; animation: none !important; }");
     expect(styles).toContain(".facts-loader .facts-fish-body { animation: facts-fish-glide");
-    expect(styles).toContain(".facts-loader .facts-loader-art { width: 176px !important; height: 176px !important; }");
-    expect(styles).toContain(".ocean-loader .facts-loader-art { width: min(292px, 72vw) !important;");
+    expect(styles).toContain(".facts-loader .facts-loader-art { width: 150px !important; height: 150px !important; }");
+    expect(styles).toContain(".ocean-loader .facts-loader-art { width: min(268px, 68vw) !important;");
   });
 });

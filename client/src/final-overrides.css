@@ -3908,12 +3908,15 @@ html[data-audit-theme="light"] .packet .price-preview-name-edit input { border-c
   .packet .price-preview-remove { grid-column: 3; grid-row: 1; width: 32px; height: 32px; min-height: 32px; }
 }
 
-/* Загрузочный косяк: каждая рыба начинает из своей точки и движется по собственной SVG‑орбите. */
-.facts-loader .facts-loader-art { width: 176px !important; height: 176px !important; }
-.facts-loader .facts-school { transform-box: view-box; transform-origin: 80px 80px; animation: facts-school-spin 5.6s linear infinite !important; will-change: transform; }
+/* Точная кинематика 1c6f03bd: каждая рыба идет по своей SVG-орбите.
+   Невидимый первый SMIL-кадр не показывает старое наложение, затем виден исходный косяк. */
+.facts-loader .facts-loader-art { width: 150px !important; height: 150px !important; }
+.facts-loader .facts-school { transform: none !important; animation: none !important; }
+.facts-loader .facts-fish { transform-box: fill-box; transform-origin: 0 0; }
+.facts-loader .facts-fish-size { transform-box: fill-box; transform-origin: 0 0; }
 .facts-loader .facts-fish-body { animation: facts-fish-glide 1.6s var(--audit-hover-ease) infinite alternate !important; }
-.ocean-loader .facts-loader-art { width: min(292px, 72vw) !important; height: min(292px, 72vw) !important; }
-@media (max-width: 520px) { .facts-loader .facts-loader-art { width: 156px !important; height: 156px !important; } .ocean-loader .facts-loader-art { width: min(258px, 76vw) !important; height: min(258px, 76vw) !important; } }
+.ocean-loader .facts-loader-art { width: min(268px, 68vw) !important; height: min(268px, 68vw) !important; }
+@media (max-width: 520px) { .facts-loader .facts-loader-art { width: 128px !important; height: 128px !important; } .ocean-loader .facts-loader-art { width: min(242px, 72vw) !important; height: min(242px, 72vw) !important; } }
 @media (prefers-reduced-motion: reduce) { .facts-loader .facts-school, .facts-loader .facts-fish-body { animation: none !important; } }
 
 /* Справочник на телефоне: основная область не резервирует скрытую боковую колонку. */
