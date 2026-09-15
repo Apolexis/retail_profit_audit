@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { calculatePriceChanges, normalizePrice, normalizeProductName, packagingSignature, productSignature, resolvePriceMapping, sourceDateFromText } from "./priceControl";
+import { readFileSync } from "node:fs";
 
 describe("прайс‑контроль: нормализация товарных строк", () => {
   it("сводит сёмгу, скобки и размерный диапазон к одной товарной сигнатуре", () => {
@@ -39,5 +40,11 @@ describe("прайс‑контроль: нормализация товарны
     ]);
     expect(changes.get(2)).toMatchObject({ previousPrice: 800, delta: 120, percent: 15, direction: "up" });
     expect(changes.get(3)).toBeUndefined();
+  });
+
+  it("имеет защищенную операцию массового назначения существующей категории", () => {
+    const source = readFileSync(new URL("./priceControl.ts", import.meta.url), "utf8");
+    expect(source).toContain("export async function bulkAssignPriceCategory");
+    expect(source).toContain("Выберите активную категорию прайс‑контроля.");
   });
 });

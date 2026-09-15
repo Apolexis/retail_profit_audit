@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getCurrentLocalAccount, hasPriceAccess } from "../accessControl";
 import { protectedProcedure, router } from "../_core/trpc";
-import { createPriceCategory, createPriceProduct, deletePriceImport, getPriceImportDownload, linkPriceImportRow, listPriceControlData, reassignPriceSupplierAlias, unlinkPriceSupplierAlias, updatePriceCategory, updatePriceImportDate, updatePriceOffer, updatePriceProduct, updatePriceSupplier } from "../priceControl";
+import { bulkAssignPriceCategory, createPriceCategory, createPriceProduct, deletePriceImport, getPriceImportDownload, linkPriceImportRow, listPriceControlData, reassignPriceSupplierAlias, unlinkPriceSupplierAlias, updatePriceCategory, updatePriceImportDate, updatePriceOffer, updatePriceProduct, updatePriceSupplier } from "../priceControl";
 import { recordChange } from "../localAuth";
 
 async function requirePricePermission(openId: string | null | undefined, required: "view" | "upload" | "edit") {
@@ -35,6 +35,13 @@ export const priceControlRouter = router({
     const actor = await localActor(ctx.user.openId); const product = await updatePriceProduct(input);
     await recordChange({ actorId: actor.id, action: "price_product.update", entityType: "price_product", entityId: String(input.id), afterState: { internalCode: product.internalCode, canonicalName: product.canonicalName, category: product.category } });
     return product;
+  }),
+  bulkAssignCategory: protectedProcedure.input(z.object({ productIds: z.array(z.number().int().positive()).min(1).max(300), categoryId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+    await requirePricePermission(ctx.user.openId, "edit");
+    const actor = await localActor(ctx.user.openId);
+    const result = await bulkAssignPriceCategory(input);
+    await recordChange({ actorId: actor.id, action: "price_product.category_bulk_assign", entityType: "price_product", entityId: input.productIds.join(","), afterState: { productIds: input.productIds, categoryId: result.category.id, categoryName: result.category.name } });
+    return result;
   }),
   createCategory: protectedProcedure.input(z.object({ name: z.string().trim().min(2).max(160) })).mutation(async ({ ctx, input }) => {
     await requirePricePermission(ctx.user.openId, "edit");

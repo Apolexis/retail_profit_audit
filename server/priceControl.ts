@@ -396,6 +396,27 @@ export async function updatePriceProduct(input: { id: number; canonicalName: str
   return product;
 }
 
+export async function bulkAssignPriceCategory(input: {
+  productIds: number[];
+  categoryId: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const category = await getPriceCategory(input.categoryId);
+  if (!category || !category.isActive) {
+    throw new Error("Выберите активную категорию прайс‑контроля.");
+  }
+  const productIds = Array.from(
+    new Set(input.productIds.filter(id => Number.isInteger(id) && id > 0))
+  );
+  if (!productIds.length) throw new Error("Выберите хотя бы один товар.");
+  await db
+    .update(priceProducts)
+    .set({ categoryId: category.id, category: category.name })
+    .where(inArray(priceProducts.id, productIds));
+  return { updated: productIds.length, category: { id: category.id, name: category.name } };
+}
+
 export async function updatePriceSupplier(input: { id: number; name: string; contactNote?: string | null; isActive?: boolean }) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
   const name = text(input.name); if (name.length < 2) throw new Error("Укажите название поставщика.");

@@ -78,6 +78,17 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("Только скрытые");
   });
 
+  it("дает поиск, счетчики скрытых, массовое назначение и быстрый переход из категории к товару", () => {
+    expect(page).toContain("directoryProductSearch");
+    expect(page).toContain("directoryCategorySearch");
+    expect(page).toContain("hiddenProductsCount");
+    expect(page).toContain("hiddenCategoriesCount");
+    expect(page).toContain("bulkAssignCategory");
+    expect(page).toContain("Назначить категорию");
+    expect(page).toContain("Входит товаров:");
+    expect(page).toContain("openProductEditor");
+  });
+
   it("использует знакомую двухколоночную панель импорта и тематичные состояния полей", () => {
     expect(page).toContain("Перетащите прайс‑лист сюда");
     expect(page).toContain("Этапы импорта");
@@ -115,5 +126,12 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain('html[data-audit-theme="dark"] .packet { --price-accent: #ff856d');
     expect(styles).toContain('html[data-audit-theme="light"] .packet .price-product-choice.active');
     expect(styles).toContain('html[data-audit-theme="dark"] .packet .price-product-choice.active');
+  });
+
+  it("закрепляет общий эталон полей и списков без двойной focus‑рамки", () => {
+    expect(styles).toContain("/* Единый эталон полей и тематичных списков");
+    expect(styles).toContain('body [data-slot="select-content"]');
+    expect(styles).toContain(".packet .price-scope:hover");
+    expect(styles).toContain(".packet .price-directory-tabs button:hover");
   });
 });

@@ -46,6 +46,7 @@ import {
   Pencil,
   Plus,
   Save,
+  Search,
   Tags,
   Trash2,
   TrendingDown,
@@ -247,6 +248,17 @@ export default function PriceControl({
     },
     onError: error => toast.error(error.message),
   });
+  const bulkAssignCategory = trpc.priceControl.bulkAssignCategory.useMutation({
+    onSuccess: result => {
+      invalidate();
+      setSelectedDirectoryProductIds([]);
+      setBulkCategoryId("");
+      toast.success("Категория назначена", {
+        description: `Обновлено товаров: ${result.updated}.`,
+      });
+    },
+    onError: error => toast.error(error.message),
+  });
   const createCategory = trpc.priceControl.createCategory.useMutation({
     onSuccess: () => {
       invalidate();
@@ -348,6 +360,12 @@ export default function PriceControl({
     null
   );
   const [directoryTab, setDirectoryTab] = useState<DirectoryTab>("products");
+  const [directoryProductSearch, setDirectoryProductSearch] = useState("");
+  const [directoryCategorySearch, setDirectoryCategorySearch] = useState("");
+  const [selectedDirectoryProductIds, setSelectedDirectoryProductIds] = useState<
+    number[]
+  >([]);
+  const [bulkCategoryId, setBulkCategoryId] = useState("");
   const [supplierDraft, setSupplierDraft] = useState<SupplierDraft | null>(
     null
   );
@@ -366,6 +384,46 @@ export default function PriceControl({
     return visibilityFilter === "all" ||
       (visibilityFilter === "active" ? visible : !visible);
   };
+  const catalogProducts = overview.data?.products ?? [];
+  const hiddenProductsCount = catalogProducts.filter(
+    product => !product.isActive || product.categoryIsActive === false
+  ).length;
+  const hiddenCategoriesCount = categories.filter(
+    category => !category.isActive
+  ).length;
+  const directoryProducts = useMemo(() => {
+    const query = directoryProductSearch.trim().toLocaleLowerCase("ru");
+    return catalogProducts.filter(product => {
+      const matchesSearch =
+        !query ||
+        `${product.canonicalName} ${product.internalCode} ${product.category ?? ""}`
+          .toLocaleLowerCase("ru")
+          .includes(query);
+      return matchesSearch && matchesVisibility(product);
+    });
+  }, [catalogProducts, directoryProductSearch, visibilityFilter]);
+  const categoryMembers = useMemo(() => {
+    const members = new Map<number, typeof catalogProducts>();
+    catalogProducts.forEach(product => {
+      if (!product.categoryId) return;
+      members.set(product.categoryId, [
+        ...(members.get(product.categoryId) ?? []),
+        product,
+      ]);
+    });
+    return members;
+  }, [catalogProducts]);
+  const directoryCategories = useMemo(() => {
+    const query = directoryCategorySearch.trim().toLocaleLowerCase("ru");
+    return categories.filter(category => {
+      const matchesSearch =
+        !query || category.name.toLocaleLowerCase("ru").includes(query);
+      const matchesMode =
+        visibilityFilter === "all" ||
+        (visibilityFilter === "active" ? category.isActive : !category.isActive);
+      return matchesSearch && matchesMode;
+    });
+  }, [categories, directoryCategorySearch, visibilityFilter]);
   const filteredComparisons = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("ru");
     return (overview.data?.comparisons ?? [])
@@ -633,6 +691,24 @@ export default function PriceControl({
     }
     setProductDraft(null);
   };
+  const openProductEditor = (product: (typeof catalogProducts)[number]) => {
+    setDirectoryTab("products");
+    setProductDraft({
+      id: product.id,
+      canonicalName: product.canonicalName,
+      internalCode: product.internalCode,
+      categoryId: String(product.categoryId ?? ""),
+      baseUnit: product.baseUnit,
+      isActive: product.isActive,
+    });
+  };
+  const toggleDirectoryProduct = (productId: number) => {
+    setSelectedDirectoryProductIds(current =>
+      current.includes(productId)
+        ? current.filter(id => id !== productId)
+        : [...current, productId]
+    );
+  };
   const saveCategory = async () => {
     if (!categoryDraft?.name.trim()) return;
     if (categoryDraft.id) {
@@ -789,9 +865,15 @@ export default function PriceControl({
                   }}
                   placeholder="Без скрытых"
                   options={[
-                    { value: "active", label: "Без скрытых" },
+                    {
+                      value: "active",
+                      label: `Без скрытых · ${hiddenProductsCount + hiddenCategoriesCount}`,
+                    },
                     { value: "all", label: "Все" },
-                    { value: "hidden", label: "Только скрытые" },
+                    {
+                      value: "hidden",
+                      label: `Только скрытые · ${hiddenProductsCount + hiddenCategoriesCount}`,
+                    },
                   ]}
                 />
               </label>
@@ -1577,15 +1659,71 @@ export default function PriceControl({
                 </div>
               </div>
             )}
+            <div className="price-directory-toolbar" role="search">
+              <label className="price-directory-search">
+                <Search size={15} aria-hidden="true" />
+                <input
+                  value={directoryProductSearch}
+                  onChange={event => setDirectoryProductSearch(event.target.value)}
+                  placeholder="Поиск по товару, коду или категории"
+                  aria-label="Поиск товаров справочника"
+                />
+              </label>
+              <small>
+                Товаров: {directoryProducts.length} · скрыто: {hiddenProductsCount}
+              </small>
+            </div>
+            {canEdit && selectedDirectoryProductIds.length > 0 && (
+              <div className="price-bulk-actions">
+                <span>Выбрано товаров: {selectedDirectoryProductIds.length}</span>
+                <PriceSelect
+                  value={bulkCategoryId}
+                  onValueChange={setBulkCategoryId}
+                  placeholder="Выберите категорию"
+                  options={selectableCategories.map(category => ({
+                    value: String(category.id),
+                    label: category.name,
+                  }))}
+                />
+                <button
+                  type="button"
+                  className="packet-link compact"
+                  disabled={!bulkCategoryId || bulkAssignCategory.isPending}
+                  onClick={() =>
+                    bulkAssignCategory.mutate({
+                      productIds: selectedDirectoryProductIds,
+                      categoryId: Number(bulkCategoryId),
+                    })
+                  }
+                >
+                  <Tags size={14} />
+                  Назначить категорию
+                </button>
+                <button
+                  type="button"
+                  className="packet-link compact subtle"
+                  onClick={() => setSelectedDirectoryProductIds([])}
+                >
+                  Снять выбор
+                </button>
+              </div>
+            )}
             <div className="price-directory-list">
-              {(overview.data?.products ?? [])
-                .filter(product => matchesVisibility(product))
-                .map(product => (
+              {directoryProducts.map(product => (
                 <article key={product.id}>
+                  {canEdit && (
+                    <label className="price-directory-check">
+                      <input
+                        type="checkbox"
+                        checked={selectedDirectoryProductIds.includes(product.id)}
+                        onChange={() => toggleDirectoryProduct(product.id)}
+                        aria-label={`Выбрать товар «${product.canonicalName}»`}
+                      />
+                    </label>
+                  )}
                   <div>
                     <span>
-                      {product.internalCode} ·{" "}
-                      {product.category || "Без категории"}
+                      {product.internalCode} · {product.category || "Без категории"}
                     </span>
                     <strong>{product.canonicalName}</strong>
                     <small>
@@ -1601,16 +1739,7 @@ export default function PriceControl({
                       <button
                         type="button"
                         className="packet-link compact"
-                        onClick={() =>
-                          setProductDraft({
-                            id: product.id,
-                            canonicalName: product.canonicalName,
-                            internalCode: product.internalCode,
-                            categoryId: String(product.categoryId ?? ""),
-                            baseUnit: product.baseUnit,
-                            isActive: product.isActive,
-                          })
-                        }
+                        onClick={() => openProductEditor(product)}
                       >
                         <Pencil size={14} />
                         Изменить
@@ -1636,6 +1765,12 @@ export default function PriceControl({
                   )}
                 </article>
               ))}
+              {!directoryProducts.length && (
+                <div className="empty-state compact">
+                  <Search size={22} />
+                  <p>Товары по текущему поиску и фильтру не найдены.</p>
+                </div>
+              )}
             </div>
           </section>
           )}
@@ -1701,23 +1836,23 @@ export default function PriceControl({
                   </div>
                 </div>
               )}
+              <div className="price-directory-toolbar" role="search">
+                <label className="price-directory-search">
+                  <Search size={15} aria-hidden="true" />
+                  <input
+                    value={directoryCategorySearch}
+                    onChange={event => setDirectoryCategorySearch(event.target.value)}
+                    placeholder="Поиск категории"
+                    aria-label="Поиск категорий справочника"
+                  />
+                </label>
+                <small>
+                  Категорий: {directoryCategories.length} · скрыто: {hiddenCategoriesCount}
+                </small>
+              </div>
               <div className="price-directory-list">
-                {categories.filter(category =>
-                  visibilityFilter === "all"
-                    ? true
-                    : visibilityFilter === "active"
-                      ? category.isActive
-                      : !category.isActive
-                ).length ? (
-                  categories
-                    .filter(category =>
-                      visibilityFilter === "all"
-                        ? true
-                        : visibilityFilter === "active"
-                          ? category.isActive
-                          : !category.isActive
-                    )
-                    .map(category => (
+                {directoryCategories.length ? (
+                  directoryCategories.map(category => (
                       <article key={category.id}>
                         <div>
                           <span>
@@ -1726,6 +1861,23 @@ export default function PriceControl({
                               : "Скрыта из новых выборов"}
                           </span>
                           <strong>{category.name}</strong>
+                          <small>
+                            Входит товаров: {(categoryMembers.get(category.id) ?? []).length}
+                          </small>
+                          {(categoryMembers.get(category.id) ?? []).length > 0 && (
+                            <div className="price-category-members">
+                              {(categoryMembers.get(category.id) ?? []).map(product => (
+                                <button
+                                  type="button"
+                                  key={product.id}
+                                  onClick={() => openProductEditor(product)}
+                                  title={`Открыть товар «${product.canonicalName}»`}
+                                >
+                                  {product.canonicalName}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
                         {canEdit && (
                           <div className="price-directory-actions">

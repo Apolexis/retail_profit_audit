@@ -39,6 +39,15 @@ describe("матрица доступа к импорту",()=>{
     expect(page).toContain("priceAccessLevel");
   });
 
+  it("сохраняет индивидуальные пояснения строк прав и не заменяет их общим текстом",()=>{
+    const page=readFileSync(resolve(process.cwd(),"client/src/pages/AccessAdmin.tsx"),"utf8");
+    expect(page).toContain("Разрешает загрузку новой книги");
+    expect(page).toContain("Отдельный контур поставщиков");
+    expect(page).toContain("Показывает суммы наличных");
+    expect(overrides).toContain(".packet .access-import-row > span > small::after {\n  content: none !important;");
+    expect(overrides).toContain("grid-template-columns: minmax(0, 1fr) minmax(268px, 336px) !important;");
+  });
+
   it("дает администратору адресную push-рассылку с честным итогом доставки",()=>{
     const page=readFileSync(resolve(process.cwd(),"client/src/pages/AccessAdmin.tsx"),"utf8");
     expect(page).toContain("Push по выбранной аудитории");
