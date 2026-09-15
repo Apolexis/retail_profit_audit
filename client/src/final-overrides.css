@@ -3912,7 +3912,7 @@ html[data-audit-theme="light"] .packet .price-preview-name-edit input { border-c
    Невидимый первый SMIL-кадр не показывает старое наложение, затем виден исходный косяк. */
 .facts-loader .facts-loader-art { width: 150px !important; height: 150px !important; }
 .facts-loader .facts-school { transform: none !important; animation: none !important; }
-.facts-loader .facts-fish { transform-box: fill-box; transform-origin: 0 0; }
+.facts-loader .facts-fish { transform: none !important; transform-box: fill-box; transform-origin: 0 0; }
 .facts-loader .facts-fish-size { transform-box: fill-box; transform-origin: 0 0; }
 .facts-loader .facts-fish-body { animation: facts-fish-glide 1.6s var(--audit-hover-ease) infinite alternate !important; }
 .ocean-loader .facts-loader-art { width: min(268px, 68vw) !important; height: min(268px, 68vw) !important; }

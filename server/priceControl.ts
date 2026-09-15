@@ -327,13 +327,22 @@ function isPdfDeliveryOrContacts(line: string) {
 }
 function normalizePdfName(value: string) {
   return text(value)
+    .replace(/[\uE000-\uF8FF]/g, " ")
     .replace(/^\s*(?:№|n)?\s*\d{1,4}\s+(?=[a-zа-яё])/i, "")
-    .replace(/\s+(?:срок\s+(?:годн|хран)|годн\.?\b|изготовлен|дата\s+(?:производ|изготов)|при\s+темп|ндс\b).*/i, "")
+    .replace(/(^|\s)(?:0+\s*(?:г|гр)|20\d{2}\s*(?:г|гр))(?![a-zа-яё])/gi, "$1")
+    .replace(/(^|\s)20\d{2}(?=\s|$|[,:;.])/g, "$1")
+    .replace(/\s+(?:с\s+ндс|без\s+ндс|срок\s+(?:годн|хран)|годн\.?(?![a-zа-яё])|изготовлен|дата\s+(?:производ|изготов)|при\s+темп|ндс(?![a-zа-яё])).*/i, "")
     .replace(/\s{2,}/g, " ")
     .trim();
 }
 function pdfPackagingFromText(value: string) {
-  const matches = Array.from(value.matchAll(/\b\d+(?:[.,]\d+)?\s*(?:кг|г|гр|л|мл|шт|уп\.?)(?![a-zа-я])/gi));
+  const matches = Array.from(value.matchAll(/\b\d+(?:[.,]\d+)?\s*(?:кг|г|гр|л|мл|шт|уп\.?)(?![a-zа-я])/gi))
+    .filter(match => {
+      const candidate = text(match[0]);
+      const numeric = Number(candidate.match(/\d+(?:[.,]\d+)?/)?.[0]?.replace(",", "."));
+      if (!Number.isFinite(numeric) || numeric <= 0) return false;
+      return !/^20\d{2}\s*(?:г|гр)(?![a-zа-я])/i.test(candidate);
+    });
   return normalizePackagingDisplay(matches.at(-1)?.[0]) || null;
 }
 function makePdfRow(rawName: string, priceText: string, priceContext: string, lineNumber: number, packaging: string | null): ParsedPriceRow | null {

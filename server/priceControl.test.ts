@@ -183,9 +183,30 @@ describe("прайс‑контроль: нормализация товарны
       "195 (в СПБ)",
     ].join("\n"));
     expect(rows).toHaveLength(1);
-    expect(rows[0]?.rawName).toBe("Икра горбуши 2026 Икра горбуши путина 2026 Рыбак 1/12,5 с НДС");
+    expect(rows[0]?.rawName).toBe("Икра горбуши Икра горбуши путина Рыбак 1/12,5");
     expect(rows[0]?.rawName).not.toMatch(/^1\s/);
     expect(rows[0]?.priceOptions[0]?.priceAmount).toBe(195);
+  });
+
+  it("очищает PDF‑имя от служебного года, НДС и приватного маркера шрифта, но сохраняет полезную фасовку", () => {
+    const rows = parsePdfExtractedText([
+      "Наименование Производитель Упаковка Цена",
+      "с НДС Изменение Остаток Медиа",
+      " Икра щуки соленая мороженная 2026 Камшат 6 шт (короб) 500 г 2 950 ₽ шт",
+    ].join("\n"));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ rawName: "Икра щуки соленая мороженная Камшат 6 шт (короб) 500 г", packaging: "500 г" });
+    expect(rows[0]?.rawName).not.toMatch(/[\uE000-\uF8FF]|\b2026\b|НДС/i);
+  });
+
+  it("не принимает нулевую и годовую псевдофасовку PDF за вес товара", () => {
+    const rows = parsePdfExtractedText([
+      "Наименование Производитель Упаковка Цена",
+      "с НДС Изменение Остаток Медиа",
+      "Палтус тушка 000 г 2025г 1 350 ₽ кг",
+    ].join("\n"));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ rawName: "Палтус тушка", packaging: null });
   });
 
   it("показывает фасовку «уп.» как «шт.» и использует ее как единицу цены за штуку", () => {
