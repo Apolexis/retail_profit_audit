@@ -4,28 +4,32 @@ import mammoth from "mammoth";
 import { PDFParse } from "pdf-parse";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import * as XLSX from "xlsx";
-import { priceCategories, priceImports, priceImportRows, priceOfferPrices, priceProducts, priceSupplierAliases, priceSuppliers } from "../drizzle/schema";
+import { priceCategories, priceImports, priceImportRows, priceOfferPrices, priceProductCharacteristics, priceProducts, priceSupplierAliases, priceSuppliers } from "../drizzle/schema";
 import { getDb } from "./db";
 import { storageGet, storagePut } from "./storage";
 
 export type PriceBasis = "kg" | "l" | "piece" | "package" | "unknown";
 export type NormalizedUnit = "kg" | "l" | "piece" | "unknown";
 export type PriceMode = "standard" | "cash" | "cashless_no_vat" | "cashless_vat" | "spb" | "moscow" | "special" | "threshold";
-export type ParsedPriceOption = { priceAmount: number | null; priceBasis: PriceBasis; normalizedPrice: number | null; normalizedUnit: NormalizedUnit; priceMode: PriceMode; minimumQuantityKg: number | null; includesVat: boolean | null; sourcePriceText: string };
-export type ParsedPriceRow = { sourceSheet: string; sourceRowNumber: number; sourceSku: string | null; rawName: string; normalizedName: string; canonicalHint: string; normalizedSignature: string; category: string | null; packaging: string | null; packagingSignature: string; availability: string | null; variant: string | null; sizeText: string | null; priceOptions: ParsedPriceOption[]; rawPayload: Record<string, string> };
+export type PriceMarket = "unknown" | "spb" | "moscow";
+export type PriceCharacteristicKind = "variant" | "size";
+export type ParsedPriceOption = { priceAmount: number | null; priceBasis: PriceBasis; normalizedPrice: number | null; normalizedUnit: NormalizedUnit; priceMode: PriceMode; market: PriceMarket; minimumQuantityKg: number | null; includesVat: boolean | null; sourcePriceText: string };
+export type ParsedPriceRow = { sourceSheet: string; sourceRowNumber: number; sourceSku: string | null; rawName: string; normalizedName: string; canonicalHint: string; normalizedSignature: string; category: string | null; packaging: string | null; packagingSignature: string; manufacturer: string | null; placeContents: string | null; availability: string | null; variant: string | null; sizeText: string | null; priceOptions: ParsedPriceOption[]; rawPayload: Record<string, string> };
 export type PriceImportPreview = { fileName: string; sourceType: "xls" | "xlsx" | "pdf" | "docx"; detectedSupplierName: string | null; detectedSourceDate: string | null; rows: ParsedPriceRow[]; warningCount: number; warnings: string[] };
 export type PriceChange = { previousPrice: number; previousDate: string | null; delta: number; percent: number; direction: "up" | "down" | "same" };
 export type PriceImportCategorySelection = { rowIndex: number; categoryId: number };
-export type PriceImportPriceEdit = { rowIndex: number; optionIndex: number; priceAmount: number; priceBasis?: PriceBasis; priceMode?: PriceMode };
+export type PriceImportPriceEdit = { rowIndex: number; optionIndex: number; priceAmount: number; priceBasis?: PriceBasis; priceMode?: PriceMode; market?: PriceMarket };
 export type PriceImportRowEdit = { rowIndex: number; rawName: string };
+export type PriceImportMetadataEdit = { rowIndex: number; manufacturer: string | null; placeContents: string | null };
 export type PriceImportProductLink = { rowIndex: number; productId: number };
 export type PreparedPriceImportRows = {
   rows: Array<{ rowIndex: number; row: ParsedPriceRow }>;
   excludedRowIndexes: number[];
   editedPriceOptions: number;
   editedNames: number;
+  editedMetadata: number;
 };
-type PriceChangeSource = { priceId: number; importId: number; productId: number | null; supplierId: number; priceMode: string | null; normalizedUnit: string | null; normalizedPrice: string | number | null; sourceDate: string | null; importedAt: Date | string };
+type PriceChangeSource = { priceId: number; importId: number; productId: number | null; supplierId: number; priceMode: string | null; market: string | null; normalizedUnit: string | null; normalizedPrice: string | number | null; sourceDate: string | null; importedAt: Date | string };
 export const SIGNIFICANT_PRICE_INCREASE_PERCENT = 10;
 
 const MAX_IMPORT_ROWS = 3000;
@@ -34,6 +38,54 @@ const synonymTokens: Record<string, string> = { "семга": "лосось", "�
 
 function text(value: unknown) { return String(value ?? "").replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim(); }
 function fold(value: string) { return text(value).toLowerCase().replace(/ё/g, "е"); }
+export function normalizeProductDisplayName(value: string) {
+  return text(value)
+    .replace(/(^|[^а-яё])б\s+ез(?=$|[^а-яё])/gi, "$1без")
+    .replace(/(\d),(\d)/g, "$1.$2")
+    .replace(/(\d+(?:\.\d+)?)\s*(кг|kg|г|гр|gr|g|л|литр(?:а|ов|ы)?|l|мл|ml|шт|pcs?|штук|уп\.?)(?![a-zа-я])/gi, (_match, amount: string, rawUnit: string) => {
+      const unit = /^(?:кг|kg)$/i.test(rawUnit) ? "кг" : /^(?:г|гр|gr|g)$/i.test(rawUnit) ? "гр" : /^(?:л|литр(?:а|ов|ы)?|l)$/i.test(rawUnit) ? "л" : /^(?:мл|ml)$/i.test(rawUnit) ? "мл" : "шт";
+      return `${amount}${unit}`;
+    })
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .replace(/([,.;:!?])(?:\s*[,.;:!?])+/g, "$1")
+    .replace(/[.,;:]+$/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+function canonicalPriceMode(mode: PriceMode | null | undefined): PriceMode {
+  return mode === "cash" || mode === "cashless_no_vat" || mode === "cashless_vat" ? mode : "cashless_vat";
+}
+function priceMarketFromText(value: string): PriceMarket {
+  const source = fold(value);
+  return /(?:^|[^а-яё])спб(?:$|[^а-яё])|санкт[ -]?петербург/i.test(source)
+    ? "spb"
+    : /(?:^|[^а-яё])мск(?:$|[^а-яё])|(?:^|[^а-яё])москва(?:$|[^а-яё])/i.test(source)
+      ? "moscow"
+      : "unknown";
+}
+function resolvePriceMarket(market: string | null | undefined, legacyMode: string | null | undefined): PriceMarket {
+  if (market === "spb" || market === "moscow") return market;
+  return legacyMode === "spb" || legacyMode === "moscow" ? legacyMode : "unknown";
+}
+function normalizeCharacteristicValue(value: string) { return fold(value).replace(/\s+/g, " ").trim(); }
+export function normalizePlaceContents(value: string | null | undefined) {
+  return normalizeProductDisplayName(text(value)
+    .replace(/(^|\s)уп\.?(?=\s|$|\()/gi, "$1шт")
+    .replace(/\s*([/×x])\s*/gi, "$1")
+    .replace(/,/g, "."));
+}
+/** Converts a supplier case notation such as 1/12.5 into a compact, readable offer attribute. */
+export function formatPlaceContents(value: string | null | undefined) {
+  const normalized = normalizePlaceContents(value);
+  if (!normalized) return null;
+  const match = normalized.match(/^(\d+)\s*(?:\/|x|×)\s*(\d+(?:\.\d+)?)\s*(кг|kg|г|гр|л|мл|шт|pcs?|штук)?\b/i);
+  if (!match) return normalized;
+  const [, placeCount, amount, rawUnit] = match;
+  const unit = rawUnit
+    ? /^(?:кг|kg)$/i.test(rawUnit) ? "кг" : /^(?:г|гр)$/i.test(rawUnit) ? "гр" : /^(?:л)$/i.test(rawUnit) ? "л" : /^(?:мл)$/i.test(rawUnit) ? "мл" : "шт"
+    : amount.includes(".") ? "кг" : "шт";
+  return `${placeCount} ${placeCount === "1" ? "место" : "места"} × ${amount}${unit}`;
+}
 function normalizeCategoryName(value: string) { return fold(value).replace(/[^a-zа-я0-9]+/g, " ").trim(); }
 function sourceTimestamp(source: Pick<PriceChangeSource, "sourceDate" | "importedAt">) {
   const dated = source.sourceDate ? Date.parse(`${source.sourceDate}T12:00:00`) : Number.NaN;
@@ -50,7 +102,7 @@ export function calculatePriceChanges<T extends PriceChangeSource>(offers: T[]) 
     .slice()
     .sort((left, right) => sourceTimestamp(left) - sourceTimestamp(right) || sourceTimestamp({ sourceDate: null, importedAt: left.importedAt }) - sourceTimestamp({ sourceDate: null, importedAt: right.importedAt }));
   for (const offer of ordered) {
-    const key = `${offer.productId}:${offer.supplierId}:${offer.priceMode}:${offer.normalizedUnit}`;
+    const key = `${offer.productId}:${offer.supplierId}:${resolvePriceMarket(offer.market, offer.priceMode)}:${canonicalPriceMode(offer.priceMode as PriceMode)}:${offer.normalizedUnit}`;
     const previous = previousByKey.get(key);
     const currentPrice = Number(offer.normalizedPrice);
     if (previous && previous.importId !== offer.importId) {
@@ -99,7 +151,7 @@ export function parsePackaging(value: string) {
   return { grams: null, volumeMl: null, pieces: count ? Number(count[1]) : null };
 }
 export function normalizePackagingDisplay(value: string | null | undefined) {
-  return text(value).replace(/(^|\s)уп\.?(?=\s|$|\()/gi, "$1шт");
+  return normalizeProductDisplayName(text(value));
 }
 export function packagingSignature(value: string | null | undefined) {
   const packaging = parsePackaging(value ?? "");
@@ -136,18 +188,20 @@ export function normalizePrice(priceAmount: number, priceBasis: PriceBasis, pack
 }
 
 const editablePriceBases: PriceBasis[] = ["kg", "l", "piece", "package", "unknown"];
-const editablePriceModes: PriceMode[] = ["standard", "cash", "cashless_no_vat", "cashless_vat", "spb", "moscow", "special", "threshold"];
+const editablePriceModes: PriceMode[] = ["cash", "cashless_no_vat", "cashless_vat"];
 
 /** Applies explicit user corrections only to the in-memory preview that will be committed. */
 export function preparePriceImportRows(
   rows: ParsedPriceRow[],
   priceEdits: PriceImportPriceEdit[] = [],
   excludedRowIndexes: number[] = [],
-  rowEdits: PriceImportRowEdit[] = []
+  rowEdits: PriceImportRowEdit[] = [],
+  metadataEdits: PriceImportMetadataEdit[] = []
 ): PreparedPriceImportRows {
   if (priceEdits.length > MAX_IMPORT_ROWS * 12) throw new Error("Слишком много ручных правок цен для одного прайс‑листа.");
   if (excludedRowIndexes.length > MAX_IMPORT_ROWS) throw new Error("Слишком много исключенных строк прайс‑листа.");
   if (rowEdits.length > MAX_IMPORT_ROWS) throw new Error("Слишком много ручных правок названий для одного прайс‑листа.");
+  if (metadataEdits.length > MAX_IMPORT_ROWS) throw new Error("Слишком много правок характеристик предложения для одного прайс‑листа.");
 
   const excluded = new Set<number>();
   excludedRowIndexes.forEach(rowIndex => {
@@ -163,7 +217,8 @@ export function preparePriceImportRows(
       !Number.isInteger(edit.optionIndex) || edit.optionIndex < 0 ||
       !Number.isFinite(edit.priceAmount) || edit.priceAmount <= 0 || edit.priceAmount >= 10_000_000 ||
       (edit.priceBasis !== undefined && !editablePriceBases.includes(edit.priceBasis)) ||
-      (edit.priceMode !== undefined && !editablePriceModes.includes(edit.priceMode))) {
+      (edit.priceMode !== undefined && !editablePriceModes.includes(edit.priceMode)) ||
+      (edit.market !== undefined && !["unknown", "spb", "moscow"].includes(edit.market))) {
       throw new Error("Передана некорректная ручная правка цены прайс‑листа.");
     }
     if (excluded.has(edit.rowIndex)) throw new Error("Нельзя менять цену у исключенной из импорта строки.");
@@ -177,7 +232,7 @@ export function preparePriceImportRows(
 
   const nameEditsByRow = new Map<number, string>();
   rowEdits.forEach(edit => {
-    const rawName = text(edit.rawName);
+    const rawName = normalizeProductDisplayName(edit.rawName);
     if (!Number.isInteger(edit.rowIndex) || edit.rowIndex < 0 || edit.rowIndex >= rows.length || rawName.length < 2 || rawName.length > 255) {
       throw new Error("Передана некорректная правка названия позиции прайс‑листа.");
     }
@@ -186,11 +241,26 @@ export function preparePriceImportRows(
     nameEditsByRow.set(edit.rowIndex, rawName);
   });
 
+  const metadataEditsByRow = new Map<number, Pick<ParsedPriceRow, "manufacturer" | "placeContents">>();
+  metadataEdits.forEach(edit => {
+    const manufacturer = text(edit.manufacturer || "") || null;
+    const placeContents = normalizePlaceContents(edit.placeContents) || null;
+    if (!Number.isInteger(edit.rowIndex) || edit.rowIndex < 0 || edit.rowIndex >= rows.length ||
+      (manufacturer !== null && manufacturer.length > 255) ||
+      (placeContents !== null && placeContents.length > 255)) {
+      throw new Error("Передана некорректная характеристика предложения прайс‑листа.");
+    }
+    if (excluded.has(edit.rowIndex)) throw new Error("Нельзя менять характеристику у исключенной из импорта строки.");
+    if (metadataEditsByRow.has(edit.rowIndex)) throw new Error("Характеристика предложения изменена повторно.");
+    metadataEditsByRow.set(edit.rowIndex, { manufacturer, placeContents });
+  });
+
   const preparedRows = rows.flatMap((sourceRow, rowIndex) => {
     if (excluded.has(rowIndex)) return [];
     const rowPriceEdits = editsByRow.get(rowIndex);
     const rawName = nameEditsByRow.get(rowIndex);
-    if (!rowPriceEdits?.size && !rawName) return [{ rowIndex, row: sourceRow }];
+    const metadata = metadataEditsByRow.get(rowIndex);
+    if (!rowPriceEdits?.size && !rawName && !metadata) return [{ rowIndex, row: sourceRow }];
     const priceOptions = sourceRow.priceOptions.map((option, optionIndex) => {
       const edit = rowPriceEdits?.get(optionIndex);
       if (!edit) return option;
@@ -200,7 +270,8 @@ export function preparePriceImportRows(
         ...option,
         priceAmount: Number(edit.priceAmount.toFixed(2)),
         priceBasis,
-        priceMode: edit.priceMode ?? option.priceMode,
+        priceMode: canonicalPriceMode(edit.priceMode ?? option.priceMode),
+        market: edit.market ?? option.market,
         ...normalized,
         sourcePriceText: String(Number(edit.priceAmount.toFixed(2))),
       };
@@ -216,6 +287,7 @@ export function preparePriceImportRows(
         normalizedSignature: rawName ? productSignature(nextName) : sourceRow.normalizedSignature,
         variant: rawName ? extractVariant(nextName) : sourceRow.variant,
         sizeText: rawName ? extractSizeText(nextName) : sourceRow.sizeText,
+        ...(metadata ?? {}),
         priceOptions,
       },
     }];
@@ -226,6 +298,7 @@ export function preparePriceImportRows(
     excludedRowIndexes: Array.from(excluded).sort((left, right) => left - right),
     editedPriceOptions: priceEdits.length,
     editedNames: rowEdits.length,
+    editedMetadata: metadataEdits.length,
   };
 }
 
@@ -235,7 +308,8 @@ function makeOption(raw: unknown, header: string, rawName: string, packaging: st
   const priceBasis = priceBasisFromText(header, rawName, packaging);
   const normalized = normalizePrice(priceAmount, priceBasis, packaging);
   const threshold = fold(header).match(/(?:от|с)\s*(\d+(?:[.,]\d+)?)\s*кг/);
-  return { priceAmount, priceBasis, ...normalized, priceMode: priceModeFromHeader(header), minimumQuantityKg: threshold ? Number(threshold[1].replace(",", ".")) : null, includesVat: /с\s*ндс|ндс\s*\d+/.test(fold(header)) ? true : /без\s*ндс/.test(fold(header)) ? false : null, sourcePriceText: text(raw) };
+  const rawMode = priceModeFromHeader(header);
+  return { priceAmount, priceBasis, ...normalized, priceMode: canonicalPriceMode(rawMode), market: priceMarketFromText(`${header} ${text(raw)}`), minimumQuantityKg: threshold ? Number(threshold[1].replace(",", ".")) : null, includesVat: /с\s*ндс|ндс\s*\d+/.test(fold(header)) ? true : /без\s*ндс/.test(fold(header)) ? false : null, sourcePriceText: text(raw) };
 }
 function isProductHeader(value: unknown) { return /^(наименовани\w*|товар\w*|номенклатур\w*|позици\w*|продукт\w*)/i.test(text(value)); }
 function isPriceHeader(value: unknown) { return /цен|стоим|прайс|опт|налич|безнал/i.test(text(value)); }
@@ -256,16 +330,18 @@ function parseExcel(buffer: Buffer) {
     const skuIndex = columnIndex(headers, /артикул|код\s*(товара)?|^код$/);
     const categoryIndex = columnIndex(headers, /катег|раздел|групп/);
     const packagingIndex = columnIndex(headers, /фас|упак|тара|вес|короб|нетто/);
+    const manufacturerIndex = columnIndex(headers, /производител|изготовител|бренд/);
+    const placeContentsIndex = columnIndex(headers, /(?:вес|состав|кол).*(?:мест|короб|упак)|(?:мест|короб|упак).*(?:вес|состав|кол)/);
     const availabilityIndex = columnIndex(headers, /налич|остат|склад/);
     matrix.slice(headerRow + 1).forEach((cells, offset) => {
-      const rawName = text(cells[nameIndex]);
+      const rawName = normalizeProductDisplayName(text(cells[nameIndex]));
       if (!rawName || rawName.length < 2 || isAdministrativeText(rawName)) return;
       const packaging = normalizePackagingDisplay(text(cells[packagingIndex])) || null;
       const options = priceIndexes.map(({ header, index }) => makeOption(cells[index], header, rawName, packaging || rawName)).filter((value): value is ParsedPriceOption => Boolean(value));
       if (!options.length) return;
       const rowNumber = headerRow + offset + 2;
       const rawPayload = Object.fromEntries(headers.map((header, index) => [header || `Колонка ${index + 1}`, text(cells[index])]).filter(([, value]) => value));
-      rows.push({ sourceSheet: sheetName, sourceRowNumber: rowNumber, sourceSku: text(cells[skuIndex]) || null, rawName, normalizedName: normalizeProductName(rawName), canonicalHint: rawName, normalizedSignature: productSignature(rawName), category: text(cells[categoryIndex]) || null, packaging, packagingSignature: packagingSignature(packaging || rawName), availability: text(cells[availabilityIndex]) || null, variant: extractVariant(rawName), sizeText: extractSizeText(rawName), priceOptions: options, rawPayload });
+      rows.push({ sourceSheet: sheetName, sourceRowNumber: rowNumber, sourceSku: text(cells[skuIndex]) || null, rawName, normalizedName: normalizeProductName(rawName), canonicalHint: rawName, normalizedSignature: productSignature(rawName), category: text(cells[categoryIndex]) || null, packaging, packagingSignature: packagingSignature(packaging || rawName), manufacturer: text(cells[manufacturerIndex]) || null, placeContents: normalizePlaceContents(text(cells[placeContentsIndex])) || null, availability: text(cells[availabilityIndex]) || null, variant: extractVariant(rawName), sizeText: extractSizeText(rawName), priceOptions: options, rawPayload });
     });
   });
   return rows;
@@ -297,14 +373,14 @@ function parseExtractedText(documentText: string) {
     if (/^(итого|всего|страница|прайс|коммерческое предложение)/i.test(line) || isAdministrativeText(line)) return;
     const candidate = bestPriceMatch(line);
     if (!candidate) return;
-    const rawName = text(line.slice(0, candidate.index));
+    const rawName = normalizeProductDisplayName(text(line.slice(0, candidate.index)));
     const price = candidate.amount;
     if (!price || rawName.length < 3 || /^(цена|руб|код|артикул)$/i.test(rawName) || isAdministrativeText(rawName)) return;
     const packingMatch = line.match(/\d+(?:[.,]\d+)?\s*(?:кг|г|гр|л|мл|шт)(?![a-zа-я])/i);
     const packaging = normalizePackagingDisplay(packingMatch?.[0]) || null;
     const option = makeOption(candidate.text, "цена", rawName, packaging || rawName);
     if (!option) return;
-    rows.push({ sourceSheet: "Документ", sourceRowNumber: index + 1, sourceSku: null, rawName, normalizedName: normalizeProductName(rawName), canonicalHint: rawName, normalizedSignature: productSignature(rawName), category: null, packaging, packagingSignature: packagingSignature(packaging || rawName), availability: null, variant: extractVariant(rawName), sizeText: extractSizeText(rawName), priceOptions: [option], rawPayload: { line } });
+    rows.push({ sourceSheet: "Документ", sourceRowNumber: index + 1, sourceSku: null, rawName, normalizedName: normalizeProductName(rawName), canonicalHint: rawName, normalizedSignature: productSignature(rawName), category: null, packaging, packagingSignature: packagingSignature(packaging || rawName), manufacturer: null, placeContents: null, availability: null, variant: extractVariant(rawName), sizeText: extractSizeText(rawName), priceOptions: [option], rawPayload: { line } });
   });
   return rows;
 }
@@ -327,14 +403,17 @@ function isPdfDeliveryOrContacts(line: string) {
   return /(?:условия\s+доставки|доставка\s+(?:в|до|по)|бесплатная\s+доставка|платная\s+доставка|подпишитесь|telegram|max$|московская\s+область|северная\s+промзона|г\.?видное|стр\.\s*\d)/i.test(line) || isAdministrativeText(line);
 }
 function normalizePdfName(value: string) {
-  return text(value)
+  const cleaned = text(value)
     .replace(/[\uE000-\uF8FF]/g, " ")
     .replace(/^\s*(?:№|n)?\s*\d{1,4}\s+(?=[a-zа-яё])/i, "")
+    .replace(/\bб\s+ез\b/gi, "без")
+    .replace(/\s+([,.;:!?])/g, "$1")
     .replace(/(^|\s)(?:0+\s*(?:г|гр)|20\d{2}\s*(?:г|гр))(?![a-zа-яё])/gi, "$1")
     .replace(/(^|\s)20\d{2}(?=\s|$|[,:;.])/g, "$1")
     .replace(/\s+(?:с\s+ндс|без\s+ндс|срок\s+(?:годн|хран)|годн\.?(?![a-zа-яё])|изготовлен|дата\s+(?:производ|изготов)|при\s+темп|ндс(?![a-zа-яё])).*/i, "")
     .replace(/\s{2,}/g, " ")
     .trim();
+  return normalizeProductDisplayName(cleaned);
 }
 function pdfPackagingFromText(value: string) {
   const matches = Array.from(value.matchAll(/\b\d+(?:[.,]\d+)?\s*(?:кг|г|гр|л|мл|шт|уп\.?)(?![a-zа-я])/gi))
@@ -351,7 +430,7 @@ function makePdfRow(rawName: string, priceText: string, priceContext: string, li
   if (name.length < 3 || isAdministrativeText(name) || isPdfHeaderLine(name) || /^\d+(?:[\s.,]\d+)?(?:\s*\(в\s*(?:спб|мск)\))?$/i.test(name)) return null;
   const option = makeOption(priceText, priceContext, name, packaging || name);
   if (!option) return null;
-  return { sourceSheet: "PDF", sourceRowNumber: lineNumber, sourceSku: null, rawName: name, normalizedName: normalizeProductName(name), canonicalHint: name, normalizedSignature: productSignature(name), category: null, packaging, packagingSignature: packagingSignature(packaging || name), availability: null, variant: extractVariant(name), sizeText: extractSizeText(name), priceOptions: [option], rawPayload: { line: priceContext } };
+  return { sourceSheet: "PDF", sourceRowNumber: lineNumber, sourceSku: null, rawName: name, normalizedName: normalizeProductName(name), canonicalHint: name, normalizedSignature: productSignature(name), category: null, packaging, packagingSignature: packagingSignature(packaging || name), manufacturer: null, placeContents: null, availability: null, variant: extractVariant(name), sizeText: extractSizeText(name), priceOptions: [option], rawPayload: { line: priceContext } };
 }
 
 /** PDF catalogs often split a product cell across lines; only fragments preceding a currency price form the product name. */
@@ -479,7 +558,12 @@ function pdfPriceOptionsFromQuote(quote: string, priceContext: string, rawName: 
   if (/(?:спец(?:предлож|цен)|акци|от\s+(?:объем|\d+\s*(?:кг|шт))|при\s+заказе)/i.test(context)) return [];
   const matches = Array.from(cleanedQuote.matchAll(/(?:\d{1,3}(?:[\s.,]\d{3})+|\d{1,7})(?:[.,]\d{1,2})?(?:\s*\(в\s*(?:спб|мск)\))?(?:\s*с\s*ндс)?(?:\s*(?:(?:за\s*(?:1\s*)?|\/)\s*)?(?:кг|л|шт))?/gi));
   const options = matches
-    .map(match => makeOption(match[0], `${match[0]} ${includesVat ? "с НДС" : ""}`, rawName, packaging || rawName))
+    .map(match => {
+      const trailing = cleanedQuote.slice((match.index ?? 0) + match[0].length);
+      const nextAmountAt = trailing.search(/\d{1,3}(?:[\s.,]\d{3})*(?:[.,]\d{1,2})?/);
+      const localContext = nextAmountAt >= 0 ? trailing.slice(0, nextAmountAt) : trailing;
+      return makeOption(match[0], `${match[0]} ${localContext} ${includesVat ? "с НДС" : ""}`, rawName, packaging || rawName);
+    })
     .filter((option): option is ParsedPriceOption => option !== null)
     .map(option => ({ ...option, includesVat: includesVat || option.includesVat }));
   if (options.length) return options;
@@ -489,7 +573,8 @@ function pdfPriceOptionsFromQuote(quote: string, priceContext: string, rawName: 
     priceBasis: packaging ? "package" as const : "unknown" as const,
     normalizedPrice: null,
     normalizedUnit: "unknown" as const,
-    priceMode: priceModeFromHeader(context),
+    priceMode: canonicalPriceMode(priceModeFromHeader(context)),
+    market: priceMarketFromText(context),
     minimumQuantityKg: null,
     includesVat: includesVat || null,
     sourcePriceText: cleanedQuote,
@@ -504,9 +589,11 @@ function pdfPriceOptionsFromQuote(quote: string, priceContext: string, rawName: 
 export function parsePdfPositionedPages(pages: PdfTextFragment[][]) {
   const rows: ParsedPriceRow[] = [];
   let sourceRowNumber = 0;
+  let continuationColumns: Array<Omit<PdfColumnSection, "headerY" | "bottomY">> = [];
   pages.forEach(pageItems => {
     const lines = pdfPositionedLines(pageItems);
     const allItems = lines.flatMap(line => line.items);
+    const pageTop = Math.max(0, ...allItems.map(item => item.y)) + 6;
     const headerCandidates: Array<Omit<PdfColumnSection, "bottomY">> = [];
     lines.forEach(line => {
       const nameItem = line.items.find(item => /наименовани|товар|номенклатур|позици|продукт/i.test(item.value));
@@ -534,10 +621,16 @@ export function parsePdfPositionedPages(pages: PdfTextFragment[][]) {
         includesVat: /с\s*ндс/i.test(text(nearby.map(item => item.value).join(" "))),
       });
     });
-    const sections = headerCandidates
+    const detectedSections = headerCandidates
       .sort((left, right) => right.headerY - left.headerY)
       .filter((header, index, list) => index === 0 || Math.abs(header.headerY - list[index - 1].headerY) > 24)
       .map((header, index, list) => ({ ...header, bottomY: list[index + 1]?.headerY ?? -Infinity }));
+    const sections = detectedSections.length
+      ? detectedSections
+      : continuationColumns.map(column => ({ ...column, headerY: pageTop, bottomY: -Infinity }));
+    if (detectedSections.length) {
+      continuationColumns = detectedSections.map(({ headerY: _headerY, bottomY: _bottomY, ...column }) => column);
+    }
 
     sections.forEach(section => {
       const priceStart = section.priceX - 62;
@@ -559,7 +652,9 @@ export function parsePdfPositionedPages(pages: PdfTextFragment[][]) {
         const rawName = stripPdfSpecification(pdfColumnText(rowItems, section.nameX - 22, nameEnd));
         const specification = section.specificationX === null ? "" : pdfColumnText(rowItems, specificationStart, manufacturerStart);
         const manufacturer = section.manufacturerX === null ? "" : pdfColumnText(rowItems, manufacturerStart, packagingStart);
-        const placeWeight = section.packagingX === null ? "" : pdfColumnText(rowItems, packagingStart, section.priceX - 16);
+        const quoteStartX = Math.min(...line.items.filter(item => item.x >= priceStart && item.x < section.priceEnd).map(item => item.x));
+        const placeEnd = Number.isFinite(quoteStartX) ? Math.min(section.priceX - 16, quoteStartX - 10) : priceStart;
+        const placeWeight = section.packagingX === null ? "" : pdfColumnText(rowItems, packagingStart, placeEnd);
         const packaging = pdfPackagingFromText(`${rawName} ${placeWeight}`);
         const options = pdfPriceOptionsFromQuote(quote, quote, rawName, packaging, section.includesVat || /с\s*ндс/i.test(quote));
         if (!rawName || !options.length || isPdfSectionLine(rawName) || isPdfDeliveryOrContacts(rawName)) return;
@@ -575,6 +670,8 @@ export function parsePdfPositionedPages(pages: PdfTextFragment[][]) {
           category: null,
           packaging,
           packagingSignature: packagingSignature(packaging || rawName),
+          manufacturer: text(manufacturer) || null,
+          placeContents: normalizePlaceContents(placeWeight) || null,
           availability: null,
           variant: extractVariant(rawName),
           sizeText: extractSizeText(rawName),
@@ -676,10 +773,10 @@ export async function createPriceSupplier(input: { name: string; contactNote?: s
   const [supplier] = await db.select().from(priceSuppliers).where(eq(priceSuppliers.id, inserted.id)).limit(1);
   return supplier!;
 }
-export async function commitPriceImport(input: { buffer: Buffer; fileName: string; supplierName: string; sourceDate?: string | null; actorId: number; categorySelections?: PriceImportCategorySelection[]; priceEdits?: PriceImportPriceEdit[]; rowEdits?: PriceImportRowEdit[]; productLinks?: PriceImportProductLink[]; excludedRowIndexes?: number[] }) {
+export async function commitPriceImport(input: { buffer: Buffer; fileName: string; supplierName: string; sourceDate?: string | null; actorId: number; categorySelections?: PriceImportCategorySelection[]; priceEdits?: PriceImportPriceEdit[]; rowEdits?: PriceImportRowEdit[]; metadataEdits?: PriceImportMetadataEdit[]; productLinks?: PriceImportProductLink[]; excludedRowIndexes?: number[] }) {
   const preview = await previewPriceImport(input.buffer, input.fileName);
   if (!preview.rows.length) throw new Error("Импорт не сохранен: в документе не найдено ни одной товарной строки с ценой.");
-  const preparedRows = preparePriceImportRows(preview.rows, input.priceEdits, input.excludedRowIndexes, input.rowEdits);
+  const preparedRows = preparePriceImportRows(preview.rows, input.priceEdits, input.excludedRowIndexes, input.rowEdits, input.metadataEdits);
   if (!preparedRows.rows.length) throw new Error("Импорт не сохранен: все распознанные строки исключены до сохранения.");
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
   const categoryByRow = new Map<number, number>();
@@ -745,30 +842,31 @@ export async function commitPriceImport(input: { buffer: Buffer; fileName: strin
     }
     if (mapping.mappingStatus === "linked") linked += 1;
     if (mapping.mappingStatus === "suggested") suggested += 1;
-    const [rowInserted] = await db.insert(priceImportRows).values({ importId: inserted.id, sourceSheet: row.sourceSheet, sourceRowNumber: row.sourceRowNumber, sourceSku: row.sourceSku, rawName: row.rawName, normalizedName: row.normalizedName, rawCategory: row.category, rawPackaging: row.packaging, rawAvailability: row.availability, rawPayload: row.rawPayload, productId: mapping.productId, mappingStatus: mapping.mappingStatus, matchedBy: mapping.matchedBy, matchConfidence: mapping.matchConfidence === null ? null : mapping.matchConfidence.toFixed(2) }).$returningId();
+    const [rowInserted] = await db.insert(priceImportRows).values({ importId: inserted.id, sourceSheet: row.sourceSheet, sourceRowNumber: row.sourceRowNumber, sourceSku: row.sourceSku, rawName: row.rawName, normalizedName: row.normalizedName, rawCategory: row.category, rawPackaging: row.packaging, manufacturer: row.manufacturer, placeContents: row.placeContents, rawAvailability: row.availability, rawPayload: row.rawPayload, productId: mapping.productId, mappingStatus: mapping.mappingStatus, matchedBy: mapping.matchedBy, matchConfidence: mapping.matchConfidence === null ? null : mapping.matchConfidence.toFixed(2) }).$returningId();
     const storedOptions = row.priceOptions.filter((option): option is ParsedPriceOption & { priceAmount: number } => option.priceAmount !== null);
-    if (storedOptions.length) await db.insert(priceOfferPrices).values(storedOptions.map(option => ({ importRowId: rowInserted.id, priceMode: option.priceMode, priceAmount: option.priceAmount.toFixed(2), priceBasis: option.priceBasis, normalizedPrice: option.normalizedPrice === null ? null : option.normalizedPrice.toFixed(2), normalizedUnit: option.normalizedUnit, minimumQuantityKg: option.minimumQuantityKg === null ? null : option.minimumQuantityKg.toFixed(2), includesVat: option.includesVat, sourcePriceText: option.sourcePriceText })));
+    if (storedOptions.length) await db.insert(priceOfferPrices).values(storedOptions.map(option => ({ importRowId: rowInserted.id, priceMode: canonicalPriceMode(option.priceMode), market: option.market, priceAmount: option.priceAmount.toFixed(2), priceBasis: option.priceBasis, normalizedPrice: option.normalizedPrice === null ? null : option.normalizedPrice.toFixed(2), normalizedUnit: option.normalizedUnit, minimumQuantityKg: option.minimumQuantityKg === null ? null : option.minimumQuantityKg.toFixed(2), includesVat: option.includesVat, sourcePriceText: option.sourcePriceText })));
   }
-  return { importId: inserted.id, supplier: { id: supplier.id, name: supplier.name }, supplierWasCreated: ensuredSupplier.created, rowCount: preparedRows.rows.length, linked, suggested, unmapped: preparedRows.rows.length - linked - suggested, createdProducts, createdProductDetails, createdAliasDetails, categorizedRows, explicitlyLinked, warningCount: preview.warningCount, excludedRows: preparedRows.excludedRowIndexes.length, editedPriceOptions: preparedRows.editedPriceOptions, editedNames: preparedRows.editedNames };
+  return { importId: inserted.id, supplier: { id: supplier.id, name: supplier.name }, supplierWasCreated: ensuredSupplier.created, rowCount: preparedRows.rows.length, linked, suggested, unmapped: preparedRows.rows.length - linked - suggested, createdProducts, createdProductDetails, createdAliasDetails, categorizedRows, explicitlyLinked, warningCount: preview.warningCount, excludedRows: preparedRows.excludedRowIndexes.length, editedPriceOptions: preparedRows.editedPriceOptions, editedNames: preparedRows.editedNames, editedMetadata: preparedRows.editedMetadata };
 }
 function sourceMimeType(sourceType: PriceImportPreview["sourceType"]) { return sourceType === "pdf" ? "application/pdf" : sourceType === "docx" ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "application/vnd.ms-excel"; }
 export async function listPriceControlData() {
   const db = await getDb(); if (!db) return emptyPriceData();
-  const [suppliers, categories, products, imports, rows, aliases] = await Promise.all([
+  const [suppliers, categories, characteristics, products, imports, rows, aliases] = await Promise.all([
     db.select().from(priceSuppliers).orderBy(priceSuppliers.name),
     db.select().from(priceCategories).orderBy(priceCategories.name),
-    db.select({ id: priceProducts.id, internalCode: priceProducts.internalCode, canonicalName: priceProducts.canonicalName, normalizedSignature: priceProducts.normalizedSignature, categoryId: priceProducts.categoryId, legacyCategory: priceProducts.category, categoryName: priceCategories.name, categoryIsActive: priceCategories.isActive, variant: priceProducts.variant, sizeText: priceProducts.sizeText, baseUnit: priceProducts.baseUnit, isActive: priceProducts.isActive }).from(priceProducts).leftJoin(priceCategories, eq(priceProducts.categoryId, priceCategories.id)).orderBy(priceProducts.canonicalName),
+    db.select().from(priceProductCharacteristics).orderBy(priceProductCharacteristics.kind, priceProductCharacteristics.value),
+    db.select({ id: priceProducts.id, internalCode: priceProducts.internalCode, canonicalName: priceProducts.canonicalName, normalizedSignature: priceProducts.normalizedSignature, categoryId: priceProducts.categoryId, legacyCategory: priceProducts.category, categoryName: priceCategories.name, categoryIsActive: priceCategories.isActive, variantCharacteristicId: priceProducts.variantCharacteristicId, sizeCharacteristicId: priceProducts.sizeCharacteristicId, variant: priceProducts.variant, sizeText: priceProducts.sizeText, baseUnit: priceProducts.baseUnit, isActive: priceProducts.isActive }).from(priceProducts).leftJoin(priceCategories, eq(priceProducts.categoryId, priceCategories.id)).orderBy(priceProducts.canonicalName),
     db.select({ id: priceImports.id, supplierId: priceImports.supplierId, supplierName: priceSuppliers.name, fileName: priceImports.fileName, fileKey: priceImports.fileKey, sourceDate: priceImports.sourceDate, sourceType: priceImports.sourceType, rowCount: priceImports.rowCount, createdAt: priceImports.createdAt }).from(priceImports).innerJoin(priceSuppliers, eq(priceImports.supplierId, priceSuppliers.id)).orderBy(desc(priceImports.createdAt)).limit(50),
-    db.select({ rowId: priceImportRows.id, importId: priceImportRows.importId, productId: priceImportRows.productId, rawName: priceImportRows.rawName, rawCategory: priceImportRows.rawCategory, rawPackaging: priceImportRows.rawPackaging, mappingStatus: priceImportRows.mappingStatus, matchedBy: priceImportRows.matchedBy, matchConfidence: priceImportRows.matchConfidence, supplierId: priceImports.supplierId, supplierName: priceSuppliers.name, sourceDate: priceImports.sourceDate, importedAt: priceImports.createdAt, productName: priceProducts.canonicalName, internalCode: priceProducts.internalCode, priceId: priceOfferPrices.id, priceMode: priceOfferPrices.priceMode, priceAmount: priceOfferPrices.priceAmount, priceBasis: priceOfferPrices.priceBasis, normalizedPrice: priceOfferPrices.normalizedPrice, normalizedUnit: priceOfferPrices.normalizedUnit, minimumQuantityKg: priceOfferPrices.minimumQuantityKg, sourcePriceText: priceOfferPrices.sourcePriceText }).from(priceImportRows).innerJoin(priceImports, eq(priceImportRows.importId, priceImports.id)).innerJoin(priceSuppliers, eq(priceImports.supplierId, priceSuppliers.id)).leftJoin(priceProducts, eq(priceImportRows.productId, priceProducts.id)).leftJoin(priceOfferPrices, eq(priceOfferPrices.importRowId, priceImportRows.id)).orderBy(desc(priceImports.createdAt)).limit(10000),
+    db.select({ rowId: priceImportRows.id, importId: priceImportRows.importId, productId: priceImportRows.productId, rawName: priceImportRows.rawName, rawCategory: priceImportRows.rawCategory, rawPackaging: priceImportRows.rawPackaging, manufacturer: priceImportRows.manufacturer, placeContents: priceImportRows.placeContents, mappingStatus: priceImportRows.mappingStatus, matchedBy: priceImportRows.matchedBy, matchConfidence: priceImportRows.matchConfidence, supplierId: priceImports.supplierId, supplierName: priceSuppliers.name, sourceDate: priceImports.sourceDate, importedAt: priceImports.createdAt, productName: priceProducts.canonicalName, internalCode: priceProducts.internalCode, priceId: priceOfferPrices.id, priceMode: priceOfferPrices.priceMode, market: priceOfferPrices.market, priceAmount: priceOfferPrices.priceAmount, priceBasis: priceOfferPrices.priceBasis, normalizedPrice: priceOfferPrices.normalizedPrice, normalizedUnit: priceOfferPrices.normalizedUnit, minimumQuantityKg: priceOfferPrices.minimumQuantityKg, sourcePriceText: priceOfferPrices.sourcePriceText }).from(priceImportRows).innerJoin(priceImports, eq(priceImportRows.importId, priceImports.id)).innerJoin(priceSuppliers, eq(priceImports.supplierId, priceSuppliers.id)).leftJoin(priceProducts, eq(priceImportRows.productId, priceProducts.id)).leftJoin(priceOfferPrices, eq(priceOfferPrices.importRowId, priceImportRows.id)).orderBy(desc(priceImports.createdAt)).limit(10000),
     db.select({ aliasId: priceSupplierAliases.id, supplierId: priceSupplierAliases.supplierId, supplierName: priceSuppliers.name, productId: priceSupplierAliases.productId, internalCode: priceProducts.internalCode, canonicalName: priceProducts.canonicalName, normalizedName: priceSupplierAliases.normalizedName, packagingSignature: priceSupplierAliases.packagingSignature, updatedAt: priceSupplierAliases.updatedAt }).from(priceSupplierAliases).innerJoin(priceSuppliers, eq(priceSupplierAliases.supplierId, priceSuppliers.id)).innerJoin(priceProducts, eq(priceSupplierAliases.productId, priceProducts.id)).orderBy(priceSuppliers.name, priceSupplierAliases.normalizedName).limit(500),
   ]);
   const catalogProducts = products.map(product => ({ ...product, category: product.categoryName ?? product.legacyCategory, categoryIsActive: product.categoryIsActive ?? true }));
   const productMap = new Map(catalogProducts.map(product => [product.id, product]));
-  const priceChangeSources = rows.flatMap(row => row.priceId !== null && row.productId !== null && row.normalizedPrice !== null && row.normalizedUnit !== null ? [{ priceId: row.priceId, importId: row.importId, productId: row.productId, supplierId: row.supplierId, priceMode: row.priceMode, normalizedUnit: row.normalizedUnit, normalizedPrice: row.normalizedPrice, sourceDate: row.sourceDate, importedAt: row.importedAt }] : []);
+  const priceChangeSources = rows.flatMap(row => row.priceId !== null && row.productId !== null && row.normalizedPrice !== null && row.normalizedUnit !== null ? [{ priceId: row.priceId, importId: row.importId, productId: row.productId, supplierId: row.supplierId, priceMode: row.priceMode, market: row.market, normalizedUnit: row.normalizedUnit, normalizedPrice: row.normalizedPrice, sourceDate: row.sourceDate, importedAt: row.importedAt }] : []);
   const priceChanges = calculatePriceChanges(priceChangeSources);
   const latestOffer = new Map<string, typeof rows[number]>();
   rows.filter(row => row.productId && row.priceId && row.normalizedPrice !== null).forEach(row => {
-    const key = `${row.productId}:${row.supplierId}:${row.priceMode}:${row.normalizedUnit}`;
+    const key = `${row.productId}:${row.supplierId}:${resolvePriceMarket(row.market, row.priceMode)}:${canonicalPriceMode(row.priceMode)}:${row.normalizedUnit}`;
     if (!latestOffer.has(key)) latestOffer.set(key, row);
   });
   const groups = new Map<number, Array<typeof rows[number]>>();
@@ -776,28 +874,28 @@ export async function listPriceControlData() {
   const comparisons = Array.from(groups.entries()).map(([productId, offers]) => {
     const product = productMap.get(productId)!;
     const comparable = offers.filter(offer => offer.normalizedPrice !== null && offer.normalizedUnit !== "unknown").sort((a, b) => Number(a.normalizedPrice) - Number(b.normalizedPrice));
-    const best = comparable[0]; const next = comparable.find(offer => offer.supplierId !== best?.supplierId && offer.normalizedUnit === best?.normalizedUnit);
+    const best = comparable[0]; const next = comparable.find(offer => offer.supplierId !== best?.supplierId && offer.normalizedUnit === best?.normalizedUnit && resolvePriceMarket(offer.market, offer.priceMode) === resolvePriceMarket(best?.market, best?.priceMode) && canonicalPriceMode(offer.priceMode) === canonicalPriceMode(best?.priceMode));
     const savings = best && next ? Number(next.normalizedPrice) - Number(best.normalizedPrice) : null;
-    return { product: { id: product.id, internalCode: product.internalCode, canonicalName: product.canonicalName, categoryId: product.categoryId, category: product.category, categoryIsActive: product.categoryIsActive, variant: product.variant, sizeText: product.sizeText, baseUnit: product.baseUnit, isActive: product.isActive }, offers: comparable.map(offer => ({ importId: offer.importId, rowId: offer.rowId, priceId: offer.priceId, supplierId: offer.supplierId, supplierName: offer.supplierName, rawName: offer.rawName, packaging: offer.rawPackaging, priceMode: offer.priceMode, priceAmount: Number(offer.priceAmount), priceBasis: offer.priceBasis, normalizedPrice: Number(offer.normalizedPrice), normalizedUnit: offer.normalizedUnit, minimumQuantityKg: offer.minimumQuantityKg === null ? null : Number(offer.minimumQuantityKg), sourcePriceText: offer.sourcePriceText, priceChange: offer.priceId === null ? null : priceChanges.get(offer.priceId) ?? null })), recommendation: best && next && savings !== null ? { supplierId: best.supplierId, supplierName: best.supplierName, normalizedPrice: Number(best.normalizedPrice), normalizedUnit: best.normalizedUnit as "kg" | "l" | "piece", savings, savingsPercent: Number(((savings / Number(next.normalizedPrice)) * 100).toFixed(1)) } : null };
+    return { product: { id: product.id, internalCode: product.internalCode, canonicalName: product.canonicalName, categoryId: product.categoryId, category: product.category, categoryIsActive: product.categoryIsActive, variantCharacteristicId: product.variantCharacteristicId, sizeCharacteristicId: product.sizeCharacteristicId, variant: product.variant, sizeText: product.sizeText, baseUnit: product.baseUnit, isActive: product.isActive }, offers: comparable.map(offer => ({ importId: offer.importId, rowId: offer.rowId, priceId: offer.priceId, supplierId: offer.supplierId, supplierName: offer.supplierName, rawName: offer.rawName, packaging: offer.rawPackaging, manufacturer: offer.manufacturer, placeContents: offer.placeContents, priceMode: canonicalPriceMode(offer.priceMode), market: resolvePriceMarket(offer.market, offer.priceMode), priceAmount: Number(offer.priceAmount), priceBasis: offer.priceBasis, normalizedPrice: Number(offer.normalizedPrice), normalizedUnit: offer.normalizedUnit, minimumQuantityKg: offer.minimumQuantityKg === null ? null : Number(offer.minimumQuantityKg), sourcePriceText: offer.sourcePriceText, priceChange: offer.priceId === null ? null : priceChanges.get(offer.priceId) ?? null })), recommendation: best && next && savings !== null ? { supplierId: best.supplierId, supplierName: best.supplierName, normalizedPrice: Number(best.normalizedPrice), normalizedUnit: best.normalizedUnit as "kg" | "l" | "piece", savings, savingsPercent: Number(((savings / Number(next.normalizedPrice)) * 100).toFixed(1)) } : null };
   }).sort((a, b) => (b.recommendation?.savings ?? 0) - (a.recommendation?.savings ?? 0));
-  const unmappedRows = rows.filter(row => row.mappingStatus !== "linked").slice(0, 100).map(row => ({ rowId: row.rowId, importId: row.importId, supplierId: row.supplierId, supplierName: row.supplierName, rawName: row.rawName, rawCategory: row.rawCategory, rawPackaging: row.rawPackaging, mappingStatus: row.mappingStatus, matchedBy: row.matchedBy, matchConfidence: row.matchConfidence === null ? null : Number(row.matchConfidence), suggestedProduct: row.productId ? { id: row.productId, name: row.productName, internalCode: row.internalCode } : null }));
-  const history = rows.filter(row => row.productId && row.priceId && row.normalizedPrice !== null && row.normalizedUnit !== "unknown").map(row => ({ priceId: row.priceId!, productId: row.productId!, supplierId: row.supplierId, supplierName: row.supplierName, date: row.sourceDate || row.importedAt.toISOString().slice(0, 10), normalizedPrice: Number(row.normalizedPrice), normalizedUnit: row.normalizedUnit, priceMode: row.priceMode, priceChange: priceChanges.get(row.priceId!) ?? null }));
-  const previewMap = new Map(imports.map(item => [item.id, { importId: item.id, rows: [] as Array<{ rowId: number; rawName: string; rawCategory: string | null; rawPackaging: string | null; productName: string | null; priceAmount: number | null }> }]));
+  const unmappedRows = rows.filter(row => row.mappingStatus !== "linked").slice(0, 100).map(row => ({ rowId: row.rowId, importId: row.importId, supplierId: row.supplierId, supplierName: row.supplierName, rawName: row.rawName, rawCategory: row.rawCategory, rawPackaging: row.rawPackaging, manufacturer: row.manufacturer, placeContents: row.placeContents, mappingStatus: row.mappingStatus, matchedBy: row.matchedBy, matchConfidence: row.matchConfidence === null ? null : Number(row.matchConfidence), suggestedProduct: row.productId ? { id: row.productId, name: row.productName, internalCode: row.internalCode } : null }));
+  const history = rows.filter(row => row.productId && row.priceId && row.normalizedPrice !== null && row.normalizedUnit !== "unknown").map(row => ({ priceId: row.priceId!, productId: row.productId!, supplierId: row.supplierId, supplierName: row.supplierName, date: row.sourceDate || row.importedAt.toISOString().slice(0, 10), normalizedPrice: Number(row.normalizedPrice), normalizedUnit: row.normalizedUnit, priceMode: canonicalPriceMode(row.priceMode), market: resolvePriceMarket(row.market, row.priceMode), priceChange: priceChanges.get(row.priceId!) ?? null }));
+  const previewMap = new Map(imports.map(item => [item.id, { importId: item.id, rows: [] as Array<{ rowId: number; rawName: string; rawCategory: string | null; rawPackaging: string | null; manufacturer: string | null; placeContents: string | null; productName: string | null; priceAmount: number | null }> }]));
   const previewSeen = new Set<number>();
   rows.forEach(row => {
     if (previewSeen.has(row.rowId)) return;
     previewSeen.add(row.rowId);
     const preview = previewMap.get(row.importId);
-    if (preview && preview.rows.length < 24) preview.rows.push({ rowId: row.rowId, rawName: row.rawName, rawCategory: row.rawCategory, rawPackaging: row.rawPackaging, productName: row.productName, priceAmount: row.priceAmount === null ? null : Number(row.priceAmount) });
+    if (preview && preview.rows.length < 24) preview.rows.push({ rowId: row.rowId, rawName: row.rawName, rawCategory: row.rawCategory, rawPackaging: row.rawPackaging, manufacturer: row.manufacturer, placeContents: row.placeContents, productName: row.productName, priceAmount: row.priceAmount === null ? null : Number(row.priceAmount) });
   });
-  return { suppliers, categories, products: catalogProducts, imports, comparisons, unmappedRows, aliases, history, importPreviews: Array.from(previewMap.values()) };
+  return { suppliers, categories, characteristics, products: catalogProducts, imports, comparisons, unmappedRows, aliases, history, importPreviews: Array.from(previewMap.values()) };
 }
-function emptyPriceData() { return { suppliers: [], categories: [], products: [], imports: [], comparisons: [], unmappedRows: [], aliases: [], history: [], importPreviews: [] }; }
+function emptyPriceData() { return { suppliers: [], categories: [], characteristics: [], products: [], imports: [], comparisons: [], unmappedRows: [], aliases: [], history: [], importPreviews: [] }; }
 
 export async function listSignificantPriceIncreases(importId: number) {
   const db = await getDb();
   if (!db) return [];
-  const rows = await db.select({ priceId: priceOfferPrices.id, importId: priceImportRows.importId, productId: priceImportRows.productId, supplierId: priceImports.supplierId, supplierName: priceSuppliers.name, productName: priceProducts.canonicalName, priceMode: priceOfferPrices.priceMode, normalizedUnit: priceOfferPrices.normalizedUnit, normalizedPrice: priceOfferPrices.normalizedPrice, sourceDate: priceImports.sourceDate, importedAt: priceImports.createdAt }).from(priceOfferPrices).innerJoin(priceImportRows, eq(priceOfferPrices.importRowId, priceImportRows.id)).innerJoin(priceImports, eq(priceImportRows.importId, priceImports.id)).innerJoin(priceSuppliers, eq(priceImports.supplierId, priceSuppliers.id)).leftJoin(priceProducts, eq(priceImportRows.productId, priceProducts.id));
+  const rows = await db.select({ priceId: priceOfferPrices.id, importId: priceImportRows.importId, productId: priceImportRows.productId, supplierId: priceImports.supplierId, supplierName: priceSuppliers.name, productName: priceProducts.canonicalName, priceMode: priceOfferPrices.priceMode, market: priceOfferPrices.market, normalizedUnit: priceOfferPrices.normalizedUnit, normalizedPrice: priceOfferPrices.normalizedPrice, sourceDate: priceImports.sourceDate, importedAt: priceImports.createdAt }).from(priceOfferPrices).innerJoin(priceImportRows, eq(priceOfferPrices.importRowId, priceImportRows.id)).innerJoin(priceImports, eq(priceImportRows.importId, priceImports.id)).innerJoin(priceSuppliers, eq(priceImports.supplierId, priceSuppliers.id)).leftJoin(priceProducts, eq(priceImportRows.productId, priceProducts.id));
   const changes = calculatePriceChanges(rows.filter((row): row is typeof row & { priceId: number; productId: number; normalizedPrice: NonNullable<typeof row.normalizedPrice>; normalizedUnit: NonNullable<typeof row.normalizedUnit> } => row.productId !== null && row.normalizedPrice !== null && row.normalizedUnit !== null));
   const unique = new Map<string, { supplierName: string; productName: string; percent: number }>();
   rows.filter(row => row.importId === importId && row.productId !== null && row.productName).forEach(row => {
@@ -824,6 +922,53 @@ async function getPriceCategory(categoryId: number | null | undefined) {
   const [category] = await db.select().from(priceCategories).where(eq(priceCategories.id, categoryId)).limit(1);
   if (!category) throw new Error("Категория прайс‑контроля не найдена.");
   return category;
+}
+
+async function findPriceProductCharacteristic(kind: PriceCharacteristicKind, id: number | null | undefined) {
+  if (!id) return null;
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const [characteristic] = await db.select().from(priceProductCharacteristics).where(and(eq(priceProductCharacteristics.id, id), eq(priceProductCharacteristics.kind, kind))).limit(1);
+  if (!characteristic) throw new Error("Характеристика товара не найдена или имеет другой тип.");
+  return characteristic;
+}
+
+async function ensurePriceProductCharacteristic(kind: PriceCharacteristicKind, rawValue: string | null | undefined) {
+  const value = text(rawValue || "");
+  if (!value) return null;
+  if (value.length > 160) throw new Error("Характеристика товара слишком длинная.");
+  const normalizedValue = normalizeCharacteristicValue(value);
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const [existing] = await db.select().from(priceProductCharacteristics).where(and(eq(priceProductCharacteristics.kind, kind), eq(priceProductCharacteristics.normalizedValue, normalizedValue))).limit(1);
+  if (existing) return existing;
+  const [inserted] = await db.insert(priceProductCharacteristics).values({ kind, value, normalizedValue }).$returningId();
+  const [created] = await db.select().from(priceProductCharacteristics).where(eq(priceProductCharacteristics.id, inserted.id)).limit(1);
+  return created!;
+}
+
+export async function createPriceProductCharacteristic(input: { kind: PriceCharacteristicKind; value: string }) {
+  const value = text(input.value);
+  if (value.length < 1 || value.length > 160) throw new Error("Укажите характеристику товара: от 1 до 160 символов.");
+  return ensurePriceProductCharacteristic(input.kind, value);
+}
+
+export async function updatePriceProductCharacteristic(input: { id: number; value: string; isActive?: boolean }) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const value = text(input.value);
+  if (value.length < 1 || value.length > 160) throw new Error("Укажите характеристику товара: от 1 до 160 символов.");
+  const [current] = await db.select().from(priceProductCharacteristics).where(eq(priceProductCharacteristics.id, input.id)).limit(1);
+  if (!current) throw new Error("Характеристика товара не найдена.");
+  const normalizedValue = normalizeCharacteristicValue(value);
+  const [conflict] = await db.select({ id: priceProductCharacteristics.id }).from(priceProductCharacteristics).where(and(eq(priceProductCharacteristics.kind, current.kind), eq(priceProductCharacteristics.normalizedValue, normalizedValue))).limit(1);
+  if (conflict && conflict.id !== input.id) throw new Error("Такая характеристика уже есть в справочнике.");
+  await db.update(priceProductCharacteristics).set({ value, normalizedValue, ...(input.isActive === undefined ? {} : { isActive: input.isActive }) }).where(eq(priceProductCharacteristics.id, input.id));
+  const [updated] = await db.select().from(priceProductCharacteristics).where(eq(priceProductCharacteristics.id, input.id)).limit(1);
+  return updated!;
+}
+
+export async function getPriceProductCharacteristicAuditState(id: number) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const [characteristic] = await db.select({ kind: priceProductCharacteristics.kind, value: priceProductCharacteristics.value, isActive: priceProductCharacteristics.isActive }).from(priceProductCharacteristics).where(eq(priceProductCharacteristics.id, id)).limit(1);
+  return characteristic ?? null;
 }
 
 export async function getPriceProductAuditState(productId: number) {
@@ -854,7 +999,9 @@ export async function getPriceOfferAuditState(priceId: number) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
   const [offer] = await db.select({
     supplierName: priceSuppliers.name, supplierProductName: priceImportRows.rawName,
-    packaging: priceImportRows.rawPackaging, priceMode: priceOfferPrices.priceMode,
+    packaging: priceImportRows.rawPackaging, manufacturer: priceImportRows.manufacturer,
+    placeContents: priceImportRows.placeContents, priceMode: priceOfferPrices.priceMode,
+    market: priceOfferPrices.market,
     priceAmount: priceOfferPrices.priceAmount, priceBasis: priceOfferPrices.priceBasis,
     normalizedPrice: priceOfferPrices.normalizedPrice, normalizedUnit: priceOfferPrices.normalizedUnit,
   }).from(priceOfferPrices).innerJoin(priceImportRows, eq(priceOfferPrices.importRowId, priceImportRows.id)).innerJoin(priceImports, eq(priceImportRows.importId, priceImports.id)).innerJoin(priceSuppliers, eq(priceImports.supplierId, priceSuppliers.id)).where(eq(priceOfferPrices.id, priceId)).limit(1);
@@ -910,19 +1057,21 @@ export async function updatePriceCategory(input: { id: number; name: string; isA
   return category;
 }
 
-export async function createPriceProduct(input: { canonicalName: string; internalCode?: string; categoryId?: number | null; category?: string | null; variant?: string | null; sizeText?: string | null; baseUnit?: NormalizedUnit; defaultWeightGrams?: number | null; defaultVolumeMl?: number | null; isActive?: boolean }) {
+export async function createPriceProduct(input: { canonicalName: string; internalCode?: string; categoryId?: number | null; category?: string | null; variantCharacteristicId?: number | null; sizeCharacteristicId?: number | null; variant?: string | null; sizeText?: string | null; baseUnit?: NormalizedUnit; defaultWeightGrams?: number | null; defaultVolumeMl?: number | null; isActive?: boolean }) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
   const canonicalName = text(input.canonicalName); const signature = productSignature(canonicalName);
   const category = await getPriceCategory(input.categoryId);
   const [existing] = await db.select().from(priceProducts).where(eq(priceProducts.normalizedSignature, signature)).limit(1);
   if (existing) return existing;
   const internalCode = text(input.internalCode || productCodeFromSignature(signature)).toUpperCase();
-  const [inserted] = await db.insert(priceProducts).values({ internalCode, canonicalName, normalizedSignature: signature, categoryId: category?.id ?? null, category: category?.name ?? (input.category || null), variant: input.variant || extractVariant(canonicalName), sizeText: input.sizeText || extractSizeText(canonicalName), baseUnit: input.baseUnit || "unknown", defaultWeightGrams: input.defaultWeightGrams === null || input.defaultWeightGrams === undefined ? null : input.defaultWeightGrams.toFixed(2), defaultVolumeMl: input.defaultVolumeMl === null || input.defaultVolumeMl === undefined ? null : input.defaultVolumeMl.toFixed(2), isActive: input.isActive ?? true }).$returningId();
+  const variant = input.variantCharacteristicId === undefined ? await ensurePriceProductCharacteristic("variant", input.variant || extractVariant(canonicalName)) : await findPriceProductCharacteristic("variant", input.variantCharacteristicId);
+  const size = input.sizeCharacteristicId === undefined ? await ensurePriceProductCharacteristic("size", input.sizeText || extractSizeText(canonicalName)) : await findPriceProductCharacteristic("size", input.sizeCharacteristicId);
+  const [inserted] = await db.insert(priceProducts).values({ internalCode, canonicalName, normalizedSignature: signature, categoryId: category?.id ?? null, category: category?.name ?? (input.category || null), variantCharacteristicId: variant?.id ?? null, sizeCharacteristicId: size?.id ?? null, variant: variant?.value ?? null, sizeText: size?.value ?? null, baseUnit: input.baseUnit || "unknown", defaultWeightGrams: input.defaultWeightGrams === null || input.defaultWeightGrams === undefined ? null : input.defaultWeightGrams.toFixed(2), defaultVolumeMl: input.defaultVolumeMl === null || input.defaultVolumeMl === undefined ? null : input.defaultVolumeMl.toFixed(2), isActive: input.isActive ?? true }).$returningId();
   const [created] = await db.select().from(priceProducts).where(eq(priceProducts.id, inserted.id)).limit(1);
   return created!;
 }
 
-export async function updatePriceProduct(input: { id: number; canonicalName: string; internalCode: string; categoryId?: number | null; category?: string | null; variant?: string | null; sizeText?: string | null; baseUnit?: NormalizedUnit; isActive?: boolean }) {
+export async function updatePriceProduct(input: { id: number; canonicalName: string; internalCode: string; categoryId?: number | null; category?: string | null; variantCharacteristicId?: number | null; sizeCharacteristicId?: number | null; variant?: string | null; sizeText?: string | null; baseUnit?: NormalizedUnit; isActive?: boolean }) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
   const canonicalName = text(input.canonicalName); const internalCode = text(input.internalCode).toUpperCase();
   if (canonicalName.length < 2 || internalCode.length < 3) throw new Error("Укажите эталонное название и внутренний код товара.");
@@ -932,7 +1081,15 @@ export async function updatePriceProduct(input: { id: number; canonicalName: str
   if (signatureConflict && signatureConflict.id !== input.id) throw new Error("Товар с такой нормализованной сигнатурой уже существует.");
   const [codeConflict] = await db.select({ id: priceProducts.id }).from(priceProducts).where(eq(priceProducts.internalCode, internalCode)).limit(1);
   if (codeConflict && codeConflict.id !== input.id) throw new Error("Такой внутренний код уже используется другим товаром.");
-  await db.update(priceProducts).set({ canonicalName, internalCode, normalizedSignature: signature, categoryId: category?.id ?? input.categoryId ?? null, category: category?.name ?? (text(input.category || "") || null), variant: text(input.variant || "") || extractVariant(canonicalName), sizeText: text(input.sizeText || "") || extractSizeText(canonicalName), baseUnit: input.baseUnit || "unknown", ...(input.isActive === undefined ? {} : { isActive: input.isActive }) }).where(eq(priceProducts.id, input.id));
+  const [current] = await db.select({ variantCharacteristicId: priceProducts.variantCharacteristicId, sizeCharacteristicId: priceProducts.sizeCharacteristicId, variant: priceProducts.variant, sizeText: priceProducts.sizeText }).from(priceProducts).where(eq(priceProducts.id, input.id)).limit(1);
+  if (!current) throw new Error("Внутренний товар не найден.");
+  const variant = input.variantCharacteristicId === undefined
+    ? input.variant === undefined ? { id: current.variantCharacteristicId, value: current.variant } : await ensurePriceProductCharacteristic("variant", input.variant)
+    : await findPriceProductCharacteristic("variant", input.variantCharacteristicId);
+  const size = input.sizeCharacteristicId === undefined
+    ? input.sizeText === undefined ? { id: current.sizeCharacteristicId, value: current.sizeText } : await ensurePriceProductCharacteristic("size", input.sizeText)
+    : await findPriceProductCharacteristic("size", input.sizeCharacteristicId);
+  await db.update(priceProducts).set({ canonicalName, internalCode, normalizedSignature: signature, categoryId: category?.id ?? input.categoryId ?? null, category: category?.name ?? (text(input.category || "") || null), variantCharacteristicId: variant?.id ?? null, sizeCharacteristicId: size?.id ?? null, variant: variant?.value ?? null, sizeText: size?.value ?? null, baseUnit: input.baseUnit || "unknown", ...(input.isActive === undefined ? {} : { isActive: input.isActive }) }).where(eq(priceProducts.id, input.id));
   const [product] = await db.select().from(priceProducts).where(eq(priceProducts.id, input.id)).limit(1);
   if (!product) throw new Error("Внутренний товар не найден.");
   return product;
@@ -988,12 +1145,18 @@ export async function deletePriceSupplier(supplierId: number) {
   return { id: supplier.id, name: supplier.name };
 }
 
-export async function updatePriceOffer(input: { priceId: number; priceAmount: number; priceBasis: PriceBasis; priceMode?: PriceMode }) {
+export async function updatePriceOffer(input: { priceId: number; priceAmount: number; priceBasis: PriceBasis; priceMode?: PriceMode; market?: PriceMarket; manufacturer?: string | null; placeContents?: string | null }) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
-  const [price] = await db.select({ id: priceOfferPrices.id, rawPackaging: priceImportRows.rawPackaging }).from(priceOfferPrices).innerJoin(priceImportRows, eq(priceOfferPrices.importRowId, priceImportRows.id)).where(eq(priceOfferPrices.id, input.priceId)).limit(1);
+  const [price] = await db.select({ id: priceOfferPrices.id, importRowId: priceOfferPrices.importRowId, rawPackaging: priceImportRows.rawPackaging, priceMode: priceOfferPrices.priceMode, market: priceOfferPrices.market }).from(priceOfferPrices).innerJoin(priceImportRows, eq(priceOfferPrices.importRowId, priceImportRows.id)).where(eq(priceOfferPrices.id, input.priceId)).limit(1);
   if (!price) throw new Error("Цена прайс‑листа не найдена.");
   const normalized = normalizePrice(input.priceAmount, input.priceBasis, price.rawPackaging);
-  await db.update(priceOfferPrices).set({ priceAmount: input.priceAmount.toFixed(2), priceBasis: input.priceBasis, ...(input.priceMode === undefined ? {} : { priceMode: input.priceMode }), normalizedPrice: normalized.normalizedPrice === null ? null : normalized.normalizedPrice.toFixed(2), normalizedUnit: normalized.normalizedUnit }).where(eq(priceOfferPrices.id, input.priceId));
+  await db.update(priceOfferPrices).set({ priceAmount: input.priceAmount.toFixed(2), priceBasis: input.priceBasis, priceMode: canonicalPriceMode(input.priceMode ?? price.priceMode), market: input.market ?? resolvePriceMarket(price.market, price.priceMode), normalizedPrice: normalized.normalizedPrice === null ? null : normalized.normalizedPrice.toFixed(2), normalizedUnit: normalized.normalizedUnit }).where(eq(priceOfferPrices.id, input.priceId));
+  if (input.manufacturer !== undefined || input.placeContents !== undefined) {
+    const manufacturer = input.manufacturer === undefined ? undefined : text(input.manufacturer || "") || null;
+    const placeContents = input.placeContents === undefined ? undefined : normalizePlaceContents(input.placeContents) || null;
+    if ((manufacturer?.length ?? 0) > 255 || (placeContents?.length ?? 0) > 255) throw new Error("Характеристика предложения слишком длинная.");
+    await db.update(priceImportRows).set({ ...(manufacturer === undefined ? {} : { manufacturer }), ...(placeContents === undefined ? {} : { placeContents }) }).where(eq(priceImportRows.id, price.importRowId));
+  }
   return { success: true, normalized };
 }
 

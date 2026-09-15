@@ -4,24 +4,24 @@ import { chartPanSpeedForZoom, chartTick, clampChartZoom, formatFactAmount, form
 
 describe("форматирование денежных показателей", () => {
   it("не скрывает малые ненулевые суммы округлением до нуля", () => {
-    expect(formatK(0.4)).toBe("0,4 тыс. ₽");
+    expect(formatK(0.4)).toBe("0.4тыс ₽");
     expect(formatK(0.004)).toBe("4 ₽");
-    expect(formatK(0.00366)).toBe("3,66 ₽");
-    expect(formatK(0.00004)).toBe("0,04 ₽");
-    expect(formatK(0.00000003)).toBe("<0,0001 ₽");
-    expect(formatK(65.2)).toBe("65,2 тыс. ₽");
+    expect(formatK(0.00366)).toBe("3.66 ₽");
+    expect(formatK(0.00004)).toBe("0.04 ₽");
+    expect(formatK(0.00000003)).toBe("<0.0001 ₽");
+    expect(formatK(65.2)).toBe("65.2тыс ₽");
   });
   it("не превращает малые значения миллионов в 0,0 млн на осях и в tooltip", () => {
-    expect(formatM(0.00366)).toBe("3,66 тыс. ₽");
+    expect(formatM(0.00366)).toBe("3.66тыс ₽");
     expect(formatM(-0.000004)).toBe("-4 ₽");
-    expect(formatM(0.05)).toBe("0,05 млн ₽");
-    expect(chartTick(0.00366,"million")).toBe("3,66 тыс.");
+    expect(formatM(0.05)).toBe("0.05млн ₽");
+    expect(chartTick(0.00366,"million")).toBe("3.66тыс");
     expect(chartTick(0,"million")).toBe("0");
   });
   it("дает таблицам единый точный формат и сохраняет отдельное состояние отсутствующего факта", () => {
-    expect(formatFactAmount(3.66)).toBe("3,66 ₽");
-    expect(formatFactAmount(3_660)).toBe("3,7 тыс. ₽");
-    expect(formatTableAmount(0.00366)).toBe("3,66 ₽");
+    expect(formatFactAmount(3.66)).toBe("3.66 ₽");
+    expect(formatFactAmount(3_660)).toBe("3.7тыс ₽");
+    expect(formatTableAmount(0.00366)).toBe("3.66 ₽");
     expect(formatTableAmount(0)).toBe("0 ₽");
     expect(formatFactAmount(null)).toBe("—");
     expect(formatTableAmount(undefined)).toBe("—");
@@ -31,7 +31,7 @@ describe("форматирование денежных показателей",
     expect(missingTooltipLines([{name:"А",value:0,payload:{a:0,b:null}}],lines)).toEqual([{name:"Б",color:"#222"},{name:"В",color:"#333"}]);
   });
   it("показывает крупные значения в миллионах", () => {
-    expect(formatK(1540)).toBe("1,5 млн ₽");
+    expect(formatK(1540)).toBe("1.5млн ₽");
   });
   it("сортирует значения тултипа по убыванию, включая отрицательные", () => {
     expect(sortTooltipPayload([{ name: "C", value: -5 }, { name: "A", value: 120 }, { name: "B", value: 40 }]).map(item => item.name)).toEqual(["A", "B", "C"]);

@@ -5,16 +5,17 @@ import { useAudit } from "@/contexts/AuditContext";
 import { chartPalette } from "@/lib/chartPalette";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
-const formatRubles = (value:number) => { const absolute=Math.abs(value); if(absolute===0)return "0 ₽"; if(absolute<.0001)return `${value<0?"−":""}<0,0001 ₽`; const fractionDigits=absolute>=1?2:Math.min(4,Math.max(2,-Math.floor(Math.log10(absolute)))); return `${value.toLocaleString("ru-RU",{maximumFractionDigits:fractionDigits})} ₽`; };
-export const formatK = (value:number,digits?:number) => { const absolute=Math.abs(value); if(!Number.isFinite(value))return "—"; if(absolute===0)return "0 ₽"; if(absolute<.01)return formatRubles(value*1000); if(absolute>=1000)return `${(value/1000).toLocaleString("ru-RU",{minimumFractionDigits:1,maximumFractionDigits:1})} млн ₽`; const precision=digits??(absolute<100?1:0); return `${value.toLocaleString("ru-RU",{minimumFractionDigits:precision,maximumFractionDigits:precision})} тыс. ₽`; };
-export const formatM = (value:number,digits=1) => { if(!Number.isFinite(value))return "—"; const absolute=Math.abs(value); if(absolute===0)return "0 ₽"; if(absolute<.01)return formatK(value*1000,2); const precision=absolute<1?Math.max(2,digits):digits; return `${value.toLocaleString("ru-RU",{minimumFractionDigits:precision,maximumFractionDigits:precision})} млн ₽`; };
+const compactNumber = (value:number, digits:number) => { const fixed=value.toFixed(digits); return fixed.includes(".")?fixed.replace(/\.?0+$/,""):fixed; };
+const formatRubles = (value:number) => { const absolute=Math.abs(value); if(absolute===0)return "0 ₽"; if(absolute<.0001)return `${value<0?"−":""}<0.0001 ₽`; const fractionDigits=absolute>=1?2:Math.min(4,Math.max(2,-Math.floor(Math.log10(absolute)))); return `${compactNumber(value,fractionDigits)} ₽`; };
+export const formatK = (value:number,digits?:number) => { const absolute=Math.abs(value); if(!Number.isFinite(value))return "—"; if(absolute===0)return "0 ₽"; if(absolute<.01)return formatRubles(value*1000); if(absolute>=1000)return `${compactNumber(value/1000,1)}млн ₽`; const precision=digits??(absolute<100?1:0); return `${compactNumber(value,precision)}тыс ₽`; };
+export const formatM = (value:number,digits=1) => { if(!Number.isFinite(value))return "—"; const absolute=Math.abs(value); if(absolute===0)return "0 ₽"; if(absolute<.01)return formatK(value*1000,2); const precision=absolute<1?Math.max(2,digits):digits; return `${compactNumber(value,precision)}млн ₽`; };
 export const formatPct = (value:number,digits=1) => `${value.toFixed(digits)}%`;
 
 export type MetricChartTooltipMode="amount"|"million"|"percent"|"number";
 export type MetricChartView="line"|"bar"|"overlay";
 type MetricLine={key:string;name:string;color:string};
 const iosPalette=["#5E5CE6","#00A3A3","#34C759","#FF9F0A","#FF375F","#64D2FF"];
-export const chartTick=(value:number,mode:MetricChartTooltipMode)=>mode==="percent"?`${value.toFixed(1)}%`:mode==="million"?formatM(value).replace(" ₽",""):mode==="number"?value.toLocaleString("ru-RU",{maximumFractionDigits:1}):formatK(value).replace(" ₽","");
+export const chartTick=(value:number,mode:MetricChartTooltipMode)=>mode==="percent"?`${compactNumber(value,1)}%`:mode==="million"?formatM(value).replace(" ₽",""):mode==="number"?compactNumber(value,1):formatK(value).replace(" ₽","");
 export const formatTableAmount=(value:unknown)=>value===null||value===undefined||value===""||!Number.isFinite(Number(value))?"—":formatK(Number(value));
 export const formatFactAmount=(value:unknown)=>value===null||value===undefined||value===""||!Number.isFinite(Number(value))?"—":formatK(Number(value)/1000);
 

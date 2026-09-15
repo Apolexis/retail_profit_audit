@@ -51,10 +51,17 @@ describe("компактный журнал изменений", () => {
     expect(journal).toContain('"price_supplier.update":"Изменение поставщика"');
     expect(journal).toContain('"price_import.commit":"Сохранение прайс‑листа"');
     expect(journal).toContain('"price_offer.update":"Изменение цены поставщика"');
+    expect(journal).toContain('"price_product_characteristic.create":"Создание характеристики товара"');
+    expect(journal).toContain('"price_product_characteristic.update":"Изменение характеристики товара"');
     expect(journal).toContain('"price_product.import_create":"Создание товаров при импорте"');
     expect(journal).toContain('"price_alias.import_link":"Создание соответствий при импорте"');
     expect(journal).toContain('categoryName:"Категория"');
     expect(journal).toContain('priceAmount:"Цена, ₽"');
+    expect(journal).toContain('manufacturer:"Производитель"');
+    expect(journal).toContain('placeContents:"Состав места"');
+    expect(journal).toContain('market:"Город / склад"');
+    expect(journal).toContain('account:"Учетная запись"');
+    expect(journal).toContain('value.toFixed(2)');
     expect(journal).toContain('audit-price-import-products');
     expect(journal).toContain('audit-price-import-product-list');
     expect(overrides).toContain('.packet .audit-price-import-product-list');

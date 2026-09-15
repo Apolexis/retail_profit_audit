@@ -259,6 +259,17 @@ export const priceCategories = mysqlTable("price_categories", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
+/** Reusable values prevent product variants and sizes from drifting into near-duplicates. */
+export const priceProductCharacteristics = mysqlTable("price_product_characteristics", {
+  id: int("id").autoincrement().primaryKey(),
+  kind: mysqlEnum("kind", ["variant", "size"]).notNull(),
+  value: varchar("value", { length: 160 }).notNull(),
+  normalizedValue: varchar("normalizedValue", { length: 180 }).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [unique("price_product_characteristic_uq").on(table.kind, table.normalizedValue)]);
+
 /** The internal code is the durable target for supplier aliases and later ERP integrations. */
 export const priceProducts = mysqlTable("price_products", {
   id: int("id").autoincrement().primaryKey(),
@@ -267,6 +278,8 @@ export const priceProducts = mysqlTable("price_products", {
   normalizedSignature: varchar("normalizedSignature", { length: 512 }).notNull().unique(),
   categoryId: int("categoryId"),
   category: varchar("category", { length: 160 }),
+  variantCharacteristicId: int("variantCharacteristicId"),
+  sizeCharacteristicId: int("sizeCharacteristicId"),
   variant: varchar("variant", { length: 255 }),
   sizeText: varchar("sizeText", { length: 120 }),
   baseUnit: mysqlEnum("baseUnit", ["kg", "l", "piece", "unknown"]).default("unknown").notNull(),
@@ -301,6 +314,8 @@ export const priceImportRows = mysqlTable("price_import_rows", {
   normalizedName: varchar("normalizedName", { length: 512 }).notNull(),
   rawCategory: varchar("rawCategory", { length: 180 }),
   rawPackaging: varchar("rawPackaging", { length: 255 }),
+  manufacturer: varchar("manufacturer", { length: 255 }),
+  placeContents: varchar("placeContents", { length: 255 }),
   rawAvailability: varchar("rawAvailability", { length: 128 }),
   rawPayload: json("rawPayload"),
   productId: int("productId"),
@@ -315,6 +330,7 @@ export const priceOfferPrices = mysqlTable("price_offer_prices", {
   id: int("id").autoincrement().primaryKey(),
   importRowId: int("importRowId").notNull(),
   priceMode: mysqlEnum("priceMode", ["standard", "cash", "cashless_no_vat", "cashless_vat", "spb", "moscow", "special", "threshold"]).default("standard").notNull(),
+  market: mysqlEnum("market", ["unknown", "spb", "moscow"]).default("unknown").notNull(),
   priceAmount: decimal("priceAmount", { precision: 18, scale: 2 }).notNull(),
   priceBasis: mysqlEnum("priceBasis", ["kg", "l", "piece", "package", "unknown"]).default("unknown").notNull(),
   normalizedPrice: decimal("normalizedPrice", { precision: 18, scale: 2 }),
@@ -341,6 +357,7 @@ export const priceSupplierAliases = mysqlTable("price_supplier_aliases", {
 
 export type PriceSupplier = typeof priceSuppliers.$inferSelect;
 export type PriceCategory = typeof priceCategories.$inferSelect;
+export type PriceProductCharacteristic = typeof priceProductCharacteristics.$inferSelect;
 export type PriceProduct = typeof priceProducts.$inferSelect;
 export type PriceImport = typeof priceImports.$inferSelect;
 export type PriceImportRow = typeof priceImportRows.$inferSelect;

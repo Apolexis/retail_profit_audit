@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculatePriceChanges, normalizePackagingDisplay, normalizePrice, normalizeProductName, packagingSignature, parsePdfExtractedText, parsePdfPositionedPages, preparePriceImportRows, productSignature, resolvePriceMapping, sourceDateFromText } from "./priceControl";
+import { calculatePriceChanges, normalizePackagingDisplay, normalizePrice, normalizeProductDisplayName, normalizeProductName, packagingSignature, parsePdfExtractedText, parsePdfPositionedPages, preparePriceImportRows, productSignature, resolvePriceMapping, sourceDateFromText } from "./priceControl";
 import { readFileSync } from "node:fs";
 
 describe("прайс‑контроль: нормализация товарных строк", () => {
@@ -14,6 +14,11 @@ describe("прайс‑контроль: нормализация товарны
     expect(packagingSignature("банка 430 г")).toBe("g430");
     expect(normalizePrice(344, "package", "банка 430 г")).toEqual({ normalizedPrice: 800, normalizedUnit: "kg" });
     expect(normalizePrice(180, "package", "бутылка 500 мл")).toEqual({ normalizedPrice: 360, normalizedUnit: "l" });
+  });
+
+  it("компактно нормализует единицы, дроби и лишние пробелы в названии без склейки слов", () => {
+    expect(normalizeProductDisplayName("Икра нерки соленая мороженая , б ез консерванта 500 гр.")).toBe("Икра нерки соленая мороженая, без консерванта 500гр");
+    expect(normalizeProductDisplayName("Креветка 0,5 л; 13 шт")).toBe("Креветка 0.5л; 13шт");
   });
 
   it("распознает дату из русской шапки прайс‑листа", () => {
@@ -72,9 +77,9 @@ describe("прайс‑контроль: нормализация товарны
   });
 
   it("сохраняет вручную уточненный город предложения вместе с ценой", () => {
-    const rows = [{ rawName: "Палтус", packaging: "21 кг", priceOptions: [{ priceAmount: 530, priceBasis: "kg", priceMode: "moscow", normalizedPrice: 530, normalizedUnit: "kg" }] }] as any;
-    const prepared = preparePriceImportRows(rows, [{ rowIndex: 0, optionIndex: 0, priceAmount: 525, priceMode: "spb" }]);
-    expect(prepared.rows[0]?.row.priceOptions[0]).toMatchObject({ priceAmount: 525, priceMode: "spb", normalizedPrice: 525, normalizedUnit: "kg" });
+    const rows = [{ rawName: "Палтус", packaging: "21кг", priceOptions: [{ priceAmount: 530, priceBasis: "kg", priceMode: "cashless_vat", market: "moscow", normalizedPrice: 530, normalizedUnit: "kg" }] }] as any;
+    const prepared = preparePriceImportRows(rows, [{ rowIndex: 0, optionIndex: 0, priceAmount: 525, priceMode: "cashless_vat", market: "spb" }]);
+    expect(prepared.rows[0]?.row.priceOptions[0]).toMatchObject({ priceAmount: 525, priceMode: "cashless_vat", market: "spb", normalizedPrice: 525, normalizedUnit: "kg" });
   });
 
   it("исключает строки только из текущего сохранения и запрещает править исключенную строку", () => {
@@ -170,7 +175,7 @@ describe("прайс‑контроль: нормализация товарны
       "500 г",
     ].join("\n"));
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ rawName: "Икра щуки соленая мороженная (пл.б, вакуум, ключ, 200 г) Камшат 56 шт (короб) 200 г", packaging: "200 г" });
+    expect(rows[0]).toMatchObject({ rawName: "Икра щуки соленая мороженная (пл.б, вакуум, ключ, 200гр) Камшат 56шт (короб) 200гр", packaging: "200гр" });
     expect(rows[0]?.priceOptions[0]).toMatchObject({ priceAmount: 1270, priceBasis: "kg" });
   });
 
@@ -183,7 +188,7 @@ describe("прайс‑контроль: нормализация товарны
       "195 (в СПБ)",
     ].join("\n"));
     expect(rows).toHaveLength(1);
-    expect(rows[0]?.rawName).toBe("Икра горбуши Икра горбуши путина Рыбак 1/12,5");
+    expect(rows[0]?.rawName).toBe("Икра горбуши Икра горбуши путина Рыбак 1/12.5");
     expect(rows[0]?.rawName).not.toMatch(/^1\s/);
     expect(rows[0]?.priceOptions[0]?.priceAmount).toBe(195);
   });
@@ -195,7 +200,7 @@ describe("прайс‑контроль: нормализация товарны
       " Икра щуки соленая мороженная 2026 Камшат 6 шт (короб) 500 г 2 950 ₽ шт",
     ].join("\n"));
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ rawName: "Икра щуки соленая мороженная Камшат 6 шт (короб) 500 г", packaging: "500 г" });
+    expect(rows[0]).toMatchObject({ rawName: "Икра щуки соленая мороженная Камшат 6шт (короб) 500гр", packaging: "500гр" });
     expect(rows[0]?.rawName).not.toMatch(/[\uE000-\uF8FF]|\b2026\b|НДС/i);
   });
 
@@ -216,10 +221,10 @@ describe("прайс‑контроль: нормализация товарны
       { x: 67, y: 340, value: "Икра нерки" }, { x: 99, y: 340, value: "пл/б 125 гр" }, { x: 131, y: 340, value: "Икра нерки, QR Честный знак" }, { x: 287, y: 340, value: "Красный Жемчуг" }, { x: 354, y: 340, value: "1/24" }, { x: 392, y: 340, value: "1 879" }, { x: 405, y: 340, value: "(в СПб)" },
     ]]);
     expect(rows).toHaveLength(2);
-    expect(rows[0]).toMatchObject({ rawName: "Икра горбуши пл/б 125 гр", packaging: "125 гр" });
+    expect(rows[0]).toMatchObject({ rawName: "Икра горбуши пл/б 125гр", packaging: "125гр", manufacturer: "Красный Жемчуг", placeContents: "1/24" });
     expect(rows[0]?.rawPayload).toMatchObject({ manufacturer: "Красный Жемчуг", specification: "Икра горбуши, QR Честный знак, пл. банка 125 гр, 2026" });
     expect(rows[0]?.priceOptions).toEqual(expect.arrayContaining([
-      expect.objectContaining({ priceAmount: 1966, priceMode: "spb", priceBasis: "package", includesVat: true }),
+      expect.objectContaining({ priceAmount: 1966, priceMode: "cashless_vat", market: "spb", priceBasis: "package", includesVat: true }),
       expect.objectContaining({ priceAmount: 15730, priceBasis: "kg", includesVat: true }),
     ]));
     expect(rows[1]?.priceOptions[0]).toMatchObject({ priceAmount: 1879 });
@@ -231,12 +236,27 @@ describe("прайс‑контроль: нормализация товарны
       { x: 25, y: 360, value: "Икра горбуши соленая мороженая" }, { x: 25, y: 348, value: "(пл.б, вакуум, ключ, 210 г) 2026" }, { x: 258, y: 360, value: "ТМ Даллос" }, { x: 340, y: 348, value: "210 г" }, { x: 387, y: 360, value: "по запросу" },
     ]]);
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ rawName: "Икра горбуши соленая мороженая", packaging: "210 г" });
+    expect(rows[0]).toMatchObject({ rawName: "Икра горбуши соленая мороженая", packaging: "210гр", manufacturer: "ТМ Даллос", placeContents: "210гр" });
     expect(rows[0]?.priceOptions[0]).toMatchObject({ priceAmount: null, sourcePriceText: "по запросу", includesVat: true });
   });
 
   it("показывает фасовку «уп.» как «шт.» и использует ее как единицу цены за штуку", () => {
-    expect(normalizePackagingDisplay("6 уп. (короб)")).toBe("6 шт (короб)");
+    expect(normalizePackagingDisplay("6 уп. (короб)")).toBe("6шт (короб)");
     expect(packagingSignature("6 уп. (короб)")).toBe("pc6");
+  });
+
+  it("продолжает разбор общей PDF-таблицы на странице без повторенной шапки", () => {
+    const rows = parsePdfPositionedPages([
+      [
+        { x: 25, y: 400, value: "Наименование" }, { x: 240, y: 400, value: "Производитель" }, { x: 330, y: 400, value: "Вес места" }, { x: 415, y: 400, value: "Цена" },
+        { x: 25, y: 360, value: "Палтус тушка" }, { x: 245, y: 360, value: "Даллос" }, { x: 340, y: 360, value: "1/21 кг" }, { x: 420, y: 360, value: "530 ₽/кг" },
+      ],
+      [
+        { x: 25, y: 362, value: "Треска филе" }, { x: 245, y: 362, value: "Даллос" }, { x: 340, y: 362, value: "1/12.5 кг" }, { x: 420, y: 362, value: "680 ₽/кг" },
+      ],
+    ]);
+    expect(rows).toHaveLength(2);
+    expect(rows[1]).toMatchObject({ rawName: "Треска филе", manufacturer: "Даллос", placeContents: "1/12.5кг" });
+    expect(rows[1]?.priceOptions[0]).toMatchObject({ priceAmount: 680, priceBasis: "kg" });
   });
 });

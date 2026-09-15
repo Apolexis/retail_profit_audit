@@ -163,6 +163,20 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain(".packet .price-preview-table > div.price-preview-row.is-selected");
   });
 
+  it("пересчитывает предупреждение о цене после ручной правки и использует нейтральный светлый акцент", () => {
+    expect(page).toContain("const unresolvedPreviewPriceCount = useMemo");
+    expect(page).toContain("unresolvedPreviewPriceCount > 0");
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .inline-error { border-color: #b9d5eb; background: #edf7ff; color: #075dbb; }');
+  });
+
+  it("на широкой версии отдает свободное место названию и не накладывает цену с метаданными", () => {
+    expect(styles).toContain("grid-template-columns: 28px minmax(360px, 1.62fr) minmax(310px, .88fr) 36px");
+    expect(styles).toContain(".price-preview-new-row .price-preview-prices { grid-column: 3; grid-row: 1 / span 2;");
+    expect(styles).toContain(".packet .price-preview-offer-metadata { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));");
+    expect(styles).toContain(".packet .price-preview-prices > div > small { position: static;");
+    expect(styles).toContain(".packet .price-preview-basis-select[data-slot=\"select-trigger\"] { min-width: 132px !important; }");
+  });
+
   it("дает до сохранения исправить имя и явно выбрать внутренний товар для связи поставщика", () => {
     expect(page).toContain("previewNameEdits");
     expect(page).toContain("previewProductLinks");
@@ -172,11 +186,14 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("rowEdits,");
   });
 
-  it("дает уточнить город или условие предложения вместе с ручной ценой", () => {
+  it("дает уточнить оплату, город и метаданные предложения вместе с ручной ценой", () => {
     expect(page).toContain("price-preview-mode-select");
     expect(page).toContain("Условие цены");
     expect(page).toContain("priceMode: draft.priceMode");
-    expect(page).toContain("draft?.priceMode ?? offer.priceMode as PriceMode");
+    expect(page).toContain("draft?.priceMode ?? canonicalPriceMode(offer.priceMode)");
+    expect(page).toContain("draft?.market ?? marketFromPriceMode(offer.market, offer.priceMode)");
+    expect(page).toContain("draft?.manufacturer ?? offer.manufacturer ?? \"\"");
+    expect(page).toContain("draft?.placeContents ?? offer.placeContents ?? \"\"");
   });
 
   it("на телефоне показывает одну позицию preview с навигацией и использует компактную отмеченную галочку", () => {
@@ -217,11 +234,13 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("isActive: productDraft.isActive");
   });
 
-  it("дает редактировать постоянные характеристику и фасовку товара в справочнике", () => {
+  it("дает выбирать постоянные характеристику и фасовку товара из управляемого справочника", () => {
     expect(page).toContain("Характеристика товара");
     expect(page).toContain("Фасовка / вес");
-    expect(page).toContain("variant: productDraft.variant.trim() || null");
-    expect(page).toContain("sizeText: productDraft.sizeText.trim() || null");
+    expect(page).toContain("variantCharacteristicId: productDraft.variantCharacteristicId ? Number(productDraft.variantCharacteristicId) : null");
+    expect(page).toContain("sizeCharacteristicId: productDraft.sizeCharacteristicId ? Number(productDraft.sizeCharacteristicId) : null");
+    expect(page).toContain('selectableCharacteristics("variant")');
+    expect(page).toContain('selectableCharacteristics("size")');
   });
 
   it("не блокирует импорт без распознанной шапки: поставщика можно выбрать или создать, дату — указать вручную", () => {
@@ -242,6 +261,17 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("price-directory-editor-actions");
     expect(page).toContain("Доступен при выборе поставщика");
     expect(styles).toContain(".packet .price-directory-editor.supplier .price-directory-editor-actions");
+  });
+
+  it("показывает скрытие в списках и переводит к каждому открытому редактору", () => {
+    expect(page).toContain("const openCategoryEditor");
+    expect(page).toContain("const openSupplierEditor");
+    expect(page).toContain("categoryEditorRef.current?.scrollIntoView");
+    expect(page).toContain("supplierEditorRef.current?.scrollIntoView");
+    expect(page).toContain("setSupplierActive.mutate({");
+    expect(page).toContain('{supplier.isActive ? "Скрыть" : "Показать"}');
+    expect(page).toContain('{product.isActive ? "Скрыть" : "Показать"}');
+    expect(page).toContain('{category.isActive ? "Скрыть" : "Показать"}');
   });
 
   it("не выводит лишнюю декоративную карточку уровня доступа", () => {

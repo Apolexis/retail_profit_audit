@@ -2002,6 +2002,7 @@ html[data-audit-theme="light"] .packet .broadcast-target-buttons button { border
 html[data-audit-theme="light"] .packet .broadcast-target-buttons button:hover,
 html[data-audit-theme="light"] .packet .broadcast-target-buttons button.active { border-color: #0a63c8; background: #edf6ff; color: #075dbb; }
 html[data-audit-theme="light"] .ocean-loader.overlay > p { color: #075dbb !important; text-shadow: none !important; filter: none !important; box-shadow: none !important; }
+html[data-audit-theme="light"] .ocean-loader.overlay { background: #ffffff !important; backdrop-filter: none !important; }
 .packet .portfolio-focus-card { grid-template-columns: minmax(280px, .85fr) minmax(0, 1.6fr) !important; }
 .packet .portfolio-focus-select-inline { flex: 0 1 220px; min-width: 190px; margin-right: auto; }
 .packet .portfolio-focus-select-inline select { width: 100%; }
@@ -2231,6 +2232,14 @@ html[data-audit-theme="light"] .packet .threshold-control-group:has(.threshold-g
 html[data-audit-theme="light"] .packet .threshold-control-group:has(.threshold-grid-cash) .threshold-control-copy > p,
 html[data-audit-theme="light"] .packet .threshold-control-group:has(.threshold-grid-cash) .threshold-amount > span { color: #61728a !important; }
 html[data-audit-theme="light"] .packet .threshold-control-group:has(.threshold-grid-cash) .threshold-control-copy > strong { color: #26384d !important; }
+
+/* Основание «не указана» не обрезается: его ширина одинакова на телефоне и в широкой строке preview. */
+.packet .price-preview-price-edit { grid-template-columns: minmax(0, 1fr) minmax(132px, .76fr) !important; }
+.packet .price-preview-basis-select[data-slot="select-trigger"] { min-width: 132px !important; }
+@media (min-width: 761px) {
+  .packet .price-preview-price-edit { grid-template-columns: minmax(0, .88fr) minmax(136px, 1fr) !important; }
+  .packet .price-preview-basis-select[data-slot="select-trigger"] { min-width: 136px !important; }
+}
 
 /* Критерии карты в темной теме — нейтральная аналитическая поверхность, без iOS-синего оттенка. */
 html[data-audit-theme="dark"] .packet .portfolio-thresholds { border-color: #46505d !important; background: #1b2028 !important; color: #edf0f3 !important; box-shadow: none !important; }
@@ -4031,10 +4040,78 @@ html[data-audit-theme="dark"] .packet .scroll-top svg { color: #ff9b88; }
   .packet .price-preview-name-edit :is(input, textarea) { font-size: 11px; }
 }
 .packet .price-preview-name-edit textarea { resize: vertical; min-height: 44px; max-height: 96px; line-height: 1.35; overflow-y: auto; }
-.packet .mobile-quick-refresh.is-refreshing { pointer-events: none; border-color: var(--blue) !important; background: color-mix(in srgb, var(--blue) 13%, var(--surface-2)) !important; }
+.packet .mobile-quick-refresh.is-refreshing { pointer-events: none; }
 .packet .mobile-quick-refresh.is-refreshing svg { animation: mobile-refresh-spin 720ms linear infinite; }
 @keyframes mobile-refresh-spin { to { transform: rotate(360deg); } }
 @media (max-width: 560px) { .packet .price-preview-table { overflow: visible; } }
 
 .packet .price-preview-price-edit { grid-template-columns: minmax(0, 1fr) minmax(116px, .72fr); }
 .packet .price-preview-price-edit .price-preview-mode-select { grid-column: 1 / -1; }
+
+/* Финальная сетка preview: свободная ширина отдается названию, а цена и селекты всегда остаются в собственной области. */
+.packet .price-preview-offer-metadata { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin-top: 8px; }
+.packet .price-preview-offer-metadata label { display: grid; min-width: 0; gap: 4px; color: var(--price-muted); font: 700 9px/1.2 "IBM Plex Mono", monospace; letter-spacing: .04em; text-transform: uppercase; }
+.packet .price-preview-offer-metadata input { min-width: 0; min-height: 34px; padding: 6px 8px; font-size: 12px; font-weight: 650; letter-spacing: 0; text-transform: none; }
+.packet .price-preview-prices > div { display: grid; min-width: 0; gap: 6px; }
+.packet .price-preview-prices > div > small { position: static; display: block; min-width: 0; margin: 0; color: var(--price-muted); font-size: 10px; line-height: 1.25; overflow-wrap: anywhere; }
+.packet .price-preview-price-edit { display: grid; min-width: 0; gap: 7px; align-items: start; }
+.packet .price-preview-price-edit > :is(input, [data-slot="select-trigger"]) { min-width: 0; width: 100%; }
+.packet .price-preview-price-edit .price-preview-market-select { grid-column: auto; }
+.packet .price-offer-metadata { display: block; margin-top: 5px; color: var(--price-muted); font-size: 10px; line-height: 1.35; overflow-wrap: anywhere; }
+.packet .price-offer-meta-edit { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.packet .price-offer-meta-edit input { min-width: 0; width: 100%; }
+.packet .price-characteristics-panel { display: grid; gap: 12px; margin: 14px 0; padding: 14px; border: 1px solid var(--price-border); border-radius: 12px; background: color-mix(in srgb, var(--price-surface) 88%, var(--price-accent) 12%); }
+.packet .price-characteristics-panel > div:first-child { display: grid; gap: 4px; }
+.packet .price-characteristics-panel > div:first-child > span { color: var(--price-muted); font: 750 9px "IBM Plex Mono", monospace; letter-spacing: .07em; }
+.packet .price-characteristics-panel p { margin: 0; color: var(--price-muted); font-size: 11px; line-height: 1.42; }
+.packet .price-characteristics-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.packet .price-characteristics-actions .packet-link { width: auto; min-height: 34px; margin: 0; padding-inline: 11px; }
+.packet .price-characteristics-editor { display: grid; grid-template-columns: minmax(150px, .7fr) minmax(220px, 1fr) minmax(190px, .8fr) auto; align-items: end; gap: 10px; padding-top: 12px; border-top: 1px solid var(--price-border); }
+.packet .price-characteristics-editor label { display: grid; min-width: 0; gap: 5px; color: var(--price-muted); font: 700 10px/1.2 Manrope, Arial, sans-serif; }
+.packet .price-characteristics-editor label > strong { min-height: 38px; padding: 10px 0; color: var(--text); font-size: 12px; }
+.packet .price-characteristics-editor > div:last-child { display: flex; flex-wrap: wrap; gap: 7px; }
+.packet .price-characteristics-editor > div:last-child .packet-link { width: auto; min-height: 36px; margin: 0; padding-inline: 10px; }
+.packet .price-characteristics-list { display: flex; flex-wrap: wrap; gap: 7px; }
+.packet .price-characteristics-list > button { display: inline-grid; grid-template-columns: auto auto auto; align-items: center; gap: 6px; min-height: 31px; padding: 5px 8px; border: 1px solid var(--price-border); border-radius: 8px; background: var(--price-surface); color: var(--text); text-align: left; }
+.packet .price-characteristics-list > button:not(:disabled):hover { border-color: var(--price-accent); }
+.packet .price-characteristics-list > button small { color: var(--price-muted); font: 750 8px "IBM Plex Mono", monospace; letter-spacing: .055em; }
+.packet .price-characteristics-list > button strong { font-size: 11px; }
+.packet .price-characteristics-list > button em { color: var(--price-muted); font-size: 9px; font-style: normal; }
+.packet .price-characteristics-list > button.is-hidden { opacity: .55; }
+@media (max-width: 760px) {
+  .packet .price-characteristics-editor { grid-template-columns: minmax(0, 1fr); }
+  .packet .price-characteristics-editor .price-active-toggle { width: 100%; }
+}
+html[data-audit-theme="light"] .packet .inline-error { border-color: #b9d5eb; background: #edf7ff; color: #075dbb; }
+html[data-audit-theme="light"] .packet .price-preview-offer-metadata input { border-color: #c8d9e9; background: #fff; color: #163a55; }
+@media (min-width: 761px) {
+  .packet .price-import-workbench.is-preview-ready .price-preview-table > div.price-preview-new-row { grid-template-columns: 28px minmax(360px, 1.62fr) minmax(310px, .88fr) 36px; grid-template-rows: auto auto; gap: 12px 16px; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-product { grid-column: 2; grid-row: 1; min-width: 0; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-prices { grid-column: 3; grid-row: 1 / span 2; min-width: 0; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-product-link { grid-column: 2; grid-row: 2; min-width: 0; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-category-select { grid-column: 3; grid-row: 2; min-width: 0; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-remove { grid-column: 4; grid-row: 1; }
+  .packet .price-preview-price-edit { grid-template-columns: minmax(0, .9fr) minmax(126px, 1fr); }
+  .packet .price-preview-price-edit .price-preview-mode-select { grid-column: auto; }
+}
+@media (max-width: 760px) {
+  .packet .price-preview-offer-metadata,
+  .packet .price-offer-meta-edit { grid-template-columns: minmax(0, 1fr); }
+  .packet .price-preview-price-edit .price-preview-market-select { grid-column: 1 / -1; }
+}
+
+/* План‑факт: срез — пояснение к графику, а не широкая служебная плашка. */
+.packet .plan-main-grid { margin-top: 18px; }
+.packet .plan-main-grid > .packet-card:first-child .card-title small,
+.packet .plan-table-card .card-title small { display: block; width: auto; max-width: 100%; margin-top: 5px; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; color: var(--muted); font: 600 11px/1.42 "IBM Plex Mono", monospace; letter-spacing: .015em; overflow-wrap: anywhere; }
+.packet .plan-main-grid > .packet-card:first-child .card-title small { width: fit-content; max-width: 25rem; }
+.packet .plan-table-card .card-title > div { min-width: 0; }
+.packet .plan-table-card .card-title small { max-width: 40rem; }
+@media (max-width: 720px) {
+  .packet .plan-main-grid { margin-top: 22px; gap: 20px; }
+  .packet .plan-main-grid > .packet-card { padding-top: 22px; }
+  .packet .plan-main-grid > .packet-card:first-child .card-title small { max-width: 100%; font-size: 10px; }
+  .packet .plan-table-card .card-title small { max-width: 100%; font-size: 10px; line-height: 1.5; }
+}
+html[data-audit-theme="light"] .packet .mobile-quick-refresh.is-refreshing { border-color: #0a84ff !important; background: #edf6ff !important; color: #075dbb !important; }
+html[data-audit-theme="dark"] .packet .mobile-quick-refresh.is-refreshing { border-color: #ff856d !important; background: #241923 !important; color: #ffe4dc !important; }
