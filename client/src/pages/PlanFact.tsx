@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { AuditShell } from "@/components/AuditShell";
 import { MetricLineChart, formatK, formatPct } from "@/components/AuditCharts";
 import { DateRangeControl } from "@/components/DateRangeControl";
+import { OceanLoader } from "@/components/OceanLoader";
 import { useAudit } from "@/contexts/AuditContext";
 import { useImportedAudit } from "@/hooks/useImportedAudit";
 import { prepareDailyFacts } from "@/lib/dailyFacts";
@@ -44,7 +45,7 @@ export default function PlanFact(){
   const remove=trpc.audit.deletePlanFact.useMutation({onSuccess:()=>utils.audit.planFacts.invalidate(),onError:error=>toast.error(error.message)});
   const isAdmin=session.data?.role==="admin";
   const scope=selectedStore==="__all__"?"Все доступные магазины":selectedStore;
-  if(facts.loading||plans.isLoading)return <AuditShell kicker="11 / ПЛАН‑ФАКТ" title="План‑факт"><section className="empty-state"><h2>Готовим план‑факт…</h2></section></AuditShell>;
+  if(facts.loading||plans.isLoading)return <AuditShell kicker="11 / ПЛАН‑ФАКТ" title="План‑факт"><section className="empty-state plan-fact-loader"><OceanLoader label="Готовим план‑факт…"/><p>Сверяем факт, план и выбранный период.</p></section></AuditShell>;
   return <AuditShell kicker="11 / ПЛАН‑ФАКТ" title="План‑факт по управленческим показателям">
     <section className="page-lede plan-lede"><div><span>ОТДЕЛЬНО ОТ ИМПОРТИРОВАННОГО ФАКТА</span><h2>План не подставляется автоматически</h2><p>Факт берется из загруженной книги. План вводится администратором по магазину, месяцу и показателю; для неполного месяца он показывается пропорционально календарным дням выбранного среза.</p></div><DateRangeControl title="ПЕРИОД ПЛАН‑ФАКТА" ariaLabel="Изменить период план‑факта"/></section>
     <section className="plan-kpis">{metricSummaries.slice(0,4).map(item=><article key={item.code} className={item.hasPlan&&item.delta<0?"packet-kpi risk":"packet-kpi"}><span>{item.name}</span><strong>{item.hasPlan?money(item.delta):money(item.actual)}</strong><small>{item.hasPlan?<>план {money(item.plan)} · факт {money(item.actual)}</>:"План пока не задан"}</small></article>)}</section>

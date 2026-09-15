@@ -34,4 +34,14 @@ describe("компактный журнал изменений", () => {
     expect(journal).toContain('Поиск и фильтр применяются ко всей истории журнала');
     expect(journal).toContain('const deferredQuery=useDeferredValue(query.trim())');
   });
+
+  it("показывает изменения соответствий поставщиков в общем журнале с отдельным фильтром прайс‑контроля", () => {
+    expect(journal).toContain('"price_alias.link":"Создание соответствия поставщика"');
+    expect(journal).toContain('"price_alias.reassign":"Переназначение соответствия поставщика"');
+    expect(journal).toContain('"price_alias.unlink":"Отмена соответствия поставщика"');
+    expect(journal).toContain('<option value="price_control">Прайс‑контроль</option>');
+    expect(journal).toContain('className="audit-change-summary audit-price-alias"');
+    expect(journal).toContain('supplierProductName:"Название поставщика"');
+    expect(overrides).toContain('.packet .audit-price-alias-context');
+  });
 });

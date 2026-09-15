@@ -47,4 +47,30 @@ describe("прайс‑контроль: нормализация товарны
     expect(source).toContain("export async function bulkAssignPriceCategory");
     expect(source).toContain("Выберите активную категорию прайс‑контроля.");
   });
+
+  it("применяет категорию из предпросмотра только к новой выбранной строке, а не к сохраненным товарам", () => {
+    const source = readFileSync(new URL("./priceControl.ts", import.meta.url), "utf8");
+    expect(source).toContain("export type PriceImportCategorySelection = { rowIndex: number; categoryId: number }");
+    expect(source).toContain("if (mapping.productId === null && category)");
+    expect(source).toContain("Для импорта можно выбрать только активную существующую категорию.");
+    expect(source).toContain("createdProducts");
+    expect(source).not.toContain("categoryId: category.id }).where(eq(priceProducts.id");
+  });
+
+  it("собирает для общего журнала поставщика, исходное название и переход нашего товара", () => {
+    const source = readFileSync(new URL("./priceControl.ts", import.meta.url), "utf8");
+    expect(source).toContain("supplierName: row.supplierName");
+    expect(source).toContain("supplierProductName: row.rawName");
+    expect(source).toContain("productLabel: null");
+    expect(source).toContain("reassignPriceSupplierAlias");
+  });
+
+  it("дает создать поставщика явно, а удалить только при отсутствии истории и связей", () => {
+    const source = readFileSync(new URL("./priceControl.ts", import.meta.url), "utf8");
+    expect(source).toContain("export async function createPriceSupplier");
+    expect(source).toContain("Поставщик «${existing.name}» уже есть в справочнике.");
+    expect(source).toContain("export async function deletePriceSupplier");
+    expect(source).toContain("Поставщика с сохраненными прайс‑листами или товарными связями удалять нельзя.");
+    expect(source).toContain("Скройте его в справочнике");
+  });
 });

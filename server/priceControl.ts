@@ -14,6 +14,7 @@ export type ParsedPriceOption = { priceAmount: number; priceBasis: PriceBasis; n
 export type ParsedPriceRow = { sourceSheet: string; sourceRowNumber: number; sourceSku: string | null; rawName: string; normalizedName: string; canonicalHint: string; normalizedSignature: string; category: string | null; packaging: string | null; packagingSignature: string; availability: string | null; variant: string | null; sizeText: string | null; priceOptions: ParsedPriceOption[]; rawPayload: Record<string, string> };
 export type PriceImportPreview = { fileName: string; sourceType: "xls" | "xlsx" | "pdf" | "docx"; detectedSupplierName: string | null; detectedSourceDate: string | null; rows: ParsedPriceRow[]; warningCount: number; warnings: string[] };
 export type PriceChange = { previousPrice: number; previousDate: string | null; delta: number; percent: number; direction: "up" | "down" | "same" };
+export type PriceImportCategorySelection = { rowIndex: number; categoryId: number };
 type PriceChangeSource = { priceId: number; importId: number; productId: number | null; supplierId: number; priceMode: string | null; normalizedUnit: string | null; normalizedPrice: string | number | null; sourceDate: string | null; importedAt: Date | string };
 export const SIGNIFICANT_PRICE_INCREASE_PERCENT = 10;
 
@@ -234,7 +235,7 @@ export async function previewPriceImport(buffer: Buffer, fileName: string): Prom
   return { fileName, sourceType, detectedSupplierName: findSupplierName(source), detectedSourceDate: sourceDateFromText(source), rows: trimmedRows, warningCount: warnings.length + trimmedRows.filter(row => row.priceOptions.some(option => option.normalizedPrice === null)).length, warnings };
 }
 
-type Mapping = { productId: number | null; mappingStatus: "linked" | "suggested" | "unmapped"; matchedBy: "supplier_alias" | "signature" | "none"; matchConfidence: number | null };
+type Mapping = { productId: number | null; mappingStatus: "linked" | "suggested" | "unmapped"; matchedBy: "supplier_alias" | "signature" | "new_product" | "none"; matchConfidence: number | null };
 export function resolvePriceMapping(row: ParsedPriceRow, supplierId: number, aliases: Array<{ supplierId: number; productId: number; normalizedName: string; packagingSignature: string | null }>, products: Array<{ id: number; normalizedSignature: string }>): Mapping {
   const direct = aliases.find(alias => alias.supplierId === supplierId && alias.normalizedName === row.normalizedName && (alias.packagingSignature || "") === row.packagingSignature);
   if (direct) return { productId: direct.productId, mappingStatus: "linked", matchedBy: "supplier_alias", matchConfidence: 100 };
@@ -251,24 +252,57 @@ async function ensureSupplier(name: string) {
   const [supplier] = await db.select().from(priceSuppliers).where(eq(priceSuppliers.id, inserted.id)).limit(1);
   return supplier!;
 }
-export async function commitPriceImport(input: { buffer: Buffer; fileName: string; supplierName: string; sourceDate?: string | null; actorId: number }) {
+export async function createPriceSupplier(input: { name: string; contactNote?: string | null }) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const name = text(input.name);
+  if (name.length < 2) throw new Error("Укажите название поставщика.");
+  const normalizedName = normalizeSupplierName(name);
+  const [existing] = await db.select({ id: priceSuppliers.id, name: priceSuppliers.name }).from(priceSuppliers).where(eq(priceSuppliers.normalizedName, normalizedName)).limit(1);
+  if (existing) throw new Error(`Поставщик «${existing.name}» уже есть в справочнике.`);
+  const [inserted] = await db.insert(priceSuppliers).values({ name, normalizedName, contactNote: text(input.contactNote || "") || null, isActive: true }).$returningId();
+  const [supplier] = await db.select().from(priceSuppliers).where(eq(priceSuppliers.id, inserted.id)).limit(1);
+  return supplier!;
+}
+export async function commitPriceImport(input: { buffer: Buffer; fileName: string; supplierName: string; sourceDate?: string | null; actorId: number; categorySelections?: PriceImportCategorySelection[] }) {
   const preview = await previewPriceImport(input.buffer, input.fileName);
   if (!preview.rows.length) throw new Error("Импорт не сохранен: в документе не найдено ни одной товарной строки с ценой.");
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const categoryByRow = new Map<number, number>();
+  for (const selection of input.categorySelections ?? []) {
+    if (!Number.isInteger(selection.rowIndex) || selection.rowIndex < 0 || selection.rowIndex >= preview.rows.length || !Number.isInteger(selection.categoryId) || selection.categoryId < 1) throw new Error("Передана некорректная категория для строки прайс‑листа.");
+    if (categoryByRow.has(selection.rowIndex)) throw new Error("Категория повторно выбрана для одной строки прайс‑листа.");
+    categoryByRow.set(selection.rowIndex, selection.categoryId);
+  }
+  const categoryIds = Array.from(new Set(categoryByRow.values()));
+  const selectedCategories = categoryIds.length ? await db.select({ id: priceCategories.id, name: priceCategories.name, isActive: priceCategories.isActive }).from(priceCategories).where(inArray(priceCategories.id, categoryIds)) : [];
+  if (selectedCategories.length !== categoryIds.length) throw new Error("Одна из выбранных категорий прайс‑контроля не найдена.");
+  if (selectedCategories.some(category => !category.isActive)) throw new Error("Для импорта можно выбрать только активную существующую категорию.");
+  const categoryMap = new Map(selectedCategories.map(category => [category.id, category]));
   const supplier = await ensureSupplier(input.supplierName);
   const stored = await storagePut(`price-imports/${supplier.id}/${Date.now()}_${input.fileName}`, input.buffer, sourceMimeType(preview.sourceType));
   const [inserted] = await db.insert(priceImports).values({ supplierId: supplier.id, fileName: input.fileName, fileKey: stored.key, sourceDate: input.sourceDate || preview.detectedSourceDate, sourceType: preview.sourceType, status: "completed", rowCount: preview.rows.length, importedByAccountId: input.actorId }).$returningId();
   const aliases = await db.select({ supplierId: priceSupplierAliases.supplierId, productId: priceSupplierAliases.productId, normalizedName: priceSupplierAliases.normalizedName, packagingSignature: priceSupplierAliases.packagingSignature }).from(priceSupplierAliases).where(eq(priceSupplierAliases.supplierId, supplier.id));
   const products = await db.select({ id: priceProducts.id, normalizedSignature: priceProducts.normalizedSignature }).from(priceProducts).where(eq(priceProducts.isActive, true));
-  let linked = 0, suggested = 0;
-  for (const row of preview.rows) {
-    const mapping = resolvePriceMapping(row, supplier.id, aliases, products);
+  let linked = 0, suggested = 0, createdProducts = 0, categorizedRows = 0;
+  for (let rowIndex = 0; rowIndex < preview.rows.length; rowIndex += 1) {
+    const row = preview.rows[rowIndex]!;
+    const category = categoryMap.get(categoryByRow.get(rowIndex) ?? -1);
+    let mapping = resolvePriceMapping(row, supplier.id, aliases, products);
+    if (mapping.productId === null && category) {
+      const product = await createPriceProduct({ canonicalName: row.canonicalHint, categoryId: category.id });
+      products.push({ id: product.id, normalizedSignature: product.normalizedSignature });
+      aliases.push({ supplierId: supplier.id, productId: product.id, normalizedName: row.normalizedName, packagingSignature: row.packagingSignature });
+      await db.insert(priceSupplierAliases).values({ supplierId: supplier.id, productId: product.id, normalizedName: row.normalizedName, sourceSku: row.sourceSku, packagingSignature: row.packagingSignature, isConfirmed: true, createdByAccountId: input.actorId }).onDuplicateKeyUpdate({ set: { productId: product.id, sourceSku: row.sourceSku, isConfirmed: true, createdByAccountId: input.actorId } });
+      mapping = { productId: product.id, mappingStatus: "linked", matchedBy: "new_product", matchConfidence: 100 };
+      createdProducts += 1;
+      categorizedRows += 1;
+    }
     if (mapping.mappingStatus === "linked") linked += 1;
     if (mapping.mappingStatus === "suggested") suggested += 1;
     const [rowInserted] = await db.insert(priceImportRows).values({ importId: inserted.id, sourceSheet: row.sourceSheet, sourceRowNumber: row.sourceRowNumber, sourceSku: row.sourceSku, rawName: row.rawName, normalizedName: row.normalizedName, rawCategory: row.category, rawPackaging: row.packaging, rawAvailability: row.availability, rawPayload: row.rawPayload, productId: mapping.productId, mappingStatus: mapping.mappingStatus, matchedBy: mapping.matchedBy, matchConfidence: mapping.matchConfidence === null ? null : mapping.matchConfidence.toFixed(2) }).$returningId();
     await db.insert(priceOfferPrices).values(row.priceOptions.map(option => ({ importRowId: rowInserted.id, priceMode: option.priceMode, priceAmount: option.priceAmount.toFixed(2), priceBasis: option.priceBasis, normalizedPrice: option.normalizedPrice === null ? null : option.normalizedPrice.toFixed(2), normalizedUnit: option.normalizedUnit, minimumQuantityKg: option.minimumQuantityKg === null ? null : option.minimumQuantityKg.toFixed(2), includesVat: option.includesVat, sourcePriceText: option.sourcePriceText })));
   }
-  return { importId: inserted.id, supplier: { id: supplier.id, name: supplier.name }, rowCount: preview.rows.length, linked, suggested, unmapped: preview.rows.length - linked - suggested, warningCount: preview.warningCount };
+  return { importId: inserted.id, supplier: { id: supplier.id, name: supplier.name }, rowCount: preview.rows.length, linked, suggested, unmapped: preview.rows.length - linked - suggested, createdProducts, categorizedRows, warningCount: preview.warningCount };
 }
 function sourceMimeType(sourceType: PriceImportPreview["sourceType"]) { return sourceType === "pdf" ? "application/pdf" : sourceType === "docx" ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "application/vnd.ms-excel"; }
 export async function listPriceControlData() {
@@ -428,6 +462,16 @@ export async function updatePriceSupplier(input: { id: number; name: string; con
   if (!supplier) throw new Error("Поставщик не найден.");
   return supplier;
 }
+export async function deletePriceSupplier(supplierId: number) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const [supplier] = await db.select({ id: priceSuppliers.id, name: priceSuppliers.name }).from(priceSuppliers).where(eq(priceSuppliers.id, supplierId)).limit(1);
+  if (!supplier) throw new Error("Поставщик не найден.");
+  const [importRow] = await db.select({ id: priceImports.id }).from(priceImports).where(eq(priceImports.supplierId, supplierId)).limit(1);
+  const [aliasRow] = await db.select({ id: priceSupplierAliases.id }).from(priceSupplierAliases).where(eq(priceSupplierAliases.supplierId, supplierId)).limit(1);
+  if (importRow || aliasRow) throw new Error("Поставщика с сохраненными прайс‑листами или товарными связями удалять нельзя. Скройте его в справочнике — история останется доступна.");
+  await db.delete(priceSuppliers).where(eq(priceSuppliers.id, supplierId));
+  return { id: supplier.id, name: supplier.name };
+}
 
 export async function updatePriceOffer(input: { priceId: number; priceAmount: number; priceBasis: PriceBasis }) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
@@ -448,30 +492,35 @@ export async function updatePriceImportDate(input: { importId: number; sourceDat
 
 export async function linkPriceImportRow(input: { rowId: number; productId: number; actorId: number; saveAlias: boolean }) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
-  const [row] = await db.select({ id: priceImportRows.id, importId: priceImportRows.importId, normalizedName: priceImportRows.normalizedName, rawPackaging: priceImportRows.rawPackaging }).from(priceImportRows).where(eq(priceImportRows.id, input.rowId)).limit(1);
+  const [row] = await db.select({ id: priceImportRows.id, importId: priceImportRows.importId, normalizedName: priceImportRows.normalizedName, rawName: priceImportRows.rawName, rawPackaging: priceImportRows.rawPackaging, mappingStatus: priceImportRows.mappingStatus, supplierId: priceImports.supplierId, supplierName: priceSuppliers.name, previousProductName: priceProducts.canonicalName, previousInternalCode: priceProducts.internalCode }).from(priceImportRows).innerJoin(priceImports, eq(priceImportRows.importId, priceImports.id)).innerJoin(priceSuppliers, eq(priceImports.supplierId, priceSuppliers.id)).leftJoin(priceProducts, eq(priceImportRows.productId, priceProducts.id)).where(eq(priceImportRows.id, input.rowId)).limit(1);
   if (!row) throw new Error("Строка прайс‑листа не найдена.");
-  const [importRecord] = await db.select({ supplierId: priceImports.supplierId }).from(priceImports).where(eq(priceImports.id, row.importId)).limit(1);
-  if (!importRecord) throw new Error("Импорт прайс‑листа не найден.");
   const [product] = await db.select().from(priceProducts).where(eq(priceProducts.id, input.productId)).limit(1);
   if (!product) throw new Error("Внутренний товар не найден.");
   await db.update(priceImportRows).set({ productId: input.productId, mappingStatus: "linked", matchedBy: "manual", matchConfidence: "100.00" }).where(eq(priceImportRows.id, input.rowId));
-  if (input.saveAlias) await db.insert(priceSupplierAliases).values({ supplierId: importRecord.supplierId, productId: input.productId, normalizedName: row.normalizedName, packagingSignature: packagingSignature(row.rawPackaging), isConfirmed: true, createdByAccountId: input.actorId }).onDuplicateKeyUpdate({ set: { productId: input.productId, isConfirmed: true, createdByAccountId: input.actorId } });
-  return { success: true, product: { id: product.id, internalCode: product.internalCode, canonicalName: product.canonicalName } };
+  if (input.saveAlias) await db.insert(priceSupplierAliases).values({ supplierId: row.supplierId, productId: input.productId, normalizedName: row.normalizedName, packagingSignature: packagingSignature(row.rawPackaging), isConfirmed: true, createdByAccountId: input.actorId }).onDuplicateKeyUpdate({ set: { productId: input.productId, isConfirmed: true, createdByAccountId: input.actorId } });
+  const beforeProduct = row.mappingStatus === "linked" && row.previousProductName ? `${row.previousProductName} · ${row.previousInternalCode}` : null;
+  const afterProduct = `${product.canonicalName} · ${product.internalCode}`;
+  const auditBase = { supplierName: row.supplierName, supplierProductName: row.rawName, packaging: row.rawPackaging, savedForFuture: input.saveAlias };
+  return { success: true, product: { id: product.id, internalCode: product.internalCode, canonicalName: product.canonicalName }, audit: { before: { ...auditBase, productLabel: beforeProduct }, after: { ...auditBase, productLabel: afterProduct } } };
 }
 export async function reassignPriceSupplierAlias(input: { aliasId: number; productId: number }) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
   const [product] = await db.select({ id: priceProducts.id, internalCode: priceProducts.internalCode, canonicalName: priceProducts.canonicalName }).from(priceProducts).where(and(eq(priceProducts.id, input.productId), eq(priceProducts.isActive, true))).limit(1);
   if (!product) throw new Error("Внутренний товар не найден или отключен.");
-  const [alias] = await db.select({ id: priceSupplierAliases.id }).from(priceSupplierAliases).where(eq(priceSupplierAliases.id, input.aliasId)).limit(1);
+  const [alias] = await db.select({ id: priceSupplierAliases.id, normalizedName: priceSupplierAliases.normalizedName, packagingSignature: priceSupplierAliases.packagingSignature, supplierName: priceSuppliers.name, previousProductName: priceProducts.canonicalName, previousInternalCode: priceProducts.internalCode }).from(priceSupplierAliases).innerJoin(priceSuppliers, eq(priceSupplierAliases.supplierId, priceSuppliers.id)).innerJoin(priceProducts, eq(priceSupplierAliases.productId, priceProducts.id)).where(eq(priceSupplierAliases.id, input.aliasId)).limit(1);
   if (!alias) throw new Error("Подтвержденная связь поставщика не найдена.");
   await db.update(priceSupplierAliases).set({ productId: input.productId, isConfirmed: true }).where(eq(priceSupplierAliases.id, input.aliasId));
-  return { success: true, product };
+  const auditBase = { supplierName: alias.supplierName, supplierProductName: alias.normalizedName, packaging: alias.packagingSignature, savedForFuture: true };
+  return { success: true, product, audit: { before: { ...auditBase, productLabel: `${alias.previousProductName} · ${alias.previousInternalCode}` }, after: { ...auditBase, productLabel: `${product.canonicalName} · ${product.internalCode}` } } };
 }
 export async function unlinkPriceSupplierAlias(aliasId: number) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const [alias] = await db.select({ id: priceSupplierAliases.id, normalizedName: priceSupplierAliases.normalizedName, packagingSignature: priceSupplierAliases.packagingSignature, supplierName: priceSuppliers.name, productName: priceProducts.canonicalName, internalCode: priceProducts.internalCode }).from(priceSupplierAliases).innerJoin(priceSuppliers, eq(priceSupplierAliases.supplierId, priceSuppliers.id)).innerJoin(priceProducts, eq(priceSupplierAliases.productId, priceProducts.id)).where(eq(priceSupplierAliases.id, aliasId)).limit(1);
+  if (!alias) throw new Error("Подтвержденная связь поставщика не найдена.");
   const result = await db.delete(priceSupplierAliases).where(eq(priceSupplierAliases.id, aliasId));
   if (!result[0]?.affectedRows) throw new Error("Подтвержденная связь поставщика не найдена.");
-  return { success: true };
+  const auditBase = { supplierName: alias.supplierName, supplierProductName: alias.normalizedName, packaging: alias.packagingSignature, savedForFuture: true };
+  return { success: true, audit: { before: { ...auditBase, productLabel: `${alias.productName} · ${alias.internalCode}` }, after: { ...auditBase, productLabel: null } } };
 }
 export async function deletePriceImport(importId: number) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");

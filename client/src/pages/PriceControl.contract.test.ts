@@ -111,6 +111,29 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain(".price-select-content");
   });
 
+  it("позволяет назначить существующую категорию отдельным новым строкам либо выбранной группе до сохранения", () => {
+    expect(page).toContain("previewCategoryTargets");
+    expect(page).toContain("selectedPreviewRowIndexes");
+    expect(page).toContain("Назначить отмеченным");
+    expect(page).toContain("Оставить без категории");
+    expect(page).toContain("categorySelections");
+    expect(page).toContain("previewNewRowIndexes.has(index)");
+    expect(styles).toContain(".packet .price-preview-categorization");
+    expect(styles).toContain(".packet .price-preview-table > div.price-preview-new-row");
+  });
+
+  it("не блокирует импорт без распознанной шапки: поставщика можно выбрать или создать, дату — указать вручную", () => {
+    expect(page).toContain("previewSupplierChoice");
+    expect(page).toContain("Поставщик для сохранения");
+    expect(page).toContain("Указать или создать нового");
+    expect(page).toContain("Добавить в справочник");
+    expect(page).toContain("Дата прайса");
+    expect(page).toContain("Новый поставщик");
+    expect(page).toContain("Удалить поставщика?");
+    expect(page).toContain("Если у него есть сохраненные прайс‑листы или товарные связи");
+    expect(styles).toContain(".packet .price-preview-supplier");
+  });
+
   it("показывает изменение цены относительно предыдущего предложения", () => {
     expect(page).toContain("PriceChangeBadge");
     expect(page).toContain("Подорожало");

@@ -66,6 +66,7 @@ type Preview = {
   detectedSupplierName: string | null;
   detectedSourceDate: string | null;
   rows: Array<{
+    normalizedSignature: string;
     rawName: string;
     packaging: string | null;
     category: string | null;
@@ -93,7 +94,7 @@ type CategoryDraft = { id: number | null; name: string; isActive: boolean };
 type DirectoryTab = "products" | "categories" | "suppliers";
 type VisibilityFilter = "active" | "all" | "hidden";
 type SupplierDraft = {
-  id: number;
+  id: number | null;
   name: string;
   contactNote: string;
   isActive: boolean;
@@ -280,6 +281,20 @@ export default function PriceControl({
     },
     onError: error => toast.error(error.message),
   });
+  const createSupplier = trpc.priceControl.createSupplier.useMutation({
+    onSuccess: () => {
+      invalidate();
+      toast.success("Поставщик создан");
+    },
+    onError: error => toast.error(error.message),
+  });
+  const deleteSupplier = trpc.priceControl.deleteSupplier.useMutation({
+    onSuccess: () => {
+      invalidate();
+      toast.success("Поставщик удален");
+    },
+    onError: error => toast.error(error.message),
+  });
   const updateOffer = trpc.priceControl.updateOffer.useMutation({
     onSuccess: () => {
       invalidate();
@@ -355,6 +370,13 @@ export default function PriceControl({
   const [newCategoryTargets, setNewCategoryTargets] = useState<
     Record<number, string>
   >({});
+  const [previewCategoryTargets, setPreviewCategoryTargets] = useState<
+    Record<number, string>
+  >({});
+  const [selectedPreviewRowIndexes, setSelectedPreviewRowIndexes] = useState<
+    number[]
+  >([]);
+  const [previewBulkCategoryId, setPreviewBulkCategoryId] = useState("");
   const [productDraft, setProductDraft] = useState<ProductDraft | null>(null);
   const [categoryDraft, setCategoryDraft] = useState<CategoryDraft | null>(
     null
@@ -369,6 +391,11 @@ export default function PriceControl({
   const [supplierDraft, setSupplierDraft] = useState<SupplierDraft | null>(
     null
   );
+  const [previewSupplierChoice, setPreviewSupplierChoice] = useState("__manual");
+  const [supplierDeleteTarget, setSupplierDeleteTarget] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
   const [offerDrafts, setOfferDrafts] = useState<
     Record<number, { priceAmount: string; priceBasis: PriceBasis }>
   >({});
@@ -376,6 +403,9 @@ export default function PriceControl({
 
   const categories = overview.data?.categories ?? [];
   const selectableCategories = categories.filter(category => category.isActive);
+  const selectableSuppliers = (overview.data?.suppliers ?? []).filter(
+    supplier => supplier.isActive
+  );
   const matchesVisibility = (item: {
     isActive: boolean;
     categoryIsActive?: boolean | null;
@@ -554,6 +584,22 @@ export default function PriceControl({
     (overview.data?.importPreviews ?? []).find(
       item => item.importId === selectedImport?.id
     ) ?? null;
+  const previewNewRows = useMemo(
+    () =>
+      (preview?.rows ?? [])
+        .map((row, index) => ({ row, index }))
+        .filter(
+          ({ row }) =>
+            !catalogProducts.some(
+              product => product.normalizedSignature === row.normalizedSignature
+            )
+        ),
+    [preview?.rows, catalogProducts]
+  );
+  const previewNewRowIndexes = useMemo(
+    () => new Set(previewNewRows.map(item => item.index)),
+    [previewNewRows]
+  );
 
   const inspectFile = async () => {
     if (!file) return;
@@ -564,7 +610,16 @@ export default function PriceControl({
       });
       setPreview(result);
       setSupplierName(result.detectedSupplierName ?? "");
+      const knownSupplier = selectableSuppliers.find(
+        supplier =>
+          supplier.name.toLocaleLowerCase("ru") ===
+          (result.detectedSupplierName ?? "").toLocaleLowerCase("ru")
+      );
+      setPreviewSupplierChoice(knownSupplier ? String(knownSupplier.id) : "__manual");
       setSourceDate(result.detectedSourceDate ?? "");
+      setPreviewCategoryTargets({});
+      setSelectedPreviewRowIndexes([]);
+      setPreviewBulkCategoryId("");
       toast.success("Прайс‑лист разобран", {
         description: `Распознано строк с ценой: ${result.rows.length}.`,
       });
@@ -589,7 +644,11 @@ export default function PriceControl({
     setFile(selected);
     setPreview(null);
     setSupplierName("");
+    setPreviewSupplierChoice("__manual");
     setSourceDate("");
+    setPreviewCategoryTargets({});
+    setSelectedPreviewRowIndexes([]);
+    setPreviewBulkCategoryId("");
   };
   const commitFile = async () => {
     if (!file || !preview || !supplierName.trim()) return;
@@ -599,15 +658,27 @@ export default function PriceControl({
         fileName: file.name,
         supplierName: supplierName.trim(),
         ...(sourceDate ? { sourceDate } : {}),
+        ...(Object.keys(previewCategoryTargets).length
+          ? {
+              categorySelections: Object.entries(previewCategoryTargets)
+                .filter(([, categoryId]) => Number(categoryId) > 0)
+                .map(([rowIndex, categoryId]) => `${rowIndex}:${categoryId}`)
+                .join(","),
+            }
+          : {}),
       });
       await invalidate();
       toast.success("Прайс‑лист сохранен", {
-        description: `Автосвязано: ${result.linked}; на проверке: ${result.suggested}; без связи: ${result.unmapped}.`,
+        description: `Автосвязано: ${result.linked}; новых товаров создано: ${result.createdProducts ?? 0}; на проверке: ${result.suggested}; без связи: ${result.unmapped}.`,
       });
       setFile(null);
       setPreview(null);
       setSupplierName("");
+      setPreviewSupplierChoice("__manual");
       setSourceDate("");
+      setPreviewCategoryTargets({});
+      setSelectedPreviewRowIndexes([]);
+      setPreviewBulkCategoryId("");
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -708,6 +779,77 @@ export default function PriceControl({
         ? current.filter(id => id !== productId)
         : [...current, productId]
     );
+  };
+  const togglePreviewRow = (rowIndex: number) => {
+    setSelectedPreviewRowIndexes(current =>
+      current.includes(rowIndex)
+        ? current.filter(index => index !== rowIndex)
+        : [...current, rowIndex]
+    );
+  };
+  const setPreviewCategory = (rowIndex: number, categoryId: string) => {
+    setPreviewCategoryTargets(current => {
+      const next = { ...current };
+      if (categoryId === "__no_category") delete next[rowIndex];
+      else next[rowIndex] = categoryId;
+      return next;
+    });
+  };
+  const assignPreviewCategoryToSelected = () => {
+    if (!previewBulkCategoryId || !selectedPreviewRowIndexes.length) return;
+    setPreviewCategoryTargets(current => ({
+      ...current,
+      ...Object.fromEntries(
+        selectedPreviewRowIndexes.map(rowIndex => [rowIndex, previewBulkCategoryId])
+      ),
+    }));
+  };
+  const selectPreviewSupplier = (value: string) => {
+    setPreviewSupplierChoice(value);
+    if (value === "__manual") {
+      setSupplierName("");
+      return;
+    }
+    const supplier = selectableSuppliers.find(item => String(item.id) === value);
+    setSupplierName(supplier?.name ?? "");
+  };
+  const createPreviewSupplier = async () => {
+    const name = supplierName.trim();
+    if (name.length < 2) {
+      toast.error("Укажите название нового поставщика.");
+      return;
+    }
+    try {
+      const supplier = await createSupplier.mutateAsync({ name });
+      setSupplierName(supplier.name);
+      setPreviewSupplierChoice(String(supplier.id));
+    } catch {
+      /* уведомление показывает mutation */
+    }
+  };
+  const saveSupplier = async () => {
+    if (!supplierDraft?.name.trim()) {
+      toast.error("Укажите название поставщика.");
+      return;
+    }
+    try {
+      if (supplierDraft.id) {
+        await updateSupplier.mutateAsync({
+          id: supplierDraft.id,
+          name: supplierDraft.name.trim(),
+          contactNote: supplierDraft.contactNote,
+          isActive: supplierDraft.isActive,
+        });
+      } else {
+        await createSupplier.mutateAsync({
+          name: supplierDraft.name.trim(),
+          contactNote: supplierDraft.contactNote,
+        });
+      }
+      setSupplierDraft(null);
+    } catch {
+      /* уведомление показывает mutation */
+    }
   };
   const saveCategory = async () => {
     if (!categoryDraft?.name.trim()) return;
@@ -1265,6 +1407,10 @@ export default function PriceControl({
                     onClick={() => {
                       setFile(null);
                       setPreview(null);
+                      setPreviewSupplierChoice("__manual");
+                      setPreviewCategoryTargets({});
+                      setSelectedPreviewRowIndexes([]);
+                      setPreviewBulkCategoryId("");
                       if (fileInput.current) fileInput.current.value = "";
                     }}
                   >
@@ -1292,14 +1438,35 @@ export default function PriceControl({
                     <span>Распознано строк</span>
                     <strong>{preview.rows.length}</strong>
                   </div>
-                  <label>
-                    Поставщик
+                  <label className="price-preview-supplier">
+                    Поставщик для сохранения
+                    <PriceSelect
+                      value={previewSupplierChoice}
+                      onValueChange={selectPreviewSupplier}
+                      placeholder="Выберите поставщика"
+                      options={[
+                        { value: "__manual", label: "Указать или создать нового" },
+                        ...selectableSuppliers.map(supplier => ({
+                          value: String(supplier.id),
+                          label: supplier.name,
+                        })),
+                      ]}
+                    />
                     <input
                       value={supplierName}
-                      onChange={event => setSupplierName(event.target.value)}
-                      placeholder="Укажите поставщика"
+                      onChange={event => {
+                        setPreviewSupplierChoice("__manual");
+                        setSupplierName(event.target.value);
+                      }}
+                      placeholder="Укажите нового поставщика"
                       maxLength={160}
                     />
+                    {canEdit && previewSupplierChoice === "__manual" && supplierName.trim() && (
+                      <button type="button" className="packet-link compact subtle" onClick={createPreviewSupplier} disabled={createSupplier.isPending}>
+                        <Plus size={14} />
+                        {createSupplier.isPending ? "Создаем…" : "Добавить в справочник"}
+                      </button>
+                    )}
                   </label>
                   <label>
                     Дата прайса
@@ -1329,9 +1496,69 @@ export default function PriceControl({
                       Сохранить прайс‑лист
                     </button>
                   </div>
+                  {canEdit && previewNewRows.length > 0 && (
+                    <div className="price-preview-categorization">
+                      <div>
+                        <span>НОВЫЕ ПОЗИЦИИ</span>
+                        <strong>{previewNewRows.length}</strong>
+                        <small>
+                          Отметьте отдельные строки и назначьте существующую
+                          категорию. Будут созданы только товары, которых еще
+                          нет в справочнике.
+                        </small>
+                      </div>
+                      {selectedPreviewRowIndexes.length > 0 && (
+                        <div className="price-preview-bulk-actions">
+                          <span>Отмечено: {selectedPreviewRowIndexes.length}</span>
+                          <PriceSelect
+                            value={previewBulkCategoryId}
+                            onValueChange={setPreviewBulkCategoryId}
+                            placeholder="Категория для отмеченных"
+                            options={selectableCategories.map(category => ({
+                              value: String(category.id),
+                              label: category.name,
+                            }))}
+                          />
+                          <button
+                            type="button"
+                            className="packet-link compact"
+                            disabled={!previewBulkCategoryId}
+                            onClick={assignPreviewCategoryToSelected}
+                          >
+                            <Tags size={14} />
+                            Назначить отмеченным
+                          </button>
+                          <button
+                            type="button"
+                            className="packet-link compact subtle"
+                            onClick={() => setSelectedPreviewRowIndexes([])}
+                          >
+                            Снять выбор
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <div className="price-preview-table">
-                    {preview.rows.slice(0, 10).map((row, index) => (
-                      <div key={`${row.rawName}-${index}`}>
+                    {preview.rows.map((row, index) => (
+                      <div
+                        key={`${row.rawName}-${index}`}
+                        className={
+                          canEdit && previewNewRowIndexes.has(index)
+                            ? "price-preview-new-row"
+                            : ""
+                        }
+                      >
+                        {canEdit && previewNewRowIndexes.has(index) && (
+                          <label className="price-preview-check">
+                            <input
+                              type="checkbox"
+                              checked={selectedPreviewRowIndexes.includes(index)}
+                              onChange={() => togglePreviewRow(index)}
+                              aria-label={`Выбрать новую позицию «${row.rawName}»`}
+                            />
+                          </label>
+                        )}
                         <strong>{row.rawName}</strong>
                         <span>
                           {row.category || "Без категории"} ·{" "}
@@ -1342,6 +1569,21 @@ export default function PriceControl({
                             ? `${formatMoney(row.priceOptions[0].priceAmount)} ₽`
                             : "цена не найдена"}
                         </b>
+                        {canEdit && previewNewRowIndexes.has(index) && (
+                          <PriceSelect
+                            value={previewCategoryTargets[index] ?? "__no_category"}
+                            onValueChange={value => setPreviewCategory(index, value)}
+                            placeholder="Оставить без категории"
+                            className="price-preview-category-select"
+                            options={[
+                              { value: "__no_category", label: "Оставить без категории" },
+                              ...selectableCategories.map(category => ({
+                                value: String(category.id),
+                                label: category.name,
+                              })),
+                            ]}
+                          />
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1357,7 +1599,7 @@ export default function PriceControl({
                 <span>ТРЕБОВАНИЯ К ПРАЙСУ</span>
                 <h3>Как система читает файл</h3>
                 <ol>
-                  <li><b>1</b><span>Определяет поставщика и дату из шапки, если они указаны.</span></li>
+                  <li><b>1</b><span>Определяет поставщика и дату из шапки, если они указаны; иначе их можно выбрать или указать перед сохранением.</span></li>
                   <li><b>2</b><span>Находит товарные строки, цену, фасовку и единицу измерения.</span></li>
                   <li><b>3</b><span>Приводит фасовку к сопоставимой цене за кг или за литр.</span></li>
                   <li><b>4</b><span>Сначала применяет подтвержденные связи «поставщик → наш товар».</span></li>
@@ -1933,7 +2175,25 @@ export default function PriceControl({
                 <span>ПОСТАВЩИКИ</span>
                 <h3>Названия и служебные пометки</h3>
               </div>
-              <PackageSearch size={21} />
+              {canEdit ? (
+                <button
+                  type="button"
+                  className="packet-link compact"
+                  onClick={() =>
+                    setSupplierDraft({
+                      id: null,
+                      name: "",
+                      contactNote: "",
+                      isActive: true,
+                    })
+                  }
+                >
+                  <Plus size={14} />
+                  Новый поставщик
+                </button>
+              ) : (
+                <PackageSearch size={21} />
+              )}
             </div>
             {supplierDraft && (
               <div className="price-directory-editor supplier">
@@ -1979,11 +2239,8 @@ export default function PriceControl({
                   <button
                     type="button"
                     className="packet-link compact"
-                    onClick={async () => {
-                      await updateSupplier.mutateAsync(supplierDraft);
-                      setSupplierDraft(null);
-                    }}
-                    disabled={updateSupplier.isPending}
+                    onClick={saveSupplier}
+                    disabled={updateSupplier.isPending || createSupplier.isPending}
                   >
                     <Save size={14} />
                     Сохранить
@@ -2029,9 +2286,52 @@ export default function PriceControl({
                       Изменить
                     </button>
                   )}
+                  {canEdit && (
+                    <button
+                      type="button"
+                      className="packet-link compact subtle-danger"
+                      onClick={() =>
+                        setSupplierDeleteTarget({
+                          id: supplier.id,
+                          name: supplier.name,
+                        })
+                      }
+                    >
+                      <Trash2 size={14} />
+                      Удалить
+                    </button>
+                  )}
                 </article>
               ))}
             </div>
+            <p className="packet-note">Поставщика без прайс‑листов и товарных связей можно удалить. Если история уже есть, используйте «Изменить» и выключите активность — записи останутся доступны.</p>
+            <AlertDialog
+              open={Boolean(supplierDeleteTarget)}
+              onOpenChange={open => {
+                if (!open) setSupplierDeleteTarget(null);
+              }}
+            >
+              <AlertDialogContent className="danger-confirm-dialog">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Удалить поставщика?</AlertDialogTitle>
+                  <AlertDialogDescription>Будет удален только пустой поставщик «{supplierDeleteTarget?.name}». Если у него есть сохраненные прайс‑листы или товарные связи, удаление будет заблокировано, чтобы не потерять историю.</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Отменить</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="danger-confirm-action"
+                    disabled={deleteSupplier.isPending}
+                    onClick={() => {
+                      if (supplierDeleteTarget)
+                        deleteSupplier.mutate({ id: supplierDeleteTarget.id });
+                      setSupplierDeleteTarget(null);
+                    }}
+                  >
+                    {deleteSupplier.isPending ? "Удаляем…" : "Удалить поставщика"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </section>
           )}
           {directoryTab === "products" && canEdit && (

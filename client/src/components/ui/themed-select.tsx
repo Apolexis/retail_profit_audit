@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectLabel,
   SelectTrigger,
@@ -88,16 +89,24 @@ function ThemedSelect({
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent className="app-select-content" align="start">
-        {options.map((option, index) => (
-          <React.Fragment key={`${option.group ?? "base"}-${option.value}-${index}`}>
-            {option.group &&
-              (index === 0 || options[index - 1]?.group !== option.group) && (
-                <SelectLabel>{option.group}</SelectLabel>
-              )}
-            <SelectItem value={option.value} disabled={option.disabled}>
+        {options
+          .filter(option => option.group === null)
+          .map((option, index) => (
+            <SelectItem value={option.value} disabled={option.disabled} key={`base-${option.value}-${index}`}>
               {option.label}
             </SelectItem>
-          </React.Fragment>
+          ))}
+        {Array.from(new Set(options.map(option => option.group).filter((group): group is string => Boolean(group)))).map(group => (
+          <SelectGroup key={group}>
+            <SelectLabel>{group}</SelectLabel>
+            {options
+              .filter(option => option.group === group)
+              .map((option, index) => (
+                <SelectItem value={option.value} disabled={option.disabled} key={`${group}-${option.value}-${index}`}>
+                  {option.label}
+                </SelectItem>
+              ))}
+          </SelectGroup>
         ))}
       </SelectContent>
     </Select>

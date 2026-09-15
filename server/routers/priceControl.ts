@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getCurrentLocalAccount, hasPriceAccess } from "../accessControl";
 import { protectedProcedure, router } from "../_core/trpc";
-import { bulkAssignPriceCategory, createPriceCategory, createPriceProduct, deletePriceImport, getPriceImportDownload, linkPriceImportRow, listPriceControlData, reassignPriceSupplierAlias, unlinkPriceSupplierAlias, updatePriceCategory, updatePriceImportDate, updatePriceOffer, updatePriceProduct, updatePriceSupplier } from "../priceControl";
+import { bulkAssignPriceCategory, createPriceCategory, createPriceProduct, createPriceSupplier, deletePriceImport, deletePriceSupplier, getPriceImportDownload, linkPriceImportRow, listPriceControlData, reassignPriceSupplierAlias, unlinkPriceSupplierAlias, updatePriceCategory, updatePriceImportDate, updatePriceOffer, updatePriceProduct, updatePriceSupplier } from "../priceControl";
 import { recordChange } from "../localAuth";
 
 async function requirePricePermission(openId: string | null | undefined, required: "view" | "upload" | "edit") {
@@ -55,11 +55,23 @@ export const priceControlRouter = router({
     await recordChange({ actorId: actor.id, action: "price_category.update", entityType: "price_category", entityId: String(input.id), afterState: { name: category.name, isActive: category.isActive } });
     return category;
   }),
+  createSupplier: protectedProcedure.input(z.object({ name: z.string().trim().min(2).max(160), contactNote: z.string().trim().max(2000).nullable().optional() })).mutation(async ({ ctx, input }) => {
+    await requirePricePermission(ctx.user.openId, "edit");
+    const actor = await localActor(ctx.user.openId); const supplier = await createPriceSupplier(input);
+    await recordChange({ actorId: actor.id, action: "price_supplier.create", entityType: "price_supplier", entityId: String(supplier.id), afterState: { supplierName: supplier.name, contactNote: supplier.contactNote } });
+    return supplier;
+  }),
   updateSupplier: protectedProcedure.input(z.object({ id: z.number().int().positive(), name: z.string().trim().min(2).max(160), contactNote: z.string().trim().max(2000).nullable().optional(), isActive: z.boolean().optional() })).mutation(async ({ ctx, input }) => {
     await requirePricePermission(ctx.user.openId, "edit");
     const actor = await localActor(ctx.user.openId); const supplier = await updatePriceSupplier(input);
     await recordChange({ actorId: actor.id, action: "price_supplier.update", entityType: "price_supplier", entityId: String(input.id), afterState: { name: supplier.name, contactNote: supplier.contactNote, isActive: supplier.isActive } });
     return supplier;
+  }),
+  deleteSupplier: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+    await requirePricePermission(ctx.user.openId, "edit");
+    const actor = await localActor(ctx.user.openId); const supplier = await deletePriceSupplier(input.id);
+    await recordChange({ actorId: actor.id, action: "price_supplier.delete", entityType: "price_supplier", entityId: String(input.id), beforeState: { supplierName: supplier.name }, afterState: null });
+    return { success: true };
   }),
   updateOffer: protectedProcedure.input(z.object({ priceId: z.number().int().positive(), priceAmount: z.number().positive().max(10_000_000), priceBasis: z.enum(["kg", "l", "piece", "package", "unknown"]) })).mutation(async ({ ctx, input }) => {
     await requirePricePermission(ctx.user.openId, "edit");
@@ -77,21 +89,21 @@ export const priceControlRouter = router({
     await requirePricePermission(ctx.user.openId, "edit");
     const actor = await localActor(ctx.user.openId);
     const result = await linkPriceImportRow({ ...input, actorId: actor.id });
-    await recordChange({ actorId: actor.id, action: "price_alias.link", entityType: "price_import_row", entityId: String(input.rowId), afterState: { productId: input.productId, saveAlias: input.saveAlias } });
+    await recordChange({ actorId: actor.id, action: "price_alias.link", entityType: "price_import_row", entityId: String(input.rowId), beforeState: result.audit.before, afterState: result.audit.after });
     return result;
   }),
   reassignAlias: protectedProcedure.input(z.object({ aliasId: z.number().int().positive(), productId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
     await requirePricePermission(ctx.user.openId, "edit");
     const actor = await localActor(ctx.user.openId);
     const result = await reassignPriceSupplierAlias(input);
-    await recordChange({ actorId: actor.id, action: "price_alias.reassign", entityType: "price_supplier_alias", entityId: String(input.aliasId), afterState: { productId: input.productId } });
+    await recordChange({ actorId: actor.id, action: "price_alias.reassign", entityType: "price_supplier_alias", entityId: String(input.aliasId), beforeState: result.audit.before, afterState: result.audit.after });
     return result;
   }),
   unlinkAlias: protectedProcedure.input(z.object({ aliasId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
     await requirePricePermission(ctx.user.openId, "edit");
     const actor = await localActor(ctx.user.openId);
     const result = await unlinkPriceSupplierAlias(input.aliasId);
-    await recordChange({ actorId: actor.id, action: "price_alias.unlink", entityType: "price_supplier_alias", entityId: String(input.aliasId), afterState: { unlinked: true } });
+    await recordChange({ actorId: actor.id, action: "price_alias.unlink", entityType: "price_supplier_alias", entityId: String(input.aliasId), beforeState: result.audit.before, afterState: result.audit.after });
     return result;
   }),
   deleteImport: protectedProcedure.input(z.object({ importId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {

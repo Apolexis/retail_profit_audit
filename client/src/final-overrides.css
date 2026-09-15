@@ -159,8 +159,8 @@ html[data-audit-theme="light"] .mobile-drawer .drawer-link:not(.active):hover {
 /* «Пилот» в светлой теме: нейтральный текст и яркий коралловый ползунок. */
 html[data-audit-theme="light"] .packet .pilot-knob > span { color: #242a33 !important; }
 html[data-audit-theme="light"] .packet .pilot-knob > span b { background: #fff0f1 !important; color: #c5354c !important; }
-html[data-audit-theme="light"] .packet .pilot-knob input[type="range"] { background: #ffe0e3 !important; accent-color: #e84f5f !important; }
-html[data-audit-theme="light"] .packet .pilot-knob input[type="range"]::-webkit-slider-thumb { border-color: #ffffff !important; background: #e84f5f !important; box-shadow: 0 2px 7px rgba(184, 41, 61, 0.24) !important; }
+html[data-audit-theme="light"] .packet .pilot-knob input[type="range"] { background: #dbeeff !important; accent-color: #0a84ff !important; }
+html[data-audit-theme="light"] .packet .pilot-knob input[type="range"]::-webkit-slider-thumb { border-color: #ffffff !important; background: #0a84ff !important; box-shadow: 0 2px 7px rgba(10, 132, 255, .24) !important; }
 html[data-audit-theme="light"] .packet .pilot-knob small { color: #5e6672 !important; }
 html[data-audit-theme="light"] .packet .pilot-knob small i { background: #d9dee5 !important; }
 
@@ -734,7 +734,7 @@ html[data-audit-theme="light"] .packet .chart-view-button.active { background: #
 .packet .plan-editor input[type="month"] { cursor: pointer; }
 .packet .plan-editor input[type="month"]:hover, .packet .plan-editor input[type="month"]:focus, .packet .plan-editor input[type="number"]:hover, .packet .plan-editor input[type="number"]:focus { border-color: #ff765f !important; box-shadow: 0 0 0 2px rgba(255,118,95,.24) !important; outline: none; }
 html[data-audit-theme="light"] .packet .plan-editor input[type="month"], html[data-audit-theme="light"] .packet .plan-editor input[type="number"] { border-color: #cbd9ee !important; background: #fff !important; color: #17171b !important; color-scheme: light; }
-html[data-audit-theme="light"] .packet .plan-editor input[type="month"]:hover, html[data-audit-theme="light"] .packet .plan-editor input[type="month"]:focus, html[data-audit-theme="light"] .packet .plan-editor input[type="number"]:hover, html[data-audit-theme="light"] .packet .plan-editor input[type="number"]:focus { border-color: #e84f5f !important; box-shadow: 0 0 0 2px rgba(232,79,95,.16) !important; }
+html[data-audit-theme="light"] .packet .plan-editor input[type="month"]:hover, html[data-audit-theme="light"] .packet .plan-editor input[type="month"]:focus, html[data-audit-theme="light"] .packet .plan-editor input[type="number"]:hover, html[data-audit-theme="light"] .packet .plan-editor input[type="number"]:focus { border-color: #0a84ff !important; box-shadow: 0 0 0 3px rgba(10,132,255,.14) !important; }
 
 /* База: отдельные режимы «новый показатель» и «редактирование», единый ритм формы. */
 .packet .manage-editor .card-title { align-items: center; gap: 14px; }
@@ -860,13 +860,15 @@ html[data-audit-theme="light"] .packet .closure-choice { border-color: #e8ebef; 
 html[data-audit-theme="light"] .packet .closure-choice:hover,html[data-audit-theme="light"] .packet .closure-choice.selected { background: #fff5f4; }
 @media (max-width: 900px) { .packet .closure-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); } .packet .closure-profit-flow { grid-template-columns: repeat(3, minmax(0, 1fr)); } .packet .closure-profit-flow > span { grid-column: 1 / -1; } }
 @media (max-width: 620px) { .packet .closure-overview { grid-template-columns: 1fr; } .packet .closure-profit-flow { grid-template-columns: 1fr; } .packet .closure-profit-flow > span { grid-column: auto; } .packet .closure-choice { grid-template-columns: auto minmax(0, 1fr); } .packet .closure-choice-values { grid-column: 2; min-width: 0; text-align: left; grid-template-columns: 1fr auto; align-items: center; } }
-/* Единственная кинематика загрузчика: неподвижное кольцо и последовательные fish motion paths. */
+/* Косяк имеет явные SVG‑координаты уже в первом кадре: анимация не отвечает за видимость рыб. */
 .facts-loader .facts-school { animation: none !important; transform: none !important; }
-.facts-loader .facts-fish { transform: none !important; transform-box: fill-box; transform-origin: 0 0; }
+.facts-loader .facts-fish { transform-box: fill-box; transform-origin: 0 0; }
 .facts-loader .facts-fish-size { transform-box: fill-box; transform-origin: 0 0; }
 .facts-loader .facts-fish-body { animation: facts-fish-glide 1.6s var(--audit-hover-ease) infinite alternate !important; transform-box: fill-box; transform-origin: center; }
 @keyframes facts-fish-glide { 0% { transform: translate(-1px, -.8px); } 48% { transform: translate(1.35px, .8px); } 100% { transform: translate(-.6px, 1.15px); } }
 @media (prefers-reduced-motion: reduce) { .facts-loader .facts-fish-body { animation: none !important; } }
+.packet .plan-fact-loader { min-height: 250px; gap: 12px; }
+.packet .plan-fact-loader > p { max-width: 310px; margin: 0; color: var(--muted); line-height: 1.42; text-align: center; }
 html[data-audit-theme="light"] .packet .manage-editor .manage-editing-metric { background: #fff8f9; border-color: #f0cbd0; }
 html[data-audit-theme="light"] .packet .manage-editor .manage-editor-notice { border-color: #efb7bf; background: #fff6f7; color: #8e4050; }
 @media (max-width: 720px) { .packet .manage-editor .fact-editor { grid-template-columns: 1fr; gap: 12px; } .packet .manage-editor .fact-editor > label > small { min-height: 0; } .packet .manage-editor .metric-rename-action { width: 100%; margin: 0; } .packet .manage-editor .metric-type-panel, .packet .manage-editor .store-rename-form { grid-template-columns: 1fr; } .packet .manage-editor .metric-type-actions { display: grid; grid-template-columns: 1fr 1fr; } .packet .manage-editor .metric-type-actions > button, .packet .manage-editor .store-rename-form .store-rename-save { width: 100%; } .packet .manage-editor .editor-actions { align-items: stretch; flex-direction: column; } .packet .manage-editor .editor-actions > button { width: 100%; } }
@@ -3451,6 +3453,7 @@ body [data-slot="select-content"] [data-slot="select-item"][data-state="checked"
 }
 @media (max-width: 560px) {
   .packet .price-directory-toolbar { align-items: stretch; flex-direction: column; }
+  .packet .price-directory-search { flex: 0 0 42px; min-height: 42px; height: 42px; }
   .packet .price-directory-toolbar > small { white-space: normal; }
   .packet .price-bulk-actions > span { width: 100%; }
   .packet .price-bulk-actions [data-slot="select-trigger"] { width: 100%; }
@@ -3461,6 +3464,10 @@ body [data-slot="select-content"] [data-slot="select-item"][data-state="checked"
   .packet .price-import-steps > span { grid-template-columns: 20px minmax(0, 1fr); }
   .packet .price-import-steps small { grid-column: 2; justify-self: start; }
 }
+
+/* Справочник: поиск всегда остается компактной строкой, даже в колонке мобильной раскладки. */
+.packet .price-directory-toolbar > small { display: inline-flex; align-items: center; min-height: 24px; padding: 0 2px; }
+.packet .price-directory-list > .empty-state.compact { min-height: 118px; margin-top: 0; padding: 18px 14px; }
 
 /* Общий эталон focus: единственный тематичный контур принадлежит самому полю. */
 html[data-audit-theme="light"] body :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), textarea, [data-slot="select-trigger"]):focus,
@@ -3535,3 +3542,44 @@ html[data-audit-theme] .packet .packet-card:focus-within {
   .packet .access-import-row .access-switch { width: 100% !important; }
   .packet .access-import-control-row .access-control-toggle { width: 100% !important; justify-self: stretch !important; }
 }
+
+/* Портфель: мягкие скругленные кнопки изменения порога, а не квадратные части поля. */
+.packet .portfolio-thresholds .threshold-stepper > div { grid-template-columns: 32px minmax(0, 1fr) 32px; gap: 4px; min-height: 40px; padding: 3px; border-radius: 12px; }
+.packet .portfolio-thresholds .threshold-stepper button { align-self: center; width: 30px; height: 30px; min-height: 30px; padding: 0; border: 1px solid transparent; border-radius: 9px; background: color-mix(in srgb, var(--surface) 72%, transparent); color: var(--muted); font-size: 18px; line-height: 1; transition: border-color 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease), color 160ms var(--audit-hover-ease), transform 160ms var(--audit-hover-ease); }
+.packet .portfolio-thresholds .threshold-stepper button:active { transform: scale(.96); }
+html[data-audit-theme="light"] .packet .portfolio-thresholds .threshold-stepper button { border-color: #d5e2ef; background: #f7fbff; color: #075dbb; }
+html[data-audit-theme="light"] .packet .portfolio-thresholds .threshold-stepper button:hover,
+html[data-audit-theme="light"] .packet .portfolio-thresholds .threshold-stepper button:focus-visible { border-color: #0a84ff !important; background: #eaf4ff !important; color: #075dbb !important; box-shadow: 0 0 0 2px rgba(10,132,255,.12) !important; outline: none !important; }
+html[data-audit-theme="dark"] .packet .portfolio-thresholds .threshold-stepper button { border-color: #454d59; background: #1b222b; color: #ffb1a2; }
+html[data-audit-theme="dark"] .packet .portfolio-thresholds .threshold-stepper button:hover,
+html[data-audit-theme="dark"] .packet .portfolio-thresholds .threshold-stepper button:focus-visible { border-color: #ff856d !important; background: rgba(255,133,109,.14) !important; color: #ffe5de !important; box-shadow: 0 0 0 2px rgba(255,133,109,.14) !important; outline: none !important; }
+
+/* Предпросмотр прайса: категории выбираются только для новых строк, индивидуально или для отмеченных. */
+.packet .price-preview-categorization { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(180px, .55fr) minmax(0, 1.45fr); gap: 11px; align-items: center; padding: 11px; border: 1px solid var(--price-border); border-radius: 12px; background: color-mix(in srgb, var(--price-accent) 5%, var(--price-surface)); }
+.packet .price-preview-categorization > div:first-child { display: grid; gap: 3px; }
+.packet .price-preview-categorization > div:first-child > span { color: var(--price-muted); font: 750 10px "IBM Plex Mono", monospace; letter-spacing: .09em; }
+.packet .price-preview-categorization > div:first-child > strong { color: var(--price-accent); font-size: 22px; line-height: 1; }
+.packet .price-preview-categorization > div:first-child > small { color: var(--price-muted); font-size: 11px; line-height: 1.35; }
+.packet .price-preview-bulk-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 7px; min-width: 0; }
+.packet .price-preview-bulk-actions > span { width: 100%; color: var(--price-muted); font-size: 11px; text-align: right; }
+.packet .price-preview-bulk-actions [data-slot="select-trigger"] { flex: 1 1 180px; width: auto; max-width: 270px; }
+.packet .price-preview-check { display: grid !important; place-items: center; min-width: 21px; min-height: 36px; padding: 0 !important; }
+.packet .price-preview-check input { width: 17px; height: 17px; min-height: 0 !important; margin: 0; accent-color: var(--price-accent); }
+.packet .price-preview-category-select { width: 100%; min-width: 170px; }
+.packet .price-preview-table > div.price-preview-new-row { grid-template-columns: 24px minmax(180px, 1.45fr) minmax(160px, 1fr) minmax(84px, auto) minmax(190px, .82fr); }
+@media (max-width: 760px) { .packet .price-preview-categorization { grid-template-columns: 1fr; } .packet .price-preview-bulk-actions { justify-content: stretch; } .packet .price-preview-bulk-actions > span { text-align: left; } .packet .price-preview-bulk-actions [data-slot="select-trigger"] { flex-basis: 100%; max-width: none; } }
+@media (max-width: 560px) { .packet .price-preview-table > div.price-preview-new-row { grid-template-columns: 23px minmax(0, 1fr); gap: 6px 8px; } .packet .price-preview-table > div.price-preview-new-row > span, .packet .price-preview-table > div.price-preview-new-row > b, .packet .price-preview-table > div.price-preview-new-row > [data-slot="select-trigger"] { grid-column: 2; } .packet .price-preview-category-select { min-width: 0; } }
+
+/* Журнал: контекст товарного соответствия читается до перехода «наш товар: до → после». */
+.packet .audit-price-alias { display: grid; gap: 7px; }
+.packet .audit-price-alias-context { display: flex; flex-wrap: wrap; gap: 6px; }
+.packet .audit-price-alias-context > span { display: inline-flex; align-items: baseline; gap: 4px; min-width: 0; padding: 4px 7px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); color: var(--muted); font-size: 11px; }
+.packet .audit-price-alias-context b { color: var(--faint); font: 750 9px "IBM Plex Mono", monospace; letter-spacing: .06em; text-transform: uppercase; }
+.packet .audit-price-alias > small { color: var(--faint); font-size: 10px; line-height: 1.35; }
+
+/* Импорт: поставщик может быть распознан, выбран из справочника или создан явно до сохранения. */
+.packet .price-preview-supplier { display: grid; gap: 6px; align-content: start; }
+.packet .price-preview-supplier [data-slot="select-trigger"] { width: 100%; }
+.packet .price-preview-supplier > input { width: 100%; }
+.packet .price-preview-supplier > .packet-link { justify-self: start; }
+@media (max-width: 560px) { .packet .price-preview-supplier > .packet-link { width: 100%; justify-content: center; } }

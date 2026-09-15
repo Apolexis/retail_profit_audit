@@ -5,14 +5,14 @@ const component = readFileSync(new URL("./OceanLoader.tsx", import.meta.url), "u
 const styles = readFileSync(new URL("../final-overrides.css", import.meta.url), "utf8");
 
 describe("векторная загрузка", () => {
-  it("использует общий круговой SVG с последовательным косяком без растровых изображений", () => {
+  it("использует общий круговой SVG с видимым в первом кадре косяком без растровых изображений", () => {
     expect(component).toContain("<svg className=\"facts-loader-art\"");
     expect(component).toContain("FishSpinner");
     expect(component).toContain('{ id: "h"');
     expect(component).toContain("SCHOOL_PATHS.map");
-    expect(component).toContain("SCHOOL_RING");
-    expect(component).toContain("begin={begin} repeatCount=\"indefinite\" rotate=\"auto\"");
-    expect(component).toContain('begin: "-1.10s"');
+    expect(component).toContain("x: 73, y: 10");
+    expect(component).toContain("rotation: 138");
+    expect(component).toContain("transform={`translate(${x} ${y}) rotate(${rotation})`}");
     expect(component).not.toContain("<img");
   });
 

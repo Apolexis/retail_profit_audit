@@ -107,6 +107,13 @@ describe("страница «Портфель»", () => {
     expect(styles).toContain('html[data-audit-theme="light"] .packet .zone-grid article:hover { transform: none !important; border-color: #0a84ff !important;');
   });
 
+  it("оформляет кнопки изменения порогов как скругленные тематичные контролы", () => {
+    expect(styles).toContain("/* Портфель: мягкие скругленные кнопки изменения порога");
+    expect(styles).toContain("border-radius: 9px");
+    expect(styles).toContain("html[data-audit-theme=\"light\"] .packet .portfolio-thresholds .threshold-stepper button:hover");
+    expect(styles).toContain("html[data-audit-theme=\"dark\"] .packet .portfolio-thresholds .threshold-stepper button:hover");
+  });
+
   it("разделяет пояснение покрытия на читаемые строки и согласует критерии темной темы", () => {
     expect(page).toContain('Покрытие запаса</b> — дни обычных продаж, на которые хватит конечного остатка:<br/>');
     expect(page).toContain('конечный остаток ÷ средние продажи в день.</b><br/>Медиана');
