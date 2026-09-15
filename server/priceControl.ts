@@ -515,6 +515,13 @@ export async function updatePriceSupplier(input: { id: number; name: string; con
   if (!supplier) throw new Error("Поставщик не найден.");
   return supplier;
 }
+export async function setPriceSupplierActive(input: { id: number; isActive: boolean }) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  await db.update(priceSuppliers).set({ isActive: input.isActive }).where(eq(priceSuppliers.id, input.id));
+  const [supplier] = await db.select().from(priceSuppliers).where(eq(priceSuppliers.id, input.id)).limit(1);
+  if (!supplier) throw new Error("Поставщик не найден.");
+  return supplier;
+}
 export async function deletePriceSupplier(supplierId: number) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
   const [supplier] = await db.select({ id: priceSuppliers.id, name: priceSuppliers.name }).from(priceSuppliers).where(eq(priceSuppliers.id, supplierId)).limit(1);

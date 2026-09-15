@@ -16,12 +16,13 @@ describe("векторная загрузка", () => {
     expect(component).not.toContain("<img");
   });
 
-  it("движет весь видимый косяк по окружности и отключает движение при системном уменьшении анимации", () => {
+  it("движет весь видимый косяк по часовой окружности и отключает движение при системном уменьшении анимации", () => {
     expect(styles).toContain("@media (prefers-reduced-motion: reduce)");
-    expect(styles).toContain(".ocean-loader *");
-    expect(styles).toContain("facts-fish-glide");
-    expect(styles).toContain(".facts-loader .facts-school { transform-origin: 80px 80px; animation: facts-school-spin 7.2s linear infinite !important;");
-    expect(styles).toContain(".facts-loader .facts-loader-art { width: 176px; height: 176px; }");
+    expect(component).toContain('className="facts-school-orbit"');
+    expect(component).toContain('type="rotate" from="0 80 80" to="360 80 80" dur="4.8s"');
+    expect(component).toContain('transform="translate(0 -10)"');
+    expect(styles).toContain(".facts-loader .facts-loader-art { width: 142px !important; height: 142px !important; }");
+    expect(styles).toContain(".facts-loader .facts-school-orbit");
     expect(styles).toContain("backdrop-filter: blur(18px)");
     expect(styles).toContain(".ocean-loader.overlay .ocean-loader-art");
     expect(styles).toContain(".ocean-loader .facts-loader-art");

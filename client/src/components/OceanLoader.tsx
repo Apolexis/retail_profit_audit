@@ -15,18 +15,21 @@ const SCHOOL_PATHS: FishPath[] = [
 
 function OrbitFish({ id, x, y, rotation, scale }: FishPath) {
   return <g className={`facts-fish facts-fish-${id}`} transform={`translate(${x} ${y}) rotate(${rotation})`}>
-    <g className="facts-fish-size" transform={`scale(${scale})`}>
-      <g className="facts-fish-body">
-        <path d="M42 11 C32 -4 15 -4 4 11 C15 26 32 26 42 11Z M6 11 L0 0 L1 22Z" />
-        <circle className="facts-eye" cx="31" cy="5.7" r="2.2"/><circle className="facts-pupil" cx="31.4" cy="5.7" r=".92"/>
+      <g className="facts-fish-size" transform={`scale(${scale})`}>
+        <g className="facts-fish-body">
+          <path d="M42 11 C32 -4 15 -4 4 11 C15 26 32 26 42 11Z M6 11 L0 0 L1 22Z" />
+          <circle className="facts-eye" cx="31" cy="5.7" r="2.2"/><circle className="facts-pupil" cx="31.4" cy="5.7" r=".92"/>
+        </g>
       </g>
-    </g>
   </g>;
 }
 
 function FishSpinner({ className, label }: { className: string; label: string }) {
   return <section className={className} role="status" aria-live="polite"><p>{label}</p><svg className="facts-loader-art" viewBox="0 0 160 160" aria-hidden="true" focusable="false">
-    <g className="facts-school">{SCHOOL_PATHS.map(fish => <OrbitFish key={fish.id} {...fish}/>)}</g>
+    <g className="facts-school-orbit">
+      <animateTransform attributeName="transform" type="rotate" from="0 80 80" to="360 80 80" dur="4.8s" repeatCount="indefinite" />
+      <g className="facts-school" transform="translate(0 -10)">{SCHOOL_PATHS.map(fish => <OrbitFish key={fish.id} {...fish}/>)}</g>
+    </g>
   </svg></section>;
 }
 

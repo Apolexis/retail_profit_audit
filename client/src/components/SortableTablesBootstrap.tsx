@@ -42,7 +42,7 @@ function sortTableByHeader(header: HTMLTableCellElement) {
 }
 
 function canStartTableDrag(target: EventTarget | null) {
-  return !(target instanceof Element && target.closest("button, a, input, select, textarea, label, [contenteditable='true']"));
+  return !(target instanceof Element && target.closest("button, a, input, select, textarea, label, th[data-sortable='true'], [contenteditable='true']"));
 }
 
 function bindMouseDragScroll(wrap: HTMLElement) {

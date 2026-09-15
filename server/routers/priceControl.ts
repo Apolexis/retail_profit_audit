@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getCurrentLocalAccount, hasPriceAccess } from "../accessControl";
 import { protectedProcedure, router } from "../_core/trpc";
-import { bulkAssignPriceCategory, createPriceCategory, createPriceProduct, createPriceSupplier, deletePriceImport, deletePriceSupplier, getPriceCategoryAuditState, getPriceImportAuditState, getPriceImportDownload, getPriceOfferAuditState, getPriceProductAuditState, getPriceProductsAuditStates, getPriceSupplierAuditState, linkPriceImportRow, listPriceControlData, reassignPriceSupplierAlias, unlinkPriceSupplierAlias, updatePriceCategory, updatePriceImportDate, updatePriceOffer, updatePriceProduct, updatePriceSupplier } from "../priceControl";
+import { bulkAssignPriceCategory, createPriceCategory, createPriceProduct, createPriceSupplier, deletePriceImport, deletePriceSupplier, getPriceCategoryAuditState, getPriceImportAuditState, getPriceImportDownload, getPriceOfferAuditState, getPriceProductAuditState, getPriceProductsAuditStates, getPriceSupplierAuditState, linkPriceImportRow, listPriceControlData, reassignPriceSupplierAlias, setPriceSupplierActive, unlinkPriceSupplierAlias, updatePriceCategory, updatePriceImportDate, updatePriceOffer, updatePriceProduct, updatePriceSupplier } from "../priceControl";
 import { recordChange } from "../localAuth";
 
 async function requirePricePermission(openId: string | null | undefined, required: "view" | "upload" | "edit") {
@@ -65,6 +65,12 @@ export const priceControlRouter = router({
   updateSupplier: protectedProcedure.input(z.object({ id: z.number().int().positive(), name: z.string().trim().min(2).max(160), contactNote: z.string().trim().max(2000).nullable().optional(), isActive: z.boolean().optional() })).mutation(async ({ ctx, input }) => {
     await requirePricePermission(ctx.user.openId, "edit");
     const actor = await localActor(ctx.user.openId); const before = await getPriceSupplierAuditState(input.id); const supplier = await updatePriceSupplier(input);
+    await recordChange({ actorId: actor.id, action: "price_supplier.update", entityType: "price_supplier", entityId: String(input.id), beforeState: before, afterState: await getPriceSupplierAuditState(supplier.id) });
+    return supplier;
+  }),
+  setSupplierActive: protectedProcedure.input(z.object({ id: z.number().int().positive(), isActive: z.boolean() })).mutation(async ({ ctx, input }) => {
+    await requirePricePermission(ctx.user.openId, "edit");
+    const actor = await localActor(ctx.user.openId); const before = await getPriceSupplierAuditState(input.id); const supplier = await setPriceSupplierActive(input);
     await recordChange({ actorId: actor.id, action: "price_supplier.update", entityType: "price_supplier", entityId: String(input.id), beforeState: before, afterState: await getPriceSupplierAuditState(supplier.id) });
     return supplier;
   }),

@@ -285,6 +285,10 @@ export default function PriceControl({
     },
     onError: error => toast.error(error.message),
   });
+  const setSupplierActive = trpc.priceControl.setSupplierActive.useMutation({
+    onSuccess: () => invalidate(),
+    onError: error => toast.error(error.message),
+  });
   const createSupplier = trpc.priceControl.createSupplier.useMutation({
     onSuccess: () => {
       invalidate();
@@ -853,6 +857,18 @@ export default function PriceControl({
       setSupplierDraft(null);
     } catch {
       /* уведомление показывает mutation */
+    }
+  };
+  const toggleSupplierDraftActive = async () => {
+    if (!supplierDraft) return;
+    const isActive = !supplierDraft.isActive;
+    const previous = supplierDraft;
+    setSupplierDraft({ ...supplierDraft, isActive });
+    if (!supplierDraft.id) return;
+    try {
+      await setSupplierActive.mutateAsync({ id: supplierDraft.id, isActive });
+    } catch {
+      setSupplierDraft(previous);
     }
   };
   const saveCategory = async () => {
@@ -2208,22 +2224,20 @@ export default function PriceControl({
                     placeholder="Контакты, условия, комментарий"
                   />
                 </label>
-                <label className="price-active-toggle">
-                  <input
-                    type="checkbox"
-                    checked={supplierDraft.isActive}
-                    onChange={event =>
-                      setSupplierDraft({
-                        ...supplierDraft,
-                        isActive: event.target.checked,
-                      })
-                    }
-                  />
+                <button
+                  type="button"
+                  className={`price-active-toggle${supplierDraft.isActive ? " is-active" : ""}`}
+                  aria-pressed={supplierDraft.isActive}
+                  onClick={toggleSupplierDraftActive}
+                  disabled={setSupplierActive.isPending}
+                >
+                  <CheckCircle2 size={16} aria-hidden="true" />
                   <span>
                     <strong>Активен в фильтрах</strong>
                     <small>Доступен при выборе поставщика</small>
                   </span>
-                </label>
+                  <em>{supplierDraft.isActive ? "Включен" : "Скрыт"}</em>
+                </button>
                 <div className="price-directory-editor-actions">
                   <button
                     type="button"

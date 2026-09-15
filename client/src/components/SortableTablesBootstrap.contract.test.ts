@@ -9,6 +9,7 @@ describe("горизонтальное перетаскивание аналит
     expect(source).toContain("function bindMouseDragScroll");
     expect(source).toContain("wrap.scrollWidth <= wrap.clientWidth");
     expect(source).toContain("button, a, input, select, textarea, label");
+    expect(source).toContain("th[data-sortable='true']");
     expect(source).toContain("window.getSelection()?.removeAllRanges()");
     expect(source).toContain(".data-table-wrap");
   });
@@ -16,5 +17,10 @@ describe("горизонтальное перетаскивание аналит
     expect(styles).toContain("@media (hover: hover) and (pointer: fine)");
     expect(styles).toContain(".data-table-wrap.table-mouse-dragging");
     expect(styles).toContain(".packet .scenario-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }");
+  });
+
+  it("оставляет короткий клик по заголовку сортировке, а не drag‑прокрутке", () => {
+    expect(source).toContain("const header = target?.closest<HTMLTableCellElement>(\"table.data-table th[data-sortable='true']\")");
+    expect(source).toContain("sortTableByHeader(header)");
   });
 });

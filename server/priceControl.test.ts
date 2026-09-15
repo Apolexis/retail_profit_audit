@@ -74,6 +74,14 @@ describe("прайс‑контроль: нормализация товарны
     expect(source).toContain("Скройте его в справочнике");
   });
 
+  it("дает переключить активность поставщика без отправки несохраненного черновика", () => {
+    const source = readFileSync(new URL("./priceControl.ts", import.meta.url), "utf8");
+    const router = readFileSync(new URL("./routers/priceControl.ts", import.meta.url), "utf8");
+    expect(source).toContain("export async function setPriceSupplierActive");
+    expect(router).toContain("setSupplierActive:");
+    expect(router).toContain('action: "price_supplier.update"');
+  });
+
   it("сохраняет для общего журнала подробности автоматически созданных при импорте поставщика и товаров", () => {
     const source = readFileSync(new URL("./priceControl.ts", import.meta.url), "utf8");
     const route = readFileSync(new URL("./priceImportBinaryRoutes.ts", import.meta.url), "utf8");

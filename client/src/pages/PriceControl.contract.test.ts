@@ -66,6 +66,14 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain(".packet .price-history-chart");
   });
 
+  it("делает активность поставщика явным кликабельным действием с немедленным сохранением", () => {
+    expect(page).toContain("setSupplierActive");
+    expect(page).toContain("toggleSupplierDraftActive");
+    expect(page).toContain('aria-pressed={supplierDraft.isActive}');
+    expect(page).toContain('supplierDraft.isActive ? "Включен" : "Скрыт"');
+    expect(styles).toContain(".packet .price-active-toggle.is-active");
+  });
+
   it("разделяет справочник на товары и категории с обязательным выбором существующей категории", () => {
     expect(page).toContain('directoryTab === "products"');
     expect(page).toContain('directoryTab === "categories"');

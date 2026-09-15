@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { chartPanSpeedForZoom, chartTick, clampChartZoom, formatFactAmount, formatK, formatM, formatTableAmount, missingTooltipLines, nonZeroLines, normalizeOverlayBarRect, panChartRows, pointInsideRect, resolveChartPanAxis, resolveMetricChartLayout, resolveMetricChartView, resolveOverlayBarGeometry, sortTooltipPayload, viewportChartDomain, windowChartRows, zeroAwareTicks } from "./AuditCharts";
 
@@ -162,12 +163,14 @@ describe("форматирование денежных показателей",
     expect(source).toContain("isAnimationActive={false} animationDuration={0}");
     expect(source).toContain('const touchStart=(event:TouchEvent)=>{if(isControl(event.target)||!event.touches.length)return;');
     expect(source).toContain('if(!allowTouchPan&&active.length===1)return');
-    expect(source).toContain('if(event.pointerType==="touch"||!pointers.current.has(event.pointerId))return');
-    expect(source).toContain('if(event.pointerType==="touch"||(event.target as Element).closest');
+    expect(source).toContain('const ownsPointerTarget=(event:ReactPointerEvent<HTMLDivElement>)=>event.target instanceof Node&&event.currentTarget.contains(event.target);');
+    expect(source).toContain('if(!ownsPointerTarget(event)||event.pointerType==="touch"||!pointers.current.has(event.pointerId))return');
+    expect(source).toContain('if(!ownsPointerTarget(event)||event.pointerType==="touch"||(event.target as Element).closest');
     expect(source).toContain('event.currentTarget.setPointerCapture(event.pointerId)');
     expect(source).toContain('onPointerDownOutside={protectGeneralChartSurface?keepChartSurfaceInside:undefined}');
     expect(source).toContain('const keepChartSurfaceInside');
     expect(source).toContain('aria-label={compact?"Интерактивный график":"Интерактивный увеличенный график"}');
+    expect(readFileSync(new URL("../final-overrides.css", import.meta.url), "utf8")).toContain('body[data-chart-dialog-open="true"] .packet { pointer-events: none !important; user-select: none; }');
     expect(source).toContain('compact?:boolean;axisLock?:boolean;mouseAxisLock?:boolean;mouseVerticalPanDirection?:1|-1;touchVerticalPanDirection?:1|-1;touchModeControl?:boolean;panSpeed?:number;zoomStep?:number;controlZoomStep?:number}');
     expect(source).not.toContain("invertX");
     expect(source).toContain('function useSmallChartViewport()');
