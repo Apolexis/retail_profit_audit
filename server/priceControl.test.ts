@@ -31,6 +31,11 @@ describe("прайс‑контроль: нормализация товарны
     expect(sourceDateFromText("14 сентября 2026 года, 38-я неделя")).toBe("2026-09-14");
   });
 
+  it("сохраняет приоритет даты шапки над более поздними датами таблицы PDF", () => {
+    const headerBeforeTable = "Санкт-Петербург · 09.09.2026 · Оптовый прайс-лист\nТаблица: годен до 05.03.2026";
+    expect(sourceDateFromText(headerBeforeTable)).toBe("2026-09-09");
+  });
+
   it("сначала использует подтвержденную связь конкретного поставщика, а не текстовую догадку", () => {
     const row = { normalizedName: normalizeProductName("Сёмга 2-3"), normalizedSignature: productSignature("Сёмга 2-3"), packagingSignature: "g1000" } as any;
     const aliases = [{ supplierId: 7, productId: 42, normalizedName: row.normalizedName, packagingSignature: "g1000" }];

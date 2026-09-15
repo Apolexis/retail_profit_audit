@@ -729,6 +729,23 @@ async function parsePdfByCoordinates(buffer: Buffer) {
     await document.destroy();
   }
 }
+async function extractPdfFirstPageHeader(buffer: Buffer) {
+  const document = await getDocument({ data: new Uint8Array(buffer) }).promise;
+  try {
+    const page = await document.getPage(1);
+    const content = await page.getTextContent();
+    const pageHeight = Number(page.view?.[3]) || 0;
+    const headerFloor = pageHeight ? pageHeight * 0.65 : 0;
+    return content.items
+      .flatMap(item => "str" in item && text(item.str) ? [{ x: item.transform[4], y: item.transform[5], value: item.str }] : [])
+      .filter(item => item.y >= headerFloor)
+      .sort((left, right) => right.y - left.y || left.x - right.x)
+      .map(item => item.value)
+      .join(" ");
+  } finally {
+    await document.destroy();
+  }
+}
 function sourceTypeFromName(fileName: string) {
   const extension = fileName.toLowerCase().match(/\.([a-z0-9]+)$/)?.[1];
   if (extension === "xls" || extension === "xlsx" || extension === "pdf" || extension === "docx") return extension;
@@ -755,10 +772,12 @@ export async function previewPriceImport(buffer: Buffer, fileName: string): Prom
   let rows: ParsedPriceRow[] = [];
   if (sourceType === "xls" || sourceType === "xlsx") { documentText = extractExcelText(buffer); rows = parseExcel(buffer); }
   if (sourceType === "docx") { documentText = (await mammoth.extractRawText({ buffer })).value; rows = parseExtractedText(documentText); }
+  let pdfFirstPageHeader = "";
   if (sourceType === "pdf") {
     const parser = new PDFParse({ data: buffer });
     try { documentText = (await parser.getText()).text; } finally { await parser.destroy(); }
-    const positionedRows = await parsePdfByCoordinates(buffer);
+    const [positionedRows, firstPageHeader] = await Promise.all([parsePdfByCoordinates(buffer), extractPdfFirstPageHeader(buffer)]);
+    pdfFirstPageHeader = firstPageHeader;
     rows = positionedRows.length ? positionedRows : parsePdfExtractedText(documentText);
   }
   const trimmedRows = rows.slice(0, MAX_IMPORT_ROWS);
@@ -767,7 +786,9 @@ export async function previewPriceImport(buffer: Buffer, fileName: string): Prom
   if (rows.length > MAX_IMPORT_ROWS) warnings.push(`Обработаны первые ${MAX_IMPORT_ROWS} строк из ${rows.length}.`);
   const manualPriceRows = trimmedRows.filter(row => row.priceOptions.some(option => option.priceAmount === null));
   if (manualPriceRows.length) warnings.push(`У ${manualPriceRows.length} поз. цена не указана поставщиком: заполните ее вручную перед сохранением.`);
-  const source = `${fileName}\n${documentText.slice(0, 6000)}`;
+  const source = sourceType === "pdf"
+    ? `${fileName}\n${pdfFirstPageHeader}\n${documentText.slice(0, 6000)}`
+    : `${fileName}\n${documentText.slice(0, 6000)}`;
   return { fileName, sourceType, detectedSupplierName: findSupplierName(source), detectedSourceDate: sourceDateFromText(source), rows: trimmedRows, warningCount: warnings.length + trimmedRows.filter(row => row.priceOptions.some(option => option.normalizedPrice === null)).length, warnings };
 }
 
