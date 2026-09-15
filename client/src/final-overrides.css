@@ -3748,12 +3748,13 @@ html[data-audit-theme="dark"] :is(.chart-expand-dialog, .chart-expand-dialog-gen
 /* Tooltip: отсутствие факта выводится в строке собственного цветного маркера, без нижней служебной подписи. */
 .tiny-tooltip .tiny-tooltip-no-fact { display: none; }
 
-/* Компактный косяк сам проходит по часовой окружности: движение видно даже при симметричных рыбках. */
-.facts-loader .facts-loader-art { width: 142px !important; height: 142px !important; }
-.facts-loader .facts-school { animation: none !important; }
-.facts-loader .facts-school-orbit { transform-box: view-box; transform-origin: 80px 80px; }
-@media (max-width: 520px) { .facts-loader .facts-loader-art { width: 120px !important; height: 120px !important; } }
-@media (prefers-reduced-motion: reduce) { .facts-loader .facts-school-orbit animateTransform { display: none; } }
+/* Общий загрузчик: косяк остается на месте, а каждая рыба движется плавно сама — без вращения всей группы. */
+.facts-loader .facts-loader-art { width: 176px !important; height: 176px !important; }
+.facts-loader .facts-school { animation: none !important; transform: none !important; }
+.facts-loader .facts-fish-body { animation: facts-fish-glide 1.6s var(--audit-hover-ease) infinite alternate !important; }
+.ocean-loader .facts-loader-art { width: min(292px, 72vw) !important; height: min(292px, 72vw) !important; }
+@media (max-width: 520px) { .facts-loader .facts-loader-art { width: 156px !important; height: 156px !important; } .ocean-loader .facts-loader-art { width: min(258px, 76vw) !important; height: min(258px, 76vw) !important; } }
+@media (prefers-reduced-motion: reduce) { .facts-loader .facts-fish-body { animation: none !important; } }
 
 /* Активный состав выбора отмечается спокойно: размеры и сетка идентичны неактивному состоянию. */
 html[data-audit-theme="light"] .packet .visibility-toggle.active { border-color: #0a84ff; background: #ffffff; color: #075dbb; box-shadow: inset 0 -2px #0a84ff; }
@@ -3765,4 +3766,83 @@ html[data-audit-theme="dark"] .packet .visibility-toggle.active { border-color: 
 @media (min-width: 761px) {
   .packet .inventory-trend-card .card-title { display: grid; grid-template-columns: minmax(0, 1fr); }
   .packet .inventory-trend-card .chart-controls { display: grid; grid-template-columns: minmax(260px, 360px) max-content; align-items: end; justify-content: start; }
+}
+
+/* Импорт прайсов: основная карточка использует всю ширину, требования идут логичным блоком ниже. */
+.packet .price-import-workbench { grid-template-columns: minmax(0, 1fr) !important; margin-bottom: 12px; }
+.packet .price-import-guide { margin: 0 0 16px; }
+.packet .price-preview { grid-template-columns: minmax(130px, .42fr) minmax(220px, 1.05fr) minmax(155px, .54fr) minmax(205px, .82fr); }
+.packet .price-preview > div:first-child > small { color: var(--price-muted); font-size: 10px; }
+.packet .price-inspect-status { display: inline-flex; align-items: center; gap: 8px; width: 100%; margin-top: 12px; padding: 10px 12px; border: 1px solid var(--price-border); border-radius: 11px; background: color-mix(in srgb, var(--price-accent) 7%, var(--price-surface)); color: var(--price-ink); font: 750 11px Manrope, Arial, sans-serif; }
+.packet .price-inspect-status svg { width: 16px; color: var(--price-accent); }
+
+/* Preview хранит все ценовые режимы каждой строки, а не только первую найденную цену. */
+.packet .price-preview-table > div.price-preview-row { grid-template-columns: minmax(190px, 1.05fr) minmax(260px, 1.35fr) 36px; }
+.packet .price-preview-table > div.price-preview-new-row { grid-template-columns: 28px minmax(175px, 1fr) minmax(260px, 1.35fr) minmax(190px, .8fr) 36px; }
+.packet .price-preview-table > div.price-preview-row.is-selected,
+.packet .price-preview-table > div.price-preview-new-row.is-selected { position: relative; border-color: var(--price-accent); background: color-mix(in srgb, var(--price-accent) 10%, var(--price-surface)); box-shadow: inset 4px 0 0 var(--price-accent); }
+.packet .price-preview-product { display: grid; min-width: 0; gap: 3px; }
+.packet .price-preview-product strong { overflow: hidden; color: var(--price-ink); text-overflow: ellipsis; white-space: nowrap; }
+.packet .price-preview-product span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.packet .price-preview-prices { display: grid; min-width: 0; gap: 7px; }
+.packet .price-preview-prices > div { display: grid; grid-template-columns: minmax(82px, .52fr) minmax(0, 1fr); align-items: center; gap: 7px; }
+.packet .price-preview-prices small { color: var(--price-muted); font-size: 10px; font-weight: 750; white-space: nowrap; }
+.packet .price-preview-price-edit { display: grid; grid-template-columns: minmax(82px, 1fr) minmax(106px, 1.15fr); gap: 6px; min-width: 0; }
+.packet .price-preview-price-edit input { width: 100%; min-width: 0; font-variant-numeric: tabular-nums; }
+.packet .price-preview-basis-select { min-width: 0; }
+.packet .price-preview-prices b,
+.packet .price-preview-table b { display: inline-flex; align-items: center; min-width: 0; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.packet .price-preview-remove { display: inline-grid; width: 32px; height: 32px; min-height: 32px; place-items: center; padding: 0; border: 1px solid var(--price-border); border-radius: 9px; background: var(--price-surface); color: var(--price-muted); transition: border-color 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease), color 160ms var(--audit-hover-ease), transform 160ms var(--audit-hover-ease); }
+.packet .price-preview-remove:active { transform: scale(.96); }
+@media (hover: hover) { .packet .price-preview-remove:hover { border-color: var(--price-accent); background: color-mix(in srgb, var(--price-accent) 9%, var(--price-surface)); color: var(--price-accent); } }
+.packet .price-preview-excluded { grid-column: 1 / -1; padding: 10px 12px; border: 1px solid var(--price-border); border-radius: 11px; background: color-mix(in srgb, var(--price-muted) 6%, var(--price-surface)); color: var(--price-muted); font-size: 11px; }
+.packet .price-preview-excluded summary { cursor: pointer; font-weight: 750; }
+.packet .price-preview-excluded > div { display: grid; gap: 6px; margin-top: 9px; }
+.packet .price-preview-excluded button { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; padding: 7px 8px; border: 1px solid var(--price-border); border-radius: 8px; background: var(--price-surface); color: var(--price-ink); font: 700 11px Manrope, Arial, sans-serif; text-align: left; }
+.packet .price-preview-excluded button > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.packet .price-preview-create-category { display: grid; grid-template-columns: minmax(150px, 1fr) auto; flex: 1 1 310px; gap: 7px; min-width: min(100%, 260px); }
+.packet .price-preview-create-category input { min-width: 0; }
+.packet .price-preview-bulk-actions > span { font-weight: 750; }
+.packet .price-preview-check { border-radius: 8px; }
+.packet .price-preview-check:has(input:checked) { background: color-mix(in srgb, var(--price-accent) 15%, transparent); }
+
+/* В сохраненном preview отдельная строка удаляется без удаления файла и остальных позиций. */
+.packet .price-import-preview .price-preview-table > div { grid-template-columns: minmax(180px, 1.45fr) minmax(155px, 1fr) minmax(96px, auto) minmax(130px, .76fr) 36px; }
+
+/* Форма товара использует тот же явный статус активности, что и форма поставщика. */
+.packet .price-directory-editor > .price-active-toggle { align-self: end; min-height: 42px; }
+
+@media (max-width: 980px) {
+  .packet .price-preview { grid-template-columns: minmax(120px, .42fr) minmax(0, 1fr) minmax(150px, .58fr); }
+  .packet .price-preview-actions { grid-column: 1 / -1; }
+  .packet .price-preview-table > div.price-preview-new-row { grid-template-columns: 28px minmax(150px, .9fr) minmax(235px, 1.2fr) minmax(178px, .7fr) 36px; }
+}
+@media (max-width: 760px) {
+  .packet .price-preview { grid-template-columns: minmax(110px, .48fr) minmax(0, 1fr); }
+  .packet .price-preview > :is(.price-preview-supplier, .price-preview-actions, .price-preview-categorization, .price-preview-table, .price-preview-excluded, .inline-error) { grid-column: 1 / -1; }
+  .packet .price-preview-table > div.price-preview-row,
+  .packet .price-preview-table > div.price-preview-new-row { grid-template-columns: 28px minmax(0, 1fr) 36px; gap: 8px; }
+  .packet .price-preview-table > div.price-preview-row .price-preview-product,
+  .packet .price-preview-table > div.price-preview-row .price-preview-prices,
+  .packet .price-preview-table > div.price-preview-new-row .price-preview-product,
+  .packet .price-preview-table > div.price-preview-new-row .price-preview-prices,
+  .packet .price-preview-table > div.price-preview-new-row > [data-slot="select-trigger"] { grid-column: 2; }
+  .packet .price-preview-table > div.price-preview-row .price-preview-remove,
+  .packet .price-preview-table > div.price-preview-new-row .price-preview-remove { grid-column: 3; grid-row: 1; }
+  .packet .price-preview-product { grid-row: 1; }
+  .packet .price-preview-prices { grid-row: 2; }
+  .packet .price-preview-create-category { flex-basis: 100%; }
+  .packet .price-import-preview .price-preview-table > div { grid-template-columns: minmax(0, 1fr) 36px; }
+  .packet .price-import-preview .price-preview-table > div > :is(span, b, small) { grid-column: 1; }
+  .packet .price-import-preview .price-preview-table > div > .price-preview-remove { grid-column: 2; grid-row: 1; }
+}
+@media (max-width: 560px) {
+  .packet .price-preview { grid-template-columns: minmax(0, 1fr); }
+  .packet .price-preview > div:first-child,
+  .packet .price-preview > label { grid-column: auto; }
+  .packet .price-preview-prices > div { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .packet .price-preview-price-edit { grid-template-columns: minmax(0, 1fr) minmax(112px, .75fr); }
+  .packet .price-preview-create-category { grid-template-columns: minmax(0, 1fr); }
+  .packet .price-preview-create-category .packet-link { width: 100%; justify-content: center; }
+  .packet .price-preview-bulk-actions .packet-link { flex: 1 1 146px; justify-content: center; }
 }

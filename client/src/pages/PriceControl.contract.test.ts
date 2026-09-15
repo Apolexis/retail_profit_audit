@@ -8,7 +8,7 @@ describe("страница «Прайс‑контроль»", () => {
   it("использует отдельный двухэтапный импорт и не задействует финансовый импорт", () => {
     expect(page).toContain('"/api/price-import/preview"');
     expect(page).toContain('"/api/price-import/commit"');
-    expect(page).toContain("Сначала проверить, затем сохранить");
+    expect(page).toContain("Выберите файл — проверим автоматически");
     expect(page).toContain("Это отдельный импорт коммерческих предложений. Он не использует");
     expect(page).toContain("и не изменяет старую страницу импорта финансовых фактов.");
     expect(page).toContain('accept=".xls,.xlsx,.pdf,.docx');
@@ -128,6 +128,39 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("previewNewRowIndexes.has(index)");
     expect(styles).toContain(".packet .price-preview-categorization");
     expect(styles).toContain(".packet .price-preview-table > div.price-preview-new-row");
+  });
+
+  it("автоматически запускает проверку и безопасно отменяет устаревший preview при выборе другого файла", () => {
+    expect(page).toContain("void inspectFile(selected)");
+    expect(page).toContain("const inspectFile = async (selectedFile: File)");
+    expect(page).toContain("previewRequestToken.current");
+    expect(page).toContain("Проверяем прайс‑лист…");
+    expect(page).not.toContain("Проверить прайс");
+  });
+
+  it("дает создать категорию только явно и применить ее к выбранным новым строкам", () => {
+    expect(page).toContain("previewNewCategoryName");
+    expect(page).toContain("createPreviewCategory");
+    expect(page).toContain("Создать и назначить");
+    expect(page).toContain("Выбрано для действия:");
+    expect(page).toContain("Выбрать все новые");
+  });
+
+  it("сохраняет ручные правки всех ценовых режимов и исключения строк вместе с файлом", () => {
+    expect(page).toContain("previewPriceEdits");
+    expect(page).toContain("priceOptions.map((option, optionIndex)");
+    expect(page).toContain("packPriceImportCommitBody");
+    expect(page).toContain("excludedPreviewRowIndexes");
+    expect(page).toContain("Исключить выбранные");
+    expect(page).toContain("Исключено из этого импорта:");
+    expect(page).toContain("price-preview-remove");
+    expect(styles).toContain(".packet .price-preview-table > div.price-preview-row.is-selected");
+  });
+
+  it("делает скрытие товара явным состоянием формы, а не только кнопкой списка", () => {
+    expect(page).toContain("Скрыт из фильтров");
+    expect(page).toContain("История цен и связи сохраняются в обоих состояниях");
+    expect(page).toContain("isActive: productDraft.isActive");
   });
 
   it("не блокирует импорт без распознанной шапки: поставщика можно выбрать или создать, дату — указать вручную", () => {

@@ -72,6 +72,8 @@ type Preview = {
     category: string | null;
     priceOptions: Array<{
       priceAmount: number;
+      priceBasis: PriceBasis;
+      priceMode: string;
       normalizedPrice: number | null;
       normalizedUnit: string;
     }>;
@@ -204,14 +206,22 @@ const sectionMeta: Record<
 async function postPriceFile(
   path: string,
   file: File,
-  query: Record<string, string>
+  query: Record<string, string>,
+  commitOptions?: {
+    categorySelections: Array<{ rowIndex: number; categoryId: number }>;
+    priceEdits: Array<{ rowIndex: number; optionIndex: number; priceAmount: number; priceBasis: PriceBasis }>;
+    excludedRowIndexes: number[];
+  }
 ) {
+  const requestBody = commitOptions
+    ? await packPriceImportCommitBody(file, commitOptions)
+    : file;
   const response = await fetch(
     `${path}?${new URLSearchParams(query).toString()}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/octet-stream" },
-      body: file,
+      body: requestBody,
     }
   );
   const body = await response
@@ -220,6 +230,27 @@ async function postPriceFile(
   if (!response.ok)
     throw new Error(body.error ?? "Не удалось обработать прайс‑лист.");
   return body;
+}
+
+const priceImportOptionsMagic = "PRICE-IMPORT-OPTIONS-V1\n";
+async function packPriceImportCommitBody(
+  file: File,
+  options: {
+    categorySelections: Array<{ rowIndex: number; categoryId: number }>;
+    priceEdits: Array<{ rowIndex: number; optionIndex: number; priceAmount: number; priceBasis: PriceBasis }>;
+    excludedRowIndexes: number[];
+  }
+) {
+  const encoder = new TextEncoder();
+  const magic = encoder.encode(priceImportOptionsMagic);
+  const metadata = encoder.encode(JSON.stringify(options));
+  const fileBytes = new Uint8Array(await file.arrayBuffer());
+  const output = new Uint8Array(magic.length + 4 + metadata.length + fileBytes.length);
+  output.set(magic, 0);
+  new DataView(output.buffer).setUint32(magic.length, metadata.length);
+  output.set(metadata, magic.length + 4);
+  output.set(fileBytes, magic.length + 4 + metadata.length);
+  return output;
 }
 
 export default function PriceControl({
@@ -348,11 +379,22 @@ export default function PriceControl({
     },
     onError: error => toast.error(error.message),
   });
+  const deleteImportRow = trpc.priceControl.deleteImportRow.useMutation({
+    onSuccess: result => {
+      invalidate();
+      setDeleteSavedRowCandidate(null);
+      toast.success("Позиция удалена из сохраненного прайса", {
+        description: `В прайс‑листе осталось строк: ${result.rowCount}. Исходный файл сохранен.`,
+      });
+    },
+    onError: error => toast.error(error.message),
+  });
   const downloadImport = trpc.priceControl.downloadImport.useMutation({
     onError: error => toast.error(error.message),
   });
 
   const fileInput = useRef<HTMLInputElement>(null);
+  const previewRequestToken = useRef(0);
   const [file, setFile] = useState<File | null>(null);
   const [fileDragging, setFileDragging] = useState(false);
   const [preview, setPreview] = useState<Preview | null>(null);
@@ -385,6 +427,11 @@ export default function PriceControl({
     number[]
   >([]);
   const [previewBulkCategoryId, setPreviewBulkCategoryId] = useState("");
+  const [previewNewCategoryName, setPreviewNewCategoryName] = useState("");
+  const [previewPriceEdits, setPreviewPriceEdits] = useState<
+    Record<string, { priceAmount: string; priceBasis: PriceBasis }>
+  >({});
+  const [excludedPreviewRowIndexes, setExcludedPreviewRowIndexes] = useState<number[]>([]);
   const [productDraft, setProductDraft] = useState<ProductDraft | null>(null);
   const [categoryDraft, setCategoryDraft] = useState<CategoryDraft | null>(
     null
@@ -408,6 +455,10 @@ export default function PriceControl({
     Record<number, { priceAmount: string; priceBasis: PriceBasis }>
   >({});
   const [dateDrafts, setDateDrafts] = useState<Record<number, string>>({});
+  const [deleteSavedRowCandidate, setDeleteSavedRowCandidate] = useState<{
+    rowId: number;
+    name: string;
+  } | null>(null);
 
   const categories = overview.data?.categories ?? [];
   const selectableCategories = categories.filter(category => category.isActive);
@@ -596,26 +647,47 @@ export default function PriceControl({
     () =>
       (preview?.rows ?? [])
         .map((row, index) => ({ row, index }))
+        .filter(({ index }) => !excludedPreviewRowIndexes.includes(index))
         .filter(
           ({ row }) =>
             !catalogProducts.some(
               product => product.normalizedSignature === row.normalizedSignature
             )
         ),
-    [preview?.rows, catalogProducts]
+    [preview?.rows, catalogProducts, excludedPreviewRowIndexes]
   );
   const previewNewRowIndexes = useMemo(
     () => new Set(previewNewRows.map(item => item.index)),
     [previewNewRows]
   );
+  const previewActiveRows = useMemo(
+    () =>
+      (preview?.rows ?? [])
+        .map((row, index) => ({ row, index }))
+        .filter(({ index }) => !excludedPreviewRowIndexes.includes(index)),
+    [preview?.rows, excludedPreviewRowIndexes]
+  );
 
-  const inspectFile = async () => {
-    if (!file) return;
+  const resetPreviewState = () => {
+    setPreview(null);
+    setSupplierName("");
+    setPreviewSupplierChoice("__manual");
+    setSourceDate("");
+    setPreviewCategoryTargets({});
+    setSelectedPreviewRowIndexes([]);
+    setPreviewBulkCategoryId("");
+    setPreviewNewCategoryName("");
+    setPreviewPriceEdits({});
+    setExcludedPreviewRowIndexes([]);
+  };
+  const inspectFile = async (selectedFile: File) => {
+    const requestToken = ++previewRequestToken.current;
     setPreviewing(true);
     try {
-      const result = await postPriceFile("/api/price-import/preview", file, {
-        fileName: file.name,
+      const result = await postPriceFile("/api/price-import/preview", selectedFile, {
+        fileName: selectedFile.name,
       });
+      if (requestToken !== previewRequestToken.current) return;
       setPreview(result);
       setSupplierName(result.detectedSupplierName ?? "");
       const knownSupplier = selectableSuppliers.find(
@@ -625,13 +697,11 @@ export default function PriceControl({
       );
       setPreviewSupplierChoice(knownSupplier ? String(knownSupplier.id) : "__manual");
       setSourceDate(result.detectedSourceDate ?? "");
-      setPreviewCategoryTargets({});
-      setSelectedPreviewRowIndexes([]);
-      setPreviewBulkCategoryId("");
       toast.success("Прайс‑лист разобран", {
         description: `Распознано строк с ценой: ${result.rows.length}.`,
       });
     } catch (error) {
+      if (requestToken !== previewRequestToken.current) return;
       toast.error(
         error instanceof Error
           ? error.message
@@ -639,7 +709,7 @@ export default function PriceControl({
       );
       setPreview(null);
     } finally {
-      setPreviewing(false);
+      if (requestToken === previewRequestToken.current) setPreviewing(false);
     }
   };
   const selectPriceFile = (selected: File | null | undefined) => {
@@ -649,44 +719,41 @@ export default function PriceControl({
       toast.error("Выберите прайс‑лист Excel, PDF или Word.");
       return;
     }
+    previewRequestToken.current += 1;
     setFile(selected);
-    setPreview(null);
-    setSupplierName("");
-    setPreviewSupplierChoice("__manual");
-    setSourceDate("");
-    setPreviewCategoryTargets({});
-    setSelectedPreviewRowIndexes([]);
-    setPreviewBulkCategoryId("");
+    resetPreviewState();
+    void inspectFile(selected);
   };
   const commitFile = async () => {
     if (!file || !preview || !supplierName.trim()) return;
+    const priceEdits = Object.entries(previewPriceEdits).map(([key, draft]) => {
+      const [rowIndexText, optionIndexText] = key.split(":");
+      const priceAmount = Number(draft.priceAmount.replace(/\s/g, "").replace(",", "."));
+      return { rowIndex: Number(rowIndexText), optionIndex: Number(optionIndexText), priceAmount, priceBasis: draft.priceBasis };
+    });
+    if (priceEdits.some(edit => !Number.isFinite(edit.priceAmount) || edit.priceAmount <= 0 || edit.priceAmount >= 10_000_000)) {
+      toast.error("Проверьте измененные цены: допустимо значение от 0 до 10 000 000 ₽.");
+      return;
+    }
     setCommitting(true);
     try {
       const result = await postPriceFile("/api/price-import/commit", file, {
         fileName: file.name,
         supplierName: supplierName.trim(),
         ...(sourceDate ? { sourceDate } : {}),
-        ...(Object.keys(previewCategoryTargets).length
-          ? {
-              categorySelections: Object.entries(previewCategoryTargets)
-                .filter(([, categoryId]) => Number(categoryId) > 0)
-                .map(([rowIndex, categoryId]) => `${rowIndex}:${categoryId}`)
-                .join(","),
-            }
-          : {}),
+      }, {
+        categorySelections: Object.entries(previewCategoryTargets)
+          .filter(([rowIndex, categoryId]) => !excludedPreviewRowIndexes.includes(Number(rowIndex)) && Number(categoryId) > 0)
+          .map(([rowIndex, categoryId]) => ({ rowIndex: Number(rowIndex), categoryId: Number(categoryId) })),
+        priceEdits,
+        excludedRowIndexes: excludedPreviewRowIndexes,
       });
       await invalidate();
       toast.success("Прайс‑лист сохранен", {
         description: `Автосвязано: ${result.linked}; новых товаров создано: ${result.createdProducts ?? 0}; на проверке: ${result.suggested}; без связи: ${result.unmapped}.`,
       });
       setFile(null);
-      setPreview(null);
-      setSupplierName("");
-      setPreviewSupplierChoice("__manual");
-      setSourceDate("");
-      setPreviewCategoryTargets({});
-      setSelectedPreviewRowIndexes([]);
-      setPreviewBulkCategoryId("");
+      resetPreviewState();
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -766,6 +833,7 @@ export default function PriceControl({
           ? { categoryId: Number(productDraft.categoryId) }
           : {}),
         baseUnit: productDraft.baseUnit,
+        isActive: productDraft.isActive,
       });
     }
     setProductDraft(null);
@@ -795,6 +863,20 @@ export default function PriceControl({
         : [...current, rowIndex]
     );
   };
+  const removePreviewRows = (rowIndexes: number[]) => {
+    const removing = new Set(rowIndexes);
+    if (!removing.size) return;
+    setExcludedPreviewRowIndexes(current => Array.from(new Set([...current, ...Array.from(removing)])).sort((left, right) => left - right));
+    setSelectedPreviewRowIndexes(current => current.filter(index => !removing.has(index)));
+    setPreviewCategoryTargets(current => Object.fromEntries(Object.entries(current).filter(([rowIndex]) => !removing.has(Number(rowIndex)))));
+    setPreviewPriceEdits(current => Object.fromEntries(Object.entries(current).filter(([key]) => !removing.has(Number(key.split(":" )[0])))));
+    toast.success(removing.size === 1 ? "Позиция исключена из этого импорта" : `Исключено из этого импорта: ${removing.size} позиций`, {
+      description: "Исходный файл не меняется; исключенные строки не будут сохранены.",
+    });
+  };
+  const restorePreviewRow = (rowIndex: number) => {
+    setExcludedPreviewRowIndexes(current => current.filter(index => index !== rowIndex));
+  };
   const setPreviewCategory = (rowIndex: number, categoryId: string) => {
     setPreviewCategoryTargets(current => {
       const next = { ...current };
@@ -810,6 +892,40 @@ export default function PriceControl({
       ...Object.fromEntries(
         selectedPreviewRowIndexes.map(rowIndex => [rowIndex, previewBulkCategoryId])
       ),
+    }));
+  };
+  const createPreviewCategory = async () => {
+    const name = previewNewCategoryName.trim();
+    if (name.length < 2) {
+      toast.error("Укажите название новой категории.");
+      return;
+    }
+    if (!selectedPreviewRowIndexes.length) {
+      toast.error("Сначала отметьте новые позиции, которым нужно назначить категорию.");
+      return;
+    }
+    try {
+      const category = await createCategory.mutateAsync({ name });
+      setPreviewBulkCategoryId(String(category.id));
+      setPreviewCategoryTargets(current => ({
+        ...current,
+        ...Object.fromEntries(selectedPreviewRowIndexes.map(rowIndex => [rowIndex, String(category.id)])),
+      }));
+      setPreviewNewCategoryName("");
+      toast.success("Категория создана и назначена отмеченным строкам");
+    } catch {
+      /* уведомление показывает mutation */
+    }
+  };
+  const previewPriceKey = (rowIndex: number, optionIndex: number) => `${rowIndex}:${optionIndex}`;
+  const updatePreviewPriceDraft = (rowIndex: number, optionIndex: number, fallback: Preview["rows"][number]["priceOptions"][number], patch: Partial<{ priceAmount: string; priceBasis: PriceBasis }>) => {
+    const key = previewPriceKey(rowIndex, optionIndex);
+    setPreviewPriceEdits(current => ({
+      ...current,
+      [key]: {
+        priceAmount: patch.priceAmount ?? current[key]?.priceAmount ?? String(fallback.priceAmount),
+        priceBasis: patch.priceBasis ?? current[key]?.priceBasis ?? fallback.priceBasis,
+      },
     }));
   };
   const selectPreviewSupplier = (value: string) => {
@@ -1356,14 +1472,16 @@ export default function PriceControl({
           <section className="page-lede price-lede">
             <div>
               <span>ИМПОРТ ПРАЙСОВ</span>
-              <h2>Сначала проверить, затем сохранить</h2>
+              <h2>Выберите файл — проверим автоматически</h2>
               <p>
                 Это отдельный импорт коммерческих предложений. Он не использует
-                и не изменяет старую страницу импорта финансовых фактов.
+                и не изменяет старую страницу импорта финансовых фактов. Сохранение
+                произойдет только после вашего подтверждения.
               </p>
             </div>
           </section>
           {canUpload && (
+            <>
             <section className="price-import-workbench">
               <div className="packet-card price-upload">
               <div className="card-title">
@@ -1405,18 +1523,15 @@ export default function PriceControl({
                   <FileSpreadsheet size={20} />
                   <div>
                     <strong>{file.name}</strong>
-                    <small>{Math.max(1, Math.ceil(file.size / 1024))} КБ · готов к проверке</small>
+                    <small>{Math.max(1, Math.ceil(file.size / 1024))} КБ · {previewing ? "идет автоматическая проверка" : preview ? "проверка готова" : "готов к автоматической проверке"}</small>
                   </div>
                   <button
                     type="button"
                     aria-label="Убрать выбранный файл"
                     onClick={() => {
+                      previewRequestToken.current += 1;
                       setFile(null);
-                      setPreview(null);
-                      setPreviewSupplierChoice("__manual");
-                      setPreviewCategoryTargets({});
-                      setSelectedPreviewRowIndexes([]);
-                      setPreviewBulkCategoryId("");
+                      resetPreviewState();
                       if (fileInput.current) fileInput.current.value = "";
                     }}
                   >
@@ -1426,23 +1541,21 @@ export default function PriceControl({
               )}
               <div className="price-import-steps" aria-label="Этапы импорта">
                 <span className={file ? "complete" : "active"}><b>1</b> Файл <small>{file ? "выбран" : "ожидание"}</small></span>
-                <span className={preview ? "complete" : file ? "active" : ""}><b>2</b> Проверка <small>{preview ? "готово" : "после выбора"}</small></span>
+                <span className={preview ? "complete" : file ? "active" : ""}><b>2</b> Проверка <small>{preview ? "готово" : "сразу после выбора"}</small></span>
                 <span className={committing ? "active" : ""}><b>3</b> Сохранение <small>после подтверждения</small></span>
               </div>
-              <button
-                type="button"
-                className="packet-link price-inspect-action"
-                onClick={inspectFile}
-                disabled={!file || previewing}
-              >
-                {previewing ? <Loader2 className="animate-spin" /> : <FileSearch size={16} />}
-                Проверить прайс
-              </button>
+              {previewing && (
+                <div className="price-inspect-status" role="status" aria-live="polite">
+                  <Loader2 className="animate-spin" />
+                  Проверяем прайс‑лист…
+                </div>
+              )}
               {preview && (
                 <div className="price-preview">
                   <div>
                     <span>Распознано строк</span>
-                    <strong>{preview.rows.length}</strong>
+                    <strong>{previewActiveRows.length}</strong>
+                    {excludedPreviewRowIndexes.length > 0 && <small>исключено: {excludedPreviewRowIndexes.length}</small>}
                   </div>
                   <label className="price-preview-supplier">
                     Поставщик для сохранения
@@ -1508,14 +1621,14 @@ export default function PriceControl({
                         <span>НОВЫЕ ПОЗИЦИИ</span>
                         <strong>{previewNewRows.length}</strong>
                         <small>
-                          Отметьте отдельные строки и назначьте существующую
-                          категорию. Будут созданы только товары, которых еще
-                          нет в справочнике.
+                          Отметьте новые строки и назначьте существующую или
+                          явно создайте новую категорию. Товары появятся только
+                          после сохранения прайс‑листа.
                         </small>
                       </div>
                       {selectedPreviewRowIndexes.length > 0 && (
                         <div className="price-preview-bulk-actions">
-                          <span>Отмечено: {selectedPreviewRowIndexes.length}</span>
+                          <span>Выбрано для действия: {selectedPreviewRowIndexes.length}</span>
                           <PriceSelect
                             value={previewBulkCategoryId}
                             onValueChange={setPreviewBulkCategoryId}
@@ -1534,6 +1647,31 @@ export default function PriceControl({
                             <Tags size={14} />
                             Назначить отмеченным
                           </button>
+                          <div className="price-preview-create-category">
+                            <input
+                              value={previewNewCategoryName}
+                              onChange={event => setPreviewNewCategoryName(event.target.value)}
+                              placeholder="Новая категория"
+                              maxLength={160}
+                            />
+                            <button
+                              type="button"
+                              className="packet-link compact subtle"
+                              onClick={createPreviewCategory}
+                              disabled={createCategory.isPending || previewNewCategoryName.trim().length < 2}
+                            >
+                              <FolderPlus size={14} />
+                              {createCategory.isPending ? "Создаем…" : "Создать и назначить"}
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            className="packet-link compact subtle-danger"
+                            onClick={() => removePreviewRows(selectedPreviewRowIndexes)}
+                          >
+                            <Trash2 size={14} />
+                            Исключить выбранные
+                          </button>
                           <button
                             type="button"
                             className="packet-link compact subtle"
@@ -1543,16 +1681,27 @@ export default function PriceControl({
                           </button>
                         </div>
                       )}
+                      {selectedPreviewRowIndexes.length === 0 && (
+                        <div className="price-preview-bulk-actions">
+                          <span>Выберите новые строки, чтобы назначить им категорию или исключить их.</span>
+                          <button
+                            type="button"
+                            className="packet-link compact subtle"
+                            onClick={() => setSelectedPreviewRowIndexes(previewNewRows.map(item => item.index))}
+                          >
+                            <CheckCircle2 size={14} />
+                            Выбрать все новые
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                   <div className="price-preview-table">
-                    {preview.rows.map((row, index) => (
+                    {previewActiveRows.map(({ row, index }) => (
                       <div
                         key={`${row.rawName}-${index}`}
                         className={
-                          canEdit && previewNewRowIndexes.has(index)
-                            ? "price-preview-new-row"
-                            : ""
+                          `${canEdit && previewNewRowIndexes.has(index) ? "price-preview-new-row" : "price-preview-row"}${selectedPreviewRowIndexes.includes(index) ? " is-selected" : ""}`
                         }
                       >
                         {canEdit && previewNewRowIndexes.has(index) && (
@@ -1565,16 +1714,42 @@ export default function PriceControl({
                             />
                           </label>
                         )}
-                        <strong>{row.rawName}</strong>
-                        <span>
-                          {row.category || "Без категории"} ·{" "}
-                          {row.packaging || "фасовка не указана"}
-                        </span>
-                        <b>
-                          {row.priceOptions[0]
-                            ? `${formatMoney(row.priceOptions[0].priceAmount)} ₽`
-                            : "цена не найдена"}
-                        </b>
+                        <div className="price-preview-product">
+                          <strong>{row.rawName}</strong>
+                          <span>
+                            {row.category || "Без категории"} ·{" "}
+                            {row.packaging || "фасовка не указана"}
+                          </span>
+                        </div>
+                        <div className="price-preview-prices" aria-label={`Цены позиции ${row.rawName}`}>
+                          {row.priceOptions.map((option, optionIndex) => {
+                            const draft = previewPriceEdits[previewPriceKey(index, optionIndex)];
+                            return (
+                              <div key={previewPriceKey(index, optionIndex)}>
+                                <small>{modeLabel[option.priceMode] ?? "цена"}</small>
+                                {canUpload ? (
+                                  <div className="price-preview-price-edit">
+                                    <input
+                                      inputMode="decimal"
+                                      value={draft?.priceAmount ?? String(option.priceAmount)}
+                                      onChange={event => updatePreviewPriceDraft(index, optionIndex, option, { priceAmount: event.target.value })}
+                                      aria-label={`Цена «${row.rawName}», ${modeLabel[option.priceMode] ?? "основная"}`}
+                                    />
+                                    <PriceSelect
+                                      value={draft?.priceBasis ?? option.priceBasis}
+                                      onValueChange={value => updatePreviewPriceDraft(index, optionIndex, option, { priceBasis: value as PriceBasis })}
+                                      placeholder="База цены"
+                                      className="price-preview-basis-select"
+                                      options={(Object.keys(basisLabel) as PriceBasis[]).map(basis => ({ value: basis, label: basisLabel[basis] }))}
+                                    />
+                                  </div>
+                                ) : (
+                                  <b>{formatMoney(option.priceAmount)} ₽/{basisLabel[option.priceBasis].replace("за ", "")}</b>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
                         {canEdit && previewNewRowIndexes.has(index) && (
                           <PriceSelect
                             value={previewCategoryTargets[index] ?? "__no_category"}
@@ -1590,9 +1765,33 @@ export default function PriceControl({
                             ]}
                           />
                         )}
+                        {canUpload && (
+                          <button
+                            type="button"
+                            className="price-preview-remove"
+                            onClick={() => removePreviewRows([index])}
+                            aria-label={`Исключить «${row.rawName}» из импорта`}
+                            title="Исключить из этого импорта"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
+                  {excludedPreviewRowIndexes.length > 0 && (
+                    <details className="price-preview-excluded">
+                      <summary>Исключено из этого импорта: {excludedPreviewRowIndexes.length}</summary>
+                      <div>
+                        {excludedPreviewRowIndexes.map(index => (
+                          <button type="button" key={index} onClick={() => restorePreviewRow(index)}>
+                            <span>{preview?.rows[index]?.rawName ?? `Строка ${index + 1}`}</span>
+                            Вернуть
+                          </button>
+                        ))}
+                      </div>
+                    </details>
+                  )}
                   {preview.warnings.map(warning => (
                     <p key={warning} className="inline-error">
                       {warning}
@@ -1601,7 +1800,8 @@ export default function PriceControl({
                 </div>
               )}
               </div>
-              <aside className="packet-card price-import-guide">
+            </section>
+            <aside className="packet-card price-import-guide">
                 <span>ТРЕБОВАНИЯ К ПРАЙСУ</span>
                 <h3>Как система читает файл</h3>
                 <ol>
@@ -1611,9 +1811,9 @@ export default function PriceControl({
                   <li><b>4</b><span>Сначала применяет подтвержденные связи «поставщик → наш товар».</span></li>
                   <li><b>5</b><span>Показывает предпросмотр: до подтверждения ничего не сохраняется.</span></li>
                 </ol>
-                <p>После сохранения доступны история цен, скачивание исходника и подтверждаемое удаление.</p>
-              </aside>
-            </section>
+                <p>Проверка запускается сразу после выбора файла. До явного сохранения можно исправить цену, исключить позицию и назначить категорию; исходный файл при этом не меняется.</p>
+            </aside>
+            </>
           )}
           <section className="packet-card price-history">
             <div className="card-title">
@@ -1747,6 +1947,17 @@ export default function PriceControl({
                         : `${formatMoney(row.priceAmount)} ₽`}
                     </b>
                     <small>{row.productName || "ожидает связи"}</small>
+                    {canEdit && (
+                      <button
+                        type="button"
+                        className="price-preview-remove"
+                        onClick={() => setDeleteSavedRowCandidate({ rowId: row.rowId, name: row.rawName })}
+                        aria-label={`Удалить сохраненную позицию «${row.rawName}»`}
+                        title="Удалить позицию из сохраненного прайса"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1881,6 +2092,19 @@ export default function PriceControl({
                     ]}
                   />
                 </label>
+                <button
+                  type="button"
+                  className={`price-active-toggle${productDraft.isActive ? " is-active" : ""}`}
+                  aria-pressed={productDraft.isActive}
+                  onClick={() => setProductDraft({ ...productDraft, isActive: !productDraft.isActive })}
+                >
+                  {productDraft.isActive ? <CheckCircle2 size={16} aria-hidden="true" /> : <EyeOff size={16} aria-hidden="true" />}
+                  <span>
+                    <strong>{productDraft.isActive ? "Активен в фильтрах" : "Скрыт из фильтров"}</strong>
+                    <small>История цен и связи сохраняются в обоих состояниях</small>
+                  </span>
+                  <em>{productDraft.isActive ? "Включен" : "Скрыт"}</em>
+                </button>
                 <div>
                   <button
                     type="button"
@@ -2559,6 +2783,33 @@ export default function PriceControl({
               }}
             >
               Удалить прайс‑лист
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog
+        open={Boolean(deleteSavedRowCandidate)}
+        onOpenChange={open => {
+          if (!open) setDeleteSavedRowCandidate(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить позицию из сохраненного прайса?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Будут удалены распознанная позиция «{deleteSavedRowCandidate?.name}» и ее цены. Исходный файл прайс‑листа, история других позиций и товарные связи сохранятся.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отменить</AlertDialogCancel>
+            <AlertDialogAction
+              className="danger-confirm-action"
+              disabled={deleteImportRow.isPending}
+              onClick={() => {
+                if (deleteSavedRowCandidate) deleteImportRow.mutate({ rowId: deleteSavedRowCandidate.rowId });
+              }}
+            >
+              {deleteImportRow.isPending ? "Удаляем…" : "Удалить позицию"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

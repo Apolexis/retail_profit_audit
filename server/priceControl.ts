@@ -15,6 +15,12 @@ export type ParsedPriceRow = { sourceSheet: string; sourceRowNumber: number; sou
 export type PriceImportPreview = { fileName: string; sourceType: "xls" | "xlsx" | "pdf" | "docx"; detectedSupplierName: string | null; detectedSourceDate: string | null; rows: ParsedPriceRow[]; warningCount: number; warnings: string[] };
 export type PriceChange = { previousPrice: number; previousDate: string | null; delta: number; percent: number; direction: "up" | "down" | "same" };
 export type PriceImportCategorySelection = { rowIndex: number; categoryId: number };
+export type PriceImportPriceEdit = { rowIndex: number; optionIndex: number; priceAmount: number; priceBasis?: PriceBasis };
+export type PreparedPriceImportRows = {
+  rows: Array<{ rowIndex: number; row: ParsedPriceRow }>;
+  excludedRowIndexes: number[];
+  editedPriceOptions: number;
+};
 type PriceChangeSource = { priceId: number; importId: number; productId: number | null; supplierId: number; priceMode: string | null; normalizedUnit: string | null; normalizedPrice: string | number | null; sourceDate: string | null; importedAt: Date | string };
 export const SIGNIFICANT_PRICE_INCREASE_PERCENT = 10;
 
@@ -121,6 +127,70 @@ export function normalizePrice(priceAmount: number, priceBasis: PriceBasis, pack
   if (priceBasis === "package" && packaging.volumeMl) return { normalizedPrice: Number((priceAmount * 1000 / packaging.volumeMl).toFixed(2)), normalizedUnit: "l" as const };
   return { normalizedPrice: null, normalizedUnit: "unknown" as const };
 }
+
+const editablePriceBases: PriceBasis[] = ["kg", "l", "piece", "package", "unknown"];
+
+/** Applies explicit user corrections only to the in-memory preview that will be committed. */
+export function preparePriceImportRows(
+  rows: ParsedPriceRow[],
+  priceEdits: PriceImportPriceEdit[] = [],
+  excludedRowIndexes: number[] = []
+): PreparedPriceImportRows {
+  if (priceEdits.length > MAX_IMPORT_ROWS * 12) throw new Error("Слишком много ручных правок цен для одного прайс‑листа.");
+  if (excludedRowIndexes.length > MAX_IMPORT_ROWS) throw new Error("Слишком много исключенных строк прайс‑листа.");
+
+  const excluded = new Set<number>();
+  excludedRowIndexes.forEach(rowIndex => {
+    if (!Number.isInteger(rowIndex) || rowIndex < 0 || rowIndex >= rows.length || excluded.has(rowIndex)) {
+      throw new Error("Передан некорректный список исключенных строк прайс‑листа.");
+    }
+    excluded.add(rowIndex);
+  });
+
+  const editsByRow = new Map<number, Map<number, PriceImportPriceEdit>>();
+  priceEdits.forEach(edit => {
+    if (!Number.isInteger(edit.rowIndex) || edit.rowIndex < 0 || edit.rowIndex >= rows.length ||
+      !Number.isInteger(edit.optionIndex) || edit.optionIndex < 0 ||
+      !Number.isFinite(edit.priceAmount) || edit.priceAmount <= 0 || edit.priceAmount >= 10_000_000 ||
+      (edit.priceBasis !== undefined && !editablePriceBases.includes(edit.priceBasis))) {
+      throw new Error("Передана некорректная ручная правка цены прайс‑листа.");
+    }
+    if (excluded.has(edit.rowIndex)) throw new Error("Нельзя менять цену у исключенной из импорта строки.");
+    const row = rows[edit.rowIndex];
+    if (!row || edit.optionIndex >= row.priceOptions.length) throw new Error("Передана некорректная цена для строки прайс‑листа.");
+    const rowEdits = editsByRow.get(edit.rowIndex) ?? new Map<number, PriceImportPriceEdit>();
+    if (rowEdits.has(edit.optionIndex)) throw new Error("Одна цена прайс‑листа изменена повторно.");
+    rowEdits.set(edit.optionIndex, edit);
+    editsByRow.set(edit.rowIndex, rowEdits);
+  });
+
+  const preparedRows = rows.flatMap((sourceRow, rowIndex) => {
+    if (excluded.has(rowIndex)) return [];
+    const rowEdits = editsByRow.get(rowIndex);
+    if (!rowEdits?.size) return [{ rowIndex, row: sourceRow }];
+    const priceOptions = sourceRow.priceOptions.map((option, optionIndex) => {
+      const edit = rowEdits.get(optionIndex);
+      if (!edit) return option;
+      const priceBasis = edit.priceBasis ?? option.priceBasis;
+      const normalized = normalizePrice(edit.priceAmount, priceBasis, sourceRow.packaging || sourceRow.rawName);
+      return {
+        ...option,
+        priceAmount: Number(edit.priceAmount.toFixed(2)),
+        priceBasis,
+        ...normalized,
+        sourcePriceText: String(Number(edit.priceAmount.toFixed(2))),
+      };
+    });
+    return [{ rowIndex, row: { ...sourceRow, priceOptions } }];
+  });
+
+  return {
+    rows: preparedRows,
+    excludedRowIndexes: Array.from(excluded).sort((left, right) => left - right),
+    editedPriceOptions: priceEdits.length,
+  };
+}
+
 function makeOption(raw: unknown, header: string, rawName: string, packaging: string | null): ParsedPriceOption | null {
   const priceAmount = numberFromText(raw);
   if (priceAmount === null) return null;
@@ -263,13 +333,16 @@ export async function createPriceSupplier(input: { name: string; contactNote?: s
   const [supplier] = await db.select().from(priceSuppliers).where(eq(priceSuppliers.id, inserted.id)).limit(1);
   return supplier!;
 }
-export async function commitPriceImport(input: { buffer: Buffer; fileName: string; supplierName: string; sourceDate?: string | null; actorId: number; categorySelections?: PriceImportCategorySelection[] }) {
+export async function commitPriceImport(input: { buffer: Buffer; fileName: string; supplierName: string; sourceDate?: string | null; actorId: number; categorySelections?: PriceImportCategorySelection[]; priceEdits?: PriceImportPriceEdit[]; excludedRowIndexes?: number[] }) {
   const preview = await previewPriceImport(input.buffer, input.fileName);
   if (!preview.rows.length) throw new Error("Импорт не сохранен: в документе не найдено ни одной товарной строки с ценой.");
+  const preparedRows = preparePriceImportRows(preview.rows, input.priceEdits, input.excludedRowIndexes);
+  if (!preparedRows.rows.length) throw new Error("Импорт не сохранен: все распознанные строки исключены до сохранения.");
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
   const categoryByRow = new Map<number, number>();
   for (const selection of input.categorySelections ?? []) {
     if (!Number.isInteger(selection.rowIndex) || selection.rowIndex < 0 || selection.rowIndex >= preview.rows.length || !Number.isInteger(selection.categoryId) || selection.categoryId < 1) throw new Error("Передана некорректная категория для строки прайс‑листа.");
+    if (preparedRows.excludedRowIndexes.includes(selection.rowIndex)) throw new Error("Нельзя назначить категорию строке, исключенной из импорта.");
     if (categoryByRow.has(selection.rowIndex)) throw new Error("Категория повторно выбрана для одной строки прайс‑листа.");
     categoryByRow.set(selection.rowIndex, selection.categoryId);
   }
@@ -281,14 +354,13 @@ export async function commitPriceImport(input: { buffer: Buffer; fileName: strin
   const ensuredSupplier = await ensureSupplier(input.supplierName);
   const supplier = ensuredSupplier.supplier;
   const stored = await storagePut(`price-imports/${supplier.id}/${Date.now()}_${input.fileName}`, input.buffer, sourceMimeType(preview.sourceType));
-  const [inserted] = await db.insert(priceImports).values({ supplierId: supplier.id, fileName: input.fileName, fileKey: stored.key, sourceDate: input.sourceDate || preview.detectedSourceDate, sourceType: preview.sourceType, status: "completed", rowCount: preview.rows.length, importedByAccountId: input.actorId }).$returningId();
+  const [inserted] = await db.insert(priceImports).values({ supplierId: supplier.id, fileName: input.fileName, fileKey: stored.key, sourceDate: input.sourceDate || preview.detectedSourceDate, sourceType: preview.sourceType, status: "completed", rowCount: preparedRows.rows.length, importedByAccountId: input.actorId }).$returningId();
   const aliases = await db.select({ supplierId: priceSupplierAliases.supplierId, productId: priceSupplierAliases.productId, normalizedName: priceSupplierAliases.normalizedName, packagingSignature: priceSupplierAliases.packagingSignature }).from(priceSupplierAliases).where(eq(priceSupplierAliases.supplierId, supplier.id));
   const products = await db.select({ id: priceProducts.id, normalizedSignature: priceProducts.normalizedSignature }).from(priceProducts).where(eq(priceProducts.isActive, true));
   let linked = 0, suggested = 0, createdProducts = 0, categorizedRows = 0;
   const createdProductDetails: Array<{ productName: string; internalCode: string; categoryName: string | null }> = [];
   const createdAliasDetails: Array<{ supplierProductName: string; productLabel: string; packaging: string | null }> = [];
-  for (let rowIndex = 0; rowIndex < preview.rows.length; rowIndex += 1) {
-    const row = preview.rows[rowIndex]!;
+  for (const { rowIndex, row } of preparedRows.rows) {
     const category = categoryMap.get(categoryByRow.get(rowIndex) ?? -1);
     let mapping = resolvePriceMapping(row, supplier.id, aliases, products);
     if (mapping.productId === null && category) {
@@ -307,7 +379,7 @@ export async function commitPriceImport(input: { buffer: Buffer; fileName: strin
     const [rowInserted] = await db.insert(priceImportRows).values({ importId: inserted.id, sourceSheet: row.sourceSheet, sourceRowNumber: row.sourceRowNumber, sourceSku: row.sourceSku, rawName: row.rawName, normalizedName: row.normalizedName, rawCategory: row.category, rawPackaging: row.packaging, rawAvailability: row.availability, rawPayload: row.rawPayload, productId: mapping.productId, mappingStatus: mapping.mappingStatus, matchedBy: mapping.matchedBy, matchConfidence: mapping.matchConfidence === null ? null : mapping.matchConfidence.toFixed(2) }).$returningId();
     await db.insert(priceOfferPrices).values(row.priceOptions.map(option => ({ importRowId: rowInserted.id, priceMode: option.priceMode, priceAmount: option.priceAmount.toFixed(2), priceBasis: option.priceBasis, normalizedPrice: option.normalizedPrice === null ? null : option.normalizedPrice.toFixed(2), normalizedUnit: option.normalizedUnit, minimumQuantityKg: option.minimumQuantityKg === null ? null : option.minimumQuantityKg.toFixed(2), includesVat: option.includesVat, sourcePriceText: option.sourcePriceText })));
   }
-  return { importId: inserted.id, supplier: { id: supplier.id, name: supplier.name }, supplierWasCreated: ensuredSupplier.created, rowCount: preview.rows.length, linked, suggested, unmapped: preview.rows.length - linked - suggested, createdProducts, createdProductDetails, createdAliasDetails, categorizedRows, warningCount: preview.warningCount };
+  return { importId: inserted.id, supplier: { id: supplier.id, name: supplier.name }, supplierWasCreated: ensuredSupplier.created, rowCount: preparedRows.rows.length, linked, suggested, unmapped: preparedRows.rows.length - linked - suggested, createdProducts, createdProductDetails, createdAliasDetails, categorizedRows, warningCount: preview.warningCount, excludedRows: preparedRows.excludedRowIndexes.length, editedPriceOptions: preparedRows.editedPriceOptions };
 }
 function sourceMimeType(sourceType: PriceImportPreview["sourceType"]) { return sourceType === "pdf" ? "application/pdf" : sourceType === "docx" ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "application/vnd.ms-excel"; }
 export async function listPriceControlData() {
@@ -425,6 +497,19 @@ export async function getPriceImportAuditState(importId: number) {
   return record ?? null;
 }
 
+export async function getPriceImportRowAuditState(rowId: number) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const [row] = await db.select({
+    importId: priceImportRows.importId,
+    fileName: priceImports.fileName,
+    supplierName: priceSuppliers.name,
+    rawName: priceImportRows.rawName,
+    rawPackaging: priceImportRows.rawPackaging,
+    productName: priceProducts.canonicalName,
+  }).from(priceImportRows).innerJoin(priceImports, eq(priceImportRows.importId, priceImports.id)).innerJoin(priceSuppliers, eq(priceImports.supplierId, priceSuppliers.id)).leftJoin(priceProducts, eq(priceImportRows.productId, priceProducts.id)).where(eq(priceImportRows.id, rowId)).limit(1);
+  return row ?? null;
+}
+
 export async function getPriceProductsAuditStates(productIds: number[]) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
   if (!productIds.length) return [];
@@ -455,14 +540,14 @@ export async function updatePriceCategory(input: { id: number; name: string; isA
   return category;
 }
 
-export async function createPriceProduct(input: { canonicalName: string; internalCode?: string; categoryId?: number | null; category?: string | null; variant?: string | null; sizeText?: string | null; baseUnit?: NormalizedUnit; defaultWeightGrams?: number | null; defaultVolumeMl?: number | null }) {
+export async function createPriceProduct(input: { canonicalName: string; internalCode?: string; categoryId?: number | null; category?: string | null; variant?: string | null; sizeText?: string | null; baseUnit?: NormalizedUnit; defaultWeightGrams?: number | null; defaultVolumeMl?: number | null; isActive?: boolean }) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
   const canonicalName = text(input.canonicalName); const signature = productSignature(canonicalName);
   const category = await getPriceCategory(input.categoryId);
   const [existing] = await db.select().from(priceProducts).where(eq(priceProducts.normalizedSignature, signature)).limit(1);
   if (existing) return existing;
   const internalCode = text(input.internalCode || productCodeFromSignature(signature)).toUpperCase();
-  const [inserted] = await db.insert(priceProducts).values({ internalCode, canonicalName, normalizedSignature: signature, categoryId: category?.id ?? null, category: category?.name ?? (input.category || null), variant: input.variant || extractVariant(canonicalName), sizeText: input.sizeText || extractSizeText(canonicalName), baseUnit: input.baseUnit || "unknown", defaultWeightGrams: input.defaultWeightGrams === null || input.defaultWeightGrams === undefined ? null : input.defaultWeightGrams.toFixed(2), defaultVolumeMl: input.defaultVolumeMl === null || input.defaultVolumeMl === undefined ? null : input.defaultVolumeMl.toFixed(2) }).$returningId();
+  const [inserted] = await db.insert(priceProducts).values({ internalCode, canonicalName, normalizedSignature: signature, categoryId: category?.id ?? null, category: category?.name ?? (input.category || null), variant: input.variant || extractVariant(canonicalName), sizeText: input.sizeText || extractSizeText(canonicalName), baseUnit: input.baseUnit || "unknown", defaultWeightGrams: input.defaultWeightGrams === null || input.defaultWeightGrams === undefined ? null : input.defaultWeightGrams.toFixed(2), defaultVolumeMl: input.defaultVolumeMl === null || input.defaultVolumeMl === undefined ? null : input.defaultVolumeMl.toFixed(2), isActive: input.isActive ?? true }).$returningId();
   const [created] = await db.select().from(priceProducts).where(eq(priceProducts.id, inserted.id)).limit(1);
   return created!;
 }
@@ -588,4 +673,17 @@ export async function deletePriceImport(importId: number) {
   if (rows.length) { const ids = rows.map(row => row.id); await db.delete(priceOfferPrices).where(inArray(priceOfferPrices.importRowId, ids)); await db.delete(priceImportRows).where(eq(priceImportRows.importId, importId)); }
   await db.delete(priceImports).where(eq(priceImports.id, importId));
   return { success: true };
+}
+
+/** Removes a saved source position and all of its price options; the original file stays available. */
+export async function deletePriceImportRow(rowId: number) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const [row] = await db.select({ id: priceImportRows.id, importId: priceImportRows.importId, rawName: priceImportRows.rawName }).from(priceImportRows).where(eq(priceImportRows.id, rowId)).limit(1);
+  if (!row) throw new Error("Позиция прайс‑листа не найдена.");
+  await db.delete(priceOfferPrices).where(eq(priceOfferPrices.importRowId, row.id));
+  const result = await db.delete(priceImportRows).where(eq(priceImportRows.id, row.id));
+  if (!result[0]?.affectedRows) throw new Error("Позиция прайс‑листа не найдена.");
+  const remainingRows = await db.select({ id: priceImportRows.id }).from(priceImportRows).where(eq(priceImportRows.importId, row.importId));
+  await db.update(priceImports).set({ rowCount: remainingRows.length }).where(eq(priceImports.id, row.importId));
+  return { success: true, importId: row.importId, rowCount: remainingRows.length, rawName: row.rawName };
 }

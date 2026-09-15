@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getCurrentLocalAccount, hasPriceAccess } from "../accessControl";
 import { protectedProcedure, router } from "../_core/trpc";
-import { bulkAssignPriceCategory, createPriceCategory, createPriceProduct, createPriceSupplier, deletePriceImport, deletePriceSupplier, getPriceCategoryAuditState, getPriceImportAuditState, getPriceImportDownload, getPriceOfferAuditState, getPriceProductAuditState, getPriceProductsAuditStates, getPriceSupplierAuditState, linkPriceImportRow, listPriceControlData, reassignPriceSupplierAlias, setPriceSupplierActive, unlinkPriceSupplierAlias, updatePriceCategory, updatePriceImportDate, updatePriceOffer, updatePriceProduct, updatePriceSupplier } from "../priceControl";
+import { bulkAssignPriceCategory, createPriceCategory, createPriceProduct, createPriceSupplier, deletePriceImport, deletePriceImportRow, deletePriceSupplier, getPriceCategoryAuditState, getPriceImportAuditState, getPriceImportDownload, getPriceImportRowAuditState, getPriceOfferAuditState, getPriceProductAuditState, getPriceProductsAuditStates, getPriceSupplierAuditState, linkPriceImportRow, listPriceControlData, reassignPriceSupplierAlias, setPriceSupplierActive, unlinkPriceSupplierAlias, updatePriceCategory, updatePriceImportDate, updatePriceOffer, updatePriceProduct, updatePriceSupplier } from "../priceControl";
 import { recordChange } from "../localAuth";
 
 async function requirePricePermission(openId: string | null | undefined, required: "view" | "upload" | "edit") {
@@ -23,7 +23,7 @@ export const priceControlRouter = router({
     await requirePricePermission(ctx.user.openId, "view");
     return getPriceImportDownload(input.importId);
   }),
-  createProduct: protectedProcedure.input(z.object({ canonicalName: z.string().trim().min(2).max(255), internalCode: z.string().trim().min(3).max(64).optional(), categoryId: z.number().int().positive().optional(), category: z.string().trim().max(160).optional(), variant: z.string().trim().max(255).optional(), sizeText: z.string().trim().max(120).optional(), baseUnit: z.enum(["kg", "l", "piece", "unknown"]).optional(), defaultWeightGrams: z.number().positive().max(1_000_000).optional(), defaultVolumeMl: z.number().positive().max(1_000_000).optional() })).mutation(async ({ ctx, input }) => {
+  createProduct: protectedProcedure.input(z.object({ canonicalName: z.string().trim().min(2).max(255), internalCode: z.string().trim().min(3).max(64).optional(), categoryId: z.number().int().positive().optional(), category: z.string().trim().max(160).optional(), variant: z.string().trim().max(255).optional(), sizeText: z.string().trim().max(120).optional(), baseUnit: z.enum(["kg", "l", "piece", "unknown"]).optional(), defaultWeightGrams: z.number().positive().max(1_000_000).optional(), defaultVolumeMl: z.number().positive().max(1_000_000).optional(), isActive: z.boolean().optional() })).mutation(async ({ ctx, input }) => {
     await requirePricePermission(ctx.user.openId, "edit");
     const actor = await localActor(ctx.user.openId);
     const product = await createPriceProduct(input);
@@ -118,6 +118,15 @@ export const priceControlRouter = router({
     const actor = await localActor(ctx.user.openId);
     const before = await getPriceImportAuditState(input.importId); const result = await deletePriceImport(input.importId);
     await recordChange({ actorId: actor.id, action: "price_import.delete", entityType: "price_import", entityId: String(input.importId), beforeState: before, afterState: null });
+    return result;
+  }),
+  deleteImportRow: protectedProcedure.input(z.object({ rowId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+    await requirePricePermission(ctx.user.openId, "edit");
+    const actor = await localActor(ctx.user.openId);
+    const before = await getPriceImportRowAuditState(input.rowId);
+    if (!before) throw new TRPCError({ code: "NOT_FOUND", message: "Позиция прайс‑листа не найдена." });
+    const result = await deletePriceImportRow(input.rowId);
+    await recordChange({ actorId: actor.id, action: "price_import.row_delete", entityType: "price_import_row", entityId: String(input.rowId), beforeState: before, afterState: { importId: result.importId, rowCount: result.rowCount, originalFileKept: true } });
     return result;
   }),
 });

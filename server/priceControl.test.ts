@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculatePriceChanges, normalizePrice, normalizeProductName, packagingSignature, productSignature, resolvePriceMapping, sourceDateFromText } from "./priceControl";
+import { calculatePriceChanges, normalizePrice, normalizeProductName, packagingSignature, preparePriceImportRows, productSignature, resolvePriceMapping, sourceDateFromText } from "./priceControl";
 import { readFileSync } from "node:fs";
 
 describe("прайс‑контроль: нормализация товарных строк", () => {
@@ -57,6 +57,31 @@ describe("прайс‑контроль: нормализация товарны
     expect(source).not.toContain("categoryId: category.id }).where(eq(priceProducts.id");
   });
 
+  it("применяет ручную правку цены к конкретному режиму и пересчитывает нормализацию до сохранения", () => {
+    const rows = [{ rawName: "Варенье", packaging: "банка 430 г", priceOptions: [{ priceAmount: 344, priceBasis: "package", normalizedPrice: 800, normalizedUnit: "kg" }] }] as any;
+    const prepared = preparePriceImportRows(rows, [{ rowIndex: 0, optionIndex: 0, priceAmount: 430, priceBasis: "package" }]);
+    expect(prepared.rows).toHaveLength(1);
+    expect(prepared.rows[0]?.row.priceOptions[0]).toMatchObject({ priceAmount: 430, priceBasis: "package", normalizedPrice: 1000, normalizedUnit: "kg" });
+    expect(prepared.editedPriceOptions).toBe(1);
+  });
+
+  it("исключает строки только из текущего сохранения и запрещает править исключенную строку", () => {
+    const rows = [
+      { rawName: "Первая", packaging: null, priceOptions: [{ priceAmount: 100, priceBasis: "kg", normalizedPrice: 100, normalizedUnit: "kg" }] },
+      { rawName: "Вторая", packaging: null, priceOptions: [{ priceAmount: 200, priceBasis: "kg", normalizedPrice: 200, normalizedUnit: "kg" }] },
+    ] as any;
+    const prepared = preparePriceImportRows(rows, [], [1]);
+    expect(prepared.rows.map(item => item.rowIndex)).toEqual([0]);
+    expect(prepared.excludedRowIndexes).toEqual([1]);
+    expect(() => preparePriceImportRows(rows, [{ rowIndex: 1, optionIndex: 0, priceAmount: 210 }], [1])).toThrow("Нельзя менять цену у исключенной из импорта строки.");
+  });
+
+  it("защищает предварительное сохранение от отрицательных, сверхлимитных и повторных правок", () => {
+    const rows = [{ rawName: "Позиция", packaging: null, priceOptions: [{ priceAmount: 100, priceBasis: "kg", normalizedPrice: 100, normalizedUnit: "kg" }] }] as any;
+    expect(() => preparePriceImportRows(rows, [{ rowIndex: 0, optionIndex: 0, priceAmount: 0 }])).toThrow("Передана некорректная ручная правка цены прайс‑листа.");
+    expect(() => preparePriceImportRows(rows, [{ rowIndex: 0, optionIndex: 0, priceAmount: 120 }, { rowIndex: 0, optionIndex: 0, priceAmount: 130 }])).toThrow("Одна цена прайс‑листа изменена повторно.");
+  });
+
   it("собирает для общего журнала поставщика, исходное название и переход нашего товара", () => {
     const source = readFileSync(new URL("./priceControl.ts", import.meta.url), "utf8");
     expect(source).toContain("supplierName: row.supplierName");
@@ -92,5 +117,15 @@ describe("прайс‑контроль: нормализация товарны
     expect(route).toContain('action: "price_product.import_create"');
     expect(route).toContain('action: "price_alias.import_link"');
     expect(route).toContain('action: "price_import.commit"');
+  });
+
+  it("добавляет только контролируемое удаление сохраненной строки с ценами и пересчетом количества", () => {
+    const source = readFileSync(new URL("./priceControl.ts", import.meta.url), "utf8");
+    const router = readFileSync(new URL("./routers/priceControl.ts", import.meta.url), "utf8");
+    expect(source).toContain("export async function deletePriceImportRow");
+    expect(source).toContain("await db.delete(priceOfferPrices).where(eq(priceOfferPrices.importRowId, row.id))");
+    expect(source).toContain("rowCount: remainingRows.length");
+    expect(router).toContain("deleteImportRow:");
+    expect(router).toContain('action: "price_import.row_delete"');
   });
 });
