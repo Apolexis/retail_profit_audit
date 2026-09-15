@@ -9,8 +9,25 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain('"/api/price-import/preview"');
     expect(page).toContain('"/api/price-import/commit"');
     expect(page).toContain("Сначала проверить, затем сохранить");
-    expect(page).toContain("Старый импорт финансовых фактов не используется и не изменяется.");
+    expect(page).toContain("Это отдельный импорт коммерческих предложений. Он не использует");
+    expect(page).toContain("и не изменяет старую страницу импорта финансовых фактов.");
     expect(page).toContain('accept=".xls,.xlsx,.pdf,.docx');
+  });
+
+  it("разделяет контур на сравнение, импорт прайсов и справочник", () => {
+    expect(page).toContain('label: "Сравнение"');
+    expect(page).toContain('label: "Импорт прайсов"');
+    expect(page).toContain('label: "Справочник"');
+    expect(page).toContain('href: "/price-control/import"');
+    expect(page).toContain('href: "/price-control/directory"');
+    expect(page).toContain("Финансовая «База» и ее показатели остаются отдельными");
+  });
+
+  it("сохраняет работу с ранее импортированными файлами", () => {
+    expect(page).toContain("Предпросмотр, скачивание и удаление");
+    expect(page).toContain("downloadImport");
+    expect(page).toContain("Удалить сохраненный прайс‑лист?");
+    expect(page).toContain("ПРЕДПРОСМОТР СОХРАНЕННОГО ПРАЙСА");
   });
 
   it("сохраняет приоритет точной связи поставщика с внутренним товаром", () => {
@@ -34,6 +51,19 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("ВЫГОДНЕЕ КУПИТЬ");
     expect(page).toContain("экономия");
     expect(page).toContain("ResponsiveContainer");
+  });
+
+  it("добавляет категории, независимые фильтры, редактирование и историю цен", () => {
+    expect(page).toContain("Категория");
+    expect(page).toContain("Все поставщики");
+    expect(page).toContain("Фильтры применяются одновременно");
+    expect(page).toContain("Данные не меняются.");
+    expect(page).toContain("ИСТОРИЯ ЦЕН");
+    expect(page).toContain("updateProduct");
+    expect(page).toContain("updateSupplier");
+    expect(page).toContain("updateOffer");
+    expect(styles).toContain(".packet .price-section-nav");
+    expect(styles).toContain(".packet .price-history-chart");
   });
 
   it("использует разные тематические акценты: iOS‑синий в светлой и коралловый в темной", () => {

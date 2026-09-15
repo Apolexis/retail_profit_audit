@@ -5,7 +5,7 @@ import { PDFParse } from "pdf-parse";
 import * as XLSX from "xlsx";
 import { priceImports, priceImportRows, priceOfferPrices, priceProducts, priceSupplierAliases, priceSuppliers } from "../drizzle/schema";
 import { getDb } from "./db";
-import { storagePut } from "./storage";
+import { storageGet, storagePut } from "./storage";
 
 export type PriceBasis = "kg" | "l" | "piece" | "package" | "unknown";
 export type NormalizedUnit = "kg" | "l" | "piece" | "unknown";
@@ -244,8 +244,8 @@ export async function listPriceControlData() {
   const [suppliers, products, imports, rows, aliases] = await Promise.all([
     db.select().from(priceSuppliers).orderBy(priceSuppliers.name),
     db.select().from(priceProducts).where(eq(priceProducts.isActive, true)).orderBy(priceProducts.canonicalName),
-    db.select({ id: priceImports.id, supplierId: priceImports.supplierId, supplierName: priceSuppliers.name, fileName: priceImports.fileName, sourceDate: priceImports.sourceDate, sourceType: priceImports.sourceType, rowCount: priceImports.rowCount, createdAt: priceImports.createdAt }).from(priceImports).innerJoin(priceSuppliers, eq(priceImports.supplierId, priceSuppliers.id)).orderBy(desc(priceImports.createdAt)).limit(50),
-    db.select({ rowId: priceImportRows.id, importId: priceImportRows.importId, productId: priceImportRows.productId, rawName: priceImportRows.rawName, rawPackaging: priceImportRows.rawPackaging, mappingStatus: priceImportRows.mappingStatus, matchedBy: priceImportRows.matchedBy, matchConfidence: priceImportRows.matchConfidence, supplierId: priceImports.supplierId, supplierName: priceSuppliers.name, importedAt: priceImports.createdAt, productName: priceProducts.canonicalName, internalCode: priceProducts.internalCode, priceId: priceOfferPrices.id, priceMode: priceOfferPrices.priceMode, priceAmount: priceOfferPrices.priceAmount, priceBasis: priceOfferPrices.priceBasis, normalizedPrice: priceOfferPrices.normalizedPrice, normalizedUnit: priceOfferPrices.normalizedUnit, minimumQuantityKg: priceOfferPrices.minimumQuantityKg, sourcePriceText: priceOfferPrices.sourcePriceText }).from(priceImportRows).innerJoin(priceImports, eq(priceImportRows.importId, priceImports.id)).innerJoin(priceSuppliers, eq(priceImports.supplierId, priceSuppliers.id)).leftJoin(priceProducts, eq(priceImportRows.productId, priceProducts.id)).leftJoin(priceOfferPrices, eq(priceOfferPrices.importRowId, priceImportRows.id)).orderBy(desc(priceImports.createdAt)).limit(10000),
+    db.select({ id: priceImports.id, supplierId: priceImports.supplierId, supplierName: priceSuppliers.name, fileName: priceImports.fileName, fileKey: priceImports.fileKey, sourceDate: priceImports.sourceDate, sourceType: priceImports.sourceType, rowCount: priceImports.rowCount, createdAt: priceImports.createdAt }).from(priceImports).innerJoin(priceSuppliers, eq(priceImports.supplierId, priceSuppliers.id)).orderBy(desc(priceImports.createdAt)).limit(50),
+    db.select({ rowId: priceImportRows.id, importId: priceImportRows.importId, productId: priceImportRows.productId, rawName: priceImportRows.rawName, rawCategory: priceImportRows.rawCategory, rawPackaging: priceImportRows.rawPackaging, mappingStatus: priceImportRows.mappingStatus, matchedBy: priceImportRows.matchedBy, matchConfidence: priceImportRows.matchConfidence, supplierId: priceImports.supplierId, supplierName: priceSuppliers.name, sourceDate: priceImports.sourceDate, importedAt: priceImports.createdAt, productName: priceProducts.canonicalName, internalCode: priceProducts.internalCode, priceId: priceOfferPrices.id, priceMode: priceOfferPrices.priceMode, priceAmount: priceOfferPrices.priceAmount, priceBasis: priceOfferPrices.priceBasis, normalizedPrice: priceOfferPrices.normalizedPrice, normalizedUnit: priceOfferPrices.normalizedUnit, minimumQuantityKg: priceOfferPrices.minimumQuantityKg, sourcePriceText: priceOfferPrices.sourcePriceText }).from(priceImportRows).innerJoin(priceImports, eq(priceImportRows.importId, priceImports.id)).innerJoin(priceSuppliers, eq(priceImports.supplierId, priceSuppliers.id)).leftJoin(priceProducts, eq(priceImportRows.productId, priceProducts.id)).leftJoin(priceOfferPrices, eq(priceOfferPrices.importRowId, priceImportRows.id)).orderBy(desc(priceImports.createdAt)).limit(10000),
     db.select({ aliasId: priceSupplierAliases.id, supplierId: priceSupplierAliases.supplierId, supplierName: priceSuppliers.name, productId: priceSupplierAliases.productId, internalCode: priceProducts.internalCode, canonicalName: priceProducts.canonicalName, normalizedName: priceSupplierAliases.normalizedName, packagingSignature: priceSupplierAliases.packagingSignature, updatedAt: priceSupplierAliases.updatedAt }).from(priceSupplierAliases).innerJoin(priceSuppliers, eq(priceSupplierAliases.supplierId, priceSuppliers.id)).innerJoin(priceProducts, eq(priceSupplierAliases.productId, priceProducts.id)).orderBy(priceSuppliers.name, priceSupplierAliases.normalizedName).limit(500),
   ]);
   const productMap = new Map(products.map(product => [product.id, product]));
@@ -261,12 +261,29 @@ export async function listPriceControlData() {
     const comparable = offers.filter(offer => offer.normalizedPrice !== null && offer.normalizedUnit !== "unknown").sort((a, b) => Number(a.normalizedPrice) - Number(b.normalizedPrice));
     const best = comparable[0]; const next = comparable.find(offer => offer.supplierId !== best?.supplierId && offer.normalizedUnit === best?.normalizedUnit);
     const savings = best && next ? Number(next.normalizedPrice) - Number(best.normalizedPrice) : null;
-    return { product: { id: product.id, internalCode: product.internalCode, canonicalName: product.canonicalName, variant: product.variant, sizeText: product.sizeText, baseUnit: product.baseUnit }, offers: comparable.map(offer => ({ rowId: offer.rowId, supplierId: offer.supplierId, supplierName: offer.supplierName, rawName: offer.rawName, packaging: offer.rawPackaging, priceMode: offer.priceMode, priceAmount: Number(offer.priceAmount), priceBasis: offer.priceBasis, normalizedPrice: Number(offer.normalizedPrice), normalizedUnit: offer.normalizedUnit, minimumQuantityKg: offer.minimumQuantityKg === null ? null : Number(offer.minimumQuantityKg), sourcePriceText: offer.sourcePriceText })), recommendation: best && next && savings !== null ? { supplierId: best.supplierId, supplierName: best.supplierName, normalizedPrice: Number(best.normalizedPrice), normalizedUnit: best.normalizedUnit as "kg" | "l" | "piece", savings, savingsPercent: Number(((savings / Number(next.normalizedPrice)) * 100).toFixed(1)) } : null };
+    return { product: { id: product.id, internalCode: product.internalCode, canonicalName: product.canonicalName, category: product.category, variant: product.variant, sizeText: product.sizeText, baseUnit: product.baseUnit }, offers: comparable.map(offer => ({ importId: offer.importId, rowId: offer.rowId, priceId: offer.priceId, supplierId: offer.supplierId, supplierName: offer.supplierName, rawName: offer.rawName, packaging: offer.rawPackaging, priceMode: offer.priceMode, priceAmount: Number(offer.priceAmount), priceBasis: offer.priceBasis, normalizedPrice: Number(offer.normalizedPrice), normalizedUnit: offer.normalizedUnit, minimumQuantityKg: offer.minimumQuantityKg === null ? null : Number(offer.minimumQuantityKg), sourcePriceText: offer.sourcePriceText })), recommendation: best && next && savings !== null ? { supplierId: best.supplierId, supplierName: best.supplierName, normalizedPrice: Number(best.normalizedPrice), normalizedUnit: best.normalizedUnit as "kg" | "l" | "piece", savings, savingsPercent: Number(((savings / Number(next.normalizedPrice)) * 100).toFixed(1)) } : null };
   }).sort((a, b) => (b.recommendation?.savings ?? 0) - (a.recommendation?.savings ?? 0));
-  const unmappedRows = rows.filter(row => row.mappingStatus !== "linked").slice(0, 100).map(row => ({ rowId: row.rowId, importId: row.importId, supplierId: row.supplierId, supplierName: row.supplierName, rawName: row.rawName, rawPackaging: row.rawPackaging, mappingStatus: row.mappingStatus, matchedBy: row.matchedBy, matchConfidence: row.matchConfidence === null ? null : Number(row.matchConfidence), suggestedProduct: row.productId ? { id: row.productId, name: row.productName, internalCode: row.internalCode } : null }));
-  return { suppliers, products, imports, comparisons, unmappedRows, aliases };
+  const unmappedRows = rows.filter(row => row.mappingStatus !== "linked").slice(0, 100).map(row => ({ rowId: row.rowId, importId: row.importId, supplierId: row.supplierId, supplierName: row.supplierName, rawName: row.rawName, rawCategory: row.rawCategory, rawPackaging: row.rawPackaging, mappingStatus: row.mappingStatus, matchedBy: row.matchedBy, matchConfidence: row.matchConfidence === null ? null : Number(row.matchConfidence), suggestedProduct: row.productId ? { id: row.productId, name: row.productName, internalCode: row.internalCode } : null }));
+  const history = rows.filter(row => row.productId && row.priceId && row.normalizedPrice !== null && row.normalizedUnit !== "unknown").map(row => ({ productId: row.productId!, supplierId: row.supplierId, supplierName: row.supplierName, date: row.sourceDate || row.importedAt.toISOString().slice(0, 10), normalizedPrice: Number(row.normalizedPrice), normalizedUnit: row.normalizedUnit, priceMode: row.priceMode }));
+  const previewMap = new Map(imports.map(item => [item.id, { importId: item.id, rows: [] as Array<{ rowId: number; rawName: string; rawCategory: string | null; rawPackaging: string | null; productName: string | null; priceAmount: number | null }> }]));
+  const previewSeen = new Set<number>();
+  rows.forEach(row => {
+    if (previewSeen.has(row.rowId)) return;
+    previewSeen.add(row.rowId);
+    const preview = previewMap.get(row.importId);
+    if (preview && preview.rows.length < 24) preview.rows.push({ rowId: row.rowId, rawName: row.rawName, rawCategory: row.rawCategory, rawPackaging: row.rawPackaging, productName: row.productName, priceAmount: row.priceAmount === null ? null : Number(row.priceAmount) });
+  });
+  return { suppliers, products, imports, comparisons, unmappedRows, aliases, history, importPreviews: Array.from(previewMap.values()) };
 }
-function emptyPriceData() { return { suppliers: [], products: [], imports: [], comparisons: [], unmappedRows: [], aliases: [] }; }
+function emptyPriceData() { return { suppliers: [], products: [], imports: [], comparisons: [], unmappedRows: [], aliases: [], history: [], importPreviews: [] }; }
+
+export async function getPriceImportDownload(importId: number) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const [record] = await db.select({ fileKey: priceImports.fileKey, fileName: priceImports.fileName }).from(priceImports).where(eq(priceImports.id, importId)).limit(1);
+  if (!record) throw new Error("Прайс‑лист не найден.");
+  const stored = await storageGet(record.fileKey);
+  return { fileName: record.fileName, url: stored.url };
+}
 function productCodeFromSignature(signature: string) { return `PRC-${createHash("sha1").update(signature).digest("hex").slice(0, 8).toUpperCase()}`; }
 export async function createPriceProduct(input: { canonicalName: string; internalCode?: string; category?: string | null; variant?: string | null; sizeText?: string | null; baseUnit?: NormalizedUnit; defaultWeightGrams?: number | null; defaultVolumeMl?: number | null }) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
@@ -278,6 +295,51 @@ export async function createPriceProduct(input: { canonicalName: string; interna
   const [created] = await db.select().from(priceProducts).where(eq(priceProducts.id, inserted.id)).limit(1);
   return created!;
 }
+
+export async function updatePriceProduct(input: { id: number; canonicalName: string; internalCode: string; category?: string | null; variant?: string | null; sizeText?: string | null; baseUnit?: NormalizedUnit }) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const canonicalName = text(input.canonicalName); const internalCode = text(input.internalCode).toUpperCase();
+  if (canonicalName.length < 2 || internalCode.length < 3) throw new Error("Укажите эталонное название и внутренний код товара.");
+  const signature = productSignature(canonicalName);
+  const [signatureConflict] = await db.select({ id: priceProducts.id }).from(priceProducts).where(eq(priceProducts.normalizedSignature, signature)).limit(1);
+  if (signatureConflict && signatureConflict.id !== input.id) throw new Error("Товар с такой нормализованной сигнатурой уже существует.");
+  const [codeConflict] = await db.select({ id: priceProducts.id }).from(priceProducts).where(eq(priceProducts.internalCode, internalCode)).limit(1);
+  if (codeConflict && codeConflict.id !== input.id) throw new Error("Такой внутренний код уже используется другим товаром.");
+  await db.update(priceProducts).set({ canonicalName, internalCode, normalizedSignature: signature, category: text(input.category || "") || null, variant: text(input.variant || "") || extractVariant(canonicalName), sizeText: text(input.sizeText || "") || extractSizeText(canonicalName), baseUnit: input.baseUnit || "unknown" }).where(eq(priceProducts.id, input.id));
+  const [product] = await db.select().from(priceProducts).where(eq(priceProducts.id, input.id)).limit(1);
+  if (!product) throw new Error("Внутренний товар не найден.");
+  return product;
+}
+
+export async function updatePriceSupplier(input: { id: number; name: string; contactNote?: string | null; isActive?: boolean }) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const name = text(input.name); if (name.length < 2) throw new Error("Укажите название поставщика.");
+  const normalizedName = normalizeSupplierName(name);
+  const [conflict] = await db.select({ id: priceSuppliers.id }).from(priceSuppliers).where(eq(priceSuppliers.normalizedName, normalizedName)).limit(1);
+  if (conflict && conflict.id !== input.id) throw new Error("Поставщик с таким названием уже существует.");
+  await db.update(priceSuppliers).set({ name, normalizedName, contactNote: text(input.contactNote || "") || null, ...(input.isActive === undefined ? {} : { isActive: input.isActive }) }).where(eq(priceSuppliers.id, input.id));
+  const [supplier] = await db.select().from(priceSuppliers).where(eq(priceSuppliers.id, input.id)).limit(1);
+  if (!supplier) throw new Error("Поставщик не найден.");
+  return supplier;
+}
+
+export async function updatePriceOffer(input: { priceId: number; priceAmount: number; priceBasis: PriceBasis }) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const [price] = await db.select({ id: priceOfferPrices.id, rawPackaging: priceImportRows.rawPackaging }).from(priceOfferPrices).innerJoin(priceImportRows, eq(priceOfferPrices.importRowId, priceImportRows.id)).where(eq(priceOfferPrices.id, input.priceId)).limit(1);
+  if (!price) throw new Error("Цена прайс‑листа не найдена.");
+  const normalized = normalizePrice(input.priceAmount, input.priceBasis, price.rawPackaging);
+  await db.update(priceOfferPrices).set({ priceAmount: input.priceAmount.toFixed(2), priceBasis: input.priceBasis, normalizedPrice: normalized.normalizedPrice === null ? null : normalized.normalizedPrice.toFixed(2), normalizedUnit: normalized.normalizedUnit }).where(eq(priceOfferPrices.id, input.priceId));
+  return { success: true, normalized };
+}
+
+export async function updatePriceImportDate(input: { importId: number; sourceDate: string | null }) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  await db.update(priceImports).set({ sourceDate: input.sourceDate }).where(eq(priceImports.id, input.importId));
+  const [record] = await db.select({ id: priceImports.id, sourceDate: priceImports.sourceDate }).from(priceImports).where(eq(priceImports.id, input.importId)).limit(1);
+  if (!record) throw new Error("Прайс‑лист не найден.");
+  return record;
+}
+
 export async function linkPriceImportRow(input: { rowId: number; productId: number; actorId: number; saveAlias: boolean }) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
   const [row] = await db.select({ id: priceImportRows.id, importId: priceImportRows.importId, normalizedName: priceImportRows.normalizedName, rawPackaging: priceImportRows.rawPackaging }).from(priceImportRows).where(eq(priceImportRows.id, input.rowId)).limit(1);
