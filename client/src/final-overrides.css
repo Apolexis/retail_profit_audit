@@ -3094,3 +3094,29 @@ html[data-audit-theme="dark"] .packet .subtle-danger:hover { border-color: #ff85
   .packet .price-directory-editor, .packet .price-directory-editor.supplier { grid-template-columns: minmax(0, 1fr); }
   .packet .price-directory-editor > div { align-items: stretch; }
 }
+
+/* Изменение цены поставщика относительно прошлого сопоставимого прайса. */
+html[data-audit-theme="light"] .packet {
+  --price-change-up: #c8505b;
+  --price-change-down: #0a72d5;
+}
+html[data-audit-theme="dark"] .packet {
+  --price-change-up: #ff856d;
+  --price-change-down: #ffbaa8;
+}
+.packet .price-offer > span:last-child .price-change {
+  align-items: center;
+  display: inline-flex;
+  font-size: .72rem;
+  font-variant-numeric: tabular-nums;
+  gap: .25rem;
+  line-height: 1.25;
+  margin-top: .22rem;
+}
+.packet .price-change.up { color: var(--price-change-up); }
+.packet .price-change.down { color: var(--price-change-down); }
+.packet .price-change.same,
+.packet .price-change.none { color: var(--price-muted); }
+@media (max-width: 620px) {
+  .packet .price-offer > span:last-child .price-change { font-size: .69rem; }
+}

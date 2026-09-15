@@ -24,5 +24,12 @@ it("ведет из блока непрочитанных к первому не
   expect(page).toContain('const revealFirstUnread = () => {');
   expect(page).toContain('target.scrollIntoView({ behavior: "smooth", block: "center" });');
   expect(page).toContain('className="packet-kpi notification-unread-kpi"');
-  expect(page).toContain('notification-first-unread');
+  expect(page).toContain("notification-first-unread");
+});
+
+it("ведет из сигнала изменения цены поставщика в прайс‑контроль", () => {
+  const page = readFileSync(resolve(process.cwd(), "client/src/pages/Notifications.tsx"), "utf8");
+  expect(page).toContain('item.entityType === "price"');
+  expect(page).toContain('setLocation("/price-control")');
+  expect(page).toContain('"Открыть прайс‑контроль"');
 });

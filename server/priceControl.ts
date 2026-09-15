@@ -13,6 +13,9 @@ export type PriceMode = "standard" | "cash" | "cashless_no_vat" | "cashless_vat"
 export type ParsedPriceOption = { priceAmount: number; priceBasis: PriceBasis; normalizedPrice: number | null; normalizedUnit: NormalizedUnit; priceMode: PriceMode; minimumQuantityKg: number | null; includesVat: boolean | null; sourcePriceText: string };
 export type ParsedPriceRow = { sourceSheet: string; sourceRowNumber: number; sourceSku: string | null; rawName: string; normalizedName: string; canonicalHint: string; normalizedSignature: string; category: string | null; packaging: string | null; packagingSignature: string; availability: string | null; variant: string | null; sizeText: string | null; priceOptions: ParsedPriceOption[]; rawPayload: Record<string, string> };
 export type PriceImportPreview = { fileName: string; sourceType: "xls" | "xlsx" | "pdf" | "docx"; detectedSupplierName: string | null; detectedSourceDate: string | null; rows: ParsedPriceRow[]; warningCount: number; warnings: string[] };
+export type PriceChange = { previousPrice: number; previousDate: string | null; delta: number; percent: number; direction: "up" | "down" | "same" };
+type PriceChangeSource = { priceId: number; importId: number; productId: number | null; supplierId: number; priceMode: string | null; normalizedUnit: string | null; normalizedPrice: string | number | null; sourceDate: string | null; importedAt: Date | string };
+export const SIGNIFICANT_PRICE_INCREASE_PERCENT = 10;
 
 const MAX_IMPORT_ROWS = 3000;
 const supplierHints: Array<[RegExp, string]> = [[/moreodor|мореодор/i, "Мореодор"], [/lucky\s*fish/i, "Lucky Fish"], [/купеческ/i, "Купеческий"], [/атлантид/i, "Атлантида"], [/вкус\s*север/i, "Вкус Севера"], [/mir\s*delicatesov|мир\s*деликатес/i, "Mir Delicatesov"], [/redgm/i, "RedGM"], [/арктическ.*вкус/i, "Арктический Вкус"], [/даллос/i, "Даллос"]];
@@ -20,6 +23,34 @@ const synonymTokens: Record<string, string> = { "семга": "лосось", "�
 
 function text(value: unknown) { return String(value ?? "").replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim(); }
 function fold(value: string) { return text(value).toLowerCase().replace(/ё/g, "е"); }
+function sourceTimestamp(source: Pick<PriceChangeSource, "sourceDate" | "importedAt">) {
+  const dated = source.sourceDate ? Date.parse(`${source.sourceDate}T12:00:00`) : Number.NaN;
+  if (Number.isFinite(dated)) return dated;
+  const imported = source.importedAt instanceof Date ? source.importedAt.getTime() : Date.parse(source.importedAt);
+  return Number.isFinite(imported) ? imported : 0;
+}
+/** Compares only like-for-like offers of the same supplier and internal product. */
+export function calculatePriceChanges<T extends PriceChangeSource>(offers: T[]) {
+  const changes = new Map<number, PriceChange>();
+  const previousByKey = new Map<string, T>();
+  const ordered = offers
+    .filter(offer => offer.productId !== null && offer.normalizedPrice !== null && offer.normalizedUnit && Number(offer.normalizedPrice) > 0)
+    .slice()
+    .sort((left, right) => sourceTimestamp(left) - sourceTimestamp(right) || sourceTimestamp({ sourceDate: null, importedAt: left.importedAt }) - sourceTimestamp({ sourceDate: null, importedAt: right.importedAt }));
+  for (const offer of ordered) {
+    const key = `${offer.productId}:${offer.supplierId}:${offer.priceMode}:${offer.normalizedUnit}`;
+    const previous = previousByKey.get(key);
+    const currentPrice = Number(offer.normalizedPrice);
+    if (previous && previous.importId !== offer.importId) {
+      const previousPrice = Number(previous.normalizedPrice);
+      const delta = Number((currentPrice - previousPrice).toFixed(2));
+      const percent = Number(((delta / previousPrice) * 100).toFixed(1));
+      changes.set(offer.priceId, { previousPrice, previousDate: previous.sourceDate, delta, percent, direction: delta > 0 ? "up" : delta < 0 ? "down" : "same" });
+    }
+    previousByKey.set(key, offer);
+  }
+  return changes;
+}
 function numberFromText(value: unknown) {
   const raw = text(value);
   if (!raw || /дог|запрос|уточн|нет\s*цен|n\/a/i.test(raw)) return null;
@@ -249,6 +280,8 @@ export async function listPriceControlData() {
     db.select({ aliasId: priceSupplierAliases.id, supplierId: priceSupplierAliases.supplierId, supplierName: priceSuppliers.name, productId: priceSupplierAliases.productId, internalCode: priceProducts.internalCode, canonicalName: priceProducts.canonicalName, normalizedName: priceSupplierAliases.normalizedName, packagingSignature: priceSupplierAliases.packagingSignature, updatedAt: priceSupplierAliases.updatedAt }).from(priceSupplierAliases).innerJoin(priceSuppliers, eq(priceSupplierAliases.supplierId, priceSuppliers.id)).innerJoin(priceProducts, eq(priceSupplierAliases.productId, priceProducts.id)).orderBy(priceSuppliers.name, priceSupplierAliases.normalizedName).limit(500),
   ]);
   const productMap = new Map(products.map(product => [product.id, product]));
+  const priceChangeSources = rows.flatMap(row => row.priceId !== null && row.productId !== null && row.normalizedPrice !== null && row.normalizedUnit !== null ? [{ priceId: row.priceId, importId: row.importId, productId: row.productId, supplierId: row.supplierId, priceMode: row.priceMode, normalizedUnit: row.normalizedUnit, normalizedPrice: row.normalizedPrice, sourceDate: row.sourceDate, importedAt: row.importedAt }] : []);
+  const priceChanges = calculatePriceChanges(priceChangeSources);
   const latestOffer = new Map<string, typeof rows[number]>();
   rows.filter(row => row.productId && row.priceId && row.normalizedPrice !== null).forEach(row => {
     const key = `${row.productId}:${row.supplierId}:${row.priceMode}:${row.normalizedUnit}`;
@@ -261,10 +294,10 @@ export async function listPriceControlData() {
     const comparable = offers.filter(offer => offer.normalizedPrice !== null && offer.normalizedUnit !== "unknown").sort((a, b) => Number(a.normalizedPrice) - Number(b.normalizedPrice));
     const best = comparable[0]; const next = comparable.find(offer => offer.supplierId !== best?.supplierId && offer.normalizedUnit === best?.normalizedUnit);
     const savings = best && next ? Number(next.normalizedPrice) - Number(best.normalizedPrice) : null;
-    return { product: { id: product.id, internalCode: product.internalCode, canonicalName: product.canonicalName, category: product.category, variant: product.variant, sizeText: product.sizeText, baseUnit: product.baseUnit }, offers: comparable.map(offer => ({ importId: offer.importId, rowId: offer.rowId, priceId: offer.priceId, supplierId: offer.supplierId, supplierName: offer.supplierName, rawName: offer.rawName, packaging: offer.rawPackaging, priceMode: offer.priceMode, priceAmount: Number(offer.priceAmount), priceBasis: offer.priceBasis, normalizedPrice: Number(offer.normalizedPrice), normalizedUnit: offer.normalizedUnit, minimumQuantityKg: offer.minimumQuantityKg === null ? null : Number(offer.minimumQuantityKg), sourcePriceText: offer.sourcePriceText })), recommendation: best && next && savings !== null ? { supplierId: best.supplierId, supplierName: best.supplierName, normalizedPrice: Number(best.normalizedPrice), normalizedUnit: best.normalizedUnit as "kg" | "l" | "piece", savings, savingsPercent: Number(((savings / Number(next.normalizedPrice)) * 100).toFixed(1)) } : null };
+    return { product: { id: product.id, internalCode: product.internalCode, canonicalName: product.canonicalName, category: product.category, variant: product.variant, sizeText: product.sizeText, baseUnit: product.baseUnit }, offers: comparable.map(offer => ({ importId: offer.importId, rowId: offer.rowId, priceId: offer.priceId, supplierId: offer.supplierId, supplierName: offer.supplierName, rawName: offer.rawName, packaging: offer.rawPackaging, priceMode: offer.priceMode, priceAmount: Number(offer.priceAmount), priceBasis: offer.priceBasis, normalizedPrice: Number(offer.normalizedPrice), normalizedUnit: offer.normalizedUnit, minimumQuantityKg: offer.minimumQuantityKg === null ? null : Number(offer.minimumQuantityKg), sourcePriceText: offer.sourcePriceText, priceChange: offer.priceId === null ? null : priceChanges.get(offer.priceId) ?? null })), recommendation: best && next && savings !== null ? { supplierId: best.supplierId, supplierName: best.supplierName, normalizedPrice: Number(best.normalizedPrice), normalizedUnit: best.normalizedUnit as "kg" | "l" | "piece", savings, savingsPercent: Number(((savings / Number(next.normalizedPrice)) * 100).toFixed(1)) } : null };
   }).sort((a, b) => (b.recommendation?.savings ?? 0) - (a.recommendation?.savings ?? 0));
   const unmappedRows = rows.filter(row => row.mappingStatus !== "linked").slice(0, 100).map(row => ({ rowId: row.rowId, importId: row.importId, supplierId: row.supplierId, supplierName: row.supplierName, rawName: row.rawName, rawCategory: row.rawCategory, rawPackaging: row.rawPackaging, mappingStatus: row.mappingStatus, matchedBy: row.matchedBy, matchConfidence: row.matchConfidence === null ? null : Number(row.matchConfidence), suggestedProduct: row.productId ? { id: row.productId, name: row.productName, internalCode: row.internalCode } : null }));
-  const history = rows.filter(row => row.productId && row.priceId && row.normalizedPrice !== null && row.normalizedUnit !== "unknown").map(row => ({ productId: row.productId!, supplierId: row.supplierId, supplierName: row.supplierName, date: row.sourceDate || row.importedAt.toISOString().slice(0, 10), normalizedPrice: Number(row.normalizedPrice), normalizedUnit: row.normalizedUnit, priceMode: row.priceMode }));
+  const history = rows.filter(row => row.productId && row.priceId && row.normalizedPrice !== null && row.normalizedUnit !== "unknown").map(row => ({ priceId: row.priceId!, productId: row.productId!, supplierId: row.supplierId, supplierName: row.supplierName, date: row.sourceDate || row.importedAt.toISOString().slice(0, 10), normalizedPrice: Number(row.normalizedPrice), normalizedUnit: row.normalizedUnit, priceMode: row.priceMode, priceChange: priceChanges.get(row.priceId!) ?? null }));
   const previewMap = new Map(imports.map(item => [item.id, { importId: item.id, rows: [] as Array<{ rowId: number; rawName: string; rawCategory: string | null; rawPackaging: string | null; productName: string | null; priceAmount: number | null }> }]));
   const previewSeen = new Set<number>();
   rows.forEach(row => {
@@ -276,6 +309,22 @@ export async function listPriceControlData() {
   return { suppliers, products, imports, comparisons, unmappedRows, aliases, history, importPreviews: Array.from(previewMap.values()) };
 }
 function emptyPriceData() { return { suppliers: [], products: [], imports: [], comparisons: [], unmappedRows: [], aliases: [], history: [], importPreviews: [] }; }
+
+export async function listSignificantPriceIncreases(importId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select({ priceId: priceOfferPrices.id, importId: priceImportRows.importId, productId: priceImportRows.productId, supplierId: priceImports.supplierId, supplierName: priceSuppliers.name, productName: priceProducts.canonicalName, priceMode: priceOfferPrices.priceMode, normalizedUnit: priceOfferPrices.normalizedUnit, normalizedPrice: priceOfferPrices.normalizedPrice, sourceDate: priceImports.sourceDate, importedAt: priceImports.createdAt }).from(priceOfferPrices).innerJoin(priceImportRows, eq(priceOfferPrices.importRowId, priceImportRows.id)).innerJoin(priceImports, eq(priceImportRows.importId, priceImports.id)).innerJoin(priceSuppliers, eq(priceImports.supplierId, priceSuppliers.id)).leftJoin(priceProducts, eq(priceImportRows.productId, priceProducts.id));
+  const changes = calculatePriceChanges(rows.filter((row): row is typeof row & { priceId: number; productId: number; normalizedPrice: NonNullable<typeof row.normalizedPrice>; normalizedUnit: NonNullable<typeof row.normalizedUnit> } => row.productId !== null && row.normalizedPrice !== null && row.normalizedUnit !== null));
+  const unique = new Map<string, { supplierName: string; productName: string; percent: number }>();
+  rows.filter(row => row.importId === importId && row.productId !== null && row.productName).forEach(row => {
+    const change = changes.get(row.priceId);
+    if (!change || change.direction !== "up" || change.percent < SIGNIFICANT_PRICE_INCREASE_PERCENT) return;
+    const key = `${row.supplierId}:${row.productId}`;
+    const existing = unique.get(key);
+    if (!existing || change.percent > existing.percent) unique.set(key, { supplierName: row.supplierName, productName: row.productName!, percent: change.percent });
+  });
+  return Array.from(unique.values()).sort((left, right) => right.percent - left.percent);
+}
 
 export async function getPriceImportDownload(importId: number) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");

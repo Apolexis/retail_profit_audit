@@ -93,3 +93,23 @@ export async function getAlertRecipients(storeIds?: number[]) {
   }
   return Array.from(recipients);
 }
+
+/** Recipients of price-control events are independent from store access. */
+export async function getPriceAlertRecipients() {
+  const db = await getDb();
+  if (!db) return [];
+  const accounts = await db
+    .select({ id: localAccounts.id })
+    .from(localAccounts)
+    .where(
+      and(
+        eq(localAccounts.isActive, true),
+        inArray(localAccounts.priceAccessLevel, ["view", "upload", "edit"])
+      )
+    );
+  const admins = await db
+    .select({ id: localAccounts.id })
+    .from(localAccounts)
+    .where(and(eq(localAccounts.role, "admin"), eq(localAccounts.isActive, true)));
+  return Array.from(new Set([...accounts, ...admins].map(account => account.id)));
+}

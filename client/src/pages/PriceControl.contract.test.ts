@@ -66,6 +66,16 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain(".packet .price-history-chart");
   });
 
+  it("показывает изменение цены относительно предыдущего предложения", () => {
+    expect(page).toContain("PriceChangeBadge");
+    expect(page).toContain("Подорожало");
+    expect(page).toContain("Подешевело");
+    expect(page).toContain("Новая цена");
+    expect(page).toContain("Нормализация и изменение");
+    expect(styles).toContain("--price-change-up");
+    expect(styles).toContain("--price-change-down");
+  });
+
   it("использует разные тематические акценты: iOS‑синий в светлой и коралловый в темной", () => {
     expect(styles).toContain('html[data-audit-theme="light"] .packet { --price-accent: #0a72d5');
     expect(styles).toContain('html[data-audit-theme="dark"] .packet { --price-accent: #ff856d');

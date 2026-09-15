@@ -38,6 +38,8 @@ import {
   Save,
   Tags,
   Trash2,
+  TrendingDown,
+  TrendingUp,
   Upload,
   WandSparkles,
 } from "lucide-react";
@@ -106,6 +108,14 @@ const priceLabel = (price: {
   normalizedUnit: string;
 }) =>
   `${formatMoney(price.normalizedPrice)} ₽/${unitLabel(price.normalizedUnit)}`;
+type PriceChangeView = { previousPrice: number; previousDate: string | null; delta: number; percent: number; direction: "up" | "down" | "same" } | null;
+function PriceChangeBadge({ change, unit }: { change: PriceChangeView; unit: string }) {
+  if (!change) return <small className="price-change none">Новая цена</small>;
+  const direction = change.direction === "up" ? "up" : change.direction === "down" ? "down" : "same";
+  const Icon = direction === "up" ? TrendingUp : TrendingDown;
+  const label = direction === "up" ? "Подорожало" : direction === "down" ? "Подешевело" : "Без изменения";
+  return <small className={`price-change ${direction}`}><Icon size={13} />{label} {direction === "same" ? "" : `${Math.abs(change.percent)}%`} · было {formatMoney(change.previousPrice)} ₽/{unitLabel(unit)}</small>;
+}
 const basisLabel: Record<PriceBasis, string> = {
   kg: "за кг",
   l: "за л",
@@ -395,6 +405,7 @@ export default function PriceControl({
     name: offer.supplierName,
     price: offer.normalizedPrice,
     winner: selected?.recommendation?.supplierId === offer.supplierId,
+    priceChange: offer.priceChange,
   }));
   const historyRows = useMemo(
     () =>
@@ -815,11 +826,7 @@ export default function PriceControl({
                             {chartData.map(item => (
                               <Cell
                                 key={item.name}
-                                fill={
-                                  item.winner
-                                    ? "var(--price-accent)"
-                                    : "var(--price-bar)"
-                                }
+                                fill={item.priceChange?.direction === "up" ? "var(--price-change-up)" : item.priceChange?.direction === "down" ? "var(--price-change-down)" : item.winner ? "var(--price-accent)" : "var(--price-bar)"}
                               />
                             ))}
                           </Bar>
@@ -893,7 +900,7 @@ export default function PriceControl({
                         <span>Поставщик и исходная строка</span>
                         <span>Фасовка</span>
                         <span>Цена</span>
-                        <span>Нормализация</span>
+                        <span>Нормализация и изменение</span>
                       </div>
                       {selected.offers.map(offer => (
                         <div
@@ -995,6 +1002,7 @@ export default function PriceControl({
                                 normalizedUnit: offer.normalizedUnit ?? "kg",
                               })}
                             </strong>
+                            <PriceChangeBadge change={offer.priceChange} unit={offer.normalizedUnit ?? "kg"} />
                             {offer.minimumQuantityKg && (
                               <small>
                                 от {formatMoney(offer.minimumQuantityKg)} кг

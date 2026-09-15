@@ -86,6 +86,7 @@ export default function Notifications() {
     if (!item.entityType || !item.entityId) return;
     markRead.mutate({ id: item.id });
     if (item.entityType === "import") { setLocation("/import"); return; }
+    if (item.entityType === "price") { setLocation("/price-control"); return; }
     if (item.entityType === "alert_feed") { openImportDetails(item.entityId); return; }
     if (item.entityType === "weekly_report") { setLocation(`/reports?report=${item.entityId}`); return; }
     if (item.entityType === "metric") { const [storeId, entryDate, metricCode] = item.entityId.split(":"); sessionStorage.setItem("auditManageTarget", JSON.stringify({ storeId: Number(storeId), entryDate, metricCode })); setLocation("/manage"); return; }
@@ -93,7 +94,7 @@ export default function Notifications() {
     if (item.entityType === "store") { const store = stores.data?.find(row => row.id === Number(item.entityId)); if (store) setSelectedStore(store.name); setLocation("/stores"); }
   };
 
-  const sourceLabel = (item: { entityType: string | null }) => item.entityType === "import" ? "Открыть импорт" : item.entityType === "alert_feed" ? "Открыть детали" : item.entityType === "metric" ? "Открыть факт" : item.entityType === "threshold" ? "Открыть источник" : item.entityType === "store" ? "Открыть магазин" : item.entityType === "weekly_report" ? "Открыть отчет" : null;
+  const sourceLabel = (item: { entityType: string | null }) => item.entityType === "import" ? "Открыть импорт" : item.entityType === "price" ? "Открыть прайс‑контроль" : item.entityType === "alert_feed" ? "Открыть детали" : item.entityType === "metric" ? "Открыть факт" : item.entityType === "threshold" ? "Открыть источник" : item.entityType === "store" ? "Открыть магазин" : item.entityType === "weekly_report" ? "Открыть отчет" : null;
 
   return <AuditShell kicker="15 / УВЕДОМЛЕНИЯ" title="Сигналы и контроль">
     <section className="page-lede"><div><span>ЦЕНТР СОБЫТИЙ</span><h2>Критичные изменения под контролем</h2><p>Сигналы появляются при нарушении выбранных порогов, существенных ручных изменениях и замене периодов при импорте. Их получают администраторы и назначенные пользователи магазина.</p></div></section>

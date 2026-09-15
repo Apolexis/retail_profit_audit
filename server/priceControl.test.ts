@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizePrice, normalizeProductName, packagingSignature, productSignature, resolvePriceMapping, sourceDateFromText } from "./priceControl";
+import { calculatePriceChanges, normalizePrice, normalizeProductName, packagingSignature, productSignature, resolvePriceMapping, sourceDateFromText } from "./priceControl";
 
 describe("прайс‑контроль: нормализация товарных строк", () => {
   it("сводит сёмгу, скобки и размерный диапазон к одной товарной сигнатуре", () => {
@@ -29,5 +29,15 @@ describe("прайс‑контроль: нормализация товарны
   it("предлагает, но не подтверждает автоматически новую сигнатуру", () => {
     const row = { normalizedName: normalizeProductName("Лосось 2-3"), normalizedSignature: productSignature("Лосось 2-3"), packagingSignature: "" } as any;
     expect(resolvePriceMapping(row, 1, [], [{ id: 12, normalizedSignature: row.normalizedSignature }])).toMatchObject({ productId: 12, mappingStatus: "suggested", matchedBy: "signature", matchConfidence: 92 });
+  });
+
+  it("считает изменение только относительно предыдущей сопоставимой цены того же поставщика", () => {
+    const changes = calculatePriceChanges([
+      { priceId: 1, importId: 1, productId: 11, supplierId: 4, priceMode: "standard", normalizedUnit: "kg", normalizedPrice: 800, sourceDate: "2026-09-01", importedAt: new Date("2026-09-01") },
+      { priceId: 2, importId: 2, productId: 11, supplierId: 4, priceMode: "standard", normalizedUnit: "kg", normalizedPrice: 920, sourceDate: "2026-09-10", importedAt: new Date("2026-09-10") },
+      { priceId: 3, importId: 2, productId: 11, supplierId: 8, priceMode: "standard", normalizedUnit: "kg", normalizedPrice: 760, sourceDate: "2026-09-10", importedAt: new Date("2026-09-10") },
+    ]);
+    expect(changes.get(2)).toMatchObject({ previousPrice: 800, delta: 120, percent: 15, direction: "up" });
+    expect(changes.get(3)).toBeUndefined();
   });
 });
