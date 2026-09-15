@@ -194,6 +194,10 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("draft?.market ?? marketFromPriceMode(offer.market, offer.priceMode)");
     expect(page).toContain("draft?.manufacturer ?? offer.manufacturer ?? \"\"");
     expect(page).toContain("draft?.placeContents ?? offer.placeContents ?? \"\"");
+    expect(page).toContain("Дата изготовления");
+    expect(page).toContain("Годен до:");
+    expect(page).toContain("shelfLifeOptions.map");
+    expect(page).toContain("calculateExpiryDate");
   });
 
   it("на телефоне показывает одну позицию preview с навигацией и использует компактную отмеченную галочку", () => {
@@ -234,13 +238,16 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("isActive: productDraft.isActive");
   });
 
-  it("дает выбирать постоянные характеристику и фасовку товара из управляемого справочника", () => {
+  it("дает выбирать постоянные характеристику, фасовку и состав места из управляемого справочника", () => {
     expect(page).toContain("Характеристика товара");
     expect(page).toContain("Фасовка / вес");
     expect(page).toContain("variantCharacteristicId: productDraft.variantCharacteristicId ? Number(productDraft.variantCharacteristicId) : null");
     expect(page).toContain("sizeCharacteristicId: productDraft.sizeCharacteristicId ? Number(productDraft.sizeCharacteristicId) : null");
+    expect(page).toContain("placeContentsCharacteristicId: productDraft.placeContentsCharacteristicId ? Number(productDraft.placeContentsCharacteristicId) : null");
     expect(page).toContain('selectableCharacteristics("variant")');
     expect(page).toContain('selectableCharacteristics("size")');
+    expect(page).toContain('selectableCharacteristics("place_contents")');
+    expect(page).toContain("Состав места");
   });
 
   it("не блокирует импорт без распознанной шапки: поставщика можно выбрать или создать, дату — указать вручную", () => {

@@ -48,16 +48,18 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
   const resetCache=async()=>{
     if(isRefreshing)return;
     setIsRefreshing(true);
-    window.requestAnimationFrame(async()=>{
-      try {
-        if("caches" in window){
-          const cacheNames=await window.caches.keys();
-          await Promise.all(cacheNames.map(cacheName=>window.caches.delete(cacheName)));
-        }
-      } finally {
-        window.setTimeout(()=>window.location.reload(),180);
+    // Два кадра гарантируют, что пользователь увидит вращение до очистки и перезагрузки.
+    await new Promise<void>(resolve=>window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>resolve())));
+    const visibleFor=new Promise<void>(resolve=>window.setTimeout(resolve,720));
+    try {
+      if("caches" in window){
+        const cacheNames=await window.caches.keys();
+        await Promise.all(cacheNames.map(cacheName=>window.caches.delete(cacheName)));
       }
-    });
+    } finally {
+      await visibleFor;
+      window.location.reload();
+    }
   };
   const toggleDemo=()=>{toggleDemoMode();};
   const matches=storeSearch.trim()?((availableStores.data??[]).filter(store=>store.name.toLowerCase().includes(storeSearch.trim().toLowerCase())).slice(0,6)):[];
@@ -97,7 +99,7 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
     {standalone&&!menuOpen&&<nav key={`mobile-quick-nav-${fixedEpoch}`} className="mobile-quick-nav" aria-label="Быстрые действия">
       <button type="button" className="mobile-quick-action mobile-quick-back" onClick={()=>{window.history.length>1?window.history.back():setLocation("/")}} aria-label="Назад"><ArrowLeft size={16}/><span>Назад</span></button>
       <button type="button" className="mobile-quick-action mobile-quick-forward" onClick={()=>window.history.forward()} aria-label="Вперёд"><ArrowRight size={16}/><span>Вперёд</span></button>
-      <button type="button" className={isRefreshing?"mobile-quick-action mobile-quick-refresh is-refreshing":"mobile-quick-action mobile-quick-refresh"} onClick={resetCache} disabled={isRefreshing} aria-label="Сбросить кэш"> <RefreshCw size={16}/><span>{isRefreshing?"Сбрасываем":"Сброс кэша"}</span></button>
+      <button type="button" className={isRefreshing?"mobile-quick-action mobile-quick-refresh is-refreshing":"mobile-quick-action mobile-quick-refresh"} onClick={resetCache} disabled={isRefreshing} aria-label="Сбросить кэш"><span className="mobile-quick-refresh-icon" aria-hidden="true"><RefreshCw size={16}/></span><span>{isRefreshing?"Сбрасываем":"Сброс кэша"}</span></button>
     </nav>}
     {showTop&&!menuOpen&&<button key={`scroll-top-${fixedEpoch}`} className="scroll-top" aria-label="Вернуться к началу страницы" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}><ArrowUp size={18}/></button>}
   </div>;

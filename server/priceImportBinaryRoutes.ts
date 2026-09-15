@@ -14,7 +14,7 @@ type ImportCommitOptions = {
   categorySelections: Array<{ rowIndex: number; categoryId: number }>;
   priceEdits: Array<{ rowIndex: number; optionIndex: number; priceAmount: number; priceBasis?: "kg" | "l" | "piece" | "package" | "unknown"; priceMode?: "cash" | "cashless_no_vat" | "cashless_vat"; market?: "unknown" | "spb" | "moscow" }>;
   rowEdits: Array<{ rowIndex: number; rawName: string }>;
-  metadataEdits: Array<{ rowIndex: number; manufacturer: string | null; placeContents: string | null }>;
+  metadataEdits: Array<{ rowIndex: number; manufacturer: string | null; placeContents: string | null; manufacturedOn: string | null; shelfLifeMonths: number | null; expiresOn: string | null }>;
   productLinks: Array<{ rowIndex: number; productId: number }>;
   excludedRowIndexes: number[];
 };
@@ -85,8 +85,11 @@ function normalizeCommitOptions(value: unknown): ImportCommitOptions {
       const rowIndex = Number(sourceEdit.rowIndex);
       const manufacturer = typeof sourceEdit.manufacturer === "string" ? sourceEdit.manufacturer.trim().replace(/\s+/g, " ") || null : sourceEdit.manufacturer === null ? null : undefined;
       const placeContents = typeof sourceEdit.placeContents === "string" ? sourceEdit.placeContents.trim().replace(/\s+/g, " ") || null : sourceEdit.placeContents === null ? null : undefined;
-      if (!Number.isInteger(rowIndex) || rowIndex < 0 || manufacturer === undefined || placeContents === undefined || (manufacturer?.length ?? 0) > 255 || (placeContents?.length ?? 0) > 255) throw new Error("Передана некорректная характеристика предложения прайс‑листа.");
-      return { rowIndex, manufacturer, placeContents };
+      const manufacturedOn = typeof sourceEdit.manufacturedOn === "string" ? sourceEdit.manufacturedOn.trim() || null : sourceEdit.manufacturedOn === null || sourceEdit.manufacturedOn === undefined ? null : undefined;
+      const shelfLifeMonths = sourceEdit.shelfLifeMonths === null || sourceEdit.shelfLifeMonths === undefined || sourceEdit.shelfLifeMonths === "" ? null : Number(sourceEdit.shelfLifeMonths);
+      const expiresOn = typeof sourceEdit.expiresOn === "string" ? sourceEdit.expiresOn.trim() || null : sourceEdit.expiresOn === null || sourceEdit.expiresOn === undefined ? null : undefined;
+      if (!Number.isInteger(rowIndex) || rowIndex < 0 || manufacturer === undefined || placeContents === undefined || manufacturedOn === undefined || expiresOn === undefined || (shelfLifeMonths !== null && !Number.isInteger(shelfLifeMonths)) || (manufacturer?.length ?? 0) > 255 || (placeContents?.length ?? 0) > 255) throw new Error("Передана некорректная характеристика предложения прайс‑листа.");
+      return { rowIndex, manufacturer, placeContents, manufacturedOn, shelfLifeMonths, expiresOn };
     }),
     productLinks: productLinks.map(item => {
       if (!item || typeof item !== "object") throw new Error("Передана некорректная связь товара для строки прайс‑листа.");

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculatePriceChanges, normalizePackagingDisplay, normalizePrice, normalizeProductDisplayName, normalizeProductName, packagingSignature, parsePdfExtractedText, parsePdfPositionedPages, preparePriceImportRows, productSignature, resolvePriceMapping, sourceDateFromText } from "./priceControl";
+import { calculatePriceChanges, calculatePriceOfferExpiry, normalizePackagingDisplay, normalizePrice, normalizeProductDisplayName, normalizeProductName, packagingSignature, parsePdfExtractedText, parsePdfPositionedPages, preparePriceImportRows, productSignature, resolvePriceMapping, sourceDateFromText } from "./priceControl";
 import { readFileSync } from "node:fs";
 
 describe("прайс‑контроль: нормализация товарных строк", () => {
@@ -19,6 +19,12 @@ describe("прайс‑контроль: нормализация товарны
   it("компактно нормализует единицы, дроби и лишние пробелы в названии без склейки слов", () => {
     expect(normalizeProductDisplayName("Икра нерки соленая мороженая , б ез консерванта 500 гр.")).toBe("Икра нерки соленая мороженая, без консерванта 500гр");
     expect(normalizeProductDisplayName("Креветка 0,5 л; 13 шт")).toBe("Креветка 0.5л; 13шт");
+  });
+
+  it("рассчитывает дату годности по дате изготовления и выбранному сроку, включая конец месяца", () => {
+    expect(calculatePriceOfferExpiry("2026-01-31", 1)).toBe("2026-02-28");
+    expect(calculatePriceOfferExpiry("2026-08-15", 18)).toBe("2028-02-15");
+    expect(calculatePriceOfferExpiry("2026-08-15", 5)).toBeNull();
   });
 
   it("распознает дату из русской шапки прайс‑листа", () => {
@@ -80,6 +86,12 @@ describe("прайс‑контроль: нормализация товарны
     const rows = [{ rawName: "Палтус", packaging: "21кг", priceOptions: [{ priceAmount: 530, priceBasis: "kg", priceMode: "cashless_vat", market: "moscow", normalizedPrice: 530, normalizedUnit: "kg" }] }] as any;
     const prepared = preparePriceImportRows(rows, [{ rowIndex: 0, optionIndex: 0, priceAmount: 525, priceMode: "cashless_vat", market: "spb" }]);
     expect(prepared.rows[0]?.row.priceOptions[0]).toMatchObject({ priceAmount: 525, priceMode: "cashless_vat", market: "spb", normalizedPrice: 525, normalizedUnit: "kg" });
+  });
+
+  it("сохраняет дату изготовления, допустимый срок и рассчитанную дату годности только для текущей строки preview", () => {
+    const rows = [{ rawName: "Икра", packaging: "125гр", manufacturer: null, placeContents: "1/12", manufacturedOn: null, shelfLifeMonths: null, expiresOn: null, priceOptions: [{ priceAmount: 1800, priceBasis: "piece", priceMode: "cashless_vat", market: "spb", normalizedPrice: 1800, normalizedUnit: "piece" }] }] as any;
+    const prepared = preparePriceImportRows(rows, [], [], [], [{ rowIndex: 0, manufacturer: "Рыбак", placeContents: "1/12", manufacturedOn: "2026-09-15", shelfLifeMonths: 6, expiresOn: "2027-03-15" }]);
+    expect(prepared.rows[0]?.row).toMatchObject({ manufacturer: "Рыбак", placeContents: "1/12", manufacturedOn: "2026-09-15", shelfLifeMonths: 6, expiresOn: "2027-03-15" });
   });
 
   it("исключает строки только из текущего сохранения и запрещает править исключенную строку", () => {

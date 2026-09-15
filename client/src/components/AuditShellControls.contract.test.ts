@@ -68,6 +68,7 @@ describe("базовые управляющие элементы", () => {
     expect(shell).toContain('className="mobile-quick-action mobile-quick-forward"');
     expect(shell).toContain('mobile-quick-action mobile-quick-refresh is-refreshing');
     expect(shell).toContain('isRefreshing?"Сбрасываем":"Сброс кэша"');
+    expect(shell).toContain('className="mobile-quick-refresh-icon"');
     expect(css).toContain("grid-template-columns: repeat(3, minmax(0, 1fr))");
     expect(css).toContain(".packet.pwa-standalone .packet-main { padding-bottom: 112px; }");
     expect(css).toContain(".packet.pwa-standalone .scroll-top { bottom: calc(env(safe-area-inset-bottom, 0px) + 80px) !important; }");
@@ -77,13 +78,15 @@ describe("базовые управляющие элементы", () => {
     expect(css).toContain("min-height: 39px;");
     expect(css).toContain(".packet .mobile-quick-nav .mobile-quick-refresh { border-color: color-mix(in srgb, var(--blue) 48%, var(--line)); background: transparent; }");
     expect(css).toContain(".packet .mobile-quick-refresh.is-refreshing");
+    expect(css).toContain(".packet .mobile-quick-refresh.is-refreshing .mobile-quick-refresh-icon");
     expect(css).toContain(".mobile-quick-refresh { border-color: #c9dceb !important; background: #ffffff !important;");
     expect(shell).not.toContain("clearActionFocus");
     expect(shell).not.toContain("data-pointer-action");
     expect(shell).toContain('onClick={()=>window.history.forward()}');
     expect(shell).toContain('const resetCache=async()=>{');
     expect(shell).toContain('setIsRefreshing(true);');
-    expect(shell).toContain('window.requestAnimationFrame(async()=>{');
+    expect(shell).toContain('await new Promise<void>(resolve=>window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>resolve())))');
+    expect(shell).toContain('const visibleFor=new Promise<void>(resolve=>window.setTimeout(resolve,720));');
     expect(shell).toContain('window.caches.keys()');
     expect(shell).toContain('onClick={resetCache}');
     expect(css).not.toContain('.packet .mobile-quick-nav button[data-pointer-action="true"]');
