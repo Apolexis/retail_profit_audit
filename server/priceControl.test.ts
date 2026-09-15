@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculatePriceChanges, normalizePrice, normalizeProductName, packagingSignature, preparePriceImportRows, productSignature, resolvePriceMapping, sourceDateFromText } from "./priceControl";
+import { calculatePriceChanges, normalizePackagingDisplay, normalizePrice, normalizeProductName, packagingSignature, parsePdfExtractedText, preparePriceImportRows, productSignature, resolvePriceMapping, sourceDateFromText } from "./priceControl";
 import { readFileSync } from "node:fs";
 
 describe("прайс‑контроль: нормализация товарных строк", () => {
@@ -145,5 +145,39 @@ describe("прайс‑контроль: нормализация товарны
     expect(source).toContain("rowCount: remainingRows.length");
     expect(router).toContain("deleteImportRow:");
     expect(router).toContain('action: "price_import.row_delete"');
+  });
+
+  it("собирает многострочную товарную строку PDF Даллос, но не добавляет в имя НДС, фасовку и служебные фрагменты", () => {
+    const rows = parsePdfExtractedText([
+      "| Икра щуки весовая / фасованная",
+      "Наименование Производитель Упаковка Цена",
+      "с НДС Изменение Остаток Медиа",
+      "Икра щуки соленая мороженная",
+      "(пл.б, вакуум, ключ, 200 г) Камшат 56 шт (короб) 200 г 1 270 ₽ кг −",
+      "Условия доставки по Москве",
+      "500 г",
+    ].join("\n"));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ rawName: "Икра щуки соленая мороженная (пл.б, вакуум, ключ, 200 г) Камшат 56 шт (короб) 200 г", packaging: "200 г" });
+    expect(rows[0]?.priceOptions[0]).toMatchObject({ priceAmount: 1270, priceBasis: "kg" });
+  });
+
+  it("исключает порядковый номер RedGM из имени, связывает его с городской ценой и не принимает заголовки секций за товары", () => {
+    const rows = parsePdfExtractedText([
+      "RedGM",
+      "1 Икра горбуши 2026",
+      "Икра горбуши путина 2026 Рыбак 1/12,5 с НДС",
+      "2026 ИКРА НЕРКИ 2026",
+      "195 (в СПБ)",
+    ].join("\n"));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.rawName).toBe("Икра горбуши 2026 Икра горбуши путина 2026 Рыбак 1/12,5 с НДС");
+    expect(rows[0]?.rawName).not.toMatch(/^1\s/);
+    expect(rows[0]?.priceOptions[0]?.priceAmount).toBe(195);
+  });
+
+  it("показывает фасовку «уп.» как «шт.» и использует ее как единицу цены за штуку", () => {
+    expect(normalizePackagingDisplay("6 уп. (короб)")).toBe("6 шт (короб)");
+    expect(packagingSignature("6 уп. (короб)")).toBe("pc6");
   });
 });

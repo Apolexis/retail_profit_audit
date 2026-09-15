@@ -3,6 +3,7 @@ import { useDeferredValue, useEffect, useState } from "react";
 import { ArrowRight, History, RotateCcw, UserRound } from "lucide-react";
 import { AuditShell } from "@/components/AuditShell";
 import { trpc } from "@/lib/trpc";
+import { formatMoscowDateTime } from "@/lib/utils";
 
 type ChangeEntry = { id:number; action:string; entityType:string; entityId:string; beforeState:unknown; afterState:unknown; createdAt:string|Date|number|null; actorName?:string|null; actorPhone?:string|null; rollbackOf?:number|null };
 type DetailValue = unknown;
@@ -16,7 +17,7 @@ const formatValue=(value:DetailValue):string=>{if(value===null||value===undefine
 const asRecord=(value:unknown):DetailRecord|null=>value&&typeof value==="object"&&!Array.isArray(value)?value as DetailRecord:null;
 const importantKeys=["storeName","account","fileName","source","target","entryDate","metricName","amount","visibility","isHidden","role","isActive","importAccessLevel","grants","weekday","reportTime","reportPeriod","deleted","supplierName","supplierProductName","productName","internalCode","categoryName","packaging","variant","baseUnit","contactNote","priceMode","priceAmount","priceBasis","normalizedPrice","normalizedUnit","sourceDate","sourceType","rowCount","linked","suggested","unmapped","createdProducts","categorizedRows","significantIncreases"];
 const grantMap=(value:unknown)=>new Map((Array.isArray(value)?value:[]).filter(item=>item&&typeof item==="object").map(item=>{const grant=item as AccessGrant;const store=String(grant.storeName??grant.storeId??"Магазин");return [store,String(grant.accessLabel??grant.accessLevel??"Нет доступа")] as const}));
-const formatAuditTimestamp=(value:ChangeEntry["createdAt"])=>{const date=value instanceof Date?value:new Date(value??"");return Number.isFinite(date.getTime())?date.toLocaleString("ru-RU"):"время не указано"};
+const formatAuditTimestamp=(value:ChangeEntry["createdAt"])=>formatMoscowDateTime(value);
 const conciseState=(state:unknown)=>{const data=asRecord(state);if(!data)return "Действие зафиксировано";const keys=importantKeys.filter(key=>key!=="grants"&&data[key]!==undefined);return keys.length?keys.map(key=>`${fieldLabels[key]??key}: ${formatValue(data[key])}`).join(" · "):"Действие зафиксировано"};
 
 function ValueTransition({before,after}:{before:string;after:string}){return <><span className="audit-change-value before">{before}</span><ArrowRight size={14}/><span className="audit-change-value after">{after}</span></>}

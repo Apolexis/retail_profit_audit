@@ -89,13 +89,16 @@ export function productSignature(value: string) {
   return [name, extractSizeText(value)].filter(Boolean).join("|") || normalizeProductName(value);
 }
 export function parsePackaging(value: string) {
-  const normalized = fold(value);
+  const normalized = fold(value).replace(/(^|\s)уп\.?(?=\s|$|\()/g, "$1шт");
   const weight = normalized.match(/(\d+(?:[.,]\d+)?)\s*(кг|kg|г|гр|gr|g)(?![a-zа-я])/);
   const volume = normalized.match(/(\d+(?:[.,]\d+)?)\s*(л|литр|l|мл|ml)(?![a-zа-я])/);
   const count = normalized.match(/(\d+)\s*(шт|pcs?|штук)(?![a-zа-я])/);
   if (weight) { const amount = Number(weight[1].replace(",", ".")); return { grams: Math.round(amount * (["кг", "kg"].includes(weight[2]) ? 1000 : 1)), volumeMl: null, pieces: count ? Number(count[1]) : null }; }
   if (volume) { const amount = Number(volume[1].replace(",", ".")); return { grams: null, volumeMl: Math.round(amount * (["л", "литр", "l"].includes(volume[2]) ? 1000 : 1)), pieces: count ? Number(count[1]) : null }; }
   return { grams: null, volumeMl: null, pieces: count ? Number(count[1]) : null };
+}
+export function normalizePackagingDisplay(value: string | null | undefined) {
+  return text(value).replace(/(^|\s)уп\.?(?=\s|$|\()/gi, "$1шт");
 }
 export function packagingSignature(value: string | null | undefined) {
   const packaging = parsePackaging(value ?? "");
@@ -114,9 +117,9 @@ function priceModeFromHeader(header: string): PriceMode {
 }
 function priceBasisFromText(header: string, name: string, packaging: string | null): PriceBasis {
   const source = fold(`${header} ${name}`);
-  if (/\/(?:кг)|за\s*кг|\bкг\b/.test(source)) return "kg";
-  if (/\/(?:л)|за\s*л|\bлитр/.test(source)) return "l";
-  if (/\/(?:шт)|за\s*шт|\bштук/.test(source)) return "piece";
+  if (/\/\s*кг|за\s*кг|(?:^|\s)кг(?:\s|$)/.test(source)) return "kg";
+  if (/\/\s*л|за\s*л|(?:^|\s)литр(?:а|ов|ы)?(?:\s|$)/.test(source)) return "l";
+  if (/\/\s*шт|за\s*шт|(?:^|\s)(?:штук|уп\.?)\b/.test(source)) return "piece";
   const pack = parsePackaging(packaging ?? name);
   if (pack.grams || pack.volumeMl) return "package";
   return "kg";
@@ -253,7 +256,7 @@ function parseExcel(buffer: Buffer) {
     matrix.slice(headerRow + 1).forEach((cells, offset) => {
       const rawName = text(cells[nameIndex]);
       if (!rawName || rawName.length < 2 || isAdministrativeText(rawName)) return;
-      const packaging = text(cells[packagingIndex]) || null;
+      const packaging = normalizePackagingDisplay(text(cells[packagingIndex])) || null;
       const options = priceIndexes.map(({ header, index }) => makeOption(cells[index], header, rawName, packaging || rawName)).filter((value): value is ParsedPriceOption => Boolean(value));
       if (!options.length) return;
       const rowNumber = headerRow + offset + 2;
@@ -294,10 +297,113 @@ function parseExtractedText(documentText: string) {
     const price = candidate.amount;
     if (!price || rawName.length < 3 || /^(цена|руб|код|артикул)$/i.test(rawName) || isAdministrativeText(rawName)) return;
     const packingMatch = line.match(/\d+(?:[.,]\d+)?\s*(?:кг|г|гр|л|мл|шт)(?![a-zа-я])/i);
-    const packaging = packingMatch?.[0] ?? null;
+    const packaging = normalizePackagingDisplay(packingMatch?.[0]) || null;
     const option = makeOption(candidate.text, "цена", rawName, packaging || rawName);
     if (!option) return;
     rows.push({ sourceSheet: "Документ", sourceRowNumber: index + 1, sourceSku: null, rawName, normalizedName: normalizeProductName(rawName), canonicalHint: rawName, normalizedSignature: productSignature(rawName), category: null, packaging, packagingSignature: packagingSignature(packaging || rawName), availability: null, variant: extractVariant(rawName), sizeText: extractSizeText(rawName), priceOptions: [option], rawPayload: { line } });
+  });
+  return rows;
+}
+
+const pdfPricePattern = /\b\d{1,3}(?:[\s.,]\d{3})*(?:[.,]\d{1,2})?\s*(?:₽|руб(?:\.|лей)?|р\.)/gi;
+const pdfPageMarker = /^--\s*(?:\{?\d+\}?|page\s+\d+)\s+(?:of|из)\s+(?:\{?\d+\}?|\d+)\s*--$/i;
+
+function isPdfHeaderLine(line: string) {
+  return /^(?:наименовани[a-zа-яё]*|производител[a-zа-яё]*|упаковк[a-zа-яё]*|цен[аы]?|с\s*ндс|без\s*ндс|изменени[a-zа-яё]*|остат[a-zа-яё]*|медиа)/i.test(line);
+}
+function isPdfSectionLine(line: string) {
+  return /^\|\s*.+/.test(line) || /^(?:оперативная\s+сводка|хиты\s+недели|новые\s+поступления|условия\s+доставки|бесплатная\s+доставка|платная\s+доставка)/i.test(line) || (line === line.toUpperCase() && /[А-ЯЁ]/.test(line));
+}
+function isPdfServiceLine(line: string) {
+  return /^(?:тм\s+|ооо\s+|ао\s+|ип\s+|производитель\b|дата\s+(?:производ|изготов)|изготовлен|вылов\b|срок\s+(?:годн|хран)|годн\.?\b|при\s+темп|вакуу?м\b|пл\.?\s*б\b|ст\.?\s*б\b|ключ\b|ожидаем\b|по\s+запросу\b|tg\b|max\b|−$|\d{1,2}\.\d{2}\s*-\s*\d{1,2}\.\d{2}\b)/i.test(line)
+    || /^\(?\s*(?:пл\.?\s*б|ст\.?\s*б|вакуу?м|ключ)\b/i.test(line)
+    || /^\d+(?:[.,]\d+)?\s*(?:кг|г|гр|шт|уп\.?)\s*\((?:короб|куб|мешок|ведро)\)/i.test(line);
+}
+function isPdfDeliveryOrContacts(line: string) {
+  return /(?:условия\s+доставки|доставка\s+(?:в|до|по)|бесплатная\s+доставка|платная\s+доставка|подпишитесь|telegram|max$|московская\s+область|северная\s+промзона|г\.?видное|стр\.\s*\d)/i.test(line) || isAdministrativeText(line);
+}
+function normalizePdfName(value: string) {
+  return text(value)
+    .replace(/^\s*(?:№|n)?\s*\d{1,4}\s+(?=[a-zа-яё])/i, "")
+    .replace(/\s+(?:срок\s+(?:годн|хран)|годн\.?\b|изготовлен|дата\s+(?:производ|изготов)|при\s+темп|ндс\b).*/i, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+function pdfPackagingFromText(value: string) {
+  const matches = Array.from(value.matchAll(/\b\d+(?:[.,]\d+)?\s*(?:кг|г|гр|л|мл|шт|уп\.?)(?![a-zа-я])/gi));
+  return normalizePackagingDisplay(matches.at(-1)?.[0]) || null;
+}
+function makePdfRow(rawName: string, priceText: string, priceContext: string, lineNumber: number, packaging: string | null): ParsedPriceRow | null {
+  const name = normalizePdfName(rawName);
+  if (name.length < 3 || isAdministrativeText(name) || isPdfHeaderLine(name) || /^\d+(?:[\s.,]\d+)?(?:\s*\(в\s*(?:спб|мск)\))?$/i.test(name)) return null;
+  const option = makeOption(priceText, priceContext, name, packaging || name);
+  if (!option) return null;
+  return { sourceSheet: "PDF", sourceRowNumber: lineNumber, sourceSku: null, rawName: name, normalizedName: normalizeProductName(name), canonicalHint: name, normalizedSignature: productSignature(name), category: null, packaging, packagingSignature: packagingSignature(packaging || name), availability: null, variant: extractVariant(name), sizeText: extractSizeText(name), priceOptions: [option], rawPayload: { line: priceContext } };
+}
+
+/** PDF catalogs often split a product cell across lines; only fragments preceding a currency price form the product name. */
+export function parsePdfExtractedText(documentText: string) {
+  const lines = documentText.replace(/\r/g, "").split("\n").map(text).filter(Boolean);
+  if (lines.some(line => /redgm|икорн(?:ый|ого)\s+сомелье/i.test(line))) return parseRedgmPdfText(lines);
+  const rows: ParsedPriceRow[] = [];
+  let tableActive = false;
+  let nameHeaderSeen = false;
+  let fragments: string[] = [];
+  lines.forEach((line, index) => {
+    if (pdfPageMarker.test(line)) return;
+    if (/^условия\s+доставки/i.test(line)) { tableActive = false; fragments = []; return; }
+    if (/^наименовани/i.test(line)) { nameHeaderSeen = true; return; }
+    if (/^(?:с\s*ндс|без\s*ндс)/i.test(line) && nameHeaderSeen) { tableActive = true; nameHeaderSeen = false; return; }
+    if (isPdfHeaderLine(line)) return;
+    if (isPdfSectionLine(line)) { fragments = []; return; }
+    if (!tableActive) return;
+    const priceMatch = Array.from(line.matchAll(pdfPricePattern)).at(-1);
+    if (priceMatch?.[0] && priceMatch.index !== undefined) {
+      const prefix = text(line.slice(0, priceMatch.index));
+      const name = [...fragments, prefix].filter(Boolean).join(" ");
+      const packaging = pdfPackagingFromText(`${fragments.join(" ")} ${prefix}`);
+      const row = makePdfRow(name, priceMatch[0], line, index + 1, packaging);
+      if (row) rows.push(row);
+      fragments = [];
+      return;
+    }
+    if (isPdfDeliveryOrContacts(line) || isPdfServiceLine(line)) return;
+    if (/^(?:\d{1,3}(?:\s\d{3})?|\d{1,2}[./-]\d{1,2})\s*(?:\(в\s*(?:спб|мск)\))?/i.test(line)) return;
+    fragments = [...fragments, line].slice(-6);
+  });
+  return rows;
+}
+
+/** RedGM extracts the product and city-price columns in separate document blocks. Pair only numbered products with city prices. */
+function parseRedgmPdfText(lines: string[]) {
+  const pages: string[][] = [[]];
+  lines.forEach(line => { if (pdfPageMarker.test(line)) pages.push([]); else pages.at(-1)?.push(line); });
+  const rows: ParsedPriceRow[] = [];
+  let sourceRowNumber = 0;
+  pages.forEach(page => {
+    const entries: string[][] = [];
+    const cityPrices: Array<{ text: string; context: string }> = [];
+    let current: string[] | null = null;
+    page.forEach(line => {
+      sourceRowNumber += 1;
+      const cityPrice = line.match(/\b\d{1,3}(?:\s\d{3})?(?:[.,]\d{1,2})?\s*\(в\s*(?:спб|мск)\)/i)?.[0];
+      if (cityPrice) { cityPrices.push({ text: cityPrice, context: line }); return; }
+      const numbered = line.match(/^\s*(\d{1,3})\s+(.+)$/);
+      if (numbered && !/\(в\s*(?:спб|мск)\)/i.test(line)) {
+        if (current?.length) entries.push(current);
+        current = [numbered[2]];
+        return;
+      }
+      if (current && !isPdfHeaderLine(line) && !isPdfSectionLine(line) && !isPdfServiceLine(line) && !isPdfDeliveryOrContacts(line)) current.push(line);
+    });
+    const trailingEntry = current as string[] | null;
+    if (trailingEntry?.length) entries.push(trailingEntry);
+    entries.slice(0, cityPrices.length).forEach((entry, index) => {
+      const price = cityPrices[index];
+      const name = entry.join(" ");
+      const row = makePdfRow(name, price.text, price.context, sourceRowNumber - page.length + index + 1, pdfPackagingFromText(name));
+      if (row) rows.push(row);
+    });
   });
   return rows;
 }
@@ -327,7 +433,7 @@ export async function previewPriceImport(buffer: Buffer, fileName: string): Prom
   let rows: ParsedPriceRow[] = [];
   if (sourceType === "xls" || sourceType === "xlsx") { documentText = extractExcelText(buffer); rows = parseExcel(buffer); }
   if (sourceType === "docx") { documentText = (await mammoth.extractRawText({ buffer })).value; rows = parseExtractedText(documentText); }
-  if (sourceType === "pdf") { const parser = new PDFParse({ data: buffer }); try { documentText = (await parser.getText()).text; } finally { await parser.destroy(); } rows = parseExtractedText(documentText); }
+  if (sourceType === "pdf") { const parser = new PDFParse({ data: buffer }); try { documentText = (await parser.getText()).text; } finally { await parser.destroy(); } rows = parsePdfExtractedText(documentText); }
   const trimmedRows = rows.slice(0, MAX_IMPORT_ROWS);
   const warnings: string[] = [];
   if (!trimmedRows.length) warnings.push("Товарные строки с распознанной ценой не найдены. Проверьте документ и разметку прайс‑листа.");

@@ -140,6 +140,8 @@ function PriceSelect({
 
 const formatMoney = (value: number) =>
   new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 2 }).format(value);
+const formatPackaging = (value: string | null | undefined) =>
+  String(value ?? "").replace(/(^|\s)уп\.?(?=\s|$|\()/gi, "$1шт");
 const dateLabel = (value: string | null) => {
   if (!value) return "дата не указана";
   const source = /^\d{4}-\d{2}-\d{2}$/.test(value)
@@ -1419,7 +1421,7 @@ export default function PriceControl({
                               {modeLabel[offer.priceMode ?? "standard"]}
                             </small>
                           </span>
-                          <span>{offer.packaging || "Не указана"}</span>
+                          <span>{formatPackaging(offer.packaging) || "Не указана"}</span>
                           <span>
                             {canEdit ? (
                               <div className="price-inline-edit">
@@ -1801,7 +1803,7 @@ export default function PriceControl({
                           ) : <strong>{row.rawName}</strong>}
                           <span>
                             {row.category || "Без категории"} ·{" "}
-                            {row.packaging || "фасовка не указана"}
+                            {formatPackaging(row.packaging) || "фасовка не указана"}
                           </span>
                         </div>
                         <div className="price-preview-prices" aria-label={`Цены позиции ${row.rawName}`}>

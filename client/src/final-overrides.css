@@ -3748,9 +3748,9 @@ html[data-audit-theme="dark"] :is(.chart-expand-dialog, .chart-expand-dialog-gen
 /* Tooltip: отсутствие факта выводится в строке собственного цветного маркера, без нижней служебной подписи. */
 .tiny-tooltip .tiny-tooltip-no-fact { display: none; }
 
-/* Общий загрузчик: косяк остается на месте, а каждая рыба движется плавно сама — без вращения всей группы. */
+/* Базовый размер общего загрузчика; фактическое вращение задает SVG‑орбита в заключительном блоке. */
 .facts-loader .facts-loader-art { width: 176px !important; height: 176px !important; }
-.facts-loader .facts-school { animation: none !important; transform: none !important; }
+.facts-loader .facts-school { animation: none !important; }
 .facts-loader .facts-fish-body { animation: facts-fish-glide 1.6s var(--audit-hover-ease) infinite alternate !important; }
 .ocean-loader .facts-loader-art { width: min(292px, 72vw) !important; height: min(292px, 72vw) !important; }
 @media (max-width: 520px) { .facts-loader .facts-loader-art { width: 156px !important; height: 156px !important; } .ocean-loader .facts-loader-art { width: min(258px, 76vw) !important; height: min(258px, 76vw) !important; } }
@@ -3903,10 +3903,21 @@ html[data-audit-theme="light"] .packet .price-preview-name-edit input { border-c
   .packet .price-preview-remove { grid-column: 3; grid-row: 1; width: 32px; height: 32px; min-height: 32px; }
 }
 
-/* Единый утвержденный косяк: заметная плавная окружность во всех состояниях загрузки. */
-.facts-loader .facts-loader-art { width: 240px !important; height: 240px !important; }
-.facts-loader .facts-school { transform-box: fill-box; transform-origin: center; animation: facts-school-spin 3.8s linear infinite !important; will-change: transform; }
+/* Единый загрузочный косяк: SVG‑орбита работает надежно и не зависит от CSS transform у группы. */
+.facts-loader .facts-loader-art { width: 176px !important; height: 176px !important; }
+.facts-loader .facts-school-orbit { transform-box: fill-box; transform-origin: center; }
+.facts-loader .facts-school { animation: none !important; }
 .facts-loader .facts-fish-body { animation: facts-fish-glide 1.6s var(--audit-hover-ease) infinite alternate !important; }
 .ocean-loader .facts-loader-art { width: min(292px, 72vw) !important; height: min(292px, 72vw) !important; }
-@media (max-width: 520px) { .facts-loader .facts-loader-art { width: 196px !important; height: 196px !important; } .ocean-loader .facts-loader-art { width: min(258px, 76vw) !important; height: min(258px, 76vw) !important; } }
-@media (prefers-reduced-motion: reduce) { .facts-loader .facts-school, .facts-loader .facts-fish-body { animation: none !important; } }
+@media (max-width: 520px) { .facts-loader .facts-loader-art { width: 156px !important; height: 156px !important; } .ocean-loader .facts-loader-art { width: min(258px, 76vw) !important; height: min(258px, 76vw) !important; } }
+@media (prefers-reduced-motion: reduce) { .facts-loader .facts-school-orbit .facts-school { transform: translate(0 -10px); } .facts-loader .facts-fish-body { animation: none !important; } }
+
+/* Справочник на телефоне: основная область не резервирует скрытую боковую колонку. */
+@media (max-width: 560px) {
+  .packet { grid-template-columns: minmax(0, 1fr) !important; width: 100% !important; min-width: 0 !important; overflow-x: clip; }
+  .packet .packet-main { width: 100% !important; max-width: none !important; min-width: 0 !important; margin: 0 !important; padding-inline: max(14px, env(safe-area-inset-left)) max(14px, env(safe-area-inset-right)) !important; }
+  .packet .packet-top { width: 100% !important; min-width: 0 !important; padding-inline: max(14px, env(safe-area-inset-left)) max(14px, env(safe-area-inset-right)) !important; }
+  .packet .price-directory-editor.supplier { grid-template-columns: minmax(0, 1fr) !important; }
+  .packet .price-directory-editor.supplier > * { min-width: 0; width: 100%; }
+  .packet .price-directory-editor.supplier .price-active-toggle { align-self: stretch; }
+}

@@ -16,16 +16,16 @@ describe("векторная загрузка", () => {
     expect(component).not.toContain("<img");
   });
 
-  it("использует единый заметный вращающийся косяк во всех состояниях загрузки и отключает движение при системном уменьшении анимации", () => {
+  it("использует единый заметный вращающийся SVG‑косяк во всех состояниях и отключает лишнее движение при системном уменьшении анимации", () => {
     expect(styles).toContain("@media (prefers-reduced-motion: reduce)");
     expect(component).toContain('className="facts-school"');
-    expect(component).not.toContain("facts-school-orbit");
-    expect(component).not.toContain("animateTransform");
-    expect(styles).toContain(".facts-loader .facts-school { transform-box: fill-box; transform-origin: center; animation: facts-school-spin 3.8s linear infinite !important;");
+    expect(component).toContain('className="facts-school-orbit"');
+    expect(component).toContain('<animateTransform attributeName="transform" type="rotate"');
+    expect(component).toContain('dur="4.8s" repeatCount="indefinite"');
+    expect(styles).toContain(".facts-loader .facts-school-orbit { transform-box: fill-box; transform-origin: center; }");
+    expect(styles).toContain(".facts-loader .facts-school { animation: none !important; }");
     expect(styles).toContain(".facts-loader .facts-fish-body { animation: facts-fish-glide");
-    expect(styles).toContain(".facts-loader .facts-loader-art { width: 240px !important; height: 240px !important; }");
-    expect(styles).toContain("backdrop-filter: blur(18px)");
-    expect(styles).toContain(".ocean-loader.overlay .ocean-loader-art");
-    expect(styles).toContain(".ocean-loader .facts-loader-art");
+    expect(styles).toContain(".facts-loader .facts-loader-art { width: 176px !important; height: 176px !important; }");
+    expect(styles).toContain(".ocean-loader .facts-loader-art { width: min(292px, 72vw) !important;");
   });
 });
