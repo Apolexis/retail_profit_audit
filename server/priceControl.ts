@@ -3,7 +3,7 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 import mammoth from "mammoth";
 import { PDFParse } from "pdf-parse";
 import * as XLSX from "xlsx";
-import { priceImports, priceImportRows, priceOfferPrices, priceProducts, priceSupplierAliases, priceSuppliers } from "../drizzle/schema";
+import { priceCategories, priceImports, priceImportRows, priceOfferPrices, priceProducts, priceSupplierAliases, priceSuppliers } from "../drizzle/schema";
 import { getDb } from "./db";
 import { storageGet, storagePut } from "./storage";
 
@@ -23,6 +23,7 @@ const synonymTokens: Record<string, string> = { "семга": "лосось", "�
 
 function text(value: unknown) { return String(value ?? "").replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim(); }
 function fold(value: string) { return text(value).toLowerCase().replace(/ё/g, "е"); }
+function normalizeCategoryName(value: string) { return fold(value).replace(/[^a-zа-я0-9]+/g, " ").trim(); }
 function sourceTimestamp(source: Pick<PriceChangeSource, "sourceDate" | "importedAt">) {
   const dated = source.sourceDate ? Date.parse(`${source.sourceDate}T12:00:00`) : Number.NaN;
   if (Number.isFinite(dated)) return dated;
@@ -272,14 +273,16 @@ export async function commitPriceImport(input: { buffer: Buffer; fileName: strin
 function sourceMimeType(sourceType: PriceImportPreview["sourceType"]) { return sourceType === "pdf" ? "application/pdf" : sourceType === "docx" ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "application/vnd.ms-excel"; }
 export async function listPriceControlData() {
   const db = await getDb(); if (!db) return emptyPriceData();
-  const [suppliers, products, imports, rows, aliases] = await Promise.all([
+  const [suppliers, categories, products, imports, rows, aliases] = await Promise.all([
     db.select().from(priceSuppliers).orderBy(priceSuppliers.name),
-    db.select().from(priceProducts).where(eq(priceProducts.isActive, true)).orderBy(priceProducts.canonicalName),
+    db.select().from(priceCategories).orderBy(priceCategories.name),
+    db.select({ id: priceProducts.id, internalCode: priceProducts.internalCode, canonicalName: priceProducts.canonicalName, normalizedSignature: priceProducts.normalizedSignature, categoryId: priceProducts.categoryId, legacyCategory: priceProducts.category, categoryName: priceCategories.name, categoryIsActive: priceCategories.isActive, variant: priceProducts.variant, sizeText: priceProducts.sizeText, baseUnit: priceProducts.baseUnit, isActive: priceProducts.isActive }).from(priceProducts).leftJoin(priceCategories, eq(priceProducts.categoryId, priceCategories.id)).orderBy(priceProducts.canonicalName),
     db.select({ id: priceImports.id, supplierId: priceImports.supplierId, supplierName: priceSuppliers.name, fileName: priceImports.fileName, fileKey: priceImports.fileKey, sourceDate: priceImports.sourceDate, sourceType: priceImports.sourceType, rowCount: priceImports.rowCount, createdAt: priceImports.createdAt }).from(priceImports).innerJoin(priceSuppliers, eq(priceImports.supplierId, priceSuppliers.id)).orderBy(desc(priceImports.createdAt)).limit(50),
     db.select({ rowId: priceImportRows.id, importId: priceImportRows.importId, productId: priceImportRows.productId, rawName: priceImportRows.rawName, rawCategory: priceImportRows.rawCategory, rawPackaging: priceImportRows.rawPackaging, mappingStatus: priceImportRows.mappingStatus, matchedBy: priceImportRows.matchedBy, matchConfidence: priceImportRows.matchConfidence, supplierId: priceImports.supplierId, supplierName: priceSuppliers.name, sourceDate: priceImports.sourceDate, importedAt: priceImports.createdAt, productName: priceProducts.canonicalName, internalCode: priceProducts.internalCode, priceId: priceOfferPrices.id, priceMode: priceOfferPrices.priceMode, priceAmount: priceOfferPrices.priceAmount, priceBasis: priceOfferPrices.priceBasis, normalizedPrice: priceOfferPrices.normalizedPrice, normalizedUnit: priceOfferPrices.normalizedUnit, minimumQuantityKg: priceOfferPrices.minimumQuantityKg, sourcePriceText: priceOfferPrices.sourcePriceText }).from(priceImportRows).innerJoin(priceImports, eq(priceImportRows.importId, priceImports.id)).innerJoin(priceSuppliers, eq(priceImports.supplierId, priceSuppliers.id)).leftJoin(priceProducts, eq(priceImportRows.productId, priceProducts.id)).leftJoin(priceOfferPrices, eq(priceOfferPrices.importRowId, priceImportRows.id)).orderBy(desc(priceImports.createdAt)).limit(10000),
     db.select({ aliasId: priceSupplierAliases.id, supplierId: priceSupplierAliases.supplierId, supplierName: priceSuppliers.name, productId: priceSupplierAliases.productId, internalCode: priceProducts.internalCode, canonicalName: priceProducts.canonicalName, normalizedName: priceSupplierAliases.normalizedName, packagingSignature: priceSupplierAliases.packagingSignature, updatedAt: priceSupplierAliases.updatedAt }).from(priceSupplierAliases).innerJoin(priceSuppliers, eq(priceSupplierAliases.supplierId, priceSuppliers.id)).innerJoin(priceProducts, eq(priceSupplierAliases.productId, priceProducts.id)).orderBy(priceSuppliers.name, priceSupplierAliases.normalizedName).limit(500),
   ]);
-  const productMap = new Map(products.map(product => [product.id, product]));
+  const catalogProducts = products.map(product => ({ ...product, category: product.categoryName ?? product.legacyCategory, categoryIsActive: product.categoryIsActive ?? true }));
+  const productMap = new Map(catalogProducts.map(product => [product.id, product]));
   const priceChangeSources = rows.flatMap(row => row.priceId !== null && row.productId !== null && row.normalizedPrice !== null && row.normalizedUnit !== null ? [{ priceId: row.priceId, importId: row.importId, productId: row.productId, supplierId: row.supplierId, priceMode: row.priceMode, normalizedUnit: row.normalizedUnit, normalizedPrice: row.normalizedPrice, sourceDate: row.sourceDate, importedAt: row.importedAt }] : []);
   const priceChanges = calculatePriceChanges(priceChangeSources);
   const latestOffer = new Map<string, typeof rows[number]>();
@@ -294,7 +297,7 @@ export async function listPriceControlData() {
     const comparable = offers.filter(offer => offer.normalizedPrice !== null && offer.normalizedUnit !== "unknown").sort((a, b) => Number(a.normalizedPrice) - Number(b.normalizedPrice));
     const best = comparable[0]; const next = comparable.find(offer => offer.supplierId !== best?.supplierId && offer.normalizedUnit === best?.normalizedUnit);
     const savings = best && next ? Number(next.normalizedPrice) - Number(best.normalizedPrice) : null;
-    return { product: { id: product.id, internalCode: product.internalCode, canonicalName: product.canonicalName, category: product.category, variant: product.variant, sizeText: product.sizeText, baseUnit: product.baseUnit }, offers: comparable.map(offer => ({ importId: offer.importId, rowId: offer.rowId, priceId: offer.priceId, supplierId: offer.supplierId, supplierName: offer.supplierName, rawName: offer.rawName, packaging: offer.rawPackaging, priceMode: offer.priceMode, priceAmount: Number(offer.priceAmount), priceBasis: offer.priceBasis, normalizedPrice: Number(offer.normalizedPrice), normalizedUnit: offer.normalizedUnit, minimumQuantityKg: offer.minimumQuantityKg === null ? null : Number(offer.minimumQuantityKg), sourcePriceText: offer.sourcePriceText, priceChange: offer.priceId === null ? null : priceChanges.get(offer.priceId) ?? null })), recommendation: best && next && savings !== null ? { supplierId: best.supplierId, supplierName: best.supplierName, normalizedPrice: Number(best.normalizedPrice), normalizedUnit: best.normalizedUnit as "kg" | "l" | "piece", savings, savingsPercent: Number(((savings / Number(next.normalizedPrice)) * 100).toFixed(1)) } : null };
+    return { product: { id: product.id, internalCode: product.internalCode, canonicalName: product.canonicalName, categoryId: product.categoryId, category: product.category, categoryIsActive: product.categoryIsActive, variant: product.variant, sizeText: product.sizeText, baseUnit: product.baseUnit, isActive: product.isActive }, offers: comparable.map(offer => ({ importId: offer.importId, rowId: offer.rowId, priceId: offer.priceId, supplierId: offer.supplierId, supplierName: offer.supplierName, rawName: offer.rawName, packaging: offer.rawPackaging, priceMode: offer.priceMode, priceAmount: Number(offer.priceAmount), priceBasis: offer.priceBasis, normalizedPrice: Number(offer.normalizedPrice), normalizedUnit: offer.normalizedUnit, minimumQuantityKg: offer.minimumQuantityKg === null ? null : Number(offer.minimumQuantityKg), sourcePriceText: offer.sourcePriceText, priceChange: offer.priceId === null ? null : priceChanges.get(offer.priceId) ?? null })), recommendation: best && next && savings !== null ? { supplierId: best.supplierId, supplierName: best.supplierName, normalizedPrice: Number(best.normalizedPrice), normalizedUnit: best.normalizedUnit as "kg" | "l" | "piece", savings, savingsPercent: Number(((savings / Number(next.normalizedPrice)) * 100).toFixed(1)) } : null };
   }).sort((a, b) => (b.recommendation?.savings ?? 0) - (a.recommendation?.savings ?? 0));
   const unmappedRows = rows.filter(row => row.mappingStatus !== "linked").slice(0, 100).map(row => ({ rowId: row.rowId, importId: row.importId, supplierId: row.supplierId, supplierName: row.supplierName, rawName: row.rawName, rawCategory: row.rawCategory, rawPackaging: row.rawPackaging, mappingStatus: row.mappingStatus, matchedBy: row.matchedBy, matchConfidence: row.matchConfidence === null ? null : Number(row.matchConfidence), suggestedProduct: row.productId ? { id: row.productId, name: row.productName, internalCode: row.internalCode } : null }));
   const history = rows.filter(row => row.productId && row.priceId && row.normalizedPrice !== null && row.normalizedUnit !== "unknown").map(row => ({ priceId: row.priceId!, productId: row.productId!, supplierId: row.supplierId, supplierName: row.supplierName, date: row.sourceDate || row.importedAt.toISOString().slice(0, 10), normalizedPrice: Number(row.normalizedPrice), normalizedUnit: row.normalizedUnit, priceMode: row.priceMode, priceChange: priceChanges.get(row.priceId!) ?? null }));
@@ -306,9 +309,9 @@ export async function listPriceControlData() {
     const preview = previewMap.get(row.importId);
     if (preview && preview.rows.length < 24) preview.rows.push({ rowId: row.rowId, rawName: row.rawName, rawCategory: row.rawCategory, rawPackaging: row.rawPackaging, productName: row.productName, priceAmount: row.priceAmount === null ? null : Number(row.priceAmount) });
   });
-  return { suppliers, products, imports, comparisons, unmappedRows, aliases, history, importPreviews: Array.from(previewMap.values()) };
+  return { suppliers, categories, products: catalogProducts, imports, comparisons, unmappedRows, aliases, history, importPreviews: Array.from(previewMap.values()) };
 }
-function emptyPriceData() { return { suppliers: [], products: [], imports: [], comparisons: [], unmappedRows: [], aliases: [], history: [], importPreviews: [] }; }
+function emptyPriceData() { return { suppliers: [], categories: [], products: [], imports: [], comparisons: [], unmappedRows: [], aliases: [], history: [], importPreviews: [] }; }
 
 export async function listSignificantPriceIncreases(importId: number) {
   const db = await getDb();
@@ -334,27 +337,60 @@ export async function getPriceImportDownload(importId: number) {
   return { fileName: record.fileName, url: stored.url };
 }
 function productCodeFromSignature(signature: string) { return `PRC-${createHash("sha1").update(signature).digest("hex").slice(0, 8).toUpperCase()}`; }
-export async function createPriceProduct(input: { canonicalName: string; internalCode?: string; category?: string | null; variant?: string | null; sizeText?: string | null; baseUnit?: NormalizedUnit; defaultWeightGrams?: number | null; defaultVolumeMl?: number | null }) {
+async function getPriceCategory(categoryId: number | null | undefined) {
+  if (!categoryId) return null;
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const [category] = await db.select().from(priceCategories).where(eq(priceCategories.id, categoryId)).limit(1);
+  if (!category) throw new Error("Категория прайс‑контроля не найдена.");
+  return category;
+}
+
+export async function createPriceCategory(input: { name: string }) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const name = text(input.name); const normalizedName = normalizeCategoryName(name);
+  if (name.length < 2 || !normalizedName) throw new Error("Укажите название категории.");
+  const [existing] = await db.select().from(priceCategories).where(eq(priceCategories.normalizedName, normalizedName)).limit(1);
+  if (existing) return existing;
+  const [inserted] = await db.insert(priceCategories).values({ name, normalizedName }).$returningId();
+  const [category] = await db.select().from(priceCategories).where(eq(priceCategories.id, inserted.id)).limit(1);
+  return category!;
+}
+
+export async function updatePriceCategory(input: { id: number; name: string; isActive?: boolean }) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const name = text(input.name); const normalizedName = normalizeCategoryName(name);
+  if (name.length < 2 || !normalizedName) throw new Error("Укажите название категории.");
+  const [conflict] = await db.select({ id: priceCategories.id }).from(priceCategories).where(eq(priceCategories.normalizedName, normalizedName)).limit(1);
+  if (conflict && conflict.id !== input.id) throw new Error("Категория с таким названием уже существует.");
+  await db.update(priceCategories).set({ name, normalizedName, ...(input.isActive === undefined ? {} : { isActive: input.isActive }) }).where(eq(priceCategories.id, input.id));
+  const [category] = await db.select().from(priceCategories).where(eq(priceCategories.id, input.id)).limit(1);
+  if (!category) throw new Error("Категория прайс‑контроля не найдена.");
+  return category;
+}
+
+export async function createPriceProduct(input: { canonicalName: string; internalCode?: string; categoryId?: number | null; category?: string | null; variant?: string | null; sizeText?: string | null; baseUnit?: NormalizedUnit; defaultWeightGrams?: number | null; defaultVolumeMl?: number | null }) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
   const canonicalName = text(input.canonicalName); const signature = productSignature(canonicalName);
+  const category = await getPriceCategory(input.categoryId);
   const [existing] = await db.select().from(priceProducts).where(eq(priceProducts.normalizedSignature, signature)).limit(1);
   if (existing) return existing;
   const internalCode = text(input.internalCode || productCodeFromSignature(signature)).toUpperCase();
-  const [inserted] = await db.insert(priceProducts).values({ internalCode, canonicalName, normalizedSignature: signature, category: input.category || null, variant: input.variant || extractVariant(canonicalName), sizeText: input.sizeText || extractSizeText(canonicalName), baseUnit: input.baseUnit || "unknown", defaultWeightGrams: input.defaultWeightGrams === null || input.defaultWeightGrams === undefined ? null : input.defaultWeightGrams.toFixed(2), defaultVolumeMl: input.defaultVolumeMl === null || input.defaultVolumeMl === undefined ? null : input.defaultVolumeMl.toFixed(2) }).$returningId();
+  const [inserted] = await db.insert(priceProducts).values({ internalCode, canonicalName, normalizedSignature: signature, categoryId: category?.id ?? null, category: category?.name ?? (input.category || null), variant: input.variant || extractVariant(canonicalName), sizeText: input.sizeText || extractSizeText(canonicalName), baseUnit: input.baseUnit || "unknown", defaultWeightGrams: input.defaultWeightGrams === null || input.defaultWeightGrams === undefined ? null : input.defaultWeightGrams.toFixed(2), defaultVolumeMl: input.defaultVolumeMl === null || input.defaultVolumeMl === undefined ? null : input.defaultVolumeMl.toFixed(2) }).$returningId();
   const [created] = await db.select().from(priceProducts).where(eq(priceProducts.id, inserted.id)).limit(1);
   return created!;
 }
 
-export async function updatePriceProduct(input: { id: number; canonicalName: string; internalCode: string; category?: string | null; variant?: string | null; sizeText?: string | null; baseUnit?: NormalizedUnit }) {
+export async function updatePriceProduct(input: { id: number; canonicalName: string; internalCode: string; categoryId?: number | null; category?: string | null; variant?: string | null; sizeText?: string | null; baseUnit?: NormalizedUnit; isActive?: boolean }) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
   const canonicalName = text(input.canonicalName); const internalCode = text(input.internalCode).toUpperCase();
   if (canonicalName.length < 2 || internalCode.length < 3) throw new Error("Укажите эталонное название и внутренний код товара.");
   const signature = productSignature(canonicalName);
+  const category = await getPriceCategory(input.categoryId);
   const [signatureConflict] = await db.select({ id: priceProducts.id }).from(priceProducts).where(eq(priceProducts.normalizedSignature, signature)).limit(1);
   if (signatureConflict && signatureConflict.id !== input.id) throw new Error("Товар с такой нормализованной сигнатурой уже существует.");
   const [codeConflict] = await db.select({ id: priceProducts.id }).from(priceProducts).where(eq(priceProducts.internalCode, internalCode)).limit(1);
   if (codeConflict && codeConflict.id !== input.id) throw new Error("Такой внутренний код уже используется другим товаром.");
-  await db.update(priceProducts).set({ canonicalName, internalCode, normalizedSignature: signature, category: text(input.category || "") || null, variant: text(input.variant || "") || extractVariant(canonicalName), sizeText: text(input.sizeText || "") || extractSizeText(canonicalName), baseUnit: input.baseUnit || "unknown" }).where(eq(priceProducts.id, input.id));
+  await db.update(priceProducts).set({ canonicalName, internalCode, normalizedSignature: signature, categoryId: category?.id ?? input.categoryId ?? null, category: category?.name ?? (text(input.category || "") || null), variant: text(input.variant || "") || extractVariant(canonicalName), sizeText: text(input.sizeText || "") || extractSizeText(canonicalName), baseUnit: input.baseUnit || "unknown", ...(input.isActive === undefined ? {} : { isActive: input.isActive }) }).where(eq(priceProducts.id, input.id));
   const [product] = await db.select().from(priceProducts).where(eq(priceProducts.id, input.id)).limit(1);
   if (!product) throw new Error("Внутренний товар не найден.");
   return product;

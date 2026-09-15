@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -27,7 +27,10 @@ import {
   CheckCircle2,
   Download,
   Eye,
+  EyeOff,
   FileSearch,
+  FileSpreadsheet,
+  FolderPlus,
   GitCompareArrows,
   History,
   Link2,
@@ -41,7 +44,9 @@ import {
   TrendingDown,
   TrendingUp,
   Upload,
+  UploadCloud,
   WandSparkles,
+  X,
 } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
@@ -73,9 +78,13 @@ type ProductDraft = {
   id: number | null;
   canonicalName: string;
   internalCode: string;
-  category: string;
+  categoryId: string;
   baseUnit: "kg" | "l" | "piece" | "unknown";
+  isActive: boolean;
 };
+type CategoryDraft = { id: number | null; name: string; isActive: boolean };
+type DirectoryTab = "products" | "categories" | "suppliers";
+type VisibilityFilter = "active" | "all" | "hidden";
 type SupplierDraft = {
   id: number;
   name: string;
@@ -137,13 +146,13 @@ const sectionMeta: Record<
     href: "/price-control/import",
     label: "Импорт прайсов",
     title: "Импорт прайс‑листов",
-    kicker: "20 / ИМПОРТ ПРАЙСОВ",
+    kicker: "21 / ИМПОРТ ПРАЙСОВ",
   },
   directory: {
     href: "/price-control/directory",
     label: "Справочник",
     title: "Справочник прайс‑контроля",
-    kicker: "20 / СПРАВОЧНИК ПРАЙСОВ",
+    kicker: "22 / СПРАВОЧНИК ПРАЙСОВ",
   },
 };
 
@@ -226,6 +235,20 @@ export default function PriceControl({
     },
     onError: error => toast.error(error.message),
   });
+  const createCategory = trpc.priceControl.createCategory.useMutation({
+    onSuccess: () => {
+      invalidate();
+      toast.success("Категория создана");
+    },
+    onError: error => toast.error(error.message),
+  });
+  const updateCategory = trpc.priceControl.updateCategory.useMutation({
+    onSuccess: () => {
+      invalidate();
+      toast.success("Категория обновлена");
+    },
+    onError: error => toast.error(error.message),
+  });
   const updateSupplier = trpc.priceControl.updateSupplier.useMutation({
     onSuccess: () => {
       invalidate();
@@ -282,7 +305,9 @@ export default function PriceControl({
     onError: error => toast.error(error.message),
   });
 
+  const fileInput = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [fileDragging, setFileDragging] = useState(false);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [supplierName, setSupplierName] = useState("");
   const [sourceDate, setSourceDate] = useState("");
@@ -291,6 +316,8 @@ export default function PriceControl({
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [supplierFilter, setSupplierFilter] = useState("");
+  const [visibilityFilter, setVisibilityFilter] =
+    useState<VisibilityFilter>("active");
   const [selectedProductId, setSelectedProductId] = useState<number | null>(
     null
   );
@@ -301,7 +328,14 @@ export default function PriceControl({
   const [linkTargets, setLinkTargets] = useState<Record<number, string>>({});
   const [aliasTargets, setAliasTargets] = useState<Record<number, string>>({});
   const [newNames, setNewNames] = useState<Record<number, string>>({});
+  const [newCategoryTargets, setNewCategoryTargets] = useState<
+    Record<number, string>
+  >({});
   const [productDraft, setProductDraft] = useState<ProductDraft | null>(null);
+  const [categoryDraft, setCategoryDraft] = useState<CategoryDraft | null>(
+    null
+  );
+  const [directoryTab, setDirectoryTab] = useState<DirectoryTab>("products");
   const [supplierDraft, setSupplierDraft] = useState<SupplierDraft | null>(
     null
   );
@@ -310,28 +344,30 @@ export default function PriceControl({
   >({});
   const [dateDrafts, setDateDrafts] = useState<Record<number, string>>({});
 
-  const categories = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          (overview.data?.products ?? []).map(
-            product => product.category || "Без категории"
-          )
-        )
-      ).sort((a, b) => a.localeCompare(b, "ru")),
-    [overview.data?.products]
-  );
+  const categories = overview.data?.categories ?? [];
+  const selectableCategories = categories.filter(category => category.isActive);
+  const matchesVisibility = (item: {
+    isActive: boolean;
+    categoryIsActive?: boolean | null;
+  }) => {
+    const visible = item.isActive && item.categoryIsActive !== false;
+    return visibilityFilter === "all" ||
+      (visibilityFilter === "active" ? visible : !visible);
+  };
   const filteredComparisons = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("ru");
     return (overview.data?.comparisons ?? [])
       .filter(item => {
-        const category = item.product.category || "Без категории";
         const matchQuery =
           !query ||
           `${item.product.canonicalName} ${item.product.internalCode} ${item.product.variant ?? ""} ${item.product.sizeText ?? ""}`
             .toLocaleLowerCase("ru")
             .includes(query);
-        return matchQuery && (!categoryFilter || category === categoryFilter);
+        return (
+          matchQuery &&
+          matchesVisibility(item.product) &&
+          (!categoryFilter || String(item.product.categoryId ?? "") === categoryFilter)
+        );
       })
       .map(item => {
         const offers = (
@@ -396,7 +432,7 @@ export default function PriceControl({
         };
       })
       .filter(item => item.offers.length);
-  }, [overview.data?.comparisons, search, categoryFilter, supplierFilter]);
+  }, [overview.data?.comparisons, search, categoryFilter, supplierFilter, visibilityFilter]);
   const selected =
     filteredComparisons.find(item => item.product.id === selectedProductId) ??
     filteredComparisons[0] ??
@@ -473,6 +509,18 @@ export default function PriceControl({
       setPreviewing(false);
     }
   };
+  const selectPriceFile = (selected: File | null | undefined) => {
+    if (!selected) return;
+    const extension = selected.name.split(".").pop()?.toLowerCase();
+    if (!extension || !["xls", "xlsx", "pdf", "docx"].includes(extension)) {
+      toast.error("Выберите прайс‑лист Excel, PDF или Word.");
+      return;
+    }
+    setFile(selected);
+    setPreview(null);
+    setSupplierName("");
+    setSourceDate("");
+  };
   const commitFile = async () => {
     if (!file || !preview || !supplierName.trim()) return;
     setCommitting(true);
@@ -522,14 +570,18 @@ export default function PriceControl({
   const createAndLink = async (
     rowId: number,
     rawName: string,
-    rawCategory: string | null
+    _rawCategory: string | null
   ) => {
     const canonicalName = (newNames[rowId] || rawName).trim();
-    if (!canonicalName) return;
+    const categoryId = Number(newCategoryTargets[rowId]);
+    if (!canonicalName || !categoryId) {
+      toast.error("Для нового товара выберите существующую категорию.");
+      return;
+    }
     try {
       const product = await createProduct.mutateAsync({
         canonicalName,
-        ...(rawCategory ? { category: rawCategory } : {}),
+        categoryId,
       });
       await linkRow.mutateAsync({
         rowId,
@@ -542,13 +594,18 @@ export default function PriceControl({
   };
   const saveProduct = async () => {
     if (!productDraft?.canonicalName.trim()) return;
+    if (!Number(productDraft.categoryId)) {
+      toast.error("Выберите существующую категорию товара.");
+      return;
+    }
     if (productDraft.id) {
       await updateProduct.mutateAsync({
         id: productDraft.id,
         canonicalName: productDraft.canonicalName.trim(),
         internalCode: productDraft.internalCode.trim(),
-        category: productDraft.category.trim() || null,
+        categoryId: Number(productDraft.categoryId) || null,
         baseUnit: productDraft.baseUnit,
+        isActive: productDraft.isActive,
       });
     } else {
       await createProduct.mutateAsync({
@@ -556,13 +613,26 @@ export default function PriceControl({
         ...(productDraft.internalCode.trim()
           ? { internalCode: productDraft.internalCode.trim() }
           : {}),
-        ...(productDraft.category.trim()
-          ? { category: productDraft.category.trim() }
+        ...(Number(productDraft.categoryId)
+          ? { categoryId: Number(productDraft.categoryId) }
           : {}),
         baseUnit: productDraft.baseUnit,
       });
     }
     setProductDraft(null);
+  };
+  const saveCategory = async () => {
+    if (!categoryDraft?.name.trim()) return;
+    if (categoryDraft.id) {
+      await updateCategory.mutateAsync({
+        id: categoryDraft.id,
+        name: categoryDraft.name.trim(),
+        isActive: categoryDraft.isActive,
+      });
+    } else {
+      await createCategory.mutateAsync({ name: categoryDraft.name.trim() });
+    }
+    setCategoryDraft(null);
   };
   const meta = sectionMeta[section];
 
@@ -671,8 +741,8 @@ export default function PriceControl({
                 >
                   <option value="">Все категории</option>
                   {categories.map(category => (
-                    <option value={category} key={category}>
-                      {category}
+                    <option value={category.id} key={category.id}>
+                      {category.name}
                     </option>
                   ))}
                 </select>
@@ -693,7 +763,23 @@ export default function PriceControl({
                       <option value={supplier.id} key={supplier.id}>
                         {supplier.name}
                       </option>
-                    ))}
+                  ))}
+                </select>
+              </label>
+              <label>
+                Позиции
+                <select
+                  value={visibilityFilter}
+                  onChange={event => {
+                    setVisibilityFilter(
+                      event.target.value as VisibilityFilter
+                    );
+                    setSelectedProductId(null);
+                  }}
+                >
+                  <option value="active">Без скрытых</option>
+                  <option value="all">Все</option>
+                  <option value="hidden">Только скрытые</option>
                 </select>
               </label>
               <small>
@@ -1036,7 +1122,8 @@ export default function PriceControl({
             </div>
           </section>
           {canUpload && (
-            <section className="packet-card price-upload">
+            <section className="price-import-workbench">
+              <div className="packet-card price-upload">
               <div className="card-title">
                 <div>
                   <span>НОВЫЙ ПРАЙС‑ЛИСТ</span>
@@ -1044,38 +1131,67 @@ export default function PriceControl({
                 </div>
                 <FileSearch size={21} />
               </div>
-              <p className="packet-note">
-                Поддерживаются `.xls`, `.xlsx`, `.pdf`, `.docx`. После
-                подтверждения сохраняются исходный файл, дата, товарные строки и
-                цены.
-              </p>
-              <div className="price-upload-form">
-                <label className="price-file-input">
-                  <span>Файл поставщика</span>
-                  <input
-                    type="file"
-                    accept=".xls,.xlsx,.pdf,.docx,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    onChange={event => {
-                      setFile(event.target.files?.[0] ?? null);
+              <input
+                ref={fileInput}
+                className="sr-only"
+                type="file"
+                accept=".xls,.xlsx,.pdf,.docx,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                onChange={event => selectPriceFile(event.target.files?.[0])}
+              />
+              <button
+                type="button"
+                className={fileDragging ? "price-file-drop dragging" : "price-file-drop"}
+                onClick={() => fileInput.current?.click()}
+                onDragOver={event => {
+                  event.preventDefault();
+                  setFileDragging(true);
+                }}
+                onDragLeave={() => setFileDragging(false)}
+                onDrop={event => {
+                  event.preventDefault();
+                  setFileDragging(false);
+                  selectPriceFile(event.dataTransfer.files?.[0]);
+                }}
+              >
+                <UploadCloud size={30} />
+                <strong>Перетащите прайс‑лист сюда</strong>
+                <span>или выберите файл с компьютера</span>
+                <small>Excel, PDF или Word: .xls · .xlsx · .pdf · .docx</small>
+              </button>
+              {file && (
+                <div className="price-selected-file">
+                  <FileSpreadsheet size={20} />
+                  <div>
+                    <strong>{file.name}</strong>
+                    <small>{Math.max(1, Math.ceil(file.size / 1024))} КБ · готов к проверке</small>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="Убрать выбранный файл"
+                    onClick={() => {
+                      setFile(null);
                       setPreview(null);
+                      if (fileInput.current) fileInput.current.value = "";
                     }}
-                  />
-                  <strong>{file ? file.name : "Выберите прайс‑лист"}</strong>
-                </label>
-                <button
-                  type="button"
-                  className="packet-link"
-                  onClick={inspectFile}
-                  disabled={!file || previewing}
-                >
-                  {previewing ? (
-                    <Loader2 className="animate-spin" />
-                  ) : (
-                    <FileSearch size={16} />
-                  )}
-                  Проверить файл
-                </button>
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
+              <div className="price-import-steps" aria-label="Этапы импорта">
+                <span className={file ? "complete" : "active"}><b>1</b> Файл <small>{file ? "выбран" : "ожидание"}</small></span>
+                <span className={preview ? "complete" : file ? "active" : ""}><b>2</b> Проверка <small>{preview ? "готово" : "после выбора"}</small></span>
+                <span className={committing ? "active" : ""}><b>3</b> Сохранение <small>после подтверждения</small></span>
               </div>
+              <button
+                type="button"
+                className="packet-link price-inspect-action"
+                onClick={inspectFile}
+                disabled={!file || previewing}
+              >
+                {previewing ? <Loader2 className="animate-spin" /> : <FileSearch size={16} />}
+                Проверить прайс
+              </button>
               {preview && (
                 <div className="price-preview">
                   <div>
@@ -1142,6 +1258,19 @@ export default function PriceControl({
                   ))}
                 </div>
               )}
+              </div>
+              <aside className="packet-card price-import-guide">
+                <span>ТРЕБОВАНИЯ К ПРАЙСУ</span>
+                <h3>Как система читает файл</h3>
+                <ol>
+                  <li><b>1</b><span>Определяет поставщика и дату из шапки, если они указаны.</span></li>
+                  <li><b>2</b><span>Находит товарные строки, цену, фасовку и единицу измерения.</span></li>
+                  <li><b>3</b><span>Приводит фасовку к сопоставимой цене за кг или за литр.</span></li>
+                  <li><b>4</b><span>Сначала применяет подтвержденные связи «поставщик → наш товар».</span></li>
+                  <li><b>5</b><span>Показывает предпросмотр: до подтверждения ничего не сохраняется.</span></li>
+                </ol>
+                <p>После сохранения доступны история цен, скачивание исходника и подтверждаемое удаление.</p>
+              </aside>
             </section>
           )}
           <section className="packet-card price-history">
@@ -1300,6 +1429,30 @@ export default function PriceControl({
               <strong>{canEdit ? "Изменение" : "Просмотр"}</strong>
             </div>
           </section>
+          <nav className="price-directory-tabs" aria-label="Разделы справочника">
+            <button
+              type="button"
+              className={directoryTab === "products" ? "active" : ""}
+              onClick={() => setDirectoryTab("products")}
+            >
+              Товары
+            </button>
+            <button
+              type="button"
+              className={directoryTab === "categories" ? "active" : ""}
+              onClick={() => setDirectoryTab("categories")}
+            >
+              Категории
+            </button>
+            <button
+              type="button"
+              className={directoryTab === "suppliers" ? "active" : ""}
+              onClick={() => setDirectoryTab("suppliers")}
+            >
+              Поставщики
+            </button>
+          </nav>
+          {directoryTab === "products" && (
           <section className="packet-card price-directory">
             <div className="card-title">
               <div>
@@ -1317,8 +1470,9 @@ export default function PriceControl({
                     id: null,
                     canonicalName: "",
                     internalCode: "",
-                    category: "",
+                    categoryId: "",
                     baseUnit: "unknown",
+                    isActive: true,
                   })
                 }
               >
@@ -1355,16 +1509,22 @@ export default function PriceControl({
                 </label>
                 <label>
                   Категория
-                  <input
-                    value={productDraft.category}
+                  <select
+                    value={productDraft.categoryId}
                     onChange={event =>
                       setProductDraft({
                         ...productDraft,
-                        category: event.target.value,
+                        categoryId: event.target.value,
                       })
                     }
-                    placeholder="Например, Лососевые"
-                  />
+                  >
+                    <option value="">Выберите существующую категорию</option>
+                    {selectableCategories.map(category => (
+                      <option value={category.id} key={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label>
                   Базовая единица
@@ -1407,7 +1567,9 @@ export default function PriceControl({
               </div>
             )}
             <div className="price-directory-list">
-              {overview.data?.products.map(product => (
+              {(overview.data?.products ?? [])
+                .filter(product => matchesVisibility(product))
+                .map(product => (
                 <article key={product.id}>
                   <div>
                     <span>
@@ -1424,27 +1586,184 @@ export default function PriceControl({
                     </small>
                   </div>
                   {canEdit && (
-                    <button
-                      type="button"
-                      className="packet-link compact"
-                      onClick={() =>
-                        setProductDraft({
-                          id: product.id,
-                          canonicalName: product.canonicalName,
-                          internalCode: product.internalCode,
-                          category: product.category || "",
-                          baseUnit: product.baseUnit,
-                        })
-                      }
-                    >
-                      <Pencil size={14} />
-                      Изменить
-                    </button>
+                    <div className="price-directory-actions">
+                      <button
+                        type="button"
+                        className="packet-link compact"
+                        onClick={() =>
+                          setProductDraft({
+                            id: product.id,
+                            canonicalName: product.canonicalName,
+                            internalCode: product.internalCode,
+                            categoryId: String(product.categoryId ?? ""),
+                            baseUnit: product.baseUnit,
+                            isActive: product.isActive,
+                          })
+                        }
+                      >
+                        <Pencil size={14} />
+                        Изменить
+                      </button>
+                      <button
+                        type="button"
+                        className="packet-link compact subtle"
+                        onClick={() =>
+                          updateProduct.mutate({
+                            id: product.id,
+                            canonicalName: product.canonicalName,
+                            internalCode: product.internalCode,
+                            categoryId: product.categoryId,
+                            baseUnit: product.baseUnit,
+                            isActive: !product.isActive,
+                          })
+                        }
+                      >
+                        {product.isActive ? <EyeOff size={14} /> : <Eye size={14} />}
+                        {product.isActive ? "Скрыть" : "Показать"}
+                      </button>
+                    </div>
                   )}
                 </article>
               ))}
             </div>
           </section>
+          )}
+          {directoryTab === "categories" && (
+            <section className="packet-card price-directory">
+              <div className="card-title">
+                <div>
+                  <span>КАТЕГОРИИ ТОВАРОВ</span>
+                  <h3>Единый список для выбора в товарах</h3>
+                </div>
+                <FolderPlus size={21} />
+              </div>
+              <p className="packet-note">
+                Категория создается один раз, затем выбирается в карточке товара.
+                Скрытие не удаляет связанные товары и историю цен.
+              </p>
+              {canEdit && (
+                <button
+                  type="button"
+                  className="packet-link compact"
+                  onClick={() =>
+                    setCategoryDraft({ id: null, name: "", isActive: true })
+                  }
+                >
+                  <Plus size={14} />
+                  Новая категория
+                </button>
+              )}
+              {categoryDraft && (
+                <div className="price-directory-editor category">
+                  <label>
+                    Название категории
+                    <input
+                      value={categoryDraft.name}
+                      onChange={event =>
+                        setCategoryDraft({
+                          ...categoryDraft,
+                          name: event.target.value,
+                        })
+                      }
+                      placeholder="Например, Лососевые"
+                    />
+                  </label>
+                  <div>
+                    <button
+                      type="button"
+                      className="packet-link compact"
+                      onClick={saveCategory}
+                      disabled={
+                        createCategory.isPending || updateCategory.isPending
+                      }
+                    >
+                      <Save size={14} />
+                      Сохранить
+                    </button>
+                    <button
+                      type="button"
+                      className="packet-link compact subtle"
+                      onClick={() => setCategoryDraft(null)}
+                    >
+                      Отменить
+                    </button>
+                  </div>
+                </div>
+              )}
+              <div className="price-directory-list">
+                {categories.filter(category =>
+                  visibilityFilter === "all"
+                    ? true
+                    : visibilityFilter === "active"
+                      ? category.isActive
+                      : !category.isActive
+                ).length ? (
+                  categories
+                    .filter(category =>
+                      visibilityFilter === "all"
+                        ? true
+                        : visibilityFilter === "active"
+                          ? category.isActive
+                          : !category.isActive
+                    )
+                    .map(category => (
+                      <article key={category.id}>
+                        <div>
+                          <span>
+                            {category.isActive
+                              ? "В выборе товаров"
+                              : "Скрыта из новых выборов"}
+                          </span>
+                          <strong>{category.name}</strong>
+                        </div>
+                        {canEdit && (
+                          <div className="price-directory-actions">
+                            <button
+                              type="button"
+                              className="packet-link compact"
+                              onClick={() =>
+                                setCategoryDraft({
+                                  id: category.id,
+                                  name: category.name,
+                                  isActive: category.isActive,
+                                })
+                              }
+                            >
+                              <Pencil size={14} />
+                              Изменить
+                            </button>
+                            <button
+                              type="button"
+                              className="packet-link compact subtle"
+                              onClick={() =>
+                                updateCategory.mutate({
+                                  id: category.id,
+                                  name: category.name,
+                                  isActive: !category.isActive,
+                                })
+                              }
+                            >
+                              {category.isActive ? (
+                                <EyeOff size={14} />
+                              ) : (
+                                <Eye size={14} />
+                              )}
+                              {category.isActive ? "Скрыть" : "Показать"}
+                            </button>
+                          </div>
+                        )}
+                      </article>
+                    ))
+                ) : (
+                  <div className="empty-state compact">
+                    <FolderPlus size={22} />
+                    <p>Категории в выбранном режиме пока отсутствуют.</p>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+          {directoryTab === "suppliers" && (
           <section className="packet-card price-directory">
             <div className="card-title">
               <div>
@@ -1551,7 +1870,8 @@ export default function PriceControl({
               ))}
             </div>
           </section>
-          {canEdit && (
+          )}
+          {directoryTab === "products" && canEdit && (
             <section className="packet-card price-mapping">
               <div className="card-title">
                 <div>
@@ -1635,6 +1955,22 @@ export default function PriceControl({
                                 }))
                               }
                             />
+                            <select
+                              value={newCategoryTargets[row.rowId] ?? ""}
+                              onChange={event =>
+                                setNewCategoryTargets(current => ({
+                                  ...current,
+                                  [row.rowId]: event.target.value,
+                                }))
+                              }
+                            >
+                              <option value="">Выберите категорию</option>
+                              {selectableCategories.map(category => (
+                                <option value={category.id} key={category.id}>
+                                  {category.name}
+                                </option>
+                              ))}
+                            </select>
                             <button
                               type="button"
                               className="packet-link compact"
@@ -1646,7 +1982,9 @@ export default function PriceControl({
                                 )
                               }
                               disabled={
-                                createProduct.isPending || linkRow.isPending
+                                createProduct.isPending ||
+                                linkRow.isPending ||
+                                !Number(newCategoryTargets[row.rowId])
                               }
                             >
                               <WandSparkles size={14} />

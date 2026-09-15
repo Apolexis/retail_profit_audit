@@ -3120,3 +3120,141 @@ html[data-audit-theme="dark"] .packet {
 @media (max-width: 620px) {
   .packet .price-offer > span:last-child .price-change { font-size: .69rem; }
 }
+
+/* Прайс‑контроль: импорт повторяет понятную двухколоночную схему финансового импорта. */
+.packet .price-import-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(280px, .92fr);
+  gap: 16px;
+  align-items: stretch;
+  margin-bottom: 16px;
+}
+.packet .price-import-workbench > .packet-card { min-width: 0; }
+.packet .price-file-drop {
+  display: grid;
+  min-height: 218px;
+  place-content: center;
+  justify-items: center;
+  gap: 9px;
+  width: 100%;
+  margin-top: 13px;
+  padding: 28px 20px;
+  border: 1px dashed var(--price-border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--price-surface) 90%, transparent);
+  color: var(--price-muted);
+  text-align: center;
+  transition: border-color 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease);
+}
+.packet .price-file-drop svg { color: var(--price-accent); }
+.packet .price-file-drop strong { color: var(--price-ink); font-size: 15px; }
+.packet .price-file-drop small { color: var(--price-muted); font-size: 11px; }
+.packet .price-selected-file {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--price-border);
+  border-radius: 11px;
+  background: var(--price-surface);
+  color: var(--price-ink);
+}
+.packet .price-selected-file > svg { color: var(--price-accent); }
+.packet .price-selected-file > div { display: grid; min-width: 0; gap: 2px; }
+.packet .price-selected-file strong,
+.packet .price-selected-file small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.packet .price-selected-file small { color: var(--price-muted); font-size: 11px; }
+.packet .price-selected-file button {
+  display: grid;
+  width: 29px;
+  height: 29px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--price-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--price-muted);
+}
+.packet .price-import-steps { display: grid; gap: 7px; margin-top: 12px; }
+.packet .price-import-steps > span { display: grid; grid-template-columns: 20px auto minmax(0, 1fr); align-items: center; gap: 7px; color: var(--price-muted); font-size: 11px; }
+.packet .price-import-steps b { display: grid; width: 20px; height: 20px; place-items: center; border: 1px solid var(--price-border); border-radius: 50%; color: var(--price-muted); font-size: 10px; }
+.packet .price-import-steps small { justify-self: end; color: var(--price-muted); font-size: 10px; }
+.packet .price-import-steps > span.active b,
+.packet .price-import-steps > span.complete b { border-color: var(--price-accent); background: color-mix(in srgb, var(--price-accent) 13%, var(--price-surface)); color: var(--price-accent); }
+.packet .price-inspect-action { width: 100%; justify-content: center; margin-top: 13px; }
+.packet .price-import-guide { display: grid; align-content: start; gap: 12px; }
+.packet .price-import-guide > span { color: var(--price-muted); font: 800 10px "IBM Plex Mono", monospace; letter-spacing: .12em; }
+.packet .price-import-guide h3 { margin: 0; color: var(--price-ink); font-size: 19px; }
+.packet .price-import-guide ol { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.packet .price-import-guide li { display: grid; grid-template-columns: 23px minmax(0, 1fr); gap: 8px; align-items: start; color: var(--price-muted); font-size: 12px; line-height: 1.4; }
+.packet .price-import-guide li b { display: grid; width: 22px; height: 22px; place-items: center; border: 1px solid var(--price-border); border-radius: 50%; color: var(--price-accent); font-size: 10px; }
+.packet .price-import-guide > p { margin: 2px 0 0; padding-top: 12px; border-top: 1px solid var(--price-border); color: var(--price-muted); font-size: 11px; line-height: 1.45; }
+
+/* Справочник: вкладки и поля имеют явную, тематичную границу без смешения палитр. */
+.packet .price-directory-tabs { display: flex; flex-wrap: wrap; gap: 7px; margin: 15px 0 10px; }
+.packet .price-directory-tabs button,
+.packet .price-directory-list article,
+.packet .price-import-list article,
+.packet .price-upload,
+.packet .price-import-guide { transition: border-color 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease); }
+.packet .price-directory-tabs button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--price-border);
+  border-radius: 9px;
+  background: var(--price-surface);
+  color: var(--price-muted);
+  font: 750 11px Manrope, Arial, sans-serif;
+}
+.packet .price-directory-tabs button.active { border-color: var(--price-accent); background: color-mix(in srgb, var(--price-accent) 13%, var(--price-surface)); color: var(--price-accent); }
+.packet .price-directory-editor.category { grid-template-columns: minmax(220px, .9fr) auto; align-items: end; }
+.packet .price-directory-editor.category > div { justify-content: flex-start; }
+.packet .price-directory :is(input, select, textarea),
+.packet .price-toolbar :is(input, select),
+.packet .price-import-meta input,
+.packet .price-preview :is(input, select) {
+  border: 1px solid var(--price-border);
+  background: var(--price-surface);
+  color: var(--price-ink);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 5%, transparent);
+  transition: border-color 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease);
+}
+.packet .price-directory-list article:hover,
+.packet .price-import-list article:hover,
+.packet .price-upload:hover,
+.packet .price-import-guide:hover { transform: none; border-color: var(--price-accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--price-accent) 12%, transparent); }
+.packet .price-file-drop:hover,
+.packet .price-file-drop.dragging,
+.packet .price-file-drop:focus-visible { border-color: var(--price-accent); background: color-mix(in srgb, var(--price-accent) 8%, var(--price-surface)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--price-accent) 13%, transparent); outline: none; }
+.packet .price-selected-file button:hover,
+.packet .price-selected-file button:focus-visible { border-color: var(--price-accent); background: color-mix(in srgb, var(--price-accent) 12%, var(--price-surface)); color: var(--price-accent); outline: none; }
+.packet .price-directory-tabs button:hover,
+.packet .price-directory-tabs button:focus-visible,
+.packet .price-directory :is(input, select, textarea):hover,
+.packet .price-directory :is(input, select, textarea):focus,
+.packet .price-toolbar :is(input, select):hover,
+.packet .price-toolbar :is(input, select):focus,
+.packet .price-import-meta input:focus,
+.packet .price-preview :is(input, select):focus { border-color: var(--price-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--price-accent) 14%, transparent); outline: none; }
+html[data-audit-theme="light"] .packet .price-directory :is(input, select, textarea),
+html[data-audit-theme="light"] .packet .price-toolbar :is(input, select),
+html[data-audit-theme="light"] .packet .price-import-meta input,
+html[data-audit-theme="light"] .packet .price-preview :is(input, select) { background: #ffffff; color: #1c2e42; }
+html[data-audit-theme="dark"] .packet .price-directory :is(input, select, textarea),
+html[data-audit-theme="dark"] .packet .price-toolbar :is(input, select),
+html[data-audit-theme="dark"] .packet .price-import-meta input,
+html[data-audit-theme="dark"] .packet .price-preview :is(input, select) { background: #15131c; color: #f5eaf0; }
+
+@media (max-width: 900px) {
+  .packet .price-import-workbench { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  .packet .price-file-drop { min-height: 190px; padding: 22px 16px; }
+  .packet .price-directory-editor.category { grid-template-columns: minmax(0, 1fr); }
+  .packet .price-directory-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+  .packet .price-directory-tabs button { min-width: 0; padding: 0 6px; font-size: 10px; }
+  .packet .price-import-steps > span { grid-template-columns: 20px minmax(0, 1fr); }
+  .packet .price-import-steps small { grid-column: 2; justify-self: start; }
+}

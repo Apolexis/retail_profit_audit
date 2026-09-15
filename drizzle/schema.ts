@@ -249,12 +249,23 @@ export const priceSuppliers = mysqlTable("price_suppliers", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
+/** Reusable price-control categories; hidden categories retain their full price history. */
+export const priceCategories = mysqlTable("price_categories", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 160 }).notNull(),
+  normalizedName: varchar("normalizedName", { length: 180 }).notNull().unique(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 /** The internal code is the durable target for supplier aliases and later ERP integrations. */
 export const priceProducts = mysqlTable("price_products", {
   id: int("id").autoincrement().primaryKey(),
   internalCode: varchar("internalCode", { length: 64 }).notNull().unique(),
   canonicalName: varchar("canonicalName", { length: 255 }).notNull(),
   normalizedSignature: varchar("normalizedSignature", { length: 512 }).notNull().unique(),
+  categoryId: int("categoryId"),
   category: varchar("category", { length: 160 }),
   variant: varchar("variant", { length: 255 }),
   sizeText: varchar("sizeText", { length: 120 }),
@@ -329,6 +340,7 @@ export const priceSupplierAliases = mysqlTable("price_supplier_aliases", {
 }, table => [unique("price_supplier_alias_uq").on(table.supplierId, table.normalizedName, table.packagingSignature)]);
 
 export type PriceSupplier = typeof priceSuppliers.$inferSelect;
+export type PriceCategory = typeof priceCategories.$inferSelect;
 export type PriceProduct = typeof priceProducts.$inferSelect;
 export type PriceImport = typeof priceImports.$inferSelect;
 export type PriceImportRow = typeof priceImportRows.$inferSelect;

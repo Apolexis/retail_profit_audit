@@ -66,6 +66,28 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain(".packet .price-history-chart");
   });
 
+  it("разделяет справочник на товары и категории с обязательным выбором существующей категории", () => {
+    expect(page).toContain('directoryTab === "products"');
+    expect(page).toContain('directoryTab === "categories"');
+    expect(page).toContain("Единый список для выбора в товарах");
+    expect(page).toContain("Выберите существующую категорию");
+    expect(page).toContain("Выберите категорию");
+    expect(page).toContain("newCategoryTargets[row.rowId]");
+    expect(page).toContain("Скрыта из новых выборов");
+    expect(page).toContain("Без скрытых");
+    expect(page).toContain("Только скрытые");
+  });
+
+  it("использует знакомую двухколоночную панель импорта и тематичные состояния полей", () => {
+    expect(page).toContain("Перетащите прайс‑лист сюда");
+    expect(page).toContain("Этапы импорта");
+    expect(page).toContain("ТРЕБОВАНИЯ К ПРАЙСУ");
+    expect(styles).toContain(".packet .price-import-workbench");
+    expect(styles).toContain(".packet .price-file-drop");
+    expect(styles).toContain(".packet .price-directory-tabs");
+    expect(styles).toContain(".packet .price-directory :is(input, select, textarea):focus");
+  });
+
   it("показывает изменение цены относительно предыдущего предложения", () => {
     expect(page).toContain("PriceChangeBadge");
     expect(page).toContain("Подорожало");

@@ -13,7 +13,8 @@ const isStandalonePwa=()=>typeof window!=="undefined"&&(window.matchMedia("(disp
 const navSections=[
   {title:"АНАЛИТИКА",items:[["/","00","Сводка",false],["/months","01","Месяцы",false],["/pricing","02","Цены",false],["/expenses","03","Расходы",false],["/inventory","04","Остатки",false],["/stores","05","Магазины",false],["/compare","06","Сравнить",false]]},
   {title:"РЕШЕНИЯ",items:[["/control","07","Динамика",false],["/cadence","08","Ритм",false],["/portfolio","09","Портфель",false],["/pilot","10","Пилот",false],["/forecast","19","Прогноз",false],["/planfact","11","План‑факт",false]]},
-  {title:"УПРАВЛЕНИЕ",items:[["/notifications","17","Сигналы",false],["/reports","18","Отчеты",true],["/price-control","20","Прайс‑контроль","price"],["/import","12","Импорт",true],["/manage","13","База",true],["/access","15","Доступ",true],["/history","16","Журнал",true]]},
+  {title:"ПРАЙС‑КОНТРОЛЬ",items:[["/price-control","20","Сравнение","price"],["/price-control/import","21","Импорт прайсов","price"],["/price-control/directory","22","Справочник","price"]]},
+  {title:"УПРАВЛЕНИЕ",items:[["/notifications","17","Сигналы",false],["/reports","18","Отчеты",true],["/import","12","Импорт",true],["/manage","13","База",true],["/access","15","Доступ",true],["/history","16","Журнал",true]]},
 ] as const;
 const profileItem=["/profile","14","Профиль",false] as const;
 
@@ -46,7 +47,7 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
   const matches=storeSearch.trim()?((availableStores.data??[]).filter(store=>store.name.toLowerCase().includes(storeSearch.trim().toLowerCase())).slice(0,6)):[];
   const chooseStore=(store:string)=>{setSelectedStore(store);setStoreSearch("");closeMenu();setLocation("/stores")};
   const guidance=recommendations[kicker.slice(0,2)]??recommendations["00"];
-  const analyticsSection=!['12','13','14','15','16','17','18','20'].includes(kicker.slice(0,2));
+  const analyticsSection=!['12','13','14','15','16','17','18','20','21','22'].includes(kicker.slice(0,2));
   const unread=notificationSummary.data?.unread??0;
   const sectionIsActive=(items:readonly (readonly [string,string,string,boolean|"price"])[])=>items.some(([href])=>href===location);
   const sectionIsOpen=(section:{title:string;items:readonly (readonly [string,string,string,boolean|"price"])[]})=>Object.hasOwn(expandedSections,section.title)?Boolean(expandedSections[section.title]):sectionIsActive(section.items);

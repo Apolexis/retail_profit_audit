@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getCurrentLocalAccount, hasPriceAccess } from "../accessControl";
 import { protectedProcedure, router } from "../_core/trpc";
-import { createPriceProduct, deletePriceImport, getPriceImportDownload, linkPriceImportRow, listPriceControlData, reassignPriceSupplierAlias, unlinkPriceSupplierAlias, updatePriceImportDate, updatePriceOffer, updatePriceProduct, updatePriceSupplier } from "../priceControl";
+import { createPriceCategory, createPriceProduct, deletePriceImport, getPriceImportDownload, linkPriceImportRow, listPriceControlData, reassignPriceSupplierAlias, unlinkPriceSupplierAlias, updatePriceCategory, updatePriceImportDate, updatePriceOffer, updatePriceProduct, updatePriceSupplier } from "../priceControl";
 import { recordChange } from "../localAuth";
 
 async function requirePricePermission(openId: string | null | undefined, required: "view" | "upload" | "edit") {
@@ -23,18 +23,30 @@ export const priceControlRouter = router({
     await requirePricePermission(ctx.user.openId, "view");
     return getPriceImportDownload(input.importId);
   }),
-  createProduct: protectedProcedure.input(z.object({ canonicalName: z.string().trim().min(2).max(255), internalCode: z.string().trim().min(3).max(64).optional(), category: z.string().trim().max(160).optional(), variant: z.string().trim().max(255).optional(), sizeText: z.string().trim().max(120).optional(), baseUnit: z.enum(["kg", "l", "piece", "unknown"]).optional(), defaultWeightGrams: z.number().positive().max(1_000_000).optional(), defaultVolumeMl: z.number().positive().max(1_000_000).optional() })).mutation(async ({ ctx, input }) => {
+  createProduct: protectedProcedure.input(z.object({ canonicalName: z.string().trim().min(2).max(255), internalCode: z.string().trim().min(3).max(64).optional(), categoryId: z.number().int().positive().optional(), category: z.string().trim().max(160).optional(), variant: z.string().trim().max(255).optional(), sizeText: z.string().trim().max(120).optional(), baseUnit: z.enum(["kg", "l", "piece", "unknown"]).optional(), defaultWeightGrams: z.number().positive().max(1_000_000).optional(), defaultVolumeMl: z.number().positive().max(1_000_000).optional() })).mutation(async ({ ctx, input }) => {
     await requirePricePermission(ctx.user.openId, "edit");
     const actor = await localActor(ctx.user.openId);
     const product = await createPriceProduct(input);
     await recordChange({ actorId: actor.id, action: "price_product.create", entityType: "price_product", entityId: String(product.id), afterState: { internalCode: product.internalCode, canonicalName: product.canonicalName, normalizedSignature: product.normalizedSignature } });
     return product;
   }),
-  updateProduct: protectedProcedure.input(z.object({ id: z.number().int().positive(), canonicalName: z.string().trim().min(2).max(255), internalCode: z.string().trim().min(3).max(64), category: z.string().trim().max(160).nullable().optional(), variant: z.string().trim().max(255).nullable().optional(), sizeText: z.string().trim().max(120).nullable().optional(), baseUnit: z.enum(["kg", "l", "piece", "unknown"]).optional() })).mutation(async ({ ctx, input }) => {
+  updateProduct: protectedProcedure.input(z.object({ id: z.number().int().positive(), canonicalName: z.string().trim().min(2).max(255), internalCode: z.string().trim().min(3).max(64), categoryId: z.number().int().positive().nullable().optional(), category: z.string().trim().max(160).nullable().optional(), variant: z.string().trim().max(255).nullable().optional(), sizeText: z.string().trim().max(120).nullable().optional(), baseUnit: z.enum(["kg", "l", "piece", "unknown"]).optional(), isActive: z.boolean().optional() })).mutation(async ({ ctx, input }) => {
     await requirePricePermission(ctx.user.openId, "edit");
     const actor = await localActor(ctx.user.openId); const product = await updatePriceProduct(input);
     await recordChange({ actorId: actor.id, action: "price_product.update", entityType: "price_product", entityId: String(input.id), afterState: { internalCode: product.internalCode, canonicalName: product.canonicalName, category: product.category } });
     return product;
+  }),
+  createCategory: protectedProcedure.input(z.object({ name: z.string().trim().min(2).max(160) })).mutation(async ({ ctx, input }) => {
+    await requirePricePermission(ctx.user.openId, "edit");
+    const actor = await localActor(ctx.user.openId); const category = await createPriceCategory(input);
+    await recordChange({ actorId: actor.id, action: "price_category.create", entityType: "price_category", entityId: String(category.id), afterState: { name: category.name } });
+    return category;
+  }),
+  updateCategory: protectedProcedure.input(z.object({ id: z.number().int().positive(), name: z.string().trim().min(2).max(160), isActive: z.boolean().optional() })).mutation(async ({ ctx, input }) => {
+    await requirePricePermission(ctx.user.openId, "edit");
+    const actor = await localActor(ctx.user.openId); const category = await updatePriceCategory(input);
+    await recordChange({ actorId: actor.id, action: "price_category.update", entityType: "price_category", entityId: String(input.id), afterState: { name: category.name, isActive: category.isActive } });
+    return category;
   }),
   updateSupplier: protectedProcedure.input(z.object({ id: z.number().int().positive(), name: z.string().trim().min(2).max(160), contactNote: z.string().trim().max(2000).nullable().optional(), isActive: z.boolean().optional() })).mutation(async ({ ctx, input }) => {
     await requirePricePermission(ctx.user.openId, "edit");
