@@ -11,10 +11,10 @@ const trendColors = ["#ff8b6f", "#b694ff", "#7dcbff", "#67d6b5", "#ffbf69", "#e8
 const money = (amount: number) => formatK(amount / 1000);
 const median = (values: number[]) => { const sorted = [...values].sort((a, b) => a - b); const middle = Math.floor(sorted.length / 2); return sorted.length ? sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2 : 0; };
 const nameFor = (code: ExpenseCode) => expenseDefinitions.find(([key]) => key === code)?.[1] ?? code;
-const monthLabel = (month: string) => new Intl.DateTimeFormat("ru-RU", { month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${month}-01T00:00:00Z`));
+const monthLabel = (month: string) => { const date = new Date(`${month.slice(0, 7)}-01T00:00:00Z`); return Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat("ru-RU", { month: "short", year: "numeric", timeZone: "UTC" }).format(date) : "Дата не указана"; };
 type DetailLevel = "days" | "weeks" | "months";
 const weekStart = (value: string) => { const date = new Date(`${value}T12:00:00`); date.setDate(date.getDate() - (date.getDay() + 6) % 7); return date.toISOString().slice(0, 10); };
-const detailLabel = (key: string, level: DetailLevel) => level === "days" ? new Date(`${key}T12:00:00`).toLocaleDateString("ru-RU", { day: "2-digit", month: "short" }) : level === "weeks" ? `Нед. ${new Date(`${key}T12:00:00`).toLocaleDateString("ru-RU", { day: "2-digit", month: "short" })}` : monthLabel(key);
+const detailLabel = (key: string, level: DetailLevel) => { if (level === "months") return monthLabel(key); const date = new Date(`${key}T12:00:00`); return Number.isFinite(date.getTime()) ? level === "days" ? date.toLocaleDateString("ru-RU", { day: "2-digit", month: "short" }) : `Нед. ${date.toLocaleDateString("ru-RU", { day: "2-digit", month: "short" })}` : "Дата не указана"; };
 
 export default function Expenses() {
   const facts = useAuditFacts();

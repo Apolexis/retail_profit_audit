@@ -3660,5 +3660,95 @@ html[data-audit-theme="dark"] .packet .portfolio-thresholds .threshold-stepper b
 @media (max-width: 520px) { .facts-loader .facts-loader-art { width: 156px; height: 156px; } .ocean-loader .facts-loader-art { width: min(258px, 76vw); height: min(258px, 76vw); } }
 @media (prefers-reduced-motion: reduce) { .facts-loader .facts-school, .facts-loader .facts-fish-body { animation: none !important; } }
 
-/* Tooltip: отсутствие числового факта показано отдельно и не маскируется ложным нулем. */
-.tiny-tooltip .tiny-tooltip-no-fact { margin: 7px 0 0; padding-top: 6px; border-top: 1px solid color-mix(in srgb, currentColor 18%, transparent); color: var(--muted); font-size: 11px; line-height: 1.35; }
+/* Единый крупный косяк для всех ожиданий: он сразу виден и затем движется по окружности. */
+.facts-loader .facts-loader-art { width: 204px !important; height: 204px !important; }
+.facts-loader .facts-school { transform-origin: 80px 80px; animation: facts-school-spin 5.6s linear infinite !important; will-change: transform; }
+.facts-loader .facts-fish-body { animation: facts-fish-glide 1.55s var(--audit-hover-ease) infinite alternate !important; }
+.packet .plan-fact-loader { width: 100%; min-height: 250px; display: grid; justify-items: center; align-content: center; gap: 12px; }
+.packet .plan-fact-loader > .facts-loader { justify-self: center; width: max-content; }
+.packet .plan-fact-loader > p { justify-self: center; width: min(310px, 100%); margin-inline: auto; text-align: center; }
+@media (max-width: 520px) { .facts-loader .facts-loader-art { width: 168px !important; height: 168px !important; } }
+
+/* Справочник поставщиков: активность — рабочий переключатель, а не отдельная тяжелая карточка. */
+.packet .price-directory-editor.supplier { grid-template-columns: minmax(190px, .9fr) minmax(270px, 1.45fr) minmax(160px, .62fr); }
+.packet .price-active-toggle { min-height: 38px; align-content: center; gap: 8px; padding: 0; border: 0; border-radius: 0; background: transparent; }
+.packet .price-active-toggle input { appearance: none; width: 18px; min-width: 18px; height: 18px; min-height: 18px; border: 1px solid var(--price-border); border-radius: 6px; background: var(--price-surface); cursor: pointer; }
+.packet .price-active-toggle input:checked { border-color: var(--price-accent); background: var(--price-accent); box-shadow: inset 0 0 0 4px var(--price-surface); }
+.packet .price-active-toggle strong { font-size: 11px; }
+.packet .price-active-toggle small { display: none; }
+.packet .price-directory-new-action { min-height: 34px; padding-inline: 10px; border-color: var(--price-border); border-radius: 9px; background: var(--price-surface); color: var(--price-ink); font-size: 11px; }
+.packet .price-directory-new-action:hover, .packet .price-directory-new-action:focus-visible { border-color: var(--price-accent); background: color-mix(in srgb, var(--price-accent) 9%, var(--price-surface)); box-shadow: none; }
+
+/* Стабильная геометрия переключателя видимости: длина текста и активность не двигают сетку. */
+.packet .compare-store-visibility { min-width: 0; width: 100%; }
+.packet .visibility-toggle { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 100%; height: 34px; min-height: 34px; white-space: nowrap; }
+html[data-audit-theme="dark"] .packet .visibility-toggle.active { box-shadow: inset 0 0 0 1px #ff765f; }
+
+/* Нативные стрелки number-input не соответствуют интерфейсу: ручной ввод остается доступным. */
+.packet input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+.packet input[type="number"]::-webkit-inner-spin-button,
+.packet input[type="number"]::-webkit-outer-spin-button { appearance: none; margin: 0; }
+
+/* Портал развернутого графика всегда перехватывает взаимодействие и не дает фоновому графику двигаться. */
+body[data-chart-dialog-open="true"] [data-slot="dialog-overlay"] { z-index: 1000 !important; pointer-events: auto !important; }
+body[data-chart-dialog-open="true"] :is(.chart-expand-dialog, .chart-expand-dialog-general) { z-index: 1001 !important; pointer-events: auto !important; isolation: isolate; }
+body[data-chart-dialog-open="true"] :is(.chart-expand-dialog, .chart-expand-dialog-general) .chart-panzoom { outline: none !important; box-shadow: none !important; }
+html[data-audit-theme="dark"] :is(.chart-expand-dialog, .chart-expand-dialog-general) .chart-panzoom:is(:hover, :focus, :focus-visible) { border-color: #ff765f !important; box-shadow: none !important; outline: none !important; }
+
+/* Права: на средней ширине контролы становятся одной ясной колонкой, а кнопка сигнала занимает ту же ширину. */
+.packet .access-import-control-row .access-control-toggle { width: 100% !important; min-width: 0 !important; justify-self: stretch !important; }
+@media (max-width: 1080px) {
+  .packet .access-import-row { grid-template-columns: minmax(0, 1fr) !important; }
+  .packet .access-import-row .access-switch,
+  .packet .access-import-control-row .access-control-toggle { width: 100% !important; justify-self: stretch !important; }
+}
+
+/* Кнопка демонстрационного режима совпадает с соседними контролами шапки вплоть до высоты. */
+.packet .packet-actions .demo-data-button { box-sizing: border-box; height: 39px; min-height: 39px; }
+@media (max-width: 560px) { .packet .packet-actions .demo-data-button { width: 34px; height: 34px; min-height: 34px; border-radius: 9px; } }
+
+/* На числовых полях не остаются системные квадратные стрелки браузера. */
+.packet input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+.packet input[type="number"]::-webkit-inner-spin-button,
+.packet input[type="number"]::-webkit-outer-spin-button { appearance: none; margin: 0; }
+
+/* Изменение активности поставщика — компактная строка формы, без лишней выделенной плашки. */
+.packet .price-directory-editor.supplier { grid-template-columns: minmax(190px, .9fr) minmax(270px, 1.45fr) minmax(160px, .62fr); }
+.packet .price-active-toggle { min-height: 38px; align-content: center; gap: 8px; padding: 0; border: 0; border-radius: 0; background: transparent; }
+.packet .price-active-toggle input { appearance: none; width: 18px; min-width: 18px; height: 18px; min-height: 18px; border: 1px solid var(--price-border); border-radius: 6px; background: var(--price-surface); cursor: pointer; }
+.packet .price-active-toggle input:checked { border-color: var(--price-accent); background: var(--price-accent); box-shadow: inset 0 0 0 4px var(--price-surface); }
+.packet .price-active-toggle strong { font-size: 11px; }
+.packet .price-active-toggle small { display: none; }
+.packet .price-directory-new-action { min-height: 34px; padding-inline: 10px; border-color: var(--price-border); border-radius: 9px; background: var(--price-surface); color: var(--price-ink); font-size: 11px; }
+.packet .price-directory-new-action:hover, .packet .price-directory-new-action:focus-visible { border-color: var(--price-accent); background: color-mix(in srgb, var(--price-accent) 9%, var(--price-surface)); box-shadow: none; }
+
+/* «Все точки» сохраняет ровную ширину при любом состоянии и не сдвигает соседние поля. */
+.packet .compare-store-visibility { min-width: 0; width: 100%; }
+.packet .visibility-toggle { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 100%; height: 34px; min-height: 34px; white-space: nowrap; }
+html[data-audit-theme="dark"] .packet .visibility-toggle.active { box-shadow: inset 0 0 0 1px #ff765f; }
+
+/* Портал развернутого графика всегда находится над страницей и принимает pointer-события сам. */
+body[data-chart-dialog-open="true"] [data-slot="dialog-overlay"] { z-index: 1000 !important; pointer-events: auto !important; }
+body[data-chart-dialog-open="true"] :is(.chart-expand-dialog, .chart-expand-dialog-general) { z-index: 1001 !important; pointer-events: auto !important; isolation: isolate; }
+body[data-chart-dialog-open="true"] :is(.chart-expand-dialog, .chart-expand-dialog-general) .chart-panzoom { outline: none !important; box-shadow: none !important; }
+html[data-audit-theme="dark"] :is(.chart-expand-dialog, .chart-expand-dialog-general) .chart-panzoom:is(:hover, :focus, :focus-visible) { border-color: #ff765f !important; box-shadow: none !important; outline: none !important; }
+
+/* Tooltip: отсутствие факта выводится в строке собственного цветного маркера, без нижней служебной подписи. */
+.tiny-tooltip .tiny-tooltip-no-fact { display: none; }
+
+/* Косяк заметно крупнее и действительно проходит круговую траекторию одинаково на всех страницах. */
+.facts-loader .facts-loader-art { width: 240px !important; height: 240px !important; }
+.facts-loader .facts-school { transform-box: fill-box; transform-origin: center; animation: facts-school-spin 3.8s linear infinite !important; }
+@media (max-width: 520px) { .facts-loader .facts-loader-art { width: 196px !important; height: 196px !important; } }
+
+/* Активный состав выбора отмечается спокойно: размеры и сетка идентичны неактивному состоянию. */
+html[data-audit-theme="light"] .packet .visibility-toggle.active { border-color: #0a84ff; background: #ffffff; color: #075dbb; box-shadow: inset 0 -2px #0a84ff; }
+html[data-audit-theme="dark"] .packet .visibility-toggle.active { border-color: #ff765f; background: #171e2b; color: #ffe4dc; box-shadow: inset 0 -2px #ff765f; }
+
+/* У «Остатков» выбор показателя и детализации расположен единой группой под заголовком. */
+.packet .inventory-trend-card .card-title { align-items: start; }
+.packet .inventory-trend-card .chart-controls { justify-content: flex-start; width: 100%; margin-top: 8px; }
+@media (min-width: 761px) {
+  .packet .inventory-trend-card .card-title { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .packet .inventory-trend-card .chart-controls { display: grid; grid-template-columns: minmax(260px, 360px) max-content; align-items: end; justify-content: start; }
+}

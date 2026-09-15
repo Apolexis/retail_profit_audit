@@ -135,12 +135,16 @@ function PriceSelect({
 
 const formatMoney = (value: number) =>
   new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 2 }).format(value);
-const dateLabel = (value: string | null) =>
-  value
-    ? new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" }).format(
-        new Date(`${value}T12:00:00`)
-      )
+const dateLabel = (value: string | null) => {
+  if (!value) return "дата не указана";
+  const source = /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? `${value}T12:00:00`
+    : value;
+  const date = new Date(source);
+  return Number.isFinite(date.getTime())
+    ? new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" }).format(date)
     : "дата не указана";
+};
 const modeLabel: Record<string, string> = {
   standard: "основная",
   cash: "наличные",

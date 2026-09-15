@@ -27,7 +27,7 @@ describe("форматирование денежных показателей",
   });
   it("показывает только действительно отсутствующие линии как «Нет факта», а не фактический ноль", () => {
     const lines=[{key:"a",name:"А",color:"#111"},{key:"b",name:"Б",color:"#222"},{key:"c",name:"В",color:"#333"}];
-    expect(missingTooltipLines([{name:"А",value:0,payload:{a:0,b:null}}],lines)).toEqual(["Б","В"]);
+    expect(missingTooltipLines([{name:"А",value:0,payload:{a:0,b:null}}],lines)).toEqual([{name:"Б",color:"#222"},{name:"В",color:"#333"}]);
   });
   it("показывает крупные значения в миллионах", () => {
     expect(formatK(1540)).toBe("1,5 млн ₽");
@@ -142,7 +142,9 @@ describe("форматирование денежных показателей",
     expect(source).toContain('onPointerDownOutside={protectGeneralChartSurface?keepChartSurfaceInside:undefined}');
     expect(source).toContain('onFocusOutside={protectGeneralChartSurface?keepChartSurfaceInside:undefined}');
     expect(source).toContain('onInteractOutside={protectGeneralChartSurface?keepChartSurfaceInside:undefined}');
-    expect(source).toContain('onPointerDownCapture={protectGeneralChartSurface?stopChartPointerBubble:undefined}');
+    expect(source).toContain('onPointerDown={protectGeneralChartSurface?stopChartPointerBubble:undefined}');
+    expect(source).not.toContain('onPointerDownCapture={protectGeneralChartSurface?stopChartPointerBubble:undefined}');
+    expect(source).toContain('item.missing?"Нет факта":chartTick(item.value??0,mode)');
     expect(source).toContain('document.body.dataset.generalChartDialogOpen="true"');
     expect(source).toContain('pointInsideRect(point,dialog.getBoundingClientRect())');
     expect(source).toContain('document.body.dataset.generalChartDialogOpen="true"');

@@ -59,13 +59,14 @@ describe("мобильный контракт графических контр�
     expect(chart).toContain('wrapper.style.setProperty("--tiny-tooltip-shift-y"');
     expect(chart).toContain('tiny-tooltip-values-${columns}');
     expect(chart).toContain('gridAutoFlow:"column"');
-    expect(chart).toContain('data-tooltip-count={sortedValues.length}');
+    expect(chart).toContain('data-tooltip-count={tooltipRows.length}');
     expect(chart).toContain('const densePercent=mode==="percent"&&sortedValues.length>2');
     expect(chart).toContain('const denseMoney=mode!=="percent"&&sortedValues.length>12');
     expect(chart).not.toContain('longestValueLabel');
     expect(chart).not.toContain('const [chartWidth,setChartWidth]=useState(0)');
     expect(chart).toContain('data-tooltip-columns={columns}');
     expect(chart).toContain('className={`tiny-tooltip${densePercent?" tiny-tooltip-dense":""}${moneyTooltip?" tiny-tooltip-monetary":""}${denseMoney?" tiny-tooltip-monetary-dense":""}`}');
+    expect(chart).toContain('item.missing?"Нет факта":chartTick(item.value??0,mode)');
     expect(styles).toContain('.tiny-tooltip-monetary { width: min(300px, calc(100vw - 32px)) !important;');
     expect(styles).toContain('.tiny-tooltip-monetary .tiny-tooltip-values-2 > span { white-space: nowrap; }');
     expect(styles).toContain('.tiny-tooltip-monetary-dense { width: min(300px, calc(100vw - 32px)) !important;');

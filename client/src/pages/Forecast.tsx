@@ -12,7 +12,7 @@ import "@/forecast.css";
 
 type ForecastMetric = { code: string; label: string; description: string };
 const metricGroups: Array<{ label: string; metrics: ForecastMetric[] }> = [
-  { label: "ФИНАНСОВЫЙ РЕЗУЛЬТАТ И ТОВАР", metrics: [
+  { label: "ФИНАНСОВЫЕ ПОКАЗАТЕЛИ И ТОВАРНЫЙ ПОТОК", metrics: [
     { code: "revenue", label: "Выручка", description: "поступление от продаж" },
     { code: "gross_profit", label: "Валовая прибыль", description: "результат до операционных расходов" },
     { code: "net_profit", label: "Чистая прибыль", description: "итог после расходов" },
