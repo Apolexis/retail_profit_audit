@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { type PointerEvent as ReactPointerEvent, useMemo, useRef, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -511,6 +511,7 @@ export default function PriceControl({
   const fileInput = useRef<HTMLInputElement>(null);
   const productEditorRef = useRef<HTMLDivElement>(null);
   const previewRequestToken = useRef(0);
+  const previewSwipeStart = useRef<{ x: number; y: number } | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [fileDragging, setFileDragging] = useState(false);
   const [preview, setPreview] = useState<Preview | null>(null);
@@ -804,6 +805,24 @@ export default function PriceControl({
     Math.max(0, previewActiveRows.length - 1)
   );
   const currentMobilePreviewRowIndex = previewActiveRows[currentMobilePreviewPosition]?.index ?? null;
+  const moveMobilePreview = (direction: -1 | 1) => {
+    const total = previewActiveRows.length;
+    if (total < 2) return;
+    setMobilePreviewPosition(current => (current + direction + total) % total);
+  };
+  const startPreviewSwipe = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType !== "touch" || (event.target as HTMLElement).closest("input, textarea, button, [data-slot='select-trigger']")) return;
+    previewSwipeStart.current = { x: event.clientX, y: event.clientY };
+  };
+  const finishPreviewSwipe = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const start = previewSwipeStart.current;
+    previewSwipeStart.current = null;
+    if (!start || event.pointerType !== "touch") return;
+    const horizontalDistance = event.clientX - start.x;
+    const verticalDistance = event.clientY - start.y;
+    if (Math.abs(horizontalDistance) < 44 || Math.abs(horizontalDistance) <= Math.abs(verticalDistance)) return;
+    moveMobilePreview(horizontalDistance < 0 ? 1 : -1);
+  };
   const unresolvedPreviewPriceCount = useMemo(
     () =>
       previewActiveRows.reduce(
@@ -1981,8 +2000,7 @@ export default function PriceControl({
                       <button
                         type="button"
                         aria-label="Предыдущая позиция"
-                        disabled={currentMobilePreviewPosition === 0}
-                        onClick={() => setMobilePreviewPosition(current => Math.max(0, current - 1))}
+                        onClick={() => moveMobilePreview(-1)}
                       >
                         <ChevronLeft size={17} />
                       </button>
@@ -1990,14 +2008,13 @@ export default function PriceControl({
                       <button
                         type="button"
                         aria-label="Следующая позиция"
-                        disabled={currentMobilePreviewPosition >= previewActiveRows.length - 1}
-                        onClick={() => setMobilePreviewPosition(current => Math.min(previewActiveRows.length - 1, current + 1))}
+                        onClick={() => moveMobilePreview(1)}
                       >
                         <ChevronRight size={17} />
                       </button>
                     </div>
                   )}
-                  <div className="price-preview-table">
+                  <div className="price-preview-table" onPointerDown={startPreviewSwipe} onPointerUp={finishPreviewSwipe} onPointerCancel={() => { previewSwipeStart.current = null; }}>
                     {previewActiveRows.map(({ row, index }) => (
                       <div
                         key={`${row.rawName}-${index}`}

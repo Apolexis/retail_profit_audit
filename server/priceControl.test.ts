@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculatePriceChanges, calculatePriceOfferExpiry, normalizePackagingDisplay, normalizePrice, normalizeProductDisplayName, normalizeProductName, packagingSignature, parsePdfExtractedText, parsePdfPositionedPages, preparePriceImportRows, productSignature, resolvePriceMapping, sourceDateFromText } from "./priceControl";
+import { calculatePriceChanges, calculatePriceOfferExpiry, deduplicatePdfRows, normalizePackagingDisplay, normalizePrice, normalizeProductDisplayName, normalizeProductName, packagingSignature, parsePdfExtractedText, parsePdfPositionedPages, preparePriceImportRows, productSignature, resolvePriceMapping, sourceDateFromText } from "./priceControl";
 import { readFileSync } from "node:fs";
 
 describe("прайс‑контроль: нормализация товарных строк", () => {
@@ -19,6 +19,24 @@ describe("прайс‑контроль: нормализация товарны
   it("компактно нормализует единицы, дроби и лишние пробелы в названии без склейки слов", () => {
     expect(normalizeProductDisplayName("Икра нерки соленая мороженая , б ез консерванта 500 гр.")).toBe("Икра нерки соленая мороженая, без консерванта 500гр");
     expect(normalizeProductDisplayName("Креветка 0,5 л; 13 шт")).toBe("Креветка 0.5л; 13шт");
+  });
+
+  it("склеивает фрагменты одного PDF-слова по нулевому промежутку, но сохраняет пробел между словами", () => {
+    const pages = [[
+      { x: 20, y: 700, value: "Наименование", width: 72 }, { x: 260, y: 700, value: "Цена", width: 28 },
+      { x: 20, y: 670, value: "Суп Ла", width: 31 }, { x: 51, y: 670, value: "кс", width: 11 }, { x: 62, y: 670, value: "а", width: 5 },
+      { x: 260, y: 670, value: "363 ₽ кг", width: 38 },
+    ]];
+    expect(parsePdfPositionedPages(pages as any)[0]?.rawName).toBe("Суп Лакса");
+  });
+
+  it("объединяет точные дубликаты PDF-строк и не теряет отличающийся вариант цены", () => {
+    const template = { sourceSheet: "PDF", sourceRowNumber: 1, sourceSku: null, rawName: "Крабовые палочки КВЭН", normalizedName: "крабовые палочки квэн", canonicalHint: "Крабовые палочки КВЭН", normalizedSignature: "крабовые палочки квэн", category: null, packaging: "200гр", packagingSignature: "g200", manufacturer: "Квэн", placeContents: "1/12", manufacturedOn: null, shelfLifeMonths: null, expiresOn: null, availability: null, variant: null, sizeText: null, rawPayload: {} } as any;
+    const first = { ...template, priceOptions: [{ priceAmount: 187, priceBasis: "piece", normalizedPrice: 187, normalizedUnit: "piece", priceMode: "cashless_vat", market: "spb", minimumQuantityKg: null, includesVat: true, sourcePriceText: "187" }] };
+    const second = { ...template, sourceRowNumber: 2, priceOptions: [{ ...first.priceOptions[0], priceAmount: 195, normalizedPrice: 195, market: "moscow", sourcePriceText: "195" }] };
+    const result = deduplicatePdfRows([first, second]);
+    expect(result).toHaveLength(1);
+    expect(result[0]?.priceOptions).toHaveLength(2);
   });
 
   it("рассчитывает дату годности по дате изготовления и выбранному сроку, включая конец месяца", () => {

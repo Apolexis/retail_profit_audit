@@ -37,6 +37,7 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
   const [standalone,setStandalone]=useState(isStandalonePwa);
   const [fixedEpoch,setFixedEpoch]=useState(0);
   const [isRefreshing,setIsRefreshing]=useState(false);
+  const [historyMotion,setHistoryMotion]=useState<"back"|"forward"|null>(null);
   const gestureStart=useRef<number|null>(null);
   useEffect(()=>{const update=()=>setShowTop(window.scrollY>280);update();window.addEventListener("scroll",update,{passive:true});return()=>window.removeEventListener("scroll",update)},[]);
   useEffect(()=>{const media=window.matchMedia("(display-mode: standalone)");const update=()=>setStandalone(isStandalonePwa());update();media.addEventListener("change",update);window.addEventListener("pageshow",update);document.addEventListener("visibilitychange",update);return()=>{media.removeEventListener("change",update);window.removeEventListener("pageshow",update);document.removeEventListener("visibilitychange",update)}},[]);
@@ -45,21 +46,20 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
   const hasPriceAccess=isAdmin||Boolean(me.data?.priceAccessLevel&&me.data.priceAccessLevel!=="none");
   const visibleNav=navSections.map(section=>({...section,items:section.items.filter(([, , ,access])=>access===true?isAdmin:access==="price"?hasPriceAccess:true)})).filter(section=>section.items.length>0);
   const closeMenu=()=>{if(document.activeElement instanceof HTMLElement)document.activeElement.blur();setMenuOpen(false)};
-  const resetCache=async()=>{
+  const refreshPage=async()=>{
     if(isRefreshing)return;
     setIsRefreshing(true);
-    // Два кадра гарантируют, что пользователь увидит вращение до очистки и перезагрузки.
+    // Два кадра гарантируют, что пользователь увидит отклик действия до обновления страницы.
     await new Promise<void>(resolve=>window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>resolve())));
-    const visibleFor=new Promise<void>(resolve=>window.setTimeout(resolve,720));
-    try {
-      if("caches" in window){
-        const cacheNames=await window.caches.keys();
-        await Promise.all(cacheNames.map(cacheName=>window.caches.delete(cacheName)));
-      }
-    } finally {
-      await visibleFor;
-      window.location.reload();
-    }
+    await new Promise<void>(resolve=>window.setTimeout(resolve,320));
+    window.location.reload();
+  };
+  const moveHistory=(direction:"back"|"forward")=>{
+    if(historyMotion)return;
+    setHistoryMotion(direction);
+    window.setTimeout(()=>{
+      direction==="back"?(window.history.length>1?window.history.back():setLocation("/")):window.history.forward();
+    },180);
   };
   const toggleDemo=()=>{toggleDemoMode();};
   const matches=storeSearch.trim()?((availableStores.data??[]).filter(store=>store.name.toLowerCase().includes(storeSearch.trim().toLowerCase())).slice(0,6)):[];
@@ -97,9 +97,9 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
     </nav>
     <main className="packet-main">{analyticsSection&&<section className={`analysis-filter${kicker.startsWith("00")?" summary-period-filter":""}`}><div className="analysis-filter-copy"><span>ОБЩИЙ СРЕЗ</span><strong>{rangeLabel}</strong><small>Применяется ко всем графикам, сравнениям и итогам текущего раздела.</small></div><DateRangeControl/></section>}{children}<aside className="section-recommendation"><span>УПРАВЛЕНЧЕСКИЙ ФОКУС</span><div><h3>{guidance.title}</h3><p>{guidance.text}</p></div><strong>{guidance.action}</strong></aside></main>
     {standalone&&!menuOpen&&<nav key={`mobile-quick-nav-${fixedEpoch}`} className="mobile-quick-nav" aria-label="Быстрые действия">
-      <button type="button" className="mobile-quick-action mobile-quick-back" onClick={()=>{window.history.length>1?window.history.back():setLocation("/")}} aria-label="Назад"><ArrowLeft size={16}/><span>Назад</span></button>
-      <button type="button" className="mobile-quick-action mobile-quick-forward" onClick={()=>window.history.forward()} aria-label="Вперёд"><ArrowRight size={16}/><span>Вперёд</span></button>
-      <button type="button" className={isRefreshing?"mobile-quick-action mobile-quick-refresh is-refreshing":"mobile-quick-action mobile-quick-refresh"} onClick={resetCache} disabled={isRefreshing} aria-label="Сбросить кэш"><span className="mobile-quick-refresh-icon" aria-hidden="true"><RefreshCw size={16}/></span><span>{isRefreshing?"Сбрасываем":"Сброс кэша"}</span></button>
+      <button type="button" className={historyMotion==="back"?"mobile-quick-action mobile-quick-back is-navigating":"mobile-quick-action mobile-quick-back"} onClick={()=>moveHistory("back")} disabled={historyMotion!==null} aria-label="Назад"><ArrowLeft size={16}/><span>Назад</span></button>
+      <button type="button" className={historyMotion==="forward"?"mobile-quick-action mobile-quick-forward is-navigating":"mobile-quick-action mobile-quick-forward"} onClick={()=>moveHistory("forward")} disabled={historyMotion!==null} aria-label="Вперёд"><ArrowRight size={16}/><span>Вперёд</span></button>
+      <button type="button" className={isRefreshing?"mobile-quick-action mobile-quick-refresh is-refreshing":"mobile-quick-action mobile-quick-refresh"} onClick={refreshPage} disabled={isRefreshing} aria-label="Обновить страницу"><span className="mobile-quick-refresh-icon" aria-hidden="true"><RefreshCw size={16}/></span><span>{isRefreshing?"Обновляем":"Обновить"}</span></button>
     </nav>}
     {showTop&&!menuOpen&&<button key={`scroll-top-${fixedEpoch}`} className="scroll-top" aria-label="Вернуться к началу страницы" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}><ArrowUp size={18}/></button>}
   </div>;

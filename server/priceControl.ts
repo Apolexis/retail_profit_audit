@@ -525,7 +525,7 @@ function parseRedgmPdfText(lines: string[]) {
   return rows;
 }
 
-type PdfTextFragment = { x: number; y: number; value: string };
+type PdfTextFragment = { x: number; y: number; value: string; width?: number };
 type PdfPositionedLine = { y: number; items: PdfTextFragment[] };
 type PdfColumnSection = {
   headerY: number;
@@ -552,13 +552,21 @@ function pdfPositionedLines(items: PdfTextFragment[]) {
   return lines.map(line => ({ ...line, items: line.items.sort((left, right) => left.x - right.x) }));
 }
 
-function pdfLineText(line: PdfPositionedLine) { return text(line.items.map(item => item.value).join(" ")); }
-function pdfColumnText(items: PdfTextFragment[], start: number, end: number) {
-  return text(items
-    .filter(item => item.x >= start && item.x < end)
+function joinPdfFragments(items: PdfTextFragment[]) {
+  return items
+    .slice()
     .sort((left, right) => right.y - left.y || left.x - right.x)
-    .map(item => item.value)
-    .join(" "));
+    .reduce<{ value: string; previous: PdfTextFragment | null }>((state, item) => {
+      const previous = state.previous;
+      const sameLine = previous !== null && Math.abs(previous.y - item.y) <= 3;
+      const previousEnd = previous ? previous.x + (previous.width ?? 0) : Number.NEGATIVE_INFINITY;
+      const touchesPreviousFragment = sameLine && previous?.width !== undefined && item.x - previousEnd <= 1.5;
+      return { value: `${state.value}${state.value && !touchesPreviousFragment ? " " : ""}${item.value}`, previous: item };
+    }, { value: "", previous: null }).value;
+}
+function pdfLineText(line: PdfPositionedLine) { return text(joinPdfFragments(line.items)); }
+function pdfColumnText(items: PdfTextFragment[], start: number, end: number) {
+  return text(joinPdfFragments(items.filter(item => item.x >= start && item.x < end)));
 }
 function isPdfPriceQuote(value: string) {
   return /(?:уточняйте|по\s+запросу|(?:\d{1,3}(?:[\s.,]\d{3})*|\d{1,7})(?:[.,]\d{1,2})?\s*(?:₽|руб|р\.|\(в\s*(?:спб|мск)\)|за\s*(?:1\s*)?(?:кг|л|шт)|\/(?:кг|л|шт)|с\s*ндс))/i.test(value);
@@ -712,6 +720,27 @@ export function parsePdfPositionedPages(pages: PdfTextFragment[][]) {
   return rows;
 }
 
+function pdfPriceOptionKey(option: ParsedPriceOption) {
+  return [option.priceAmount ?? "manual", option.priceBasis, canonicalPriceMode(option.priceMode), option.market, option.includesVat ? "vat" : "no-vat"].join("|");
+}
+
+/** Keeps a single PDF row for repeated cells while preserving every distinct offer condition. */
+export function deduplicatePdfRows(rows: ParsedPriceRow[]) {
+  const unique = new Map<string, ParsedPriceRow>();
+  rows.forEach(row => {
+    const key = [row.normalizedSignature, row.packagingSignature, fold(row.manufacturer ?? ""), normalizePlaceContents(row.placeContents)].join("|");
+    const existing = unique.get(key);
+    if (!existing) {
+      unique.set(key, { ...row, priceOptions: [...row.priceOptions] });
+      return;
+    }
+    const options = new Map(existing.priceOptions.map(option => [pdfPriceOptionKey(option), option]));
+    row.priceOptions.forEach(option => options.set(pdfPriceOptionKey(option), option));
+    existing.priceOptions = Array.from(options.values());
+  });
+  return Array.from(unique.values());
+}
+
 async function parsePdfByCoordinates(buffer: Buffer) {
   const document = await getDocument({ data: new Uint8Array(buffer) }).promise;
   try {
@@ -721,7 +750,7 @@ async function parsePdfByCoordinates(buffer: Buffer) {
       const content = await page.getTextContent();
       pages.push(content.items.flatMap(item => {
         if (!("str" in item) || !text(item.str)) return [];
-        return [{ x: item.transform[4], y: item.transform[5], value: item.str }];
+        return [{ x: item.transform[4], y: item.transform[5], value: item.str, width: typeof item.width === "number" ? item.width : undefined }];
       }));
     }
     return parsePdfPositionedPages(pages);
@@ -780,10 +809,11 @@ export async function previewPriceImport(buffer: Buffer, fileName: string): Prom
     pdfFirstPageHeader = firstPageHeader;
     rows = positionedRows.length ? positionedRows : parsePdfExtractedText(documentText);
   }
-  const trimmedRows = rows.slice(0, MAX_IMPORT_ROWS);
+  const parsedRows = sourceType === "pdf" ? deduplicatePdfRows(rows) : rows;
+  const trimmedRows = parsedRows.slice(0, MAX_IMPORT_ROWS);
   const warnings: string[] = [];
   if (!trimmedRows.length) warnings.push("Товарные строки с распознанной ценой не найдены. Проверьте документ и разметку прайс‑листа.");
-  if (rows.length > MAX_IMPORT_ROWS) warnings.push(`Обработаны первые ${MAX_IMPORT_ROWS} строк из ${rows.length}.`);
+  if (parsedRows.length > MAX_IMPORT_ROWS) warnings.push(`Обработаны первые ${MAX_IMPORT_ROWS} строк из ${parsedRows.length}.`);
   const manualPriceRows = trimmedRows.filter(row => row.priceOptions.some(option => option.priceAmount === null));
   if (manualPriceRows.length) warnings.push(`У ${manualPriceRows.length} поз. цена не указана поставщиком: заполните ее вручную перед сохранением.`);
   const source = sourceType === "pdf"

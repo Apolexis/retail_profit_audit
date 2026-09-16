@@ -3923,6 +3923,25 @@ html[data-audit-theme="light"] .packet .price-preview-name-edit :is(input, texta
 .facts-loader .facts-fish-size { transform-box: fill-box; transform-origin: 0 0; }
 .facts-loader .facts-fish-body { transform-box: fill-box; transform-origin: 50% 50%; animation: facts-fish-pulse 2.8s ease-in-out infinite alternate !important; }
 .facts-loader .facts-fish-b .facts-fish-body { animation-delay: -.7s !important; }
+
+/* Preview: шесть прямых ячеек всегда укладываются в явную сетку; название получает свободную ширину раньше ценовых контролов. */
+.packet .price-preview-table { max-width: 100%; overflow-x: clip; }
+.packet .price-preview-table > div.price-preview-row { grid-template-columns: minmax(0, 1.55fr) minmax(220px, .9fr) 36px; }
+.packet .price-preview-table > div.price-preview-new-row { grid-template-columns: 24px minmax(0, 1.55fr) minmax(220px, 1fr) minmax(138px, .7fr) minmax(138px, .7fr) 36px; }
+.packet .price-preview-table > div > :is(.price-preview-product, .price-preview-prices, .price-preview-product-link, .price-preview-category-select, [data-slot="select-trigger"]) { min-width: 0; max-width: 100%; }
+.packet .price-preview-product-link, .packet .price-preview-category-select { width: 100%; }
+@media (max-width: 980px) {
+  .packet .price-preview-table > div.price-preview-new-row { grid-template-columns: 24px minmax(0, 1.4fr) minmax(210px, 1fr) minmax(132px, .7fr) minmax(132px, .7fr) 36px; }
+}
+@media (max-width: 760px) {
+  .packet .price-preview-table > div.price-preview-row,
+  .packet .price-preview-table > div.price-preview-new-row { grid-template-columns: 22px minmax(0, 1fr) 34px; max-width: 100%; }
+}
+@media (max-width: 560px) {
+  .packet .price-preview-table { overflow: clip; touch-action: pan-y; }
+  .packet .price-preview-table > div.price-preview-row,
+  .packet .price-preview-table > div.price-preview-new-row { border-inline: 0; box-shadow: none; }
+}
 .facts-loader .facts-fish-c .facts-fish-body { animation-delay: -1.35s !important; }
 .facts-loader .facts-fish-d .facts-fish-body { animation-delay: -.35s !important; }
 .facts-loader .facts-fish-e .facts-fish-body { animation-delay: -1.9s !important; }
@@ -4043,7 +4062,7 @@ html[data-audit-theme="dark"] .packet .scroll-top svg { color: #ff9b88; }
 .packet .mobile-quick-refresh.is-refreshing .mobile-quick-refresh-icon { animation: mobile-refresh-spin 620ms linear infinite !important; }
 .packet .mobile-quick-refresh.is-refreshing svg { animation: none !important; }
 @keyframes mobile-refresh-spin { to { transform: rotate(360deg); } }
-@media (max-width: 560px) { .packet .price-preview-table { overflow: visible; } }
+@media (max-width: 560px) { .packet .price-preview-table { overflow: clip; touch-action: pan-y; } }
 
 .packet .price-preview-price-edit { grid-template-columns: minmax(0, 1fr) minmax(116px, .72fr); }
 .packet .price-preview-price-edit .price-preview-mode-select { grid-column: 1 / -1; }
@@ -4152,4 +4171,18 @@ html[data-audit-theme="light"] .packet .price-preview .inline-error {
 .packet .price-offer-meta-edit .price-expiry-date { grid-column: 1 / -1; }
 @media (min-width: 761px) {
   .packet .price-preview-price-edit { grid-template-columns: minmax(102px, .9fr) minmax(144px, 1.1fr) !important; }
+}
+
+/* Нижнее меню: стрелки кратко идут в направлении действия, а обновление не меняет локальный кэш. */
+.packet .mobile-quick-action.is-navigating { pointer-events: none; }
+.packet .mobile-quick-back.is-navigating svg { animation: mobile-quick-back-run 180ms var(--audit-hover-ease) 2 alternate; }
+.packet .mobile-quick-forward.is-navigating svg { animation: mobile-quick-forward-run 180ms var(--audit-hover-ease) 2 alternate; }
+@keyframes mobile-quick-back-run { to { transform: translateX(-5px); } }
+@keyframes mobile-quick-forward-run { to { transform: translateX(5px); } }
+.packet .profile-cache-reset-icon { display: inline-flex; flex: 0 0 auto; transform-origin: center; }
+.packet .profile-cache-reset.is-clearing .profile-cache-reset-icon { animation: mobile-refresh-spin 620ms linear infinite !important; }
+.packet .profile-cache-reset.is-clearing .profile-cache-reset-icon svg { animation: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .packet .mobile-quick-action.is-navigating svg,
+  .packet .profile-cache-reset.is-clearing .profile-cache-reset-icon { animation: none !important; }
 }

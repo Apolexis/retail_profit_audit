@@ -19,5 +19,9 @@ describe("страница «Профиль»", () => {
     expect(profile).toContain("navigator.serviceWorker.getRegistrations()");
     expect(profile).toContain("window.location.replace(window.location.href)");
     expect(profile).toContain("Сбросить кэш приложения");
+    expect(profile).toContain('className={clearingCache ? "subtle-button profile-cache-reset is-clearing"');
+    expect(profile).toContain('className="profile-cache-reset-icon"');
+    expect(profile).toContain('const visibleFor = new Promise<void>(resolve => window.setTimeout(resolve, 620));');
+    expect(styles).toContain('.packet .profile-cache-reset.is-clearing .profile-cache-reset-icon');
   });
 });

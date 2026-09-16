@@ -204,6 +204,11 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("price-preview-mobile-pager");
     expect(page).toContain("Позиция {currentMobilePreviewPosition + 1}");
     expect(page).toContain("is-mobile-current");
+    expect(page).toContain("const moveMobilePreview = (direction: -1 | 1)");
+    expect(page).toContain("(current + direction + total) % total");
+    expect(page).toContain("onPointerDown={startPreviewSwipe}");
+    expect(page).toContain("onPointerUp={finishPreviewSwipe}");
+    expect(page).toContain("Math.abs(horizontalDistance) < 44");
     expect(page).toContain("<Check size={12} />");
     expect(styles).toContain(".packet .price-preview-mobile-pager { display: none; }");
     expect(styles).toContain(".packet .price-preview-table > div.is-mobile-current { display: grid; }");
@@ -215,7 +220,7 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain(".packet .price-preview-name-edit :is(input, textarea) { min-width: 0; padding-inline: 7px; font-size: 12px;");
     expect(styles).toContain(".packet .price-preview-name-edit textarea { resize: vertical;");
     expect(styles).toContain("@media (max-width: 420px)");
-    expect(styles).toContain("@media (max-width: 560px) { .packet .price-preview-table { overflow: visible; } }");
+    expect(styles).toContain("@media (max-width: 560px) { .packet .price-preview-table { overflow: clip; touch-action: pan-y; } }");
   });
 
   it("не ограничивает широкий preview тремя строками и перестраивает связь с категорией без наложений", () => {
