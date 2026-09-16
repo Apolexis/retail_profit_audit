@@ -600,7 +600,7 @@ function pdfColumnText(items: PdfTextFragment[], start: number, end: number) {
   return text(joinPdfFragments(items.filter(item => item.x >= start && item.x < end)));
 }
 function isPdfPriceQuote(value: string) {
-  if (/(?:уточняйте|по\s+запросу|(?:\d{1,3}(?:[\s.,]\d{3})*|\d{1,7})(?:[.,]\d{1,2})?\s*(?:₽|руб|р\.|\(в\s*(?:спб|мск)\)|за\s*(?:1\s*)?(?:кг|л|шт)|\/(?:кг|л|шт)|с\s*ндс))/i.test(value)) return true;
+  if (/(?:уточняйте|по\s+запросу|(?:\d{1,3}(?:[\s.,]\d{3})*|\d{1,7})(?:[.,]\d{1,2})?\s*(?:₽|руб|р\.?|\(в\s*(?:спб|мск)\)|за\s*(?:1\s*)?(?:кг|л|шт)|\/(?:кг|л|шт)|с\s*ндс))/i.test(value)) return true;
   const bareAmount = numberFromText(value);
   return bareAmount !== null && bareAmount >= 20 && /^\s*\d{1,3}(?:[\s.,]\d{3})*(?:[.,]\d{1,2})?\s*$/.test(value);
 }
@@ -692,9 +692,13 @@ export function parsePdfPositionedPages(pages: PdfTextFragment[][]) {
         .filter(item => item.x > priceItem.x && /изменени|остат|медиа|налич|статус/i.test(item.value))
         .map(item => item.x)
         .sort((left, right) => left - right)[0] ?? Infinity;
+      const isSimpleTwoColumnTable = !specificationItem && !manufacturerItem && !packagingItem;
+      const estimatedNameStart = isSimpleTwoColumnTable
+        ? Math.max(0, nameItem.x - Math.max(40, (priceItem.x - nameItem.x) * 0.65))
+        : nameItem.x;
       headerCandidates.push({
         headerY: Math.min(line.y, ...nearby.filter(item => /цен|стоим|прайс/i.test(item.value)).map(item => item.y)),
-        nameX: nameItem.x,
+        nameX: estimatedNameStart,
         specificationX: specificationItem?.x ?? null,
         manufacturerX: manufacturerItem?.x ?? null,
         packagingX: packagingItem?.x ?? null,

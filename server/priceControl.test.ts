@@ -351,6 +351,23 @@ describe("прайс‑контроль: нормализация товарны
     ]));
   });
 
+  it("читает двухколоночную таблицу «Номенклатура / цена» с обозначением рубля «Р» и ее продолжение на следующей странице", () => {
+    const rows = parsePdfPositionedPages([
+      [
+        { x: 218, y: 700, value: "НОМЕНКЛАТУРА" }, { x: 482, y: 700, value: "цена" },
+        { x: 71, y: 680, value: "Лосось атл. Мурманск филе" }, { x: 477, y: 680, value: "1 240 Р" },
+      ],
+      [
+        { x: 71, y: 700, value: "Форель морская Мурманск филе" }, { x: 477, y: 700, value: "1 010 Р" },
+      ],
+    ]);
+    expect(rows.map(row => row.rawName)).toEqual(["Лосось атл. Мурманск филе", "Форель морская Мурманск филе"]);
+    expect(rows.map(row => row.priceOptions[0])).toEqual([
+      expect.objectContaining({ priceAmount: 1240, priceBasis: "kg" }),
+      expect.objectContaining({ priceAmount: 1010, priceBasis: "kg" }),
+    ]);
+  });
+
   it("сохраняет строку PDF без цены для ручного заполнения и исключает спецификацию из имени", () => {
     const rows = parsePdfPositionedPages([[
       { x: 25, y: 400, value: "Наименование" }, { x: 246, y: 400, value: "Производитель" }, { x: 330, y: 400, value: "Упаковка" }, { x: 396, y: 400, value: "Цена" }, { x: 394, y: 388, value: "с НДС" },
