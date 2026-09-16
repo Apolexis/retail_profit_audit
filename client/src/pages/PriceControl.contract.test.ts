@@ -170,11 +170,12 @@ describe("страница «Прайс‑контроль»", () => {
   });
 
   it("на широкой версии отдает свободное место названию и не накладывает цену с метаданными", () => {
-    expect(styles).toContain("grid-template-columns: 28px minmax(360px, 1.62fr) minmax(310px, .88fr) 36px");
+    expect(styles).toContain("grid-template-columns: 28px minmax(0, 1.62fr) minmax(0, .88fr) 36px");
+    expect(styles).toContain(".price-preview-table { inline-size: 100%; max-inline-size: 100%; box-sizing: border-box; }");
     expect(styles).toContain(".price-preview-new-row .price-preview-prices { grid-column: 3; grid-row: 1 / span 2;");
     expect(styles).toContain(".packet .price-preview-offer-metadata { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));");
     expect(styles).toContain(".packet .price-preview-prices > div > small { position: static;");
-    expect(styles).toContain(".packet .price-preview-basis-select[data-slot=\"select-trigger\"] { min-width: 132px !important; }");
+    expect(styles).toContain(".packet .price-preview-price-edit { grid-template-columns: minmax(0, .9fr) minmax(0, 1fr); }");
   });
 
   it("дает до сохранения исправить имя и явно выбрать внутренний товар для связи поставщика", () => {

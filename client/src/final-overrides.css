@@ -4117,13 +4117,14 @@ html[data-audit-theme="dark"] .packet .scroll-top svg { color: #ff9b88; }
 html[data-audit-theme="light"] .packet .inline-error { border-color: #b9d5eb; background: #edf7ff; color: #075dbb; }
 html[data-audit-theme="light"] .packet .price-preview-offer-metadata input { border-color: #c8d9e9; background: #fff; color: #163a55; }
 @media (min-width: 761px) {
-  .packet .price-import-workbench.is-preview-ready .price-preview-table > div.price-preview-new-row { grid-template-columns: 28px minmax(360px, 1.62fr) minmax(310px, .88fr) 36px; grid-template-rows: auto auto; gap: 12px 16px; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-table { inline-size: 100%; max-inline-size: 100%; box-sizing: border-box; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-table > div.price-preview-new-row { grid-template-columns: 28px minmax(0, 1.62fr) minmax(0, .88fr) 36px; grid-template-rows: auto auto; gap: 12px 16px; inline-size: 100%; max-inline-size: 100%; box-sizing: border-box; }
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-product { grid-column: 2; grid-row: 1; min-width: 0; }
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-prices { grid-column: 3; grid-row: 1 / span 2; min-width: 0; }
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-product-link { grid-column: 2; grid-row: 2; min-width: 0; }
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-category-select { grid-column: 3; grid-row: 2; min-width: 0; }
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-remove { grid-column: 4; grid-row: 1; }
-  .packet .price-preview-price-edit { grid-template-columns: minmax(0, .9fr) minmax(126px, 1fr); }
+  .packet .price-preview-price-edit { grid-template-columns: minmax(0, .9fr) minmax(0, 1fr); }
   .packet .price-preview-price-edit .price-preview-mode-select { grid-column: auto; }
 }
 @media (max-width: 760px) {

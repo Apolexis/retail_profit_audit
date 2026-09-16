@@ -182,15 +182,20 @@ const formatPackaging = (value: string | null | undefined) =>
     .replace(/[.,;:]+$/g, "")
     .trim();
 const formatPlaceContents = (value: string | null | undefined) => {
-  const source = formatPackaging(value).replace(/,/g, ".").trim();
+  const source = formatPackaging(value)
+    .replace(/\((?:\s*(?:короб(?:ка)?|ящик|упак(?:овка)?|место|куб)\s*)+\)/gi, " ")
+    .replace(/\b(?:короб(?:ка)?|ящик|упак(?:овка)?|место|куб)\b/gi, " ")
+    .replace(/,/g, ".")
+    .replace(/\s*([/×x])\s*/gi, "/")
+    .trim();
   if (!source) return "";
-  const match = source.match(/^(\d+)\s*(?:\/|x|×)\s*(\d+(?:\.\d+)?)\s*(кг|kg|г|гр|л|мл|шт|pcs?|штук)?\b/i);
-  if (!match) return source;
-  const [, count, amount, rawUnit] = match;
-  const unit = rawUnit
-    ? /^(?:кг|kg)$/i.test(rawUnit) ? "кг" : /^(?:г|гр)$/i.test(rawUnit) ? "гр" : /^(?:л)$/i.test(rawUnit) ? "л" : /^(?:мл)$/i.test(rawUnit) ? "мл" : "шт"
-    : amount.includes(".") ? "кг" : "шт";
-  return `${count} ${count === "1" ? "место" : "места"} × ${amount}${unit}`;
+  const prefix = /^(\d+)\//.exec(source);
+  const count = prefix?.[1] ?? "1";
+  const contents = prefix ? source.slice(prefix[0].length) : source;
+  const parts = Array.from(contents.matchAll(/(\d+(?:\.\d+)?)\s*(кг|kg|г|гр|gr|g|л|l|мл|ml|шт|pcs?|штук)?/gi));
+  if (!parts.length) return source;
+  const unit = (rawUnit: string | undefined) => !rawUnit ? "кг" : /^(?:кг|kg)$/i.test(rawUnit) ? "кг" : /^(?:г|гр|gr|g)$/i.test(rawUnit) ? "гр" : /^(?:л|l)$/i.test(rawUnit) ? "л" : /^(?:мл|ml)$/i.test(rawUnit) ? "мл" : "шт";
+  return `${count}/${parts.map(match => `${match[1]}${unit(match[2])}`).join("/")}`;
 };
 const shelfLifeOptions = [
   { value: 1, label: "1 месяц" },

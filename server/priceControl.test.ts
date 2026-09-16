@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculatePriceChanges, calculatePriceOfferExpiry, deduplicatePdfRows, normalizePackagingDisplay, normalizePrice, normalizeProductDisplayName, normalizeProductName, packagingSignature, parsePdfExtractedText, parsePdfPositionedPages, preparePriceImportRows, productSignature, resolvePriceMapping, sourceDateFromText } from "./priceControl";
+import { calculatePriceChanges, calculatePriceOfferExpiry, deduplicatePdfRows, normalizePackagingDisplay, normalizePlaceContents, normalizePrice, normalizeProductDisplayName, normalizeProductName, packagingSignature, parsePdfExtractedText, parsePdfPositionedPages, preparePriceImportRows, productSignature, resolvePriceMapping, sourceDateFromText } from "./priceControl";
 import { readFileSync } from "node:fs";
 
 describe("прайс‑контроль: нормализация товарных строк", () => {
@@ -19,6 +19,12 @@ describe("прайс‑контроль: нормализация товарны
   it("компактно нормализует единицы, дроби и лишние пробелы в названии без склейки слов", () => {
     expect(normalizeProductDisplayName("Икра нерки соленая мороженая , б ез консерванта 500 гр.")).toBe("Икра нерки соленая мороженая, без консерванта 500гр");
     expect(normalizeProductDisplayName("Креветка 0,5 л; 13 шт")).toBe("Креветка 0.5л; 13шт");
+  });
+
+  it("унифицирует состав места с явной единицей и без служебного слова «короб»", () => {
+    expect(normalizePlaceContents("4 кг (короб) 500 гр")).toBe("1/4кг/500гр");
+    expect(normalizePlaceContents("1/12.5")).toBe("1/12.5кг");
+    expect(normalizePlaceContents("1/24", "Икра щуки ст.б. 100гр")).toBe("1/24шт");
   });
 
   it("склеивает фрагменты одного PDF-слова по нулевому промежутку, но сохраняет пробел между словами", () => {
@@ -64,6 +70,16 @@ describe("прайс‑контроль: нормализация товарны
     const row = parsePdfPositionedPages(pages as any)[0];
     expect(row?.rawName).toBe("Чебуреки с кальмаром и креветкой обжаренные во фритюре");
     expect(row?.priceOptions[0]).toMatchObject({ priceAmount: 450, priceBasis: "kg" });
+  });
+
+  it("очищает производителя от доставки и приводит состав места PDF к единому виду", () => {
+    const pages = [[
+      { x: 20, y: 700, value: "Наименование", width: 72 }, { x: 145, y: 700, value: "Производитель", width: 82 }, { x: 210, y: 700, value: "Вес места", width: 56 }, { x: 280, y: 700, value: "Цена", width: 28 },
+      { x: 20, y: 670, value: "Чебуреки с кальмаром", width: 132 }, { x: 150, y: 670, value: "Экспрод, Холодная доставка.", width: 142 }, { x: 214, y: 670, value: "4 кг (короб) 500 гр", width: 104 }, { x: 280, y: 670, value: "450 ₽ кг", width: 44 },
+    ]];
+    const row = parsePdfPositionedPages(pages as any)[0];
+    expect(row?.manufacturer).toBe("Экспрод");
+    expect(row?.placeContents).toBe("1/4кг/500гр");
   });
 
   it("объединяет точные дубликаты PDF-строк и не теряет отличающийся вариант цены", () => {
@@ -162,7 +178,7 @@ describe("прайс‑контроль: нормализация товарны
   it("сохраняет дату изготовления, допустимый срок и рассчитанную дату годности только для текущей строки preview", () => {
     const rows = [{ rawName: "Икра", packaging: "125гр", manufacturer: null, placeContents: "1/12", manufacturedOn: null, shelfLifeMonths: null, expiresOn: null, priceOptions: [{ priceAmount: 1800, priceBasis: "piece", priceMode: "cashless_vat", market: "spb", normalizedPrice: 1800, normalizedUnit: "piece" }] }] as any;
     const prepared = preparePriceImportRows(rows, [], [], [], [{ rowIndex: 0, manufacturer: "Рыбак", placeContents: "1/12", manufacturedOn: "2026-09-15", shelfLifeMonths: 6, expiresOn: "2027-03-15" }]);
-    expect(prepared.rows[0]?.row).toMatchObject({ manufacturer: "Рыбак", placeContents: "1/12", manufacturedOn: "2026-09-15", shelfLifeMonths: 6, expiresOn: "2027-03-15" });
+    expect(prepared.rows[0]?.row).toMatchObject({ manufacturer: "Рыбак", placeContents: "1/12кг", manufacturedOn: "2026-09-15", shelfLifeMonths: 6, expiresOn: "2027-03-15" });
   });
 
   it("исключает строки только из текущего сохранения и запрещает править исключенную строку", () => {
@@ -304,7 +320,7 @@ describe("прайс‑контроль: нормализация товарны
       { x: 67, y: 340, value: "Икра нерки" }, { x: 99, y: 340, value: "пл/б 125 гр" }, { x: 131, y: 340, value: "Икра нерки, QR Честный знак" }, { x: 287, y: 340, value: "Красный Жемчуг" }, { x: 354, y: 340, value: "1/24" }, { x: 392, y: 340, value: "1 879" }, { x: 405, y: 340, value: "(в СПб)" },
     ]]);
     expect(rows).toHaveLength(2);
-    expect(rows[0]).toMatchObject({ rawName: "Икра горбуши пл/б 125гр", packaging: "125гр", manufacturer: "Красный Жемчуг", placeContents: "1/24" });
+    expect(rows[0]).toMatchObject({ rawName: "Икра горбуши пл/б 125гр", packaging: "125гр", manufacturer: "Красный Жемчуг", placeContents: "1/24шт" });
     expect(rows[0]?.rawPayload).toMatchObject({ manufacturer: "Красный Жемчуг", specification: "Икра горбуши, QR Честный знак, пл. банка 125 гр, 2026" });
     expect(rows[0]?.priceOptions).toEqual(expect.arrayContaining([
       expect.objectContaining({ priceAmount: 1966, priceMode: "cashless_vat", market: "spb", priceBasis: "package", includesVat: true }),
@@ -319,7 +335,7 @@ describe("прайс‑контроль: нормализация товарны
       { x: 25, y: 360, value: "Икра горбуши соленая мороженая" }, { x: 25, y: 348, value: "(пл.б, вакуум, ключ, 210 г) 2026" }, { x: 258, y: 360, value: "ТМ Даллос" }, { x: 340, y: 348, value: "210 г" }, { x: 387, y: 360, value: "по запросу" },
     ]]);
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ rawName: "Икра горбуши соленая мороженая", packaging: "210гр", manufacturer: "ТМ Даллос", placeContents: "210гр" });
+    expect(rows[0]).toMatchObject({ rawName: "Икра горбуши соленая мороженая", packaging: "210гр", manufacturer: "ТМ Даллос", placeContents: "1/210гр" });
     expect(rows[0]?.priceOptions[0]).toMatchObject({ priceAmount: null, sourcePriceText: "по запросу", includesVat: true });
   });
 

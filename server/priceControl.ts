@@ -87,23 +87,38 @@ export function calculatePriceOfferExpiry(manufacturedOn: string | null | undefi
   const targetLastDay = new Date(Date.UTC(targetYear, targetMonth, 0)).getUTCDate();
   return `${targetYear}-${String(targetMonth).padStart(2, "0")}-${String(Math.min(day, targetLastDay)).padStart(2, "0")}`;
 }
-export function normalizePlaceContents(value: string | null | undefined) {
-  return normalizeProductDisplayName(text(value)
-    .replace(/(^|\s)уп\.?(?=\s|$|\()/gi, "$1шт")
-    .replace(/\s*([/×x])\s*/gi, "$1")
-    .replace(/,/g, "."));
+function normalizePlaceUnit(value: string | undefined, fallback: "кг" | "шт") {
+  if (!value) return fallback;
+  if (/^(?:кг|kg)$/i.test(value)) return "кг";
+  if (/^(?:г|гр|gr|g)$/i.test(value)) return "гр";
+  if (/^(?:л|l)$/i.test(value)) return "л";
+  if (/^(?:мл|ml)$/i.test(value)) return "мл";
+  return "шт";
 }
-/** Converts a supplier case notation such as 1/12.5 into a compact, readable offer attribute. */
-export function formatPlaceContents(value: string | null | undefined) {
-  const normalized = normalizePlaceContents(value);
-  if (!normalized) return null;
-  const match = normalized.match(/^(\d+)\s*(?:\/|x|×)\s*(\d+(?:\.\d+)?)\s*(кг|kg|г|гр|л|мл|шт|pcs?|штук)?\b/i);
-  if (!match) return normalized;
-  const [, placeCount, amount, rawUnit] = match;
-  const unit = rawUnit
-    ? /^(?:кг|kg)$/i.test(rawUnit) ? "кг" : /^(?:г|гр)$/i.test(rawUnit) ? "гр" : /^(?:л)$/i.test(rawUnit) ? "л" : /^(?:мл)$/i.test(rawUnit) ? "мл" : "шт"
-    : amount.includes(".") ? "кг" : "шт";
-  return `${placeCount} ${placeCount === "1" ? "место" : "места"} × ${amount}${unit}`;
+function placeContentsFallbackUnit(context: string | null | undefined): "кг" | "шт" {
+  return pdfPackagingFromText(context || "") ? "шт" : "кг";
+}
+/** Normalizes supplier case notation into a compact canonical form, e.g. 1/4кг/500гр or 1/24шт. */
+export function normalizePlaceContents(value: string | null | undefined, context?: string | null) {
+  const source = normalizeProductDisplayName(text(value)
+    .replace(/\((?:\s*(?:короб(?:ка)?|ящик|упак(?:овка)?|место|куб)\s*)+\)/gi, " ")
+    .replace(/\b(?:короб(?:ка)?|ящик|упак(?:овка)?|место|куб)\b/gi, " ")
+    .replace(/(^|\s)уп\.?(?=\s|$|\()/gi, "$1шт")
+    .replace(/\s*([/×x])\s*/gi, "/")
+    .replace(/,/g, "."));
+  if (!source) return "";
+  const prefix = /^(\d+)\//.exec(source);
+  const placeCount = prefix?.[1] ?? "1";
+  const contents = prefix ? source.slice(prefix[0].length) : source;
+  const fallbackUnit = placeContentsFallbackUnit(context);
+  const parts = Array.from(contents.matchAll(/(\d+(?:\.\d+)?)\s*(кг|kg|г|гр|gr|g|л|l|мл|ml|шт|pcs?|штук)?/gi));
+  if (!parts.length) return source;
+  const normalizedParts = parts.map(match => `${match[1]}${normalizePlaceUnit(match[2], fallbackUnit)}`);
+  return `${placeCount}/${normalizedParts.join("/")}`;
+}
+/** Keeps the same compact case notation at all offer display points. */
+export function formatPlaceContents(value: string | null | undefined, context?: string | null) {
+  return normalizePlaceContents(value, context) || null;
 }
 function normalizeCategoryName(value: string) { return fold(value).replace(/[^a-zа-я0-9]+/g, " ").trim(); }
 function sourceTimestamp(source: Pick<PriceChangeSource, "sourceDate" | "importedAt">) {
@@ -583,8 +598,11 @@ function stripPdfSpecification(value: string) {
   return normalized;
 }
 function stripPdfServiceTail(value: string) {
-  const serviceStart = /(?:^|\s)(?:условия\s+доставки|бесплатная\s+доставка|платная\s+доставка|доставка\s+в\s+регионы|стоимость\s+выписки|услуги\s+прр)(?:\s|$)/i.exec(value);
-  return text(serviceStart?.index === undefined ? value : value.slice(0, serviceStart.index));
+  const serviceStart = /(?:^|[\s,;·])(?:условия\s+доставки|бесплатная\s+доставка|платная\s+доставка|холодная\s+доставка|доставка\s+в\s+регионы|стоимость\s+выписки|услуги\s+прр)(?=\s|[.,;:!?]|$)/i.exec(value);
+  return text((serviceStart?.index === undefined ? value : value.slice(0, serviceStart.index)).replace(/[\s,;·-]+$/g, ""));
+}
+function cleanPdfManufacturer(value: string) {
+  return text(stripPdfServiceTail(value).replace(/^[\s,;·-]+|[\s,;·-]+$/g, ""));
 }
 function pdfPriceOptionsFromQuote(quote: string, priceContext: string, rawName: string, packaging: string | null, includesVat: boolean) {
   const cleanedQuote = text(quote)
@@ -696,7 +714,7 @@ export function parsePdfPositionedPages(pages: PdfTextFragment[][]) {
         const nameEnd = Math.min(specificationStart - 1, manufacturerStart, packagingStart, priceStart);
         const rawName = stripPdfServiceTail(stripPdfSpecification(pdfColumnText(rowItems, section.nameX - 22, nameEnd)));
         const specification = section.specificationX === null ? "" : pdfColumnText(rowItems, specificationStart, manufacturerStart);
-        const manufacturer = section.manufacturerX === null ? "" : pdfColumnText(rowItems, manufacturerStart, packagingStart);
+        const manufacturer = section.manufacturerX === null ? "" : cleanPdfManufacturer(pdfColumnText(rowItems, manufacturerStart, packagingStart));
         const quoteStartX = Math.min(...line.items.filter(item => item.x >= priceStart && item.x < section.priceEnd).map(item => item.x));
         const placeEnd = Number.isFinite(quoteStartX) ? Math.min(section.priceX - 16, quoteStartX - 10) : priceStart;
         const placeWeight = section.packagingX === null ? "" : pdfColumnText(rowItems, packagingStart, placeEnd);
@@ -715,8 +733,8 @@ export function parsePdfPositionedPages(pages: PdfTextFragment[][]) {
           category: null,
           packaging,
           packagingSignature: packagingSignature(packaging || rawName),
-          manufacturer: text(manufacturer) || null,
-          placeContents: normalizePlaceContents(placeWeight) || null,
+          manufacturer: manufacturer || null,
+          placeContents: normalizePlaceContents(placeWeight, `${rawName} ${packaging || ""}`) || null,
           manufacturedOn: null,
           shelfLifeMonths: null,
           expiresOn: null,
