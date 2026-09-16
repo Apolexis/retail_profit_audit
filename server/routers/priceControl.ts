@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getCurrentLocalAccount, hasPriceAccess } from "../accessControl";
 import { protectedProcedure, router } from "../_core/trpc";
-import { bulkAssignPriceCategory, createPriceCategory, createPriceProduct, createPriceProductCharacteristic, createPriceSupplier, deletePriceImport, deletePriceImportRow, deletePriceSupplier, getPriceCategoryAuditState, getPriceImportAuditState, getPriceImportDownload, getPriceImportRowAuditState, getPriceOfferAuditState, getPriceProductAuditState, getPriceProductCharacteristicAuditState, getPriceProductsAuditStates, getPriceSupplierAuditState, linkPriceImportRow, listPriceControlData, reassignPriceSupplierAlias, setPriceSupplierActive, unlinkPriceSupplierAlias, updatePriceCategory, updatePriceImportDate, updatePriceOffer, updatePriceProduct, updatePriceProductCharacteristic, updatePriceSupplier } from "../priceControl";
+import { bulkAssignPriceCategory, createManualPriceOffer, createPriceCategory, createPriceProduct, createPriceProductCharacteristic, createPriceSupplier, deletePriceImport, deletePriceImportRow, deletePriceSupplier, getPriceCategoryAuditState, getPriceImportAuditState, getPriceImportDownload, getPriceImportRowAuditState, getPriceOfferAuditState, getPriceProductAuditState, getPriceProductCharacteristicAuditState, getPriceProductsAuditStates, getPriceSupplierAuditState, linkPriceImportRow, listPriceControlData, reassignPriceSupplierAlias, setPriceSupplierActive, unlinkPriceSupplierAlias, updatePriceCategory, updatePriceImportDate, updatePriceOffer, updatePriceProduct, updatePriceProductCharacteristic, updatePriceSupplier } from "../priceControl";
 import { recordChange } from "../localAuth";
 
 async function requirePricePermission(openId: string | null | undefined, required: "view" | "upload" | "edit") {
@@ -97,6 +97,13 @@ export const priceControlRouter = router({
     await requirePricePermission(ctx.user.openId, "edit");
     const actor = await localActor(ctx.user.openId); const before = await getPriceOfferAuditState(input.priceId); const result = await updatePriceOffer(input);
     await recordChange({ actorId: actor.id, action: "price_offer.update", entityType: "price_offer", entityId: String(input.priceId), beforeState: before, afterState: await getPriceOfferAuditState(input.priceId) });
+    return result;
+  }),
+  createManualOffer: protectedProcedure.input(z.object({ productId: z.number().int().positive(), supplierId: z.number().int().positive(), sourceDate: z.string().regex(/^20\d{2}-\d{2}-\d{2}$/), priceAmount: z.number().positive().max(10_000_000), priceBasis: z.enum(["kg", "l", "piece", "package", "unknown"]), priceMode: z.enum(["cash", "cashless_no_vat", "cashless_vat"]).optional(), market: z.enum(["unknown", "spb", "moscow"]).optional(), manufacturer: z.string().trim().max(255).nullable().optional(), placeContents: z.string().trim().max(255).nullable().optional(), manufacturedOn: z.string().regex(/^20\d{2}-\d{2}-\d{2}$/).nullable().optional(), shelfLifeMonths: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(6), z.literal(12), z.literal(18), z.literal(24)]).nullable().optional(), expiresOn: z.string().regex(/^20\d{2}-\d{2}-\d{2}$/).nullable().optional() })).mutation(async ({ ctx, input }) => {
+    await requirePricePermission(ctx.user.openId, "edit");
+    const actor = await localActor(ctx.user.openId);
+    const result = await createManualPriceOffer({ ...input, actorId: actor.id });
+    await recordChange({ actorId: actor.id, action: "price_offer.create", entityType: "price_offer", entityId: String(result.priceId), afterState: await getPriceOfferAuditState(result.priceId) });
     return result;
   }),
   updateImportDate: protectedProcedure.input(z.object({ importId: z.number().int().positive(), sourceDate: z.string().regex(/^20\d{2}-\d{2}-\d{2}$/).nullable() })).mutation(async ({ ctx, input }) => {

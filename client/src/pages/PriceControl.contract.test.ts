@@ -230,6 +230,13 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain(".price-preview-new-row .price-preview-category-select { grid-column: 3; grid-row: 2;");
   });
 
+  it("сохраняет сетку цены и уменьшает подписи селекторов по ширине их области", () => {
+    expect(styles).toContain(".packet .price-preview-price-edit { container-type: inline-size; }");
+    expect(styles).toContain("grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr) !important;");
+    expect(styles).toContain(".packet .price-preview-price-edit .price-preview-market-select { font-size: clamp(9px, 3.3cqi, 11px); letter-spacing: -.03em; }");
+    expect(styles).toContain('[data-slot="select-value"] { min-width: 0; overflow: hidden; text-overflow: clip; white-space: nowrap; }');
+  });
+
   it("использует тематичный выбор даты прайса вместо системного поля даты", () => {
     expect(page).toContain('import { ExactDateControl } from "@/components/DateRangeControl";');
     expect(page).toContain('<ExactDateControl');
@@ -253,6 +260,19 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain('selectableCharacteristics("size")');
     expect(page).toContain('selectableCharacteristics("place_contents")');
     expect(page).toContain("Состав места");
+  });
+
+  it("дает создать ручное предложение с ценой прямо при создании или изменении товара", () => {
+    expect(page).toContain("const createManualOffer = trpc.priceControl.createManualOffer.useMutation");
+    expect(page).toContain("РУЧНОЕ ПРЕДЛОЖЕНИЕ");
+    expect(page).toContain("Добавить цену поставщика");
+    expect(page).toContain("Поставщик, дата и цена обязательны");
+    expect(page).toContain("ДАТА ПРЕДЛОЖЕНИЯ");
+    expect(page).toContain("sourceDate: manualOffer.sourceDate");
+    expect(page).toContain("productId: savedProductId");
+    expect(page).toContain("supplierId: Number(manualOffer.supplierId)");
+    expect(styles).toContain(".packet .price-manual-offer-editor");
+    expect(styles).toContain(".packet .price-manual-offer-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));");
   });
 
   it("не блокирует импорт без распознанной шапки: поставщика можно выбрать или создать, дату — указать вручную", () => {

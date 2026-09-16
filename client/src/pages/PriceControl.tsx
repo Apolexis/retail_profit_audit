@@ -97,6 +97,20 @@ type PriceBasis = "kg" | "l" | "piece" | "package" | "unknown";
 type PriceMode = "standard" | "cash" | "cashless_no_vat" | "cashless_vat" | "spb" | "moscow" | "special" | "threshold";
 type PricePaymentMode = "cash" | "cashless_no_vat" | "cashless_vat";
 type PriceMarket = "unknown" | "spb" | "moscow";
+type ManualOfferDraft = {
+  enabled: boolean;
+  supplierId: string;
+  sourceDate: string;
+  priceAmount: string;
+  priceBasis: PriceBasis;
+  priceMode: PricePaymentMode;
+  market: PriceMarket;
+  manufacturer: string;
+  placeContents: string;
+  manufacturedOn: string;
+  shelfLifeMonths: number | null;
+  expiresOn: string;
+};
 type ProductDraft = {
   id: number | null;
   canonicalName: string;
@@ -107,6 +121,7 @@ type ProductDraft = {
   placeContentsCharacteristicId: string;
   baseUnit: "kg" | "l" | "piece" | "unknown";
   isActive: boolean;
+  manualOffer: ManualOfferDraft;
 };
 type CharacteristicDraft = { id: number | null; kind: "variant" | "size" | "place_contents"; value: string; isActive: boolean };
 type CategoryDraft = { id: number | null; name: string; isActive: boolean };
@@ -187,6 +202,34 @@ const shelfLifeOptions = [
   { value: 24, label: "2 года" },
 ] as const;
 type ShelfLifeMonths = (typeof shelfLifeOptions)[number]["value"];
+const moscowTodayIso = () => {
+  const parts = new Intl.DateTimeFormat("en", {
+    timeZone: "Europe/Moscow",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find(item => item.type === type)?.value ?? "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+};
+const createManualOfferDraft = (
+  baseUnit: ProductDraft["baseUnit"] = "unknown",
+  placeContents = ""
+): ManualOfferDraft => ({
+  enabled: false,
+  supplierId: "",
+  sourceDate: moscowTodayIso(),
+  priceAmount: "",
+  priceBasis: baseUnit === "kg" || baseUnit === "l" || baseUnit === "piece" ? baseUnit : "unknown",
+  priceMode: "cashless_vat",
+  market: "unknown",
+  manufacturer: "",
+  placeContents,
+  manufacturedOn: "",
+  shelfLifeMonths: null,
+  expiresOn: "",
+});
 const calculateExpiryDate = (manufacturedOn: string, shelfLifeMonths: number | null) => {
   if (!/^20\d{2}-\d{2}-\d{2}$/.test(manufacturedOn) || !shelfLifeMonths) return "";
   const [year, month, day] = manufacturedOn.split("-").map(Number);
@@ -453,6 +496,13 @@ export default function PriceControl({
     onSuccess: () => {
       invalidate();
       toast.success("Цена прайс‑листа обновлена");
+    },
+    onError: error => toast.error(error.message),
+  });
+  const createManualOffer = trpc.priceControl.createManualOffer.useMutation({
+    onSuccess: () => {
+      invalidate();
+      toast.success("Ручное предложение сохранено");
     },
     onError: error => toast.error(error.message),
   });
@@ -1017,8 +1067,23 @@ export default function PriceControl({
       toast.error("Выберите существующую категорию товара.");
       return;
     }
+    const manualOffer = productDraft.manualOffer;
+    const manualPrice = Number(
+      manualOffer.priceAmount.replace(/\s/g, "").replace(",", ".")
+    );
+    if (
+      manualOffer.enabled &&
+      (!Number(manualOffer.supplierId) ||
+        !manualOffer.sourceDate ||
+        !Number.isFinite(manualPrice) ||
+        manualPrice <= 0)
+    ) {
+      toast.error("Для ручного предложения укажите поставщика, дату и цену.");
+      return;
+    }
+    let savedProductId: number;
     if (productDraft.id) {
-      await updateProduct.mutateAsync({
+      const product = await updateProduct.mutateAsync({
         id: productDraft.id,
         canonicalName: productDraft.canonicalName.trim(),
         internalCode: productDraft.internalCode.trim(),
@@ -1029,8 +1094,9 @@ export default function PriceControl({
         baseUnit: productDraft.baseUnit,
         isActive: productDraft.isActive,
       });
+      savedProductId = product.id;
     } else {
-      await createProduct.mutateAsync({
+      const product = await createProduct.mutateAsync({
         canonicalName: productDraft.canonicalName.trim(),
         ...(productDraft.internalCode.trim()
           ? { internalCode: productDraft.internalCode.trim() }
@@ -1050,8 +1116,40 @@ export default function PriceControl({
         baseUnit: productDraft.baseUnit,
         isActive: productDraft.isActive,
       });
+      savedProductId = product.id;
+    }
+    if (manualOffer.enabled) {
+      await createManualOffer.mutateAsync({
+        productId: savedProductId,
+        supplierId: Number(manualOffer.supplierId),
+        sourceDate: manualOffer.sourceDate,
+        priceAmount: manualPrice,
+        priceBasis: manualOffer.priceBasis,
+        priceMode: manualOffer.priceMode,
+        market: manualOffer.market,
+        manufacturer: manualOffer.manufacturer.trim() || null,
+        placeContents: manualOffer.placeContents.trim() || null,
+        manufacturedOn: manualOffer.manufacturedOn || null,
+        shelfLifeMonths: manualOffer.shelfLifeMonths as ShelfLifeMonths | null,
+        expiresOn: manualOffer.expiresOn || null,
+      });
     }
     setProductDraft(null);
+  };
+  const patchProductManualOffer = (
+    patch: Partial<ManualOfferDraft>
+  ) => {
+    setProductDraft(current => {
+      if (!current) return current;
+      const manualOffer = { ...current.manualOffer, ...patch };
+      if (patch.manufacturedOn !== undefined || patch.shelfLifeMonths !== undefined) {
+        manualOffer.expiresOn = calculateExpiryDate(
+          manualOffer.manufacturedOn,
+          manualOffer.shelfLifeMonths
+        );
+      }
+      return { ...current, manualOffer };
+    });
   };
   const openProductEditor = (product: (typeof catalogProducts)[number]) => {
     setDirectoryTab("products");
@@ -1065,6 +1163,7 @@ export default function PriceControl({
       placeContentsCharacteristicId: product.placeContentsCharacteristicId ? String(product.placeContentsCharacteristicId) : "",
       baseUnit: product.baseUnit,
       isActive: product.isActive,
+      manualOffer: createManualOfferDraft(product.baseUnit, product.placeContents ?? ""),
     });
     window.requestAnimationFrame(() => {
       productEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -2260,7 +2359,7 @@ export default function PriceControl({
                       <small>
                         {dateLabel(importItem.sourceDate)} ·{" "}
                         {importItem.rowCount} строк ·{" "}
-                        {importItem.sourceType.toUpperCase()}
+                        {importItem.sourceType === "manual" ? "ВВЕДЕНО ВРУЧНУЮ" : importItem.sourceType.toUpperCase()}
                       </small>
                     </button>
                     <div className="price-import-actions">
@@ -2272,15 +2371,17 @@ export default function PriceControl({
                         <Eye size={14} />
                         Просмотр
                       </button>
-                      <button
-                        type="button"
-                        className="packet-link compact"
-                        onClick={() => downloadExisting(importItem.id)}
-                        disabled={downloadImport.isPending}
-                      >
-                        <Download size={14} />
-                        Скачать
-                      </button>
+                      {importItem.sourceType !== "manual" && (
+                        <button
+                          type="button"
+                          className="packet-link compact"
+                          onClick={() => downloadExisting(importItem.id)}
+                          disabled={downloadImport.isPending}
+                        >
+                          <Download size={14} />
+                          Скачать
+                        </button>
+                      )}
                       {canEdit && (
                         <button
                           type="button"
@@ -2438,6 +2539,7 @@ export default function PriceControl({
                     placeContentsCharacteristicId: "",
                     baseUnit: "unknown",
                     isActive: true,
+                    manualOffer: createManualOfferDraft(),
                   })
                 }
               >
@@ -2596,6 +2698,123 @@ export default function PriceControl({
                     options={selectableCharacteristics("place_contents").map(item => ({ value: String(item.id), label: item.value }))}
                   />
                 </label>
+                <section className="price-manual-offer-editor" aria-label="Ручное предложение поставщика">
+                  <div className="price-manual-offer-heading">
+                    <span>РУЧНОЕ ПРЕДЛОЖЕНИЕ</span>
+                    <p>Добавьте цену без загрузки прайс‑листа. Она сразу попадет в историю и сравнение.</p>
+                  </div>
+                  <button
+                    type="button"
+                    className={`price-active-toggle${productDraft.manualOffer.enabled ? " is-active" : ""}`}
+                    aria-pressed={productDraft.manualOffer.enabled}
+                    onClick={() => patchProductManualOffer({ enabled: !productDraft.manualOffer.enabled })}
+                  >
+                    {productDraft.manualOffer.enabled ? <CheckCircle2 size={16} aria-hidden="true" /> : <Plus size={16} aria-hidden="true" />}
+                    <span>
+                      <strong>{productDraft.manualOffer.enabled ? "Цена будет добавлена" : "Добавить цену поставщика"}</strong>
+                      <small>Поставщик, дата и цена обязательны</small>
+                    </span>
+                    <em>{productDraft.manualOffer.enabled ? "Включено" : "Не добавлять"}</em>
+                  </button>
+                  {productDraft.manualOffer.enabled && (
+                    <div className="price-manual-offer-fields">
+                      <label>
+                        Поставщик
+                        <PriceSelect
+                          value={productDraft.manualOffer.supplierId}
+                          onValueChange={supplierId => patchProductManualOffer({ supplierId })}
+                          placeholder="Выберите поставщика"
+                          options={selectableSuppliers.map(supplier => ({ value: String(supplier.id), label: supplier.name }))}
+                        />
+                      </label>
+                      <ExactDateControl
+                        value={productDraft.manualOffer.sourceDate}
+                        onChange={sourceDate => patchProductManualOffer({ sourceDate })}
+                        title="ДАТА ПРЕДЛОЖЕНИЯ"
+                        ariaLabel="Указать дату ручного предложения"
+                        emptyLabel="Дата не указана"
+                      />
+                      <label>
+                        Цена, ₽
+                        <input
+                          inputMode="decimal"
+                          value={productDraft.manualOffer.priceAmount}
+                          onChange={event => patchProductManualOffer({ priceAmount: event.target.value })}
+                          placeholder="Например, 925"
+                        />
+                      </label>
+                      <label>
+                        База цены
+                        <PriceSelect
+                          value={productDraft.manualOffer.priceBasis}
+                          onValueChange={priceBasis => patchProductManualOffer({ priceBasis: priceBasis as PriceBasis })}
+                          placeholder="База цены"
+                          options={priceBasisOptions(null)}
+                        />
+                      </label>
+                      <label>
+                        Условие оплаты
+                        <PriceSelect
+                          value={productDraft.manualOffer.priceMode}
+                          onValueChange={priceMode => patchProductManualOffer({ priceMode: priceMode as PricePaymentMode })}
+                          placeholder="Условие оплаты"
+                          options={editablePriceModes}
+                        />
+                      </label>
+                      <label>
+                        Город
+                        <PriceSelect
+                          value={productDraft.manualOffer.market}
+                          onValueChange={market => patchProductManualOffer({ market: market as PriceMarket })}
+                          placeholder="Город"
+                          options={priceMarketOptions}
+                        />
+                      </label>
+                      <label>
+                        Производитель
+                        <input
+                          value={productDraft.manualOffer.manufacturer}
+                          onChange={event => patchProductManualOffer({ manufacturer: event.target.value })}
+                          placeholder="Не указан"
+                          maxLength={255}
+                        />
+                      </label>
+                      <label>
+                        Состав места
+                        <input
+                          value={productDraft.manualOffer.placeContents}
+                          onChange={event => patchProductManualOffer({ placeContents: event.target.value })}
+                          placeholder="Например, 1/12.5"
+                          maxLength={255}
+                        />
+                      </label>
+                      <ExactDateControl
+                        value={productDraft.manualOffer.manufacturedOn}
+                        onChange={manufacturedOn => patchProductManualOffer({ manufacturedOn })}
+                        title="ДАТА ИЗГОТОВЛЕНИЯ"
+                        ariaLabel="Указать дату изготовления ручного предложения"
+                        emptyLabel="Не указана"
+                      />
+                      <div className="price-shelf-life-picker" aria-label="Срок годности ручного предложения">
+                        {shelfLifeOptions.map(option => (
+                          <button
+                            type="button"
+                            key={option.value}
+                            className={productDraft.manualOffer.shelfLifeMonths === option.value ? "active" : ""}
+                            onClick={() => patchProductManualOffer({ shelfLifeMonths: option.value })}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                      <small className="price-expiry-date">
+                        {productDraft.manualOffer.expiresOn
+                          ? `Годен до: ${dateLabel(productDraft.manualOffer.expiresOn)}`
+                          : "Срок годности не указан"}
+                      </small>
+                    </div>
+                  )}
+                </section>
                 <button
                   type="button"
                   className={`price-active-toggle${productDraft.isActive ? " is-active" : ""}`}

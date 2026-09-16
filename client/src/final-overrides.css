@@ -4097,6 +4097,19 @@ html[data-audit-theme="dark"] .packet .scroll-top svg { color: #ff9b88; }
 .packet .price-characteristics-list > button strong { font-size: 11px; }
 .packet .price-characteristics-list > button em { color: var(--price-muted); font-size: 9px; font-style: normal; }
 .packet .price-characteristics-list > button.is-hidden { opacity: .55; }
+.packet .price-manual-offer-editor { display: grid; grid-column: 1 / -1; gap: 11px; min-width: 0; padding: 14px; border: 1px solid var(--price-border); border-radius: 12px; background: color-mix(in srgb, var(--price-surface) 89%, var(--price-accent) 11%); }
+.packet .price-manual-offer-heading { display: grid; gap: 4px; }
+.packet .price-manual-offer-heading > span { color: var(--price-muted); font: 750 9px "IBM Plex Mono", monospace; letter-spacing: .07em; }
+.packet .price-manual-offer-heading p { margin: 0; color: var(--price-muted); font-size: 11px; line-height: 1.42; }
+.packet .price-manual-offer-editor > .price-active-toggle { width: 100%; }
+.packet .price-manual-offer-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; min-width: 0; padding-top: 11px; border-top: 1px solid var(--price-border); }
+.packet .price-manual-offer-fields > label { display: grid; min-width: 0; gap: 5px; color: var(--price-muted); font: 700 10px/1.2 Manrope, Arial, sans-serif; }
+.packet .price-manual-offer-fields :is(input, [data-slot="select-trigger"], .fact-date-trigger) { width: 100%; min-width: 0; }
+.packet .price-manual-offer-fields .fact-date-trigger { min-height: 38px; justify-content: space-between; }
+.packet .price-manual-offer-fields .price-shelf-life-picker,
+.packet .price-manual-offer-fields .price-expiry-date { grid-column: 1 / -1; }
+@media (max-width: 980px) { .packet .price-manual-offer-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .packet .price-manual-offer-fields { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 760px) {
   .packet .price-characteristics-editor { grid-template-columns: minmax(0, 1fr); }
   .packet .price-characteristics-editor .price-active-toggle { width: 100%; }
@@ -4137,12 +4150,24 @@ html[data-audit-theme="dark"] .packet .mobile-quick-refresh.is-refreshing { bord
 
 /* Preview: одна строка цены — две устойчивые колонки; названия и действия не пересекаются. */
 .packet .price-preview-price-edit {
-  grid-template-columns: minmax(88px, 1fr) minmax(132px, 1.1fr) !important;
+  grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr) !important;
   grid-auto-flow: row;
   grid-column: 1 / -1;
 }
 .packet .price-preview-price-edit .price-preview-mode-select,
 .packet .price-preview-price-edit .price-preview-market-select { grid-column: auto !important; }
+.packet .price-preview-price-edit { container-type: inline-size; }
+.packet .price-preview-price-edit [data-slot="select-trigger"] {
+  min-width: 0;
+  gap: 4px;
+  padding-inline: 7px;
+  letter-spacing: -.018em;
+}
+.packet .price-preview-price-edit .price-preview-basis-select { font-size: clamp(9px, 3.7cqi, 11.5px); }
+.packet .price-preview-price-edit .price-preview-mode-select { font-size: clamp(9px, 3.5cqi, 11.5px); }
+.packet .price-preview-price-edit .price-preview-market-select { font-size: clamp(9px, 3.3cqi, 11px); letter-spacing: -.03em; }
+.packet .price-preview-price-edit [data-slot="select-value"] { min-width: 0; overflow: hidden; text-overflow: clip; white-space: nowrap; }
+.packet .price-preview-price-edit [data-slot="select-trigger"] svg { flex: 0 0 auto; width: 14px; height: 14px; }
 .packet .price-preview-prices > div { align-items: start; }
 .packet .price-preview-prices > div > small { grid-column: 1 / -1; }
 .packet .price-preview .inline-error {
@@ -4170,7 +4195,7 @@ html[data-audit-theme="light"] .packet .price-preview .inline-error {
 .packet .price-offer-meta-edit .price-shelf-life-picker,
 .packet .price-offer-meta-edit .price-expiry-date { grid-column: 1 / -1; }
 @media (min-width: 761px) {
-  .packet .price-preview-price-edit { grid-template-columns: minmax(102px, .9fr) minmax(144px, 1.1fr) !important; }
+  .packet .price-preview-price-edit { grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr) !important; }
 }
 
 /* Нижнее меню: стрелки кратко идут в направлении действия, а обновление не меняет локальный кэш. */

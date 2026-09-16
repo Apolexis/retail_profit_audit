@@ -30,6 +30,42 @@ describe("прайс‑контроль: нормализация товарны
     expect(parsePdfPositionedPages(pages as any)[0]?.rawName).toBe("Суп Лакса");
   });
 
+  it("не теряет строки продолжения над новой шапкой следующей PDF-страницы и собирает многострочное имя с ценой отдельной строкой", () => {
+    const pages = [
+      [
+        { x: 20, y: 700, value: "Наименование", width: 72 }, { x: 260, y: 700, value: "Цена", width: 28 },
+        { x: 20, y: 670, value: "Креветка шримс 60/100", width: 110 }, { x: 260, y: 670, value: "1 200 ₽ кг", width: 52 },
+      ],
+      [
+        { x: 20, y: 700, value: "Креветка шримс 80/100", width: 110 }, { x: 260, y: 700, value: "1 100 ₽ кг", width: 52 },
+        { x: 20, y: 620, value: "Наименование", width: 72 }, { x: 260, y: 620, value: "Цена", width: 28 },
+        { x: 20, y: 590, value: "Чебуреки с кальмаром", width: 120 },
+        { x: 20, y: 578, value: "и креветкой", width: 58 }, { x: 260, y: 584, value: "450 ₽ кг", width: 44 },
+      ],
+    ];
+    const rows = parsePdfPositionedPages(pages as any);
+    expect(rows.map(row => row.rawName)).toEqual([
+      "Креветка шримс 60/100",
+      "Креветка шримс 80/100",
+      "Чебуреки с кальмаром и креветкой",
+    ]);
+    expect(rows[1]?.priceOptions[0]).toMatchObject({ priceAmount: 1100, priceBasis: "kg" });
+    expect(rows[2]?.priceOptions[0]).toMatchObject({ priceAmount: 450, priceBasis: "kg" });
+  });
+
+  it("сохраняет многострочную позицию перед блоком доставки и не добавляет служебный текст к названию", () => {
+    const pages = [[
+      { x: 20, y: 700, value: "Наименование", width: 72 }, { x: 260, y: 700, value: "Цена", width: 28 },
+      { x: 20, y: 670, value: "Чебуреки с кальмаром и креветкой", width: 160 },
+      { x: 20, y: 658, value: "обжаренные во фритюре", width: 112 }, { x: 260, y: 664, value: "450 ₽ кг", width: 44 },
+      { x: 20, y: 600, value: "УСЛОВИЯ ДОСТАВКИ СО СКЛАДА МОСКВЫ", width: 190 },
+      { x: 20, y: 585, value: "Бесплатная доставка", width: 100 },
+    ]];
+    const row = parsePdfPositionedPages(pages as any)[0];
+    expect(row?.rawName).toBe("Чебуреки с кальмаром и креветкой обжаренные во фритюре");
+    expect(row?.priceOptions[0]).toMatchObject({ priceAmount: 450, priceBasis: "kg" });
+  });
+
   it("объединяет точные дубликаты PDF-строк и не теряет отличающийся вариант цены", () => {
     const template = { sourceSheet: "PDF", sourceRowNumber: 1, sourceSku: null, rawName: "Крабовые палочки КВЭН", normalizedName: "крабовые палочки квэн", canonicalHint: "Крабовые палочки КВЭН", normalizedSignature: "крабовые палочки квэн", category: null, packaging: "200гр", packagingSignature: "g200", manufacturer: "Квэн", placeContents: "1/12", manufacturedOn: null, shelfLifeMonths: null, expiresOn: null, availability: null, variant: null, sizeText: null, rawPayload: {} } as any;
     const first = { ...template, priceOptions: [{ priceAmount: 187, priceBasis: "piece", normalizedPrice: 187, normalizedUnit: "piece", priceMode: "cashless_vat", market: "spb", minimumQuantityKg: null, includesVat: true, sourcePriceText: "187" }] };
@@ -86,6 +122,18 @@ describe("прайс‑контроль: нормализация товарны
     const source = readFileSync(new URL("./priceControl.ts", import.meta.url), "utf8");
     expect(source).toContain("export async function bulkAssignPriceCategory");
     expect(source).toContain("Выберите активную категорию прайс‑контроля.");
+  });
+
+  it("создает ручное предложение через общий контур строк и цен, а не через финансовый импорт", () => {
+    const source = readFileSync(new URL("./priceControl.ts", import.meta.url), "utf8");
+    const router = readFileSync(new URL("./routers/priceControl.ts", import.meta.url), "utf8");
+    expect(source).toContain("export async function createManualPriceOffer");
+    expect(source).toContain('sourceType: "manual"');
+    expect(source).toContain('sourceSheet: "manual"');
+    expect(source).toContain('sourcePriceText: "Введено вручную"');
+    expect(source).toContain("const normalized = normalizePrice(input.priceAmount, input.priceBasis, rawPackaging)");
+    expect(router).toContain("createManualOffer: protectedProcedure.input");
+    expect(router).toContain('action: "price_offer.create"');
   });
 
   it("применяет категорию из предпросмотра только к новой выбранной строке, а не к сохраненным товарам", () => {

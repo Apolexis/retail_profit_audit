@@ -582,6 +582,10 @@ function stripPdfSpecification(value: string) {
   if (words.length >= 4 && fold(words[0]) === fold(words[2]) && fold(words[1]) === fold(words[3])) return words.slice(2).join(" ");
   return normalized;
 }
+function stripPdfServiceTail(value: string) {
+  const serviceStart = /(?:^|\s)(?:условия\s+доставки|бесплатная\s+доставка|платная\s+доставка|доставка\s+в\s+регионы|стоимость\s+выписки|услуги\s+прр)(?:\s|$)/i.exec(value);
+  return text(serviceStart?.index === undefined ? value : value.slice(0, serviceStart.index));
+}
 function pdfPriceOptionsFromQuote(quote: string, priceContext: string, rawName: string, packaging: string | null, includesVat: boolean) {
   const cleanedQuote = text(quote)
     .replace(/[\uE000-\uF8FF]/g, " ")
@@ -624,6 +628,7 @@ export function parsePdfPositionedPages(pages: PdfTextFragment[][]) {
   let sourceRowNumber = 0;
   let continuationColumns: Array<Omit<PdfColumnSection, "headerY" | "bottomY">> = [];
   pages.forEach(pageItems => {
+    const previousContinuationColumns = continuationColumns;
     const lines = pdfPositionedLines(pageItems);
     const allItems = lines.flatMap(line => line.items);
     const pageTop = Math.max(0, ...allItems.map(item => item.y)) + 6;
@@ -658,9 +663,16 @@ export function parsePdfPositionedPages(pages: PdfTextFragment[][]) {
       .sort((left, right) => right.headerY - left.headerY)
       .filter((header, index, list) => index === 0 || Math.abs(header.headerY - list[index - 1].headerY) > 24)
       .map((header, index, list) => ({ ...header, bottomY: list[index + 1]?.headerY ?? -Infinity }));
+    const continuationSectionAboveHeader = detectedSections.length && previousContinuationColumns.length
+      ? previousContinuationColumns.map(column => ({
+          ...column,
+          headerY: pageTop,
+          bottomY: detectedSections[0]!.headerY,
+        }))
+      : [];
     const sections = detectedSections.length
-      ? detectedSections
-      : continuationColumns.map(column => ({ ...column, headerY: pageTop, bottomY: -Infinity }));
+      ? [...continuationSectionAboveHeader, ...detectedSections]
+      : previousContinuationColumns.map(column => ({ ...column, headerY: pageTop, bottomY: -Infinity }));
     if (detectedSections.length) {
       continuationColumns = detectedSections.map(({ headerY: _headerY, bottomY: _bottomY, ...column }) => column);
     }
@@ -682,7 +694,7 @@ export function parsePdfPositionedPages(pages: PdfTextFragment[][]) {
         const specificationStart = section.specificationX === null ? manufacturerStart : section.specificationX - 52;
         const packagingStart = section.packagingX === null ? priceStart : section.packagingX - 14;
         const nameEnd = Math.min(specificationStart - 1, manufacturerStart, packagingStart, priceStart);
-        const rawName = stripPdfSpecification(pdfColumnText(rowItems, section.nameX - 22, nameEnd));
+        const rawName = stripPdfServiceTail(stripPdfSpecification(pdfColumnText(rowItems, section.nameX - 22, nameEnd)));
         const specification = section.specificationX === null ? "" : pdfColumnText(rowItems, specificationStart, manufacturerStart);
         const manufacturer = section.manufacturerX === null ? "" : pdfColumnText(rowItems, manufacturerStart, packagingStart);
         const quoteStartX = Math.min(...line.items.filter(item => item.x >= priceStart && item.x < section.priceEnd).map(item => item.x));
@@ -1209,6 +1221,104 @@ export async function updatePriceSupplier(input: { id: number; name: string; con
   const [supplier] = await db.select().from(priceSuppliers).where(eq(priceSuppliers.id, input.id)).limit(1);
   if (!supplier) throw new Error("Поставщик не найден.");
   return supplier;
+}
+
+/** Stores a point-in-time offer without a source file while preserving the common comparison and history model. */
+export async function createManualPriceOffer(input: {
+  productId: number;
+  supplierId: number;
+  sourceDate: string;
+  priceAmount: number;
+  priceBasis: PriceBasis;
+  priceMode?: PriceMode;
+  market?: PriceMarket;
+  manufacturer?: string | null;
+  placeContents?: string | null;
+  manufacturedOn?: string | null;
+  shelfLifeMonths?: number | null;
+  expiresOn?: string | null;
+  actorId: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  if (!Number.isFinite(input.priceAmount) || input.priceAmount <= 0 || input.priceAmount > 10_000_000) {
+    throw new Error("Укажите цену от 0 до 10 000 000 ₽.");
+  }
+  const sourceDate = normalizeIsoDate(input.sourceDate);
+  if (!sourceDate) throw new Error("Укажите дату ручного предложения.");
+  const [product] = await db
+    .select({ id: priceProducts.id, canonicalName: priceProducts.canonicalName, normalizedSignature: priceProducts.normalizedSignature, sizeText: priceProducts.sizeText, placeContents: priceProducts.placeContents, isActive: priceProducts.isActive })
+    .from(priceProducts)
+    .where(eq(priceProducts.id, input.productId))
+    .limit(1);
+  if (!product || !product.isActive) throw new Error("Активный внутренний товар не найден.");
+  const [supplier] = await db
+    .select({ id: priceSuppliers.id, isActive: priceSuppliers.isActive })
+    .from(priceSuppliers)
+    .where(eq(priceSuppliers.id, input.supplierId))
+    .limit(1);
+  if (!supplier || !supplier.isActive) throw new Error("Выберите активного поставщика.");
+
+  const manufacturer = text(input.manufacturer || "") || null;
+  const placeContents = normalizePlaceContents(input.placeContents) || product.placeContents || null;
+  const manufacturedOn = normalizeIsoDate(input.manufacturedOn);
+  const shelfLifeMonths = input.shelfLifeMonths === null || input.shelfLifeMonths === undefined ? null : Number(input.shelfLifeMonths);
+  const expiresOn = calculatePriceOfferExpiry(manufacturedOn, shelfLifeMonths);
+  if (
+    (manufacturer !== null && manufacturer.length > 255) ||
+    (placeContents !== null && placeContents.length > 255) ||
+    (input.manufacturedOn !== null && input.manufacturedOn !== undefined && !manufacturedOn) ||
+    (shelfLifeMonths !== null && !PRICE_SHELF_LIFE_MONTHS.includes(shelfLifeMonths as typeof PRICE_SHELF_LIFE_MONTHS[number])) ||
+    (input.expiresOn !== null && input.expiresOn !== undefined && normalizeIsoDate(input.expiresOn) !== expiresOn)
+  ) {
+    throw new Error("Характеристика ручного предложения некорректна.");
+  }
+  const rawPackaging = product.sizeText || product.placeContents || null;
+  const normalized = normalizePrice(input.priceAmount, input.priceBasis, rawPackaging);
+  const [manualImport] = await db.insert(priceImports).values({
+    supplierId: supplier.id,
+    fileName: `Ручное предложение · ${product.canonicalName}`.slice(0, 255),
+    fileKey: `manual://offer/${input.actorId}/${Date.now()}/${product.id}`,
+    sourceDate,
+    sourceType: "manual",
+    status: "completed",
+    rowCount: 1,
+    importedByAccountId: input.actorId,
+  }).$returningId();
+  const [manualRow] = await db.insert(priceImportRows).values({
+    importId: manualImport.id,
+    sourceSheet: "manual",
+    sourceRowNumber: 1,
+    sourceSku: null,
+    rawName: product.canonicalName,
+    normalizedName: product.normalizedSignature,
+    rawCategory: null,
+    rawPackaging,
+    manufacturer,
+    placeContents,
+    manufacturedOn,
+    shelfLifeMonths,
+    expiresOn,
+    rawAvailability: null,
+    rawPayload: { source: "manual" },
+    productId: product.id,
+    mappingStatus: "linked",
+    matchedBy: "manual",
+    matchConfidence: "100.00",
+  }).$returningId();
+  const [manualPrice] = await db.insert(priceOfferPrices).values({
+    importRowId: manualRow.id,
+    priceMode: canonicalPriceMode(input.priceMode),
+    market: input.market ?? "unknown",
+    priceAmount: input.priceAmount.toFixed(2),
+    priceBasis: input.priceBasis,
+    normalizedPrice: normalized.normalizedPrice === null ? null : normalized.normalizedPrice.toFixed(2),
+    normalizedUnit: normalized.normalizedUnit,
+    minimumQuantityKg: null,
+    includesVat: canonicalPriceMode(input.priceMode) === "cashless_vat",
+    sourcePriceText: "Введено вручную",
+  }).$returningId();
+  return { importId: manualImport.id, rowId: manualRow.id, priceId: manualPrice.id };
 }
 export async function setPriceSupplierActive(input: { id: number; isActive: boolean }) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");

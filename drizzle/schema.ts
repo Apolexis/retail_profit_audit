@@ -298,7 +298,7 @@ export const priceImports = mysqlTable("price_imports", {
   fileName: varchar("fileName", { length: 255 }).notNull(),
   fileKey: varchar("fileKey", { length: 512 }).notNull(),
   sourceDate: varchar("sourceDate", { length: 10 }),
-  sourceType: mysqlEnum("sourceType", ["xls", "xlsx", "pdf", "docx"]).notNull(),
+  sourceType: mysqlEnum("sourceType", ["xls", "xlsx", "pdf", "docx", "manual"]).notNull(),
   status: mysqlEnum("status", ["completed", "failed"]).default("completed").notNull(),
   rowCount: int("rowCount").default(0).notNull(),
   importedByAccountId: int("importedByAccountId").notNull(),
