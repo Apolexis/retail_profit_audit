@@ -2628,6 +2628,7 @@ html[data-audit-theme="dark"] .packet .visibility-toggle:hover, html[data-audit-
 html[data-audit-theme="light"] .packet .visibility-toggle { border-color: #c6d9ec; background: #ffffff; color: #42617d; }
 html[data-audit-theme="light"] .packet .visibility-toggle:hover, html[data-audit-theme="light"] .packet .visibility-toggle:focus-visible { border-color: #0a84ff; background: #edf6ff; color: #075dbb; outline: none; }
 .packet .change-log-filters { padding-inline: 4px; }
+.packet .change-log.detailed > .change-log-empty { margin: 8px 4px 10px; padding: 0; }
 .packet .change-log-filters :is(input, select):hover { border-color: var(--blue); }
 html[data-audit-theme="light"] .packet .change-log-filters :is(input, select) { border-color: #c6d9ec; background: #ffffff; color: #26384d; }
 html[data-audit-theme="light"] .packet .change-log-filters :is(input, select):hover, html[data-audit-theme="light"] .packet .change-log-filters :is(input, select):focus { border-color: #0a84ff; box-shadow: 0 0 0 3px rgba(10, 132, 255, .13); }
@@ -2841,9 +2842,9 @@ html[data-audit-theme="dark"] .packet .notification-first-unread:focus { outline
 
 /* Денежные значения используют две или три колонки по фактической ширине графика и длине списка. */
 @media (max-width: 560px), (min-width: 561px) and (max-height: 780px) {
-  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip-monetary { width: min(300px, calc(100vw - 32px)) !important; min-width: min(300px, calc(100vw - 32px)) !important; max-width: min(300px, calc(100vw - 32px)) !important; }
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip-monetary { width: fit-content !important; min-width: 0 !important; max-width: min(300px, calc(100vw - 32px)) !important; }
   :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip-monetary .tiny-tooltip-values-2 > span { white-space: nowrap; }
-  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip-monetary-dense { width: min(300px, calc(100vw - 32px)) !important; min-width: min(300px, calc(100vw - 32px)) !important; max-width: min(300px, calc(100vw - 32px)) !important; padding: 8px 9px; font-size: 10px; }
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip-monetary-dense { width: fit-content !important; min-width: 0 !important; max-width: min(300px, calc(100vw - 32px)) !important; padding: 8px 9px; font-size: 10px; }
   :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip-monetary-dense .tiny-tooltip-values-3 { column-gap: 6px; }
   :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip-monetary-dense .tiny-tooltip-values-3 > span { white-space: nowrap; }
   html[data-audit-theme="light"] .packet .benchmark-chart:not(.benchmark-chart-expanded) .chart-touch-mode-button.active { border-color: #0a63c8 !important; background: #0a63c8 !important; color: #ffffff !important; }
@@ -2986,6 +2987,19 @@ html.pwa-fixed-reflow .scroll-top { position: fixed !important; transform: trans
 :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip { padding: 10px 12px 11px !important; }
 :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip > b { display: block; margin-bottom: 6px !important; line-height: 1.2; }
 :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip .tiny-tooltip-values { row-gap: 4px; }
+
+/* Денежный tooltip: поздние широкие правила не должны отменять согласованный компактный ритм. */
+@media (min-width: 561px) {
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart) .tiny-tooltip:not([data-tooltip-count="1"]),
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip-monetary-dense {
+    width: fit-content !important;
+    min-width: 0 !important;
+    max-width: min(320px, calc(100vw - 40px)) !important;
+  }
+}
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip { padding: 7px 9px !important; }
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip > b { margin-bottom: 3px !important; line-height: 1.12; }
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip .tiny-tooltip-values { row-gap: 2px; column-gap: 8px !important; }
 
 /* Длинное пояснение сопоставления периодов не покидает карточку на узком темном экране. */
 html[data-audit-theme="dark"] .packet .comparison-chart-stack .card-title small {
@@ -4120,7 +4134,7 @@ html[data-audit-theme="light"] .packet .price-preview-offer-metadata input { bor
   .packet .price-import-workbench.is-preview-ready .price-preview-table { inline-size: 100%; max-inline-size: 100%; box-sizing: border-box; }
   .packet .price-import-workbench.is-preview-ready .price-preview-table > div.price-preview-new-row { grid-template-columns: 28px minmax(0, 1.62fr) minmax(0, .88fr) 36px; grid-template-rows: auto auto; gap: 12px 16px; inline-size: 100%; max-inline-size: 100%; box-sizing: border-box; }
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-product { grid-column: 2; grid-row: 1; min-width: 0; }
-  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-prices { grid-column: 3; grid-row: 1 / span 2; min-width: 0; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-prices { grid-column: 3; grid-row: 1; min-width: 0; }
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-product-link { grid-column: 2; grid-row: 2; min-width: 0; }
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-category-select { grid-column: 3; grid-row: 2; min-width: 0; }
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-remove { grid-column: 4; grid-row: 1; }

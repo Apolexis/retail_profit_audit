@@ -162,6 +162,13 @@
       "when": 1789556816771,
       "tag": "0022_oval_gateway",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "5",
+      "when": 1789573680481,
+      "tag": "0023_solid_captain_britain",
+      "breakpoints": true
     }
   ]
 }

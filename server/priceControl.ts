@@ -12,7 +12,7 @@ export type PriceBasis = "kg" | "l" | "piece" | "package" | "unknown";
 export type NormalizedUnit = "kg" | "l" | "piece" | "unknown";
 export type PriceMode = "standard" | "cash" | "cashless_no_vat" | "cashless_vat" | "spb" | "moscow" | "special" | "threshold";
 export type PriceMarket = "unknown" | "spb" | "moscow";
-export type PriceCharacteristicKind = "variant" | "size" | "place_contents";
+export type PriceCharacteristicKind = "variant" | "size" | "place_contents" | "manufacturer";
 export type ParsedPriceOption = { priceAmount: number | null; priceBasis: PriceBasis; normalizedPrice: number | null; normalizedUnit: NormalizedUnit; priceMode: PriceMode; market: PriceMarket; minimumQuantityKg: number | null; includesVat: boolean | null; sourcePriceText: string };
 export type ParsedPriceRow = { sourceSheet: string; sourceRowNumber: number; sourceSku: string | null; rawName: string; normalizedName: string; canonicalHint: string; normalizedSignature: string; category: string | null; packaging: string | null; packagingSignature: string; manufacturer: string | null; placeContents: string | null; manufacturedOn: string | null; shelfLifeMonths: number | null; expiresOn: string | null; availability: string | null; variant: string | null; sizeText: string | null; priceOptions: ParsedPriceOption[]; rawPayload: Record<string, string> };
 export type PriceImportPreview = { fileName: string; sourceType: "xls" | "xlsx" | "pdf" | "docx"; detectedSupplierName: string | null; detectedSourceDate: string | null; rows: ParsedPriceRow[]; warningCount: number; warnings: string[] };
@@ -70,7 +70,7 @@ function resolvePriceMarket(market: string | null | undefined, legacyMode: strin
 }
 function normalizeCharacteristicValue(value: string) { return fold(value).replace(/\s+/g, " ").trim(); }
 function normalizeCharacteristicDisplay(kind: PriceCharacteristicKind, value: string) {
-  return kind === "place_contents" ? normalizePlaceContents(value) : kind === "size" ? normalizeProductDisplayName(value) : text(value);
+  return kind === "place_contents" ? normalizePlaceContents(value) : kind === "size" ? normalizeProductDisplayName(value) : kind === "manufacturer" ? cleanPdfManufacturer(value) : text(value);
 }
 function normalizeIsoDate(value: string | null | undefined) {
   const normalized = text(value || "");
@@ -115,6 +115,14 @@ export function normalizePlaceContents(value: string | null | undefined, context
   if (!parts.length) return source;
   const normalizedParts = parts.map(match => `${match[1]}${normalizePlaceUnit(match[2], fallbackUnit)}`);
   return `${placeCount}/${normalizedParts.join("/")}`;
+}
+/** Keeps manually corrected case contents in the same unit context as its price basis. */
+export function synchronizePlaceContentsBasis(value: string | null | undefined, priceBasis: PriceBasis, context?: string | null) {
+  const normalized = normalizePlaceContents(value, context);
+  if (!normalized || !["kg", "l", "piece"].includes(priceBasis)) return normalized;
+  const unit = priceBasis === "kg" ? "кг" : priceBasis === "l" ? "л" : "шт";
+  const simplePlace = /^(\d+)\/(\d+(?:\.\d+)?)(?:кг|гр|л|мл|шт)$/i.exec(normalized);
+  return simplePlace ? `${simplePlace[1]}/${simplePlace[2]}${unit}` : normalized;
 }
 /** Keeps the same compact case notation at all offer display points. */
 export function formatPlaceContents(value: string | null | undefined, context?: string | null) {
@@ -317,6 +325,13 @@ export function preparePriceImportRows(
       };
     });
     const nextName = rawName ?? sourceRow.rawName;
+    const nextPlaceContents = metadata?.placeContents ?? (
+      synchronizePlaceContentsBasis(
+        sourceRow.placeContents,
+        priceOptions[0]?.priceBasis ?? sourceRow.priceOptions[0]?.priceBasis ?? "unknown",
+        `${nextName} ${sourceRow.packaging || ""}`
+      ) || null
+    );
     return [{
       rowIndex,
       row: {
@@ -328,6 +343,7 @@ export function preparePriceImportRows(
         variant: rawName ? extractVariant(nextName) : sourceRow.variant,
         sizeText: rawName ? extractSizeText(nextName) : sourceRow.sizeText,
         ...(metadata ?? {}),
+        placeContents: nextPlaceContents,
         priceOptions,
       },
     }];
@@ -584,7 +600,9 @@ function pdfColumnText(items: PdfTextFragment[], start: number, end: number) {
   return text(joinPdfFragments(items.filter(item => item.x >= start && item.x < end)));
 }
 function isPdfPriceQuote(value: string) {
-  return /(?:уточняйте|по\s+запросу|(?:\d{1,3}(?:[\s.,]\d{3})*|\d{1,7})(?:[.,]\d{1,2})?\s*(?:₽|руб|р\.|\(в\s*(?:спб|мск)\)|за\s*(?:1\s*)?(?:кг|л|шт)|\/(?:кг|л|шт)|с\s*ндс))/i.test(value);
+  if (/(?:уточняйте|по\s+запросу|(?:\d{1,3}(?:[\s.,]\d{3})*|\d{1,7})(?:[.,]\d{1,2})?\s*(?:₽|руб|р\.|\(в\s*(?:спб|мск)\)|за\s*(?:1\s*)?(?:кг|л|шт)|\/(?:кг|л|шт)|с\s*ндс))/i.test(value)) return true;
+  const bareAmount = numberFromText(value);
+  return bareAmount !== null && bareAmount >= 20 && /^\s*\d{1,3}(?:[\s.,]\d{3})*(?:[.,]\d{1,2})?\s*$/.test(value);
 }
 function stripPdfSpecification(value: string) {
   const normalized = normalizePdfName(value)
@@ -621,7 +639,15 @@ function pdfPriceOptionsFromQuote(quote: string, priceContext: string, rawName: 
     })
     .filter((option): option is ParsedPriceOption => option !== null)
     .map(option => ({ ...option, includesVat: includesVat || option.includesVat }));
-  if (options.length) return options;
+  if (options.length) {
+    const explicitlyLabeled = /(?:за\s*(?:1\s*)?|\/)\s*(?:кг|л|шт)/i.test(cleanedQuote);
+    if (options.length === 1 && !explicitlyLabeled) {
+      const [option] = options;
+      const priceBasis: PriceBasis = "kg";
+      return [{ ...option, priceBasis, ...normalizePrice(option.priceAmount!, priceBasis, packaging || rawName) }];
+    }
+    return options;
+  }
   if (!/(?:уточняйте|по\s+запросу)/i.test(quote)) return [];
   return [{
     priceAmount: null,

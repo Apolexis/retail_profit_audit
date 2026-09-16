@@ -262,7 +262,7 @@ export const priceCategories = mysqlTable("price_categories", {
 /** Reusable values prevent product variants and sizes from drifting into near-duplicates. */
 export const priceProductCharacteristics = mysqlTable("price_product_characteristics", {
   id: int("id").autoincrement().primaryKey(),
-  kind: mysqlEnum("kind", ["variant", "size", "place_contents"]).notNull(),
+  kind: mysqlEnum("kind", ["variant", "size", "place_contents", "manufacturer"]).notNull(),
   value: varchar("value", { length: 160 }).notNull(),
   normalizedValue: varchar("normalizedValue", { length: 180 }).notNull(),
   isActive: boolean("isActive").default(true).notNull(),

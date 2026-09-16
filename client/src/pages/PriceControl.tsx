@@ -123,7 +123,7 @@ type ProductDraft = {
   isActive: boolean;
   manualOffer: ManualOfferDraft;
 };
-type CharacteristicDraft = { id: number | null; kind: "variant" | "size" | "place_contents"; value: string; isActive: boolean };
+type CharacteristicDraft = { id: number | null; kind: "variant" | "size" | "place_contents" | "manufacturer"; value: string; isActive: boolean };
 type CategoryDraft = { id: number | null; name: string; isActive: boolean };
 type DirectoryTab = "products" | "categories" | "suppliers";
 type VisibilityFilter = "active" | "all" | "hidden";
@@ -196,6 +196,13 @@ const formatPlaceContents = (value: string | null | undefined) => {
   if (!parts.length) return source;
   const unit = (rawUnit: string | undefined) => !rawUnit ? "кг" : /^(?:кг|kg)$/i.test(rawUnit) ? "кг" : /^(?:г|гр|gr|g)$/i.test(rawUnit) ? "гр" : /^(?:л|l)$/i.test(rawUnit) ? "л" : /^(?:мл|ml)$/i.test(rawUnit) ? "мл" : "шт";
   return `${count}/${parts.map(match => `${match[1]}${unit(match[2])}`).join("/")}`;
+};
+const synchronizePlaceContentsBasis = (value: string | null | undefined, priceBasis: PriceBasis) => {
+  const normalized = formatPlaceContents(value);
+  if (!normalized || !["kg", "l", "piece"].includes(priceBasis)) return normalized;
+  const unit = priceBasis === "kg" ? "кг" : priceBasis === "l" ? "л" : "шт";
+  const simplePlace = /^(\d+)\/(\d+(?:\.\d+)?)(?:кг|гр|л|мл|шт)$/i.exec(normalized);
+  return simplePlace ? `${simplePlace[1]}/${simplePlace[2]}${unit}` : normalized;
 };
 const shelfLifeOptions = [
   { value: 1, label: "1 месяц" },
@@ -659,6 +666,11 @@ export default function PriceControl({
   const characteristics = overview.data?.characteristics ?? [];
   const selectableCharacteristics = (kind: CharacteristicDraft["kind"]) =>
     characteristics.filter(item => item.kind === kind && item.isActive);
+  const offerCharacteristicOptions = (kind: "manufacturer" | "place_contents", currentValue: string | null | undefined) => {
+    const values = selectableCharacteristics(kind).map(item => ({ value: item.value, label: item.value }));
+    const current = String(currentValue ?? "").trim();
+    return current && !values.some(item => item.value === current) ? [{ value: current, label: current }, ...values] : values;
+  };
   const hiddenProductsCount = catalogProducts.filter(
     product => !product.isActive || product.categoryIsActive === false
   ).length;
@@ -1272,6 +1284,7 @@ export default function PriceControl({
   const previewPriceKey = (rowIndex: number, optionIndex: number) => `${rowIndex}:${optionIndex}`;
   const updatePreviewPriceDraft = (rowIndex: number, optionIndex: number, fallback: Preview["rows"][number]["priceOptions"][number], patch: Partial<{ priceAmount: string; priceBasis: PriceBasis; priceMode: PricePaymentMode; market: PriceMarket }>) => {
     const key = previewPriceKey(rowIndex, optionIndex);
+    const nextBasis = patch.priceBasis ?? previewPriceEdits[key]?.priceBasis ?? fallback.priceBasis;
     setPreviewPriceEdits(current => ({
       ...current,
       [key]: {
@@ -1281,6 +1294,26 @@ export default function PriceControl({
         market: patch.market ?? current[key]?.market ?? marketFromPriceMode(fallback.market, fallback.priceMode),
       },
     }));
+    if (patch.priceBasis) {
+      const previewRow = preview?.rows[rowIndex];
+      if (previewRow) {
+        setPreviewMetadataEdits(current => {
+          const existing = current[rowIndex];
+          const manufacturedOn = existing?.manufacturedOn ?? previewRow.manufacturedOn ?? "";
+          const shelfLifeMonths = existing?.shelfLifeMonths ?? previewRow.shelfLifeMonths ?? null;
+          return {
+            ...current,
+            [rowIndex]: {
+              manufacturer: existing?.manufacturer ?? previewRow.manufacturer ?? "",
+              placeContents: synchronizePlaceContentsBasis(existing?.placeContents ?? previewRow.placeContents, nextBasis),
+              manufacturedOn,
+              shelfLifeMonths,
+              expiresOn: calculateExpiryDate(manufacturedOn, shelfLifeMonths),
+            },
+          };
+        });
+      }
+    }
   };
   const updatePreviewNameDraft = (rowIndex: number, rawName: string) => {
     setPreviewNameEdits(current => ({ ...current, [rowIndex]: rawName }));
@@ -1786,7 +1819,11 @@ export default function PriceControl({
                           expiresOn: draft?.expiresOn ?? offer.expiresOn ?? "",
                         };
                         const patchDraft = (patch: Partial<typeof currentDraft>) => {
-                          const next = { ...currentDraft, ...patch };
+                          const next = {
+                            ...currentDraft,
+                            ...patch,
+                            ...(patch.priceBasis ? { placeContents: synchronizePlaceContentsBasis(currentDraft.placeContents, patch.priceBasis) } : {}),
+                          };
                           const expiresOn = calculateExpiryDate(next.manufacturedOn, next.shelfLifeMonths);
                           setOfferDrafts(current => ({ ...current, [offer.priceId]: { ...next, expiresOn } }));
                         };
@@ -1820,8 +1857,8 @@ export default function PriceControl({
                                   <PriceSelect value={currentDraft.priceMode} onValueChange={value => patchDraft({ priceMode: value as PricePaymentMode })} placeholder="Условие цены" className="price-select-compact" options={editablePriceModes} />
                                   <PriceSelect value={currentDraft.market} onValueChange={value => patchDraft({ market: value as PriceMarket })} placeholder="Город" className="price-select-compact" options={priceMarketOptions} />
                                   <div className="price-offer-meta-edit">
-                                    <input value={currentDraft.manufacturer} onChange={event => patchDraft({ manufacturer: event.target.value })} placeholder="Производитель" maxLength={255} />
-                                    <input value={currentDraft.placeContents} onChange={event => patchDraft({ placeContents: event.target.value })} placeholder="Состав места: 1/12.5" maxLength={255} />
+                                    <PriceSelect value={currentDraft.manufacturer} onValueChange={manufacturer => patchDraft({ manufacturer })} placeholder="Производитель" options={offerCharacteristicOptions("manufacturer", currentDraft.manufacturer)} />
+                                    <PriceSelect value={currentDraft.placeContents} onValueChange={placeContents => patchDraft({ placeContents })} placeholder="Состав места" options={offerCharacteristicOptions("place_contents", currentDraft.placeContents)} />
                                     <ExactDateControl value={currentDraft.manufacturedOn} onChange={manufacturedOn => patchDraft({ manufacturedOn })} title="ДАТА ИЗГОТОВЛЕНИЯ" ariaLabel="Указать дату изготовления" emptyLabel="Дата изготовления" />
                                     <div className="price-shelf-life-picker" aria-label="Срок годности">
                                       {shelfLifeOptions.map(option => <button type="button" key={option.value} className={currentDraft.shelfLifeMonths === option.value ? "active" : ""} onClick={() => patchDraft({ shelfLifeMonths: option.value })}>{option.label}</button>)}
@@ -2159,20 +2196,20 @@ export default function PriceControl({
                               <>
                                 <label>
                                   Производитель
-                                  <input
+                                  <PriceSelect
                                     value={previewMetadataEdits[index]?.manufacturer ?? row.manufacturer ?? ""}
-                                    onChange={event => updatePreviewMetadataDraft(index, { manufacturer: event.target.value }, row)}
+                                    onValueChange={manufacturer => updatePreviewMetadataDraft(index, { manufacturer }, row)}
                                     placeholder="Не указан"
-                                    maxLength={255}
+                                    options={offerCharacteristicOptions("manufacturer", previewMetadataEdits[index]?.manufacturer ?? row.manufacturer)}
                                   />
                                 </label>
                                 <label>
                                   Состав места
-                                  <input
+                                  <PriceSelect
                                     value={previewMetadataEdits[index]?.placeContents ?? row.placeContents ?? ""}
-                                    onChange={event => updatePreviewMetadataDraft(index, { placeContents: event.target.value }, row)}
-                                    placeholder="Например, 1/12.5"
-                                    maxLength={255}
+                                    onValueChange={placeContents => updatePreviewMetadataDraft(index, { placeContents }, row)}
+                                    placeholder="Не указан"
+                                    options={offerCharacteristicOptions("place_contents", previewMetadataEdits[index]?.placeContents ?? row.placeContents)}
                                   />
                                 </label>
                                 <label className="price-preview-manufactured-date">
@@ -2555,7 +2592,7 @@ export default function PriceControl({
             <section className="price-characteristics-panel" aria-label="Характеристики товаров">
               <div>
                 <span>ХАРАКТЕРИСТИКИ ТОВАРОВ</span>
-                <p>Вариант и фасовка выбираются из повторно используемых значений, а не вводятся заново в каждом товаре.</p>
+                <p>Вариант, фасовка, состав места и производитель выбираются из повторно используемых значений, а не вводятся заново в каждой позиции.</p>
               </div>
               {canEdit && (
                 <div className="price-characteristics-actions">
@@ -2568,6 +2605,9 @@ export default function PriceControl({
                   <button type="button" className="packet-link compact" onClick={() => setCharacteristicDraft({ id: null, kind: "place_contents", value: "", isActive: true })}>
                     <Plus size={13} /> Состав места
                   </button>
+                  <button type="button" className="packet-link compact" onClick={() => setCharacteristicDraft({ id: null, kind: "manufacturer", value: "", isActive: true })}>
+                    <Plus size={13} /> Производитель
+                  </button>
                 </div>
               )}
               {characteristicDraft && (
@@ -2575,19 +2615,19 @@ export default function PriceControl({
                   <label>
                     Тип
                     {characteristicDraft.id ? (
-                      <strong>{characteristicDraft.kind === "variant" ? "Вариант товара" : characteristicDraft.kind === "size" ? "Фасовка / вес" : "Состав места"}</strong>
+                      <strong>{characteristicDraft.kind === "variant" ? "Вариант товара" : characteristicDraft.kind === "size" ? "Фасовка / вес" : characteristicDraft.kind === "place_contents" ? "Состав места" : "Производитель"}</strong>
                     ) : (
                       <PriceSelect
                         value={characteristicDraft.kind}
                         onValueChange={value => setCharacteristicDraft({ ...characteristicDraft, kind: value as CharacteristicDraft["kind"] })}
                         placeholder="Тип характеристики"
-                        options={[{ value: "variant", label: "Вариант товара" }, { value: "size", label: "Фасовка / вес" }, { value: "place_contents", label: "Состав места" }]}
+                        options={[{ value: "variant", label: "Вариант товара" }, { value: "size", label: "Фасовка / вес" }, { value: "place_contents", label: "Состав места" }, { value: "manufacturer", label: "Производитель" }]}
                       />
                     )}
                   </label>
                   <label>
                     Значение
-                    <input value={characteristicDraft.value} onChange={event => setCharacteristicDraft({ ...characteristicDraft, value: event.target.value })} placeholder={characteristicDraft.kind === "variant" ? "Например, IQF" : characteristicDraft.kind === "size" ? "Например, 500гр" : "Например, 1/12.5"} maxLength={160} />
+                    <input value={characteristicDraft.value} onChange={event => setCharacteristicDraft({ ...characteristicDraft, value: event.target.value })} placeholder={characteristicDraft.kind === "variant" ? "Например, IQF" : characteristicDraft.kind === "size" ? "Например, 500гр" : characteristicDraft.kind === "place_contents" ? "Например, 1/12.5кг" : "Например, Экспрод"} maxLength={160} />
                   </label>
                   {characteristicDraft.id && (
                     <button type="button" className={`price-active-toggle${characteristicDraft.isActive ? " is-active" : ""}`} onClick={() => setCharacteristicDraft({ ...characteristicDraft, isActive: !characteristicDraft.isActive })}>
@@ -2605,7 +2645,7 @@ export default function PriceControl({
                 <div className="price-characteristics-list">
                   {characteristics.map(item => (
                     <button type="button" key={item.id} className={item.isActive ? "" : "is-hidden"} onClick={() => canEdit && setCharacteristicDraft({ id: item.id, kind: item.kind, value: item.value, isActive: item.isActive })} disabled={!canEdit}>
-                      <small>{item.kind === "variant" ? "ВАРИАНТ" : item.kind === "size" ? "ФАСОВКА" : "СОСТАВ МЕСТА"}</small>
+                      <small>{item.kind === "variant" ? "ВАРИАНТ" : item.kind === "size" ? "ФАСОВКА" : item.kind === "place_contents" ? "СОСТАВ МЕСТА" : "ПРОИЗВОДИТЕЛЬ"}</small>
                       <strong>{item.value}</strong>
                       {!item.isActive && <em>Скрыта</em>}
                     </button>
@@ -2777,20 +2817,20 @@ export default function PriceControl({
                       </label>
                       <label>
                         Производитель
-                        <input
+                        <PriceSelect
                           value={productDraft.manualOffer.manufacturer}
-                          onChange={event => patchProductManualOffer({ manufacturer: event.target.value })}
+                          onValueChange={manufacturer => patchProductManualOffer({ manufacturer })}
                           placeholder="Не указан"
-                          maxLength={255}
+                          options={offerCharacteristicOptions("manufacturer", productDraft.manualOffer.manufacturer)}
                         />
                       </label>
                       <label>
                         Состав места
-                        <input
+                        <PriceSelect
                           value={productDraft.manualOffer.placeContents}
-                          onChange={event => patchProductManualOffer({ placeContents: event.target.value })}
-                          placeholder="Например, 1/12.5"
-                          maxLength={255}
+                          onValueChange={placeContents => patchProductManualOffer({ placeContents })}
+                          placeholder="Не указан"
+                          options={offerCharacteristicOptions("place_contents", productDraft.manualOffer.placeContents)}
                         />
                       </label>
                       <ExactDateControl

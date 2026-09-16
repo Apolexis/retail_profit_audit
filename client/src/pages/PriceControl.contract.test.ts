@@ -172,7 +172,8 @@ describe("страница «Прайс‑контроль»", () => {
   it("на широкой версии отдает свободное место названию и не накладывает цену с метаданными", () => {
     expect(styles).toContain("grid-template-columns: 28px minmax(0, 1.62fr) minmax(0, .88fr) 36px");
     expect(styles).toContain(".price-preview-table { inline-size: 100%; max-inline-size: 100%; box-sizing: border-box; }");
-    expect(styles).toContain(".price-preview-new-row .price-preview-prices { grid-column: 3; grid-row: 1 / span 2;");
+    expect(styles).toContain(".price-preview-new-row .price-preview-prices { grid-column: 3; grid-row: 1; min-width: 0; }");
+    expect(styles).toContain(".price-preview-new-row .price-preview-remove { grid-column: 4; grid-row: 1; }");
     expect(styles).toContain(".packet .price-preview-offer-metadata { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));");
     expect(styles).toContain(".packet .price-preview-prices > div > small { position: static;");
     expect(styles).toContain(".packet .price-preview-price-edit { grid-template-columns: minmax(0, .9fr) minmax(0, 1fr); }");
@@ -199,6 +200,17 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("Годен до:");
     expect(page).toContain("shelfLifeOptions.map");
     expect(page).toContain("calculateExpiryDate");
+  });
+
+  it("ведет производителя и состав места через управляемый справочник, сохраняя распознанное значение до явного редактирования", () => {
+    expect(page).toContain('const offerCharacteristicOptions = (kind: "manufacturer" | "place_contents", currentValue: string | null | undefined) =>');
+    expect(page).toContain('selectableCharacteristics(kind).map(item => ({ value: item.value, label: item.value }))');
+    expect(page).toContain('offerCharacteristicOptions("manufacturer", currentDraft.manufacturer)');
+    expect(page).toContain('offerCharacteristicOptions("place_contents", currentDraft.placeContents)');
+    expect(page).toContain('offerCharacteristicOptions("manufacturer", productDraft.manualOffer.manufacturer)');
+    expect(page).toContain('offerCharacteristicOptions("place_contents", productDraft.manualOffer.placeContents)');
+    expect(page).toContain('kind: "variant" | "size" | "place_contents" | "manufacturer"');
+    expect(page).not.toContain("manufacturerCharacteristicId");
   });
 
   it("на телефоне показывает одну позицию preview с навигацией и использует компактную отмеченную галочку", () => {

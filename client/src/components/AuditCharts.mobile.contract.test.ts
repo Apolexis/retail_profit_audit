@@ -66,10 +66,10 @@ describe("мобильный контракт графических контр�
     expect(chart).not.toContain('const [chartWidth,setChartWidth]=useState(0)');
     expect(chart).toContain('data-tooltip-columns={columns}');
     expect(chart).toContain('className={`tiny-tooltip${densePercent?" tiny-tooltip-dense":""}${moneyTooltip?" tiny-tooltip-monetary":""}${denseMoney?" tiny-tooltip-monetary-dense":""}`}');
-    expect(chart).toContain('item.missing?"Нет факта":chartTick(item.value??0,mode)');
-    expect(styles).toContain('.tiny-tooltip-monetary { width: min(300px, calc(100vw - 32px)) !important;');
+    expect(chart).toContain('item.missing?"Нет факта":chartTick(item.value??0,mode,mode==="amount"||mode==="million")');
+    expect(styles).toContain('.tiny-tooltip-monetary { width: fit-content !important; min-width: 0 !important; max-width: min(300px, calc(100vw - 32px)) !important; }');
     expect(styles).toContain('.tiny-tooltip-monetary .tiny-tooltip-values-2 > span { white-space: nowrap; }');
-    expect(styles).toContain('.tiny-tooltip-monetary-dense { width: min(300px, calc(100vw - 32px)) !important;');
+    expect(styles).toContain('.tiny-tooltip-monetary-dense { width: fit-content !important; min-width: 0 !important; max-width: min(300px, calc(100vw - 32px)) !important;');
   });
 
   it("сокращает левый резерв компактного медианного графика на телефоне и не меняет развернутый вариант", () => {
@@ -90,8 +90,8 @@ describe("мобильный контракт графических контр�
   });
 
   it("дает периоду и строкам значений одинаковый вертикальный воздух", () => {
-    expect(styles).toContain('.tiny-tooltip { padding: 10px 12px 11px !important; }');
-    expect(styles).toContain('.tiny-tooltip > b { display: block; margin-bottom: 6px !important; line-height: 1.2; }');
-    expect(styles).toContain('.tiny-tooltip .tiny-tooltip-values { row-gap: 4px; }');
+    expect(styles).toContain('.tiny-tooltip { padding: 7px 9px !important; }');
+    expect(styles).toContain('.tiny-tooltip > b { margin-bottom: 3px !important; line-height: 1.12; }');
+    expect(styles).toContain('.tiny-tooltip .tiny-tooltip-values { row-gap: 2px; column-gap: 8px !important; }');
   });
 });

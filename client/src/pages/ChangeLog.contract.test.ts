@@ -35,6 +35,11 @@ describe("компактный журнал изменений", () => {
     expect(journal).toContain('const deferredQuery=useDeferredValue(query.trim())');
   });
 
+  it("выравнивает пустой результат поиска по левому краю контента карточки", () => {
+    expect(journal).toContain('className="change-log-empty"');
+    expect(overrides).toContain('.packet .change-log.detailed > .change-log-empty { margin: 8px 4px 10px; padding: 0; }');
+  });
+
   it("показывает изменения соответствий поставщиков в общем журнале с отдельным фильтром прайс‑контроля", () => {
     expect(journal).toContain('"price_alias.link":"Создание соответствия поставщика"');
     expect(journal).toContain('"price_alias.reassign":"Переназначение соответствия поставщика"');

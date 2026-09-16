@@ -44,7 +44,7 @@ export const priceControlRouter = router({
     await recordChange({ actorId: actor.id, action: "price_product.category_bulk_assign", entityType: "price_product", entityId: input.productIds.join(","), beforeState: { products: before }, afterState: { products: after, categoryName: result.category.name } });
     return result;
   }),
-  createCharacteristic: protectedProcedure.input(z.object({ kind: z.enum(["variant", "size", "place_contents"]), value: z.string().trim().min(1).max(160) })).mutation(async ({ ctx, input }) => {
+  createCharacteristic: protectedProcedure.input(z.object({ kind: z.enum(["variant", "size", "place_contents", "manufacturer"]), value: z.string().trim().min(1).max(160) })).mutation(async ({ ctx, input }) => {
     await requirePricePermission(ctx.user.openId, "edit");
     const actor = await localActor(ctx.user.openId); const characteristic = await createPriceProductCharacteristic(input);
     if (!characteristic) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Не удалось создать характеристику товара." });

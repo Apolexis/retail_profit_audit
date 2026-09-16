@@ -1,0 +1,1 @@
+ALTER TABLE `price_product_characteristics` MODIFY COLUMN `kind` enum('variant','size','place_contents','manufacturer') NOT NULL;

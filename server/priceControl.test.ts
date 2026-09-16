@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculatePriceChanges, calculatePriceOfferExpiry, deduplicatePdfRows, normalizePackagingDisplay, normalizePlaceContents, normalizePrice, normalizeProductDisplayName, normalizeProductName, packagingSignature, parsePdfExtractedText, parsePdfPositionedPages, preparePriceImportRows, productSignature, resolvePriceMapping, sourceDateFromText } from "./priceControl";
+import { calculatePriceChanges, calculatePriceOfferExpiry, deduplicatePdfRows, normalizePackagingDisplay, normalizePlaceContents, normalizePrice, normalizeProductDisplayName, normalizeProductName, packagingSignature, parsePdfExtractedText, parsePdfPositionedPages, preparePriceImportRows, productSignature, resolvePriceMapping, sourceDateFromText, synchronizePlaceContentsBasis } from "./priceControl";
 import { readFileSync } from "node:fs";
 
 describe("прайс‑контроль: нормализация товарных строк", () => {
@@ -25,6 +25,13 @@ describe("прайс‑контроль: нормализация товарны
     expect(normalizePlaceContents("4 кг (короб) 500 гр")).toBe("1/4кг/500гр");
     expect(normalizePlaceContents("1/12.5")).toBe("1/12.5кг");
     expect(normalizePlaceContents("1/24", "Икра щуки ст.б. 100гр")).toBe("1/24шт");
+  });
+
+  it("меняет базовую единицу только у простого состава места и сохраняет составную фасовку", () => {
+    expect(synchronizePlaceContentsBasis("1/13шт", "kg")).toBe("1/13кг");
+    expect(synchronizePlaceContentsBasis("1/12.5кг", "piece")).toBe("1/12.5шт");
+    expect(synchronizePlaceContentsBasis("1/4кг/500гр", "piece")).toBe("1/4кг/500гр");
+    expect(synchronizePlaceContentsBasis("1/36шт/210гр", "kg")).toBe("1/36шт/210гр");
   });
 
   it("склеивает фрагменты одного PDF-слова по нулевому промежутку, но сохраняет пробел между словами", () => {
@@ -326,7 +333,22 @@ describe("прайс‑контроль: нормализация товарны
       expect.objectContaining({ priceAmount: 1966, priceMode: "cashless_vat", market: "spb", priceBasis: "package", includesVat: true }),
       expect.objectContaining({ priceAmount: 15730, priceBasis: "kg", includesVat: true }),
     ]));
-    expect(rows[1]?.priceOptions[0]).toMatchObject({ priceAmount: 1879 });
+    expect(rows[1]?.priceOptions[0]).toMatchObject({ priceAmount: 1879, priceBasis: "kg", includesVat: true });
+  });
+
+  it("для любой одиночной неявной цены PDF использует ₽/кг, но сохраняет базы при нескольких или явных ценах", () => {
+    const rows = parsePdfPositionedPages([[
+      { x: 25, y: 400, value: "Наименование" }, { x: 250, y: 400, value: "Цена" }, { x: 250, y: 388, value: "с НДС" },
+      { x: 25, y: 360, value: "Мясо краба" }, { x: 255, y: 360, value: "4 750" },
+      { x: 25, y: 330, value: "Икра горбуши 125гр" }, { x: 255, y: 330, value: "1 966 (в СПб) 15 730 за 1 кг" },
+    ]]);
+    const crab = rows.find(row => row.rawName === "Мясо краба");
+    const caviar = rows.find(row => row.rawName === "Икра горбуши 125гр");
+    expect(crab?.priceOptions).toEqual([expect.objectContaining({ priceAmount: 4750, priceBasis: "kg", includesVat: true })]);
+    expect(caviar?.priceOptions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ priceAmount: 1966, priceBasis: "package", market: "spb" }),
+      expect.objectContaining({ priceAmount: 15730, priceBasis: "kg" }),
+    ]));
   });
 
   it("сохраняет строку PDF без цены для ручного заполнения и исключает спецификацию из имени", () => {

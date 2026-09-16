@@ -149,7 +149,7 @@ describe("форматирование денежных показателей",
     expect(source).toContain('onInteractOutside={protectGeneralChartSurface?keepChartSurfaceInside:undefined}');
     expect(source).toContain('onPointerDown={protectGeneralChartSurface?stopChartPointerBubble:undefined}');
     expect(source).not.toContain('onPointerDownCapture={protectGeneralChartSurface?stopChartPointerBubble:undefined}');
-    expect(source).toContain('item.missing?"Нет факта":chartTick(item.value??0,mode)');
+    expect(source).toContain('item.missing?"Нет факта":chartTick(item.value??0,mode,mode==="amount"||mode==="million")');
     expect(source).toContain('document.body.dataset.generalChartDialogOpen="true"');
     expect(source).toContain('pointInsideRect(point,dialog.getBoundingClientRect())');
     expect(source).toContain('document.body.dataset.generalChartDialogOpen="true"');
