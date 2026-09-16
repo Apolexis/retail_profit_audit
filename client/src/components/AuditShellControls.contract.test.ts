@@ -83,6 +83,15 @@ describe("базовые управляющие элементы", () => {
     expect(shell).not.toContain("clearActionFocus");
     expect(shell).not.toContain("data-pointer-action");
     expect(shell).toContain('const moveHistory=(direction:"back"|"forward")=>');
+    expect(shell).toContain('const quickRouteHistoryRef=useRef<string[]>([])');
+    expect(shell).toContain('const quickRouteStorageKey="audit-quick-route-history"');
+    expect(shell).toContain('window.sessionStorage.setItem(quickRouteStorageKey');
+    expect(shell).toContain('const knownCursor=paths.lastIndexOf(location);');
+    expect(shell).toContain('paths.unshift("/");');
+    expect(shell).toContain('quickRouteCursorRef.current=1;');
+    expect(shell).not.toContain('window.history.length>1');
+    expect(shell).not.toContain('window.history.back()');
+    expect(shell).not.toContain('window.history.forward()');
     expect(shell).toContain('const refreshPage=async()=>{');
     expect(shell).toContain('setIsRefreshing(true);');
     expect(shell).toContain('await new Promise<void>(resolve=>window.requestAnimationFrame(()=>window.requestAnimationFrame(()=>resolve())))');

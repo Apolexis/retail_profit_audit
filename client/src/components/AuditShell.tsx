@@ -9,6 +9,7 @@ import "@/audit.css";
 import "@/mobile-nav.css";
 
 const compactBrandIcon={dark:"/manus-storage/rybny_pwa_dark_transparent_110da59a.png",light:"/manus-storage/rybny_pwa_light_transparent_d1223d9d.png"} as const;
+const quickRouteStorageKey="audit-quick-route-history";
 export function BrandMark({theme}:{theme:"dark"|"light"}){return <span className="brand-mark-switch" aria-hidden="true">{(["dark","light"] as const).map(markTheme=><img key={markTheme} className={markTheme===theme?"brand-mark is-visible":"brand-mark"} src={compactBrandIcon[markTheme]} alt="" loading="eager" decoding="sync" draggable={false}/>)}</span>}
 const isStandalonePwa=()=>typeof window!=="undefined"&&(window.matchMedia("(display-mode: standalone)").matches||(window.navigator as Navigator&{standalone?:boolean}).standalone===true||document.documentElement.dataset.pwaStandalone==="true");
 const navSections=[
@@ -39,8 +40,29 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
   const [isRefreshing,setIsRefreshing]=useState(false);
   const [historyMotion,setHistoryMotion]=useState<"back"|"forward"|null>(null);
   const gestureStart=useRef<number|null>(null);
+  const quickRouteHistoryRef=useRef<string[]>([]);
+  const quickRouteCursorRef=useRef(0);
   useEffect(()=>{const update=()=>setShowTop(window.scrollY>280);update();window.addEventListener("scroll",update,{passive:true});return()=>window.removeEventListener("scroll",update)},[]);
   useEffect(()=>{const media=window.matchMedia("(display-mode: standalone)");const update=()=>setStandalone(isStandalonePwa());update();media.addEventListener("change",update);window.addEventListener("pageshow",update);document.addEventListener("visibilitychange",update);return()=>{media.removeEventListener("change",update);window.removeEventListener("pageshow",update);document.removeEventListener("visibilitychange",update)}},[]);
+  useEffect(()=>{
+    const persist=()=>{try{window.sessionStorage.setItem(quickRouteStorageKey,JSON.stringify({paths:quickRouteHistoryRef.current,cursor:quickRouteCursorRef.current}))}catch{}};
+    if(quickRouteHistoryRef.current.length===0){
+      try{
+        const saved=JSON.parse(window.sessionStorage.getItem(quickRouteStorageKey)??"null") as {paths?:unknown;cursor?:unknown}|null;
+        const paths=Array.isArray(saved?.paths)?saved.paths.filter((path):path is string=>typeof path==="string"&&path.startsWith("/")):[];
+        if(paths.length>0&&typeof saved?.cursor==="number"&&saved.cursor>=0&&saved.cursor<paths.length){quickRouteHistoryRef.current=paths;quickRouteCursorRef.current=saved.cursor;}
+      }catch{}
+      if(quickRouteHistoryRef.current.length===0){quickRouteHistoryRef.current=[location];quickRouteCursorRef.current=0;}
+    }
+    const paths=quickRouteHistoryRef.current;
+    const cursor=quickRouteCursorRef.current;
+    if(paths[cursor]!==location){
+      const knownCursor=paths.lastIndexOf(location);
+      if(knownCursor>=0)quickRouteCursorRef.current=knownCursor;
+      else {paths.splice(cursor+1);paths.push(location);quickRouteCursorRef.current=paths.length-1;}
+    }
+    persist();
+  },[location]);
   useEffect(()=>{if(!standalone)return;let firstFrame:number|undefined;let secondFrame:number|undefined;let settleTimer:number|undefined;const refreshFixedControls=()=>{if(document.visibilityState==="hidden")return;if(firstFrame!==undefined)window.cancelAnimationFrame(firstFrame);if(secondFrame!==undefined)window.cancelAnimationFrame(secondFrame);if(settleTimer!==undefined)window.clearTimeout(settleTimer);document.documentElement.classList.add("pwa-fixed-reflow");firstFrame=window.requestAnimationFrame(()=>{secondFrame=window.requestAnimationFrame(()=>{setFixedEpoch(epoch=>epoch+1);settleTimer=window.setTimeout(()=>{setFixedEpoch(epoch=>epoch+1);document.documentElement.classList.remove("pwa-fixed-reflow");},220);});});};const viewport=window.visualViewport;const onVisible=()=>{if(document.visibilityState==="visible")refreshFixedControls();};refreshFixedControls();window.addEventListener("pageshow",refreshFixedControls);window.addEventListener("focus",refreshFixedControls);window.addEventListener("orientationchange",refreshFixedControls);document.addEventListener("visibilitychange",onVisible);viewport?.addEventListener("resize",refreshFixedControls);viewport?.addEventListener("scroll",refreshFixedControls);return()=>{if(firstFrame!==undefined)window.cancelAnimationFrame(firstFrame);if(secondFrame!==undefined)window.cancelAnimationFrame(secondFrame);if(settleTimer!==undefined)window.clearTimeout(settleTimer);document.documentElement.classList.remove("pwa-fixed-reflow");window.removeEventListener("pageshow",refreshFixedControls);window.removeEventListener("focus",refreshFixedControls);window.removeEventListener("orientationchange",refreshFixedControls);document.removeEventListener("visibilitychange",onVisible);viewport?.removeEventListener("resize",refreshFixedControls);viewport?.removeEventListener("scroll",refreshFixedControls);};},[standalone]);
   const isAdmin=me.data?.role==="admin";
   const hasPriceAccess=isAdmin||Boolean(me.data?.priceAccessLevel&&me.data.priceAccessLevel!=="none");
@@ -56,9 +78,23 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
   };
   const moveHistory=(direction:"back"|"forward")=>{
     if(historyMotion)return;
+    const paths=quickRouteHistoryRef.current;
+    const cursor=quickRouteCursorRef.current;
+    let target:string|null=null;
+    if(direction==="back"){
+      if(cursor>0)target=paths[cursor-1];
+      else if(location!=="/"){
+        paths.unshift("/");
+        quickRouteCursorRef.current=1;
+        try{window.sessionStorage.setItem(quickRouteStorageKey,JSON.stringify({paths,cursor:1}))}catch{}
+        target="/";
+      }
+    }else if(cursor<paths.length-1)target=paths[cursor+1];
+    if(!target||target===location)return;
     setHistoryMotion(direction);
     window.setTimeout(()=>{
-      direction==="back"?(window.history.length>1?window.history.back():setLocation("/")):window.history.forward();
+      setLocation(target);
+      setHistoryMotion(null);
     },180);
   };
   const toggleDemo=()=>{toggleDemoMode();};
