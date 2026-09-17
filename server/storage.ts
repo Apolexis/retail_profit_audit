@@ -2,6 +2,7 @@
 // Uploads via Forge Server presigned URL to S3 (PUT direct).
 // Downloads return /manus-storage/{key} paths served via 307 redirect.
 
+import { createHash } from "node:crypto";
 import { ENV } from "./_core/env";
 
 function getForgeConfig() {
@@ -21,6 +22,25 @@ function normalizeKey(relKey: string): string {
   return relKey.replace(/^\/+/, "");
 }
 
+/**
+ * The Forge presign endpoint only accepts ASCII object paths. The visible
+ * document name remains unchanged in the database; this conversion applies
+ * solely to the opaque S3 key used for a new upload.
+ */
+export function storagePutKey(relKey: string): string {
+  const source = normalizeKey(relKey);
+  const safeSegments = source.split("/").filter(Boolean).map((segment, index) => {
+    if (/^[A-Za-z0-9._-]+$/.test(segment)) return segment;
+    const extension = segment.match(/(\.[A-Za-z0-9]{1,16})$/)?.[1] ?? "";
+    const stem = extension ? segment.slice(0, -extension.length) : segment;
+    const readable = stem.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48) || `file-${index + 1}`;
+    const suffix = createHash("sha256").update(segment).digest("hex").slice(0, 12);
+    return `${readable}-${suffix}${extension.toLowerCase()}`;
+  });
+  if (!safeSegments.length) throw new Error("Не удалось сформировать путь для загрузки файла.");
+  return safeSegments.join("/");
+}
+
 function appendHashSuffix(relKey: string): string {
   const hash = crypto.randomUUID().replace(/-/g, "").slice(0, 8);
   const lastDot = relKey.lastIndexOf(".");
@@ -34,7 +54,7 @@ export async function storagePut(
   contentType = "application/octet-stream",
 ): Promise<{ key: string; url: string }> {
   const { forgeUrl, forgeKey } = getForgeConfig();
-  const key = appendHashSuffix(normalizeKey(relKey));
+  const key = appendHashSuffix(storagePutKey(relKey));
 
   // 1. Get presigned PUT URL from Forge
   const presignUrl = new URL("v1/storage/presign/put", forgeUrl + "/");
