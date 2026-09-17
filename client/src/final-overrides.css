@@ -3085,6 +3085,9 @@ html[data-audit-theme="dark"] .packet { --price-accent: #ff856d; --price-bar: #8
 .packet .price-summary-grid strong { color: var(--price-accent); font-size: clamp(24px, 3vw, 34px); line-height: 1; font-variant-numeric: tabular-nums; }
 .packet .price-summary-grid small { color: var(--price-muted); line-height: 1.32; }
 .packet .price-upload, .packet .price-comparison, .packet .price-mapping, .packet .price-history { border-color: var(--price-border); }
+/* Импорт прайсов повторяет материальность основного Excel-импорта: одинаковая поверхность карточек и отдельная подложка зоны файла. */
+.packet .price-import-workbench > :is(.price-upload, .price-import-guide) { background: var(--card); border-color: var(--price-border) !important; }
+.packet .price-file-drop { background: radial-gradient(circle at 50% 0, color-mix(in srgb, var(--price-accent) 18%, transparent), transparent 58%), var(--price-surface); }
 .packet .price-upload-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: end; margin-top: 15px; }
 .packet .price-file-input { display: grid; gap: 6px; min-width: 0; }
 .packet .price-file-input > span, .packet .price-upload label:not(.price-file-input), .packet .price-toolbar label { display: grid; gap: 6px; color: var(--price-muted); font-size: 11px; font-weight: 700; }

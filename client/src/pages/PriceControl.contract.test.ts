@@ -114,6 +114,8 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain('className={preview ? "price-import-workbench is-preview-ready" : "price-import-workbench"}');
     expect(page).toContain('{!preview && <aside className="packet-card price-import-guide">');
     expect(styles).toContain(".packet .price-import-workbench.is-preview-ready");
+    expect(styles).toContain(".packet .price-import-workbench > :is(.price-upload, .price-import-guide) { background: var(--card); border-color: var(--price-border) !important; }");
+    expect(styles).toContain(".packet .price-file-drop { background: radial-gradient(circle at 50% 0");
   });
 
   it("заменяет нативные селекты тематичными немодальными списками приложения", () => {
