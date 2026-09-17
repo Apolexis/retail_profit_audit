@@ -25,10 +25,12 @@ describe("страница «Профиль»", () => {
     expect(styles).toContain('.packet .profile-cache-reset.is-clearing .profile-cache-reset-icon');
   });
 
-  it("подготавливает ключ отдельным действием и запускает Android prompt только вторым прямым нажатием", () => {
+  it("сохраняет один шаг на iPhone и запускает Android prompt вторым прямым нажатием", () => {
     expect(profile).toContain('import { passkeyErrorText } from "@/lib/passkeyError";');
     expect(profile).toContain('import { getPasskeyPlatform, passkeyPlatformGuidance } from "@/lib/passkeyPlatform";');
     expect(profile).toContain("const [preparedPasskeyOptions, setPreparedPasskeyOptions]");
+    expect(profile).toContain('if (getPasskeyPlatform() !== "android")');
+    expect(profile).toContain("await startRegistration({ optionsJSON: options })");
     expect(profile).toContain("const confirmPasskeyOnDevice = async () =>");
     expect(profile).toContain("await startRegistration({ optionsJSON: preparedPasskeyOptions })");
     expect(profile).toContain("Подтвердить ключ на устройстве");

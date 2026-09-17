@@ -8,7 +8,8 @@ describe("немодальный тематичный select", () => {
   it("использует Popover без scroll lock и закрывает список при прокрутке документа", () => {
     expect(component).toContain('import { Popover, PopoverContent, PopoverTrigger }');
     expect(component).toContain('modal={false}');
-    expect(component).toContain('window.addEventListener("scroll", closeOnDocumentScroll, true)');
+    expect(component).toContain('useLayoutEffect(() => {');
+    expect(component).toContain('window.addEventListener("scroll", closeOnDocumentScroll, { capture: true, passive: true })');
     expect(component).toContain('window.removeEventListener("scroll", closeOnDocumentScroll, true)');
     expect(component).not.toContain("RemoveScroll");
   });
@@ -20,5 +21,6 @@ describe("немодальный тематичный select", () => {
     expect(component).toContain('className="free-scroll-select-group"');
     expect(styles).toContain('.free-scroll-select-content { z-index: 90 !important;');
     expect(styles).toContain('overflow-y: auto;');
+    expect(styles).toContain('animation: none !important; transition: none !important;');
   });
 });

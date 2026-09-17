@@ -1,5 +1,5 @@
 import { Check, ChevronDown } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
@@ -44,13 +44,13 @@ export function FreeScrollSelect({
   const listId = useId();
   const selected = options.find(option => option.value === value);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return;
     const closeOnDocumentScroll = (event: Event) => {
       if (event.target instanceof Node && contentRef.current?.contains(event.target)) return;
       setOpen(false);
     };
-    window.addEventListener("scroll", closeOnDocumentScroll, true);
+    window.addEventListener("scroll", closeOnDocumentScroll, { capture: true, passive: true });
     return () => window.removeEventListener("scroll", closeOnDocumentScroll, true);
   }, [open]);
 

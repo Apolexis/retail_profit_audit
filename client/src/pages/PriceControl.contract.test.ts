@@ -260,8 +260,8 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain(".packet .price-preview-name-edit :is(input, textarea) { min-width: 0; padding-inline: 7px; font-size: 12px;");
     expect(styles).toContain(".packet .price-preview-name-edit textarea { resize: vertical;");
     expect(styles).toContain(".packet .price-preview-name-edit > label { display: grid;");
-    expect(styles).toContain("@media (hover: none) and (pointer: coarse)");
-    expect(styles).toContain(".packet .price-preview-name-expand { display: inline-grid; grid-column: 3; grid-row: 2;");
+    expect(styles).toContain("@media (hover: none) and (pointer: coarse), (max-width: 560px)");
+    expect(styles).toContain(".packet .price-preview-name-expand { position: absolute; z-index: 2; top: 10px; right: 51px; display: inline-grid;");
     expect(styles).toContain(".packet .price-preview-name-edit.is-expanded textarea { min-height: 96px;");
     expect(styles).toContain("@media (max-width: 420px)");
     expect(styles).toContain("@media (max-width: 560px) { .packet .price-preview-table { overflow: clip; touch-action: pan-y; } }");

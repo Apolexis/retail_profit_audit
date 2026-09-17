@@ -104,6 +104,11 @@ export default function Profile() {
   const enablePasskey = async () => {
     try {
       const options = await beginPasskey.mutateAsync();
+      if (getPasskeyPlatform() !== "android") {
+        const response = await startRegistration({ optionsJSON: options });
+        await finishPasskey.mutateAsync({ response });
+        return;
+      }
       setPreparedPasskeyOptions(options);
       toast.success("Ключ подготовлен", { description: "Теперь нажмите «Подтвердить ключ на устройстве» — это откроет системное подтверждение." });
     } catch (error) {
