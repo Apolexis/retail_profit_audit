@@ -3001,7 +3001,7 @@ html.pwa-fixed-reflow .scroll-top { position: fixed !important; transform: trans
 :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip > b { margin-bottom: 3px !important; line-height: 1.12; }
 :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip .tiny-tooltip-values { row-gap: 2px; column-gap: 8px !important; }
 
-/* Tooltip: короткое имя магазина не теряет полезные символы из-за жесткой трехколоночной сетки. */
+/* Tooltip: код до пяти символов не теряет полезные символы; длинные подписи уже сокращены в компоненте. */
 :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) .tiny-tooltip.tiny-tooltip-single {
   display: block !important;
   width: fit-content !important;

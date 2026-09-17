@@ -87,12 +87,15 @@ describe("мобильный контракт графических контр�
     expect(styles).toContain('.tiny-tooltip[data-tooltip-count="1"]');
   });
 
-  it("держит маркер, подпись и значение tooltip в одной строке с безопасным сокращением подписи", () => {
+  it("держит маркер, подпись и значение tooltip в одной строке: до пяти символов полностью, далее многоточие", () => {
     expect(styles).toContain('grid-template-columns: 8px minmax(0, 1fr) max-content;');
     expect(styles).toContain('text-overflow: ellipsis;');
     expect(styles).toContain('font-variant-numeric: tabular-nums;');
     expect(styles).toContain('white-space: nowrap !important;');
-    expect(chart).toContain('const shortLabel=item.name.length<=5');
+    expect(chart).toContain('export const truncateTooltipLabel=(value:string,limit=5)');
+    expect(chart).toContain('const shortLabel=Array.from(item.name).length<=5');
+    expect(chart).toContain('const displayName=truncateTooltipLabel(item.name)');
+    expect(chart).toContain('title={item.name}');
     expect(chart).toContain('"tiny-tooltip-name tiny-tooltip-short-label"');
     expect(styles).toContain('min-width: 5ch;');
     expect(styles).toContain('.tiny-tooltip-name.tiny-tooltip-short-label');

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { chartPanSpeedForZoom, chartTick, clampChartZoom, formatFactAmount, formatK, formatM, formatTableAmount, missingTooltipLines, nonZeroLines, normalizeOverlayBarRect, panChartRows, pointInsideRect, resolveChartPanAxis, resolveMetricChartLayout, resolveMetricChartView, resolveOverlayBarGeometry, sortTooltipPayload, viewportChartDomain, windowChartRows, zeroAwareTicks } from "./AuditCharts";
+import { chartPanSpeedForZoom, chartTick, clampChartZoom, formatFactAmount, formatK, formatM, formatTableAmount, missingTooltipLines, nonZeroLines, normalizeOverlayBarRect, panChartRows, pointInsideRect, resolveChartPanAxis, resolveMetricChartLayout, resolveMetricChartView, resolveOverlayBarGeometry, sortTooltipPayload, truncateTooltipLabel, viewportChartDomain, windowChartRows, zeroAwareTicks } from "./AuditCharts";
 
 describe("форматирование денежных показателей", () => {
   it("не скрывает малые ненулевые суммы округлением до нуля", () => {
@@ -35,6 +35,12 @@ describe("форматирование денежных показателей",
   });
   it("сортирует значения тултипа по убыванию, включая отрицательные", () => {
     expect(sortTooltipPayload([{ name: "C", value: -5 }, { name: "A", value: 120 }, { name: "B", value: 40 }]).map(item => item.name)).toEqual(["A", "B", "C"]);
+  });
+  it("оставляет в tooltip до пяти символов названия, а более длинные сокращает одинаково на любой ширине", () => {
+    expect(truncateTooltipLabel("КИР1")).toBe("КИР1");
+    expect(truncateTooltipLabel("П.ЗОР")).toBe("П.ЗОР");
+    expect(truncateTooltipLabel("СНЕЖОК")).toBe("СНЕЖО…");
+    expect(truncateTooltipLabel("Зарплата наличными")).toBe("Зарпл…");
   });
   it("не выводит серию, которая за весь выбранный срез равна нулю", () => {
     const lines=[{key:"driverCash",name:"Водитель нал",color:"#111"},{key:"cash",name:"Траты нал",color:"#222"}];
@@ -166,7 +172,8 @@ describe("форматирование денежных показателей",
     expect(source).toContain("function StableTinyTooltip(props:TinyTooltipProps)");
     expect(source).not.toContain("function useNarrowTooltipViewport()");
     expect(source).toContain("const denseColumns=3");
-    expect(source).toContain("const shortLabel=item.name.length<=5");
+    expect(source).toContain("const shortLabel=Array.from(item.name).length<=5");
+    expect(source).toContain("const displayName=truncateTooltipLabel(item.name)");
     expect(source).toContain('singleTooltip?" tiny-tooltip-single":""');
     expect(source).toContain("isAnimationActive={false} animationDuration={0}");
     expect(source).toContain('const touchStart=(event:TouchEvent)=>{if(isControl(event.target)||!event.touches.length)return;');
