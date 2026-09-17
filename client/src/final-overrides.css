@@ -4222,17 +4222,34 @@ html[data-audit-theme="light"] .packet .price-preview .inline-error {
 }
 
 @media (max-width: 560px) {
-  .packet .price-preview-swipe-hint { grid-column: 1 / -1; display: inline-flex; align-items: center; justify-content: center; gap: 2px; margin-top: -2px; color: var(--price-accent); font: 750 9px/1.2 "IBM Plex Mono", monospace; letter-spacing: .035em; animation: price-preview-swipe-hint 1.9s cubic-bezier(.23, 1, .32, 1) infinite; }
-  .packet .price-preview-table > div.is-mobile-current { will-change: transform; transition: transform 180ms cubic-bezier(.23, 1, .32, 1); }
+  .packet .price-preview-swipe-hint { grid-column: 1 / -1; display: inline-flex; align-items: center; justify-content: center; gap: 2px; margin-top: -2px; color: var(--price-accent); font: 750 9px/1.2 "IBM Plex Mono", monospace; letter-spacing: .035em; }
+  .packet .price-preview-swipe-hint-left,
+  .packet .price-preview-swipe-hint-right { flex: 0 0 auto; animation: price-preview-swipe-hint-left 1.45s cubic-bezier(.23, 1, .32, 1) infinite alternate; }
+  .packet .price-preview-swipe-hint-right { animation-name: price-preview-swipe-hint-right; }
+  .packet .price-preview-table { display: grid; grid-template-areas: "carousel"; padding: 2px; isolation: isolate; }
+  .packet .price-preview-table > div.is-mobile-carousel-visible { display: grid; grid-area: carousel; }
+  .packet .price-preview-table > div.is-mobile-current { will-change: transform; transform: translateX(var(--price-preview-swipe-offset, 0px)); transition: transform 230ms cubic-bezier(.23, 1, .32, 1); }
   .packet .price-preview-table > div.is-mobile-current.is-mobile-swipe-dragging { transition: none; }
-  .packet .price-preview-table > div.is-mobile-current.is-mobile-swipe-enter-from-right { animation: price-preview-enter-from-right 180ms cubic-bezier(.23, 1, .32, 1); }
-  .packet .price-preview-table > div.is-mobile-current.is-mobile-swipe-enter-from-left { animation: price-preview-enter-from-left 180ms cubic-bezier(.23, 1, .32, 1); }
-  @keyframes price-preview-swipe-hint { 0%, 100% { transform: translateX(-7px); opacity: .6; } 50% { transform: translateX(7px); opacity: 1; } }
-  @keyframes price-preview-enter-from-right { from { transform: translateX(26px); opacity: .72; } to { transform: translateX(0); opacity: 1; } }
-  @keyframes price-preview-enter-from-left { from { transform: translateX(-26px); opacity: .72; } to { transform: translateX(0); opacity: 1; } }
+  .packet .price-preview-table > div.is-mobile-carousel-outgoing,
+  .packet .price-preview-table > div.is-mobile-carousel-incoming { z-index: 1; pointer-events: none; will-change: transform, opacity; }
+  .packet .price-preview-table > div.is-mobile-carousel-incoming { z-index: 2; }
+  .packet .price-preview-table > div.is-mobile-swipe-enter-from-right { animation: price-preview-enter-from-right 250ms cubic-bezier(.23, 1, .32, 1) both; }
+  .packet .price-preview-table > div.is-mobile-swipe-enter-from-left { animation: price-preview-enter-from-left 250ms cubic-bezier(.23, 1, .32, 1) both; }
+  .packet .price-preview-table > div.is-mobile-swipe-exit-to-left { animation: price-preview-exit-to-left 250ms cubic-bezier(.23, 1, .32, 1) both; }
+  .packet .price-preview-table > div.is-mobile-swipe-exit-to-right { animation: price-preview-exit-to-right 250ms cubic-bezier(.23, 1, .32, 1) both; }
+  @keyframes price-preview-swipe-hint-left { from { transform: translateX(-2px); opacity: .62; } to { transform: translateX(-8px); opacity: 1; } }
+  @keyframes price-preview-swipe-hint-right { from { transform: translateX(2px); opacity: .62; } to { transform: translateX(8px); opacity: 1; } }
+  @keyframes price-preview-enter-from-right { from { transform: translateX(102%); opacity: .72; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes price-preview-enter-from-left { from { transform: translateX(-102%); opacity: .72; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes price-preview-exit-to-left { from { transform: translateX(var(--price-preview-swipe-offset, 0px)); opacity: 1; } to { transform: translateX(-102%); opacity: .72; } }
+  @keyframes price-preview-exit-to-right { from { transform: translateX(var(--price-preview-swipe-offset, 0px)); opacity: 1; } to { transform: translateX(102%); opacity: .72; } }
 }
 @media (prefers-reduced-motion: reduce) {
   .packet .price-preview-swipe-hint,
+  .packet .price-preview-swipe-hint-left,
+  .packet .price-preview-swipe-hint-right,
   .packet .price-preview-table > div.is-mobile-current.is-mobile-swipe-enter-from-right,
-  .packet .price-preview-table > div.is-mobile-current.is-mobile-swipe-enter-from-left { animation: none; }
+  .packet .price-preview-table > div.is-mobile-current.is-mobile-swipe-enter-from-left,
+  .packet .price-preview-table > div.is-mobile-swipe-exit-to-left,
+  .packet .price-preview-table > div.is-mobile-swipe-exit-to-right { animation: none; }
 }

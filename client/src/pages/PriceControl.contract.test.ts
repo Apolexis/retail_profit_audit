@@ -218,19 +218,27 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("Позиция {currentMobilePreviewPosition + 1}");
     expect(page).toContain("is-mobile-current");
     expect(page).toContain("const moveMobilePreview = (direction: -1 | 1)");
-    expect(page).toContain("(current + direction + total) % total");
+    expect(page).toContain("(from + direction + total) % total");
     expect(page).toContain("onPointerDown={startPreviewSwipe}");
     expect(page).toContain("onPointerMove={updatePreviewSwipe}");
     expect(page).toContain("onPointerUp={finishPreviewSwipe}");
     expect(page).toContain("Math.abs(horizontalDistance) < 44");
     expect(page).toContain("mobilePreviewSwipeOffset");
+    expect(page).toContain("mobilePreviewTransition");
+    expect(page).toContain("is-mobile-carousel-outgoing");
+    expect(page).toContain("is-mobile-carousel-incoming");
+    expect(page).toContain('window.matchMedia("(prefers-reduced-motion: reduce)").matches');
     expect(page).toContain("price-preview-swipe-hint");
+    expect(page).toContain("price-preview-swipe-hint-left");
+    expect(page).toContain("Свайпните влево или вправо");
     expect(page).toContain("price-preview-swipe-hint\", \"seen\"");
     expect(page).toContain("<Check size={12} />");
     expect(styles).toContain(".packet .price-preview-mobile-pager { display: none; }");
     expect(styles).toContain(".packet .price-preview-table > div.is-mobile-current { display: grid; }");
     expect(styles).toContain(".packet .price-preview-table > div.is-mobile-current.is-mobile-swipe-dragging");
     expect(styles).toContain("@keyframes price-preview-enter-from-right");
+    expect(styles).toContain("@keyframes price-preview-exit-to-left");
+    expect(styles).toContain("padding: 2px; isolation: isolate;");
     expect(styles).toContain(".packet .price-preview-check:has(input:checked)");
   });
 
