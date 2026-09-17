@@ -1,0 +1,210 @@
+import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
+import { localAccounts, operationalRevenueRecords, operationalRevenueRecordVersions, stores } from "../drizzle/schema";
+import { getDb } from "./db";
+
+export const REVENUE_AMOUNT_FIELDS = [
+  "cash",
+  "cashless",
+  "cashExpenses",
+  "householdCash",
+  "cleaningCash",
+  "salaryCash",
+  "serviceCash",
+  "extraPaymentCash",
+  "bonusCash",
+  "vacationCash",
+  "utilitiesCash",
+  "deliveryCash",
+] as const;
+
+export const REVENUE_EXPENSE_FIELDS = [
+  "cashExpenses",
+  "householdCash",
+  "cleaningCash",
+  "salaryCash",
+  "serviceCash",
+  "extraPaymentCash",
+  "bonusCash",
+  "vacationCash",
+  "utilitiesCash",
+  "deliveryCash",
+] as const;
+
+export type RevenueAmountField = (typeof REVENUE_AMOUNT_FIELDS)[number];
+export type RevenueExpenseField = (typeof REVENUE_EXPENSE_FIELDS)[number];
+export type RevenueExpenseComments = Partial<Record<RevenueExpenseField, string>>;
+export type RevenueAmounts = Record<RevenueAmountField, number>;
+export type RevenueEntryInput = RevenueAmounts & { expenseComments: RevenueExpenseComments };
+
+export const REVENUE_FIELD_LABELS: Record<RevenueAmountField, string> = {
+  cash: "Нал",
+  cashless: "Б/Нал",
+  cashExpenses: "Расходы нал",
+  householdCash: "Хоз. нужды нал",
+  cleaningCash: "Уборка нал",
+  salaryCash: "Зарплата нал",
+  serviceCash: "Выслуга нал",
+  extraPaymentCash: "Доплата нал",
+  bonusCash: "Премия нал",
+  vacationCash: "Отпускные нал",
+  utilitiesCash: "Ком. плат. нал",
+  deliveryCash: "Доставка нал",
+};
+
+export const emptyRevenueAmounts = (): RevenueAmounts => Object.fromEntries(REVENUE_AMOUNT_FIELDS.map(field => [field, 0])) as RevenueAmounts;
+
+export function calculateOperationalRevenueTotal(input: RevenueAmounts) {
+  return REVENUE_AMOUNT_FIELDS.reduce((total, field) => total + input[field], 0);
+}
+
+/** Ensures a submitted record can never be read as a financial fact or a free-text expense total. */
+export function validateRevenueEntry(input: RevenueEntryInput) {
+  for (const field of REVENUE_AMOUNT_FIELDS) {
+    const amount = input[field];
+    if (!Number.isFinite(amount) || amount < 0) throw new Error(`Поле «${REVENUE_FIELD_LABELS[field]}» должно содержать неотрицательную сумму`);
+    if (Math.round(amount * 100) !== amount * 100) throw new Error(`Поле «${REVENUE_FIELD_LABELS[field]}» допускает не более двух знаков после точки`);
+  }
+  const comments: RevenueExpenseComments = {};
+  for (const field of REVENUE_EXPENSE_FIELDS) {
+    const comment = (input.expenseComments[field] ?? "").trim().replace(/\s+/g, " ");
+    if (input[field] > 0 && !comment) throw new Error(`Для строки «${REVENUE_FIELD_LABELS[field]}» укажите, куда / зачем / за что потрачены наличные`);
+    if (input[field] > 0) comments[field] = comment.slice(0, 500);
+  }
+  return { ...input, expenseComments: comments };
+}
+
+function numericRecord(row: typeof operationalRevenueRecords.$inferSelect): RevenueAmounts {
+  return Object.fromEntries(REVENUE_AMOUNT_FIELDS.map(field => [field, Number(row[field])])) as RevenueAmounts;
+}
+
+function recordState(row: typeof operationalRevenueRecords.$inferSelect) {
+  return {
+    storeId: row.storeId,
+    businessDate: row.businessDate,
+    currentVersion: row.currentVersion,
+    ...numericRecord(row),
+    expenseComments: (row.expenseComments ?? {}) as RevenueExpenseComments,
+    total: calculateOperationalRevenueTotal(numericRecord(row)),
+  };
+}
+
+function entryColumns(input: RevenueEntryInput) {
+  return {
+    cash: input.cash.toFixed(2),
+    cashless: input.cashless.toFixed(2),
+    cashExpenses: input.cashExpenses.toFixed(2),
+    householdCash: input.householdCash.toFixed(2),
+    cleaningCash: input.cleaningCash.toFixed(2),
+    salaryCash: input.salaryCash.toFixed(2),
+    serviceCash: input.serviceCash.toFixed(2),
+    extraPaymentCash: input.extraPaymentCash.toFixed(2),
+    bonusCash: input.bonusCash.toFixed(2),
+    vacationCash: input.vacationCash.toFixed(2),
+    utilitiesCash: input.utilitiesCash.toFixed(2),
+    deliveryCash: input.deliveryCash.toFixed(2),
+    expenseComments: input.expenseComments,
+  };
+}
+
+export type RevenueRegistryFilter = {
+  from?: string;
+  to?: string;
+  storeId?: number;
+  storeIds?: number[] | null;
+  createdByAccountId?: number;
+  limit?: number;
+};
+
+export async function listRevenueRecords(input: RevenueRegistryFilter = {}) {
+  const db = await getDb();
+  if (!db) return [];
+  if (Array.isArray(input.storeIds) && !input.storeIds.length) return [];
+  const conditions = [
+    input.from ? gte(operationalRevenueRecords.businessDate, input.from) : undefined,
+    input.to ? lte(operationalRevenueRecords.businessDate, input.to) : undefined,
+    input.storeId ? eq(operationalRevenueRecords.storeId, input.storeId) : undefined,
+    Array.isArray(input.storeIds) ? inArray(operationalRevenueRecords.storeId, input.storeIds) : undefined,
+    input.createdByAccountId ? eq(operationalRevenueRecords.createdByAccountId, input.createdByAccountId) : undefined,
+  ].filter(Boolean);
+  const rows = await db
+    .select({
+      id: operationalRevenueRecords.id,
+      storeId: operationalRevenueRecords.storeId,
+      storeName: stores.name,
+      businessDate: operationalRevenueRecords.businessDate,
+      createdByAccountId: operationalRevenueRecords.createdByAccountId,
+      createdByName: localAccounts.displayName,
+      currentVersion: operationalRevenueRecords.currentVersion,
+      cash: operationalRevenueRecords.cash,
+      cashless: operationalRevenueRecords.cashless,
+      cashExpenses: operationalRevenueRecords.cashExpenses,
+      householdCash: operationalRevenueRecords.householdCash,
+      cleaningCash: operationalRevenueRecords.cleaningCash,
+      salaryCash: operationalRevenueRecords.salaryCash,
+      serviceCash: operationalRevenueRecords.serviceCash,
+      extraPaymentCash: operationalRevenueRecords.extraPaymentCash,
+      bonusCash: operationalRevenueRecords.bonusCash,
+      vacationCash: operationalRevenueRecords.vacationCash,
+      utilitiesCash: operationalRevenueRecords.utilitiesCash,
+      deliveryCash: operationalRevenueRecords.deliveryCash,
+      expenseComments: operationalRevenueRecords.expenseComments,
+      createdAt: operationalRevenueRecords.createdAt,
+      updatedAt: operationalRevenueRecords.updatedAt,
+    })
+    .from(operationalRevenueRecords)
+    .innerJoin(stores, eq(operationalRevenueRecords.storeId, stores.id))
+    .innerJoin(localAccounts, eq(operationalRevenueRecords.createdByAccountId, localAccounts.id))
+    .where(conditions.length ? and(...conditions) : undefined)
+    .orderBy(desc(operationalRevenueRecords.businessDate), desc(operationalRevenueRecords.id))
+    .limit(Math.min(Math.max(input.limit ?? 100, 1), 500));
+  return rows.map(row => {
+    const amounts = Object.fromEntries(REVENUE_AMOUNT_FIELDS.map(field => [field, Number(row[field])])) as RevenueAmounts;
+    return { ...row, ...amounts, expenseComments: (row.expenseComments ?? {}) as RevenueExpenseComments, total: calculateOperationalRevenueTotal(amounts) };
+  });
+}
+
+export async function getRevenueRecord(recordId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const [row] = await db.select().from(operationalRevenueRecords).where(eq(operationalRevenueRecords.id, recordId)).limit(1);
+  if (!row) return null;
+  const [store] = await db.select({ name: stores.name }).from(stores).where(eq(stores.id, row.storeId)).limit(1);
+  const [author] = await db.select({ displayName: localAccounts.displayName }).from(localAccounts).where(eq(localAccounts.id, row.createdByAccountId)).limit(1);
+  const amounts = numericRecord(row);
+  return { ...row, ...amounts, storeName: store?.name ?? `Магазин #${row.storeId}`, createdByName: author?.displayName ?? `Пользователь #${row.createdByAccountId}`, expenseComments: (row.expenseComments ?? {}) as RevenueExpenseComments, total: calculateOperationalRevenueTotal(amounts) };
+}
+
+export async function createRevenueRecord(input: { storeId: number; businessDate: string; createdByAccountId: number; entry: RevenueEntryInput }) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const entry = validateRevenueEntry(input.entry);
+  const [existing] = await db.select({ id: operationalRevenueRecords.id }).from(operationalRevenueRecords).where(and(eq(operationalRevenueRecords.storeId, input.storeId), eq(operationalRevenueRecords.businessDate, input.businessDate))).limit(1);
+  if (existing) throw new Error("За эту дату по выбранному магазину запись «Выручки» уже передана");
+  const [inserted] = await db.insert(operationalRevenueRecords).values({ storeId: input.storeId, businessDate: input.businessDate, createdByAccountId: input.createdByAccountId, ...entryColumns(entry) }).$returningId();
+  const [created] = await db.select().from(operationalRevenueRecords).where(eq(operationalRevenueRecords.id, inserted.id)).limit(1);
+  if (!created) throw new Error("Не удалось прочитать созданную запись «Выручки»");
+  await db.insert(operationalRevenueRecordVersions).values({ revenueRecordId: created.id, version: 1, action: "create", changedByAccountId: input.createdByAccountId, state: recordState(created) });
+  return getRevenueRecord(created.id);
+}
+
+export async function correctRevenueRecord(input: { recordId: number; changedByAccountId: number; correctionReason: string; entry: RevenueEntryInput }) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const reason = input.correctionReason.trim().replace(/\s+/g, " ");
+  if (!reason) throw new Error("Укажите причину исправления записи «Выручки»");
+  const entry = validateRevenueEntry(input.entry);
+  const [before] = await db.select().from(operationalRevenueRecords).where(eq(operationalRevenueRecords.id, input.recordId)).limit(1);
+  if (!before) throw new Error("Запись «Выручки» не найдена");
+  const nextVersion = before.currentVersion + 1;
+  await db.update(operationalRevenueRecords).set({ ...entryColumns(entry), currentVersion: nextVersion }).where(eq(operationalRevenueRecords.id, before.id));
+  const [after] = await db.select().from(operationalRevenueRecords).where(eq(operationalRevenueRecords.id, before.id)).limit(1);
+  if (!after) throw new Error("Не удалось прочитать исправленную запись «Выручки»");
+  await db.insert(operationalRevenueRecordVersions).values({ revenueRecordId: after.id, version: nextVersion, action: "correct", changedByAccountId: input.changedByAccountId, correctionReason: reason.slice(0, 500), state: recordState(after) });
+  return { before: recordState(before), after: await getRevenueRecord(after.id), correctionReason: reason.slice(0, 500) };
+}
+
+export async function listRevenueRecordVersions(recordId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(operationalRevenueRecordVersions).where(eq(operationalRevenueRecordVersions.revenueRecordId, recordId)).orderBy(desc(operationalRevenueRecordVersions.version));
+}

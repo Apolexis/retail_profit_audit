@@ -104,7 +104,7 @@ export const localAccounts = mysqlTable("audit_local_accounts", {
   username: varchar("username", { length: 64 }).notNull().unique(),
   displayName: varchar("displayName", { length: 128 }).notNull(),
   passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
-  role: mysqlEnum("role", ["admin", "analyst"]).default("analyst").notNull(),
+  role: mysqlEnum("role", ["admin", "analyst", "seller"]).default("analyst").notNull(),
   importAccessLevel: mysqlEnum("importAccessLevel", ["none", "upload", "edit"]).default("none").notNull(),
   priceAccessLevel: mysqlEnum("priceAccessLevel", ["none", "view", "upload", "edit"]).default("none").notNull(),
   canViewImportControls: boolean("canViewImportControls").default(false).notNull(),
@@ -237,6 +237,48 @@ export type AuditPushSubscription = typeof auditPushSubscriptions.$inferSelect;
 export type AuditAlertThreshold = typeof auditAlertThresholds.$inferSelect;
 export type ExecutiveReportSchedule = typeof executiveReportSchedules.$inferSelect;
 export type WeeklyExecutiveReport = typeof weeklyExecutiveReports.$inferSelect;
+
+/**
+ * Separate operational daily registry. It deliberately has no relation to
+ * audit_metrics or audit_imports: its total is not a financial fact.
+ */
+export const operationalRevenueRecords = mysqlTable("operational_revenue_records", {
+  id: int("id").autoincrement().primaryKey(),
+  storeId: int("storeId").notNull(),
+  businessDate: varchar("businessDate", { length: 10 }).notNull(),
+  createdByAccountId: int("createdByAccountId").notNull(),
+  currentVersion: int("currentVersion").default(1).notNull(),
+  cash: decimal("cash", { precision: 18, scale: 2 }).notNull(),
+  cashless: decimal("cashless", { precision: 18, scale: 2 }).notNull(),
+  cashExpenses: decimal("cashExpenses", { precision: 18, scale: 2 }).notNull(),
+  householdCash: decimal("householdCash", { precision: 18, scale: 2 }).notNull(),
+  cleaningCash: decimal("cleaningCash", { precision: 18, scale: 2 }).notNull(),
+  salaryCash: decimal("salaryCash", { precision: 18, scale: 2 }).notNull(),
+  serviceCash: decimal("serviceCash", { precision: 18, scale: 2 }).notNull(),
+  extraPaymentCash: decimal("extraPaymentCash", { precision: 18, scale: 2 }).notNull(),
+  bonusCash: decimal("bonusCash", { precision: 18, scale: 2 }).notNull(),
+  vacationCash: decimal("vacationCash", { precision: 18, scale: 2 }).notNull(),
+  utilitiesCash: decimal("utilitiesCash", { precision: 18, scale: 2 }).notNull(),
+  deliveryCash: decimal("deliveryCash", { precision: 18, scale: 2 }).notNull(),
+  expenseComments: json("expenseComments").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [unique("operational_revenue_store_date_uq").on(table.storeId, table.businessDate)]);
+
+/** Immutable snapshots make an administrative correction auditable without deleting the original. */
+export const operationalRevenueRecordVersions = mysqlTable("operational_revenue_record_versions", {
+  id: int("id").autoincrement().primaryKey(),
+  revenueRecordId: int("revenueRecordId").notNull(),
+  version: int("version").notNull(),
+  action: mysqlEnum("action", ["create", "correct"]).notNull(),
+  changedByAccountId: int("changedByAccountId").notNull(),
+  correctionReason: text("correctionReason"),
+  state: json("state").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => [unique("operational_revenue_version_uq").on(table.revenueRecordId, table.version)]);
+
+export type OperationalRevenueRecord = typeof operationalRevenueRecords.$inferSelect;
+export type OperationalRevenueRecordVersion = typeof operationalRevenueRecordVersions.$inferSelect;
 
 /** Supplier catalog is deliberately isolated from financial facts and financial workbook imports. */
 export const priceSuppliers = mysqlTable("price_suppliers", {

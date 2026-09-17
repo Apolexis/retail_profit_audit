@@ -1,0 +1,87 @@
+import { TRPCError } from "@trpc/server";
+import { z } from "zod";
+import { protectedProcedure, router } from "../_core/trpc";
+import { getCurrentLocalAccount, getAccessibleStoreIds, hasStoreAccess } from "../accessControl";
+import { recordChange } from "../localAuth";
+import { REVENUE_AMOUNT_FIELDS, REVENUE_EXPENSE_FIELDS, correctRevenueRecord, createRevenueRecord, getRevenueRecord, listRevenueRecordVersions, listRevenueRecords, type RevenueAmountField, type RevenueExpenseField } from "../revenueRegistry";
+
+const businessDate = z.string().regex(/^20\d{2}-\d{2}-\d{2}$/, "Выберите дату в формате ГГГГ-ММ-ДД");
+const money = z.number().finite().min(0).multipleOf(0.01, "Сумма допускает не более двух знаков после точки");
+const amounts = Object.fromEntries(REVENUE_AMOUNT_FIELDS.map(field => [field, money])) as Record<RevenueAmountField, typeof money>;
+const comments = Object.fromEntries(REVENUE_EXPENSE_FIELDS.map(field => [field, z.string().max(500).optional()])) as Record<RevenueExpenseField, z.ZodOptional<z.ZodString>>;
+const revenueEntry = z.object({ ...amounts, expenseComments: z.object(comments) });
+
+async function requireOperationalActor(openId?: string | null) {
+  const account = await getCurrentLocalAccount(openId);
+  if (!account) throw new TRPCError({ code: "UNAUTHORIZED", message: "Требуется локальный вход" });
+  return account;
+}
+
+async function requireRevenueStorePermission(openId: string | null | undefined, storeId: number) {
+  if (!await hasStoreAccess(openId, storeId, "view")) throw new TRPCError({ code: "FORBIDDEN", message: "Нет назначенного доступа к этому магазину" });
+}
+
+/** A seller belongs to exactly one operational point; broad financial grants never imply this access. */
+async function requireSellerStore(openId: string | null | undefined) {
+  const storeIds = await getAccessibleStoreIds(openId);
+  if (!Array.isArray(storeIds) || storeIds.length !== 1) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Продавцу должна быть назначена ровно одна операционная точка" });
+  }
+  return storeIds[0];
+}
+
+export const revenueRegistryRouter = router({
+  myLatest: protectedProcedure.query(async ({ ctx }) => {
+    const actor = await requireOperationalActor(ctx.user?.openId);
+    if (actor.role !== "seller" && actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Реестр «Выручка» доступен продавцу и администратору" });
+    const storeIds = actor.role === "seller" ? [await requireSellerStore(ctx.user?.openId)] : await getAccessibleStoreIds(ctx.user?.openId);
+    return listRevenueRecords({ storeIds, createdByAccountId: actor.role === "seller" ? actor.id : undefined, limit: actor.role === "seller" ? 5 : 50 });
+  }),
+  create: protectedProcedure.input(z.object({ storeId: z.number().int().positive(), businessDate, entry: revenueEntry })).mutation(async ({ input, ctx }) => {
+    const actor = await requireOperationalActor(ctx.user?.openId);
+    if (actor.role !== "seller" && actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Создавать записи «Выручки» может продавец или администратор" });
+    if (actor.role === "seller" && input.storeId !== await requireSellerStore(ctx.user?.openId)) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Продавец может передавать выручку только за свою точку" });
+    }
+    await requireRevenueStorePermission(ctx.user?.openId, input.storeId);
+    const created = await createRevenueRecord({ storeId: input.storeId, businessDate: input.businessDate, createdByAccountId: actor.id, entry: input.entry });
+    if (!created) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Не удалось создать запись «Выручки»" });
+    await recordChange({ actorId: actor.id, action: "operational_revenue.create", entityType: "operational_revenue", entityId: String(created.id), beforeState: null, afterState: { ...created, actorRole: actor.role } });
+    return created;
+  }),
+  adminList: protectedProcedure.input(z.object({ from: businessDate.optional(), to: businessDate.optional(), storeId: z.number().int().positive().optional() }).refine(input => !input.from || !input.to || input.from <= input.to, { message: "Дата начала не может быть позже даты окончания" })).query(async ({ input, ctx }) => {
+    const actor = await requireOperationalActor(ctx.user?.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Реестр всех магазинов доступен только администратору" });
+    return listRevenueRecords({ ...input, limit: 500 });
+  }),
+  print: protectedProcedure.input(z.object({ from: businessDate.optional(), to: businessDate.optional(), storeId: z.number().int().positive().optional() }).refine(input => !input.from || !input.to || input.from <= input.to, { message: "Дата начала не может быть позже даты окончания" })).mutation(async ({ input, ctx }) => {
+    const actor = await requireOperationalActor(ctx.user?.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Печать реестра доступна только администратору" });
+    const records = await listRevenueRecords({ ...input, limit: 500 });
+    await recordChange({ actorId: actor.id, action: "operational_revenue.print", entityType: "operational_revenue_register", entityId: `${input.from ?? "all"}:${input.to ?? "all"}:${input.storeId ?? "all"}`, afterState: { filter: input, recordCount: records.length, storeCount: new Set(records.map(record => record.storeId)).size } });
+    return { recordCount: records.length };
+  }),
+  correct: protectedProcedure.input(z.object({ recordId: z.number().int().positive(), correctionReason: z.string().trim().min(1, "Укажите причину исправления").max(500), entry: revenueEntry })).mutation(async ({ input, ctx }) => {
+    const actor = await requireOperationalActor(ctx.user?.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Исправлять записи «Выручки» может только администратор" });
+    const corrected = await correctRevenueRecord({ recordId: input.recordId, changedByAccountId: actor.id, correctionReason: input.correctionReason, entry: input.entry });
+    await recordChange({ actorId: actor.id, action: "operational_revenue.correct", entityType: "operational_revenue", entityId: String(input.recordId), beforeState: corrected.before, afterState: { ...corrected.after, correctionReason: corrected.correctionReason } });
+    return corrected.after;
+  }),
+  versions: protectedProcedure.input(z.object({ recordId: z.number().int().positive() })).query(async ({ input, ctx }) => {
+    const actor = await requireOperationalActor(ctx.user?.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "История версий доступна только администратору" });
+    return listRevenueRecordVersions(input.recordId);
+  }),
+  details: protectedProcedure.input(z.object({ recordId: z.number().int().positive() })).query(async ({ input, ctx }) => {
+    const actor = await requireOperationalActor(ctx.user?.openId);
+    const record = await getRevenueRecord(input.recordId);
+    if (!record) throw new TRPCError({ code: "NOT_FOUND", message: "Запись «Выручки» не найдена" });
+    if (actor.role !== "admin") {
+      if (actor.role !== "seller" || record.createdByAccountId !== actor.id) throw new TRPCError({ code: "FORBIDDEN", message: "Нет доступа к этой записи «Выручки»" });
+      if (record.storeId !== await requireSellerStore(ctx.user?.openId)) throw new TRPCError({ code: "FORBIDDEN", message: "Нет доступа к этой операционной точке" });
+      await requireRevenueStorePermission(ctx.user?.openId, record.storeId);
+    }
+    return record;
+  }),
+});

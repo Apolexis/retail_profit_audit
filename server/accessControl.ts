@@ -46,6 +46,7 @@ export async function hasStoreAccess(openId: string | null | undefined, storeId:
 export async function hasImportAccess(openId: string | null | undefined, required: Exclude<ImportAccessLevel, "none">) {
   const account = await getCurrentLocalAccount(openId);
   if (!account) return false;
+  if (account.role === "seller") return false;
   if (account.role === "admin") return true;
   return isImportAccessAllowed(account.importAccessLevel, required);
 }
@@ -54,6 +55,7 @@ export async function hasImportAccess(openId: string | null | undefined, require
 export async function hasPriceAccess(openId: string | null | undefined, required: Exclude<PriceAccessLevel, "none">) {
   const account = await getCurrentLocalAccount(openId);
   if (!account) return false;
+  if (account.role === "seller") return false;
   if (account.role === "admin") return true;
   return isPriceAccessAllowed(account.priceAccessLevel, required);
 }
@@ -61,7 +63,13 @@ export async function hasPriceAccess(openId: string | null | undefined, required
 /** Importing a workbook and viewing its financial control preview are separate permissions. */
 export async function hasImportControlAccess(openId: string | null | undefined) {
   const account = await getCurrentLocalAccount(openId);
-  return Boolean(account && (account.role === "admin" || account.canViewImportControls));
+  return Boolean(account && account.role !== "seller" && (account.role === "admin" || account.canViewImportControls));
+}
+
+/** Sellers work only with the isolated operating modules and never receive financial facts. */
+export async function hasFinancialAccess(openId?: string | null) {
+  const account = await getCurrentLocalAccount(openId);
+  return Boolean(account && account.role !== "seller");
 }
 
 export async function listAccountStoreAccess(accountId: number) {
@@ -88,8 +96,8 @@ export async function getAlertRecipients(storeIds?: number[]) {
   const admins = await db.select({ id: localAccounts.id }).from(localAccounts).where(and(eq(localAccounts.role, "admin"), eq(localAccounts.isActive, true)));
   const recipients = new Set(admins.map(account => account.id));
   if (storeIds?.length) {
-    const grants = await db.select({ accountId: storeAccess.accountId }).from(storeAccess).where(inArray(storeAccess.storeId, storeIds));
-    grants.forEach(grant => recipients.add(grant.accountId));
+    const grants = await db.select({ accountId: storeAccess.accountId, role: localAccounts.role }).from(storeAccess).innerJoin(localAccounts, eq(storeAccess.accountId, localAccounts.id)).where(and(inArray(storeAccess.storeId, storeIds), eq(localAccounts.isActive, true)));
+    grants.filter(grant => grant.role !== "seller").forEach(grant => recipients.add(grant.accountId));
   }
   return Array.from(recipients);
 }

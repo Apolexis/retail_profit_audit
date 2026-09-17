@@ -9,7 +9,7 @@ import { createNotifications, getNotificationSummary, getPushStatus, hasNotifica
 import { PASSKEY_ATTEMPT_COOKIE, beginPasskeyAuthentication, beginPasskeyRegistration, deleteAccountPasskey, finishPasskeyAuthentication, finishPasskeyRegistration, listAccountPasskeys } from "../passkeys";
 
 const password = z.string().min(10, "Пароль должен содержать не менее 10 символов").max(128);
-const role = z.enum(["admin", "analyst"]);
+const role = z.enum(["admin", "analyst", "seller"]);
 const importAccessLevel = z.enum(["none", "upload", "edit"]);
 const priceAccessLevel = z.enum(["none", "view", "upload", "edit"]);
 const broadcastAudience = z.discriminatedUnion("kind", [z.object({ kind: z.literal("all") }), z.object({ kind: z.literal("account"), accountId: z.number().int().positive() }), z.object({ kind: z.literal("role"), role })]);
@@ -111,9 +111,15 @@ export const localAuthRouter = router({
   }),
   replaceStoreAccess: adminProcedure.input(z.object({ accountId: z.number().int(), grants: z.array(z.object({ storeId: z.number().int(), accessLevel: z.enum(["view", "edit"]) })).max(500) })).mutation(async ({ input, ctx }) => {
     const actor = await localAccountFromContext(ctx.user?.openId);
+    const accountsBefore = await listLocalAccounts();
+    const targetBefore = accountsBefore.find(account => account.id === input.accountId);
+    if (!targetBefore) throw new TRPCError({ code: "NOT_FOUND", message: "Учетная запись не найдена" });
+    if (targetBefore.role === "seller" && (input.grants.length !== 1 || input.grants[0]?.accessLevel !== "view")) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "Продавцу назначается ровно один магазин с операционным доступом «Просмотр»" });
+    }
     const result = await replaceAccountStoreAccess(input.accountId, input.grants);
-    const [accounts, stores] = await Promise.all([listLocalAccounts(), listAuditStores()]);
-    const target = accounts.find(account => account.id === input.accountId);
+    const stores = await listAuditStores();
+    const target = targetBefore;
     const names = new Map(stores.map(store => [store.id, store.name]));
     const describe = (grant: { storeId: number; accessLevel: "view" | "edit" }) => ({ storeId: grant.storeId, storeName: names.get(grant.storeId) ?? `Магазин #${grant.storeId}`, accessLevel: grant.accessLevel, accessLabel: grant.accessLevel === "edit" ? "редактирование" : "просмотр" });
     await recordChange({ actorId: actor.id, action: "store_access.replace", entityType: "account", entityId: String(input.accountId), beforeState: { accountId: input.accountId, account: target?.displayName ?? `Пользователь #${input.accountId}`, grants: result.before.map(describe) }, afterState: { accountId: input.accountId, account: target?.displayName ?? `Пользователь #${input.accountId}`, grants: result.after.map(describe) } });
@@ -129,6 +135,7 @@ export const localAuthRouter = router({
   }),
   importAlertDetails: protectedProcedure.input(z.object({ importId: z.number().int().positive(), limit: z.number().int().min(10).max(100).optional(), cursor: z.number().int().nonnegative().optional() })).query(async ({ input, ctx }) => {
     const account = await localAccountFromContext(ctx.user?.openId);
+    if (account.role === "seller") throw new TRPCError({ code: "FORBIDDEN", message: "Продавцу недоступны финансовые сигналы и детали импорта" });
     if (account.role !== "admin" && !await hasNotificationEntityAccess(account.id, "alert_feed", String(input.importId))) throw new TRPCError({ code: "FORBIDDEN", message: "Нет доступа к деталям этого уведомления" });
     return getImportThresholdBreachPage(input.importId, await getAccessibleStoreIds(ctx.user?.openId), input);
   }),

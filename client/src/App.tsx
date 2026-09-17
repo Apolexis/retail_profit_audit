@@ -3,7 +3,7 @@ import { DecimalInputNormalizerBootstrap } from "@/components/DecimalInputNormal
 import { OceanLoader } from "@/components/OceanLoader";
 import { SortableTablesBootstrap } from "@/components/SortableTablesBootstrap";
 import { toast } from "sonner";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch, useLocation } from "wouter";
@@ -32,6 +32,7 @@ import OperationalCadence from "./pages/OperationalCadence";
 import PlanFact from "./pages/PlanFact";
 import Forecast from "./pages/Forecast";
 import PriceControl from "./pages/PriceControl";
+import RevenueRegistry from "./pages/RevenueRegistry";
 import { trpc } from "./lib/trpc";
 import "./access.css";
 import "./theme-refresh.css";
@@ -64,6 +65,7 @@ function Router() {
       <Route path="/price-control">
         <PriceControl />
       </Route>
+      <Route path="/revenue" component={RevenueRegistry} />
       <Route path="/import" component={ImportData} />
       <Route path="/manage" component={ManageData} />
       <Route path="/profile" component={Profile} />
@@ -113,6 +115,18 @@ function AdminSignalOnLogin() {
   }, [session.data, notifications.data, notifications.isLoading, setLocation]);
   return null;
 }
+
+const sellerPaths = new Set(["/revenue", "/profile"]);
+
+function SellerRouteGate({ children }: { children: ReactNode }) {
+  const [location, setLocation] = useLocation();
+  const allowed = sellerPaths.has(location);
+  useEffect(() => {
+    if (!allowed) setLocation("/revenue");
+  }, [allowed, setLocation]);
+  return allowed ? <>{children}</> : <div className="app-loading"><OceanLoader overlay label="Открываем операционный контур…" /></div>;
+}
+
 function LocalAccessGate() {
   const session = trpc.localAuth.me.useQuery(undefined, { retry: false });
   const loaderPreview =
@@ -126,6 +140,7 @@ function LocalAccessGate() {
     );
   if (session.error) return <Login accessError={session.error} />;
   if (!session.data) return <Login />;
+  if (session.data.role === "seller") return <SellerRouteGate><Router /></SellerRouteGate>;
   return (
     <>
       <AdminSignalOnLogin />

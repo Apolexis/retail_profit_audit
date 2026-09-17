@@ -1,0 +1,159 @@
+/* Isolated operational registry: uses the common packet tokens and avoids financial status colors. */
+.packet .revenue-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(250px, .85fr);
+  gap: 18px;
+  align-items: start;
+}
+.packet .revenue-entry-card,
+.packet .revenue-rule-card,
+.packet .revenue-admin-register,
+.packet .revenue-own-history { min-width: 0; }
+.packet .revenue-entry-card { display: grid; gap: 16px; }
+.packet .revenue-meta-row {
+  display: grid;
+  grid-template-columns: minmax(190px, .75fr) minmax(190px, 1fr);
+  gap: 12px;
+}
+.packet .revenue-meta-row > label,
+.packet .revenue-store-readonly,
+.packet .revenue-correction-reason { display: grid; gap: 6px; min-width: 0; }
+.packet .revenue-meta-row > label > span,
+.packet .revenue-store-readonly > span,
+.packet .revenue-correction-reason > span {
+  color: var(--muted);
+  font: 800 10px Manrope, Arial, sans-serif;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.packet .revenue-store-readonly {
+  align-content: center;
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--surface-2) 66%, transparent);
+}
+.packet .revenue-store-readonly strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.packet .revenue-input-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.packet .revenue-amount { display: grid; gap: 6px; min-width: 0; }
+.packet .revenue-amount > span { color: var(--muted); font: 750 12px Manrope, Arial, sans-serif; }
+.packet .revenue-amount input,
+.packet .revenue-filter-row input {
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font: 750 14px Manrope, Arial, sans-serif;
+  outline: none;
+}
+.packet .revenue-amount input:focus-visible,
+.packet .revenue-filter-row input:focus-visible,
+.packet .revenue-correction-reason textarea:focus-visible,
+.packet .revenue-amount textarea:focus-visible { border-color: var(--packet-accent); box-shadow: 0 0 0 2px var(--packet-accent-faint); }
+.packet .revenue-amount.expense { padding: 9px; border: 1px solid color-mix(in srgb, var(--line) 80%, var(--packet-accent-soft)); border-radius: 11px; background: color-mix(in srgb, var(--surface-2) 74%, transparent); }
+.packet .revenue-amount textarea,
+.packet .revenue-correction-reason textarea {
+  min-height: 65px;
+  width: 100%;
+  resize: vertical;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ink);
+  font: 650 12px Manrope, Arial, sans-serif;
+  outline: none;
+}
+.packet .revenue-total {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 14px;
+  align-items: center;
+  padding: 14px 16px;
+  border: 1px solid var(--packet-accent-soft);
+  border-radius: 12px;
+  background: var(--packet-accent-faint);
+}
+.packet .revenue-total > span { color: var(--ink); font-size: 16px; font-weight: 850; }
+.packet .revenue-total > strong { justify-self: end; color: var(--packet-accent); font-size: 22px; line-height: 1.15; }
+.packet .revenue-total > small { grid-column: 1 / -1; color: var(--muted); font-size: 11px; }
+.packet .revenue-form-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.packet .revenue-form-actions small { color: var(--muted); font-size: 11px; }
+.packet .revenue-rule-card { display: grid; align-content: start; gap: 11px; }
+.packet .revenue-rule-card h3 { margin: 0; font-size: 18px; }
+.packet .revenue-rule-card ol { display: grid; gap: 9px; margin: 0; padding-left: 22px; color: var(--ink); font-size: 13px; line-height: 1.4; }
+.packet .revenue-admin-register,
+.packet .revenue-own-history { display: grid; gap: 15px; margin-top: 18px; }
+.packet .revenue-register-actions { display: flex; gap: 8px; }
+.packet .revenue-filter-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.packet .revenue-filter-row label { display: grid; gap: 6px; min-width: 0; color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .07em; text-transform: uppercase; }
+.packet .revenue-register-table-wrap { overflow-x: auto; }
+.packet .revenue-register-table { min-width: 900px; }
+.packet .revenue-register-table td small { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+.packet .revenue-register-table tfoot { background: color-mix(in srgb, var(--packet-accent-faint) 72%, var(--surface)); }
+.packet .revenue-register-table tfoot > tr > :is(th, td) { font-weight: 750; }
+.packet .revenue-register-table tfoot > tr > th { font-size: 14px; font-weight: 850; }
+.packet .revenue-details { display: inline-block; vertical-align: middle; margin-right: 7px; }
+.packet .revenue-details > summary { cursor: pointer; color: var(--packet-accent); font-size: 12px; font-weight: 750; white-space: nowrap; }
+.packet .revenue-details > dl { display: grid; gap: 6px; min-width: 240px; margin: 8px 0 0; padding: 9px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); box-shadow: 0 8px 24px color-mix(in srgb, #000 16%, transparent); }
+.packet .revenue-details > dl > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start; }
+.packet .revenue-details dt { color: var(--muted); font-size: 11px; }
+.packet .revenue-details dd { display: grid; gap: 2px; margin: 0; text-align: right; font-size: 12px; font-weight: 750; }
+.packet .revenue-details dd small { max-width: 150px; font-weight: 500; text-align: right; white-space: normal; }
+.packet .revenue-print-details { display: none; }
+.packet .revenue-history-list { display: grid; gap: 8px; }
+.packet .revenue-history-list article { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 0; border-bottom: 1px solid var(--line); }
+.packet .revenue-history-list article:last-child { border-bottom: 0; }
+.packet .revenue-history-list article > div { display: grid; gap: 2px; min-width: 0; }
+.packet .revenue-history-list span { color: var(--muted); font-size: 11px; }
+.packet .revenue-history-list strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.packet .revenue-history-list small { color: var(--muted); font-size: 11px; }
+.packet .revenue-history-list b { white-space: nowrap; color: var(--packet-accent); }
+
+@media (max-width: 980px) {
+  .packet .revenue-layout { grid-template-columns: 1fr; }
+  .packet .revenue-rule-card { grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); column-gap: 18px; }
+  .packet .revenue-rule-card > :is(.card-eyebrow, h3) { grid-column: 1; }
+  .packet .revenue-rule-card > :is(ol, .packet-note) { grid-column: 2; }
+}
+@media (max-width: 680px) {
+  .packet .revenue-meta-row,
+  .packet .revenue-filter-row { grid-template-columns: 1fr; }
+  .packet .revenue-input-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .packet .revenue-rule-card { display: grid; grid-template-columns: 1fr; }
+  .packet .revenue-rule-card > * { grid-column: auto !important; }
+  .packet .revenue-total > strong { font-size: 20px; }
+}
+@media (max-width: 400px) {
+  .packet .revenue-input-grid { grid-template-columns: 1fr; }
+  .packet .revenue-history-list article { align-items: flex-start; flex-direction: column; gap: 5px; }
+}
+@media print {
+  .packet .packet-spine,
+  .packet .packet-top,
+  .packet .section-recommendation,
+  .packet .revenue-entry-card,
+  .packet .revenue-rule-card,
+  .packet .revenue-filter-row,
+  .packet .revenue-not-for-print,
+  .packet .revenue-register-actions { display: none !important; }
+  .packet .packet-main { display: block; padding: 0; }
+  .packet .revenue-admin-register { display: block; margin: 0; border: 0; box-shadow: none; }
+  .packet .revenue-admin-register .card-title { margin-bottom: 14px; }
+  .packet .revenue-register-table { min-width: 0; width: 100%; font-size: 10px; }
+  .packet .revenue-register-table tfoot { display: none; }
+  .packet .revenue-print-details { display: grid; gap: 14px; margin-top: 18px; }
+  .packet .revenue-print-details > article { break-inside: avoid; padding-top: 10px; border-top: 1px solid #9d9d9d; }
+  .packet .revenue-print-details header { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; }
+  .packet .revenue-print-details dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px 14px; margin: 9px 0; }
+  .packet .revenue-print-details dl > div { display: grid; gap: 2px; }
+  .packet .revenue-print-details dt { color: #444; font-size: 9px; }
+  .packet .revenue-print-details dd { margin: 0; font-size: 10px; font-weight: 700; }
+  .packet .revenue-print-details dd small { display: block; margin-top: 2px; font-weight: 500; }
+  .packet .revenue-print-details footer { font-size: 12px; font-weight: 850; text-align: right; }
+}
