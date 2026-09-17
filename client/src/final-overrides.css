@@ -4384,7 +4384,14 @@ html[data-audit-theme="light"] .password-input-toggle:focus-visible { border-col
 html[data-audit-theme="dark"] .password-input-toggle { color: #c7bdcc; }
 
 /* Портальный список не блокирует прокрутку страницы: при листании страницы он закрывается, а выбор остается под пальцем. Списки открываются и исчезают мгновенно, без конкурирующей анимации. */
-.free-scroll-select-content { z-index: 90 !important; width: var(--radix-popover-trigger-width) !important; min-width: min(calc(100vw - 24px), var(--radix-popover-trigger-width)) !important; max-height: min(42vh, 320px); overflow-x: hidden; overflow-y: auto; padding: 4px !important; border: 1px solid var(--app-select-border) !important; border-radius: 12px !important; background: var(--app-select-surface) !important; color: var(--app-select-ink) !important; box-shadow: 0 16px 38px color-mix(in srgb, var(--app-select-shadow) 28%, transparent) !important; animation: none !important; transition: none !important; }
+.free-scroll-select-content { position: relative; z-index: 90 !important; width: var(--radix-popover-trigger-width) !important; min-width: min(calc(100vw - 24px), var(--radix-popover-trigger-width)) !important; overflow: hidden; padding: 4px !important; border: 1px solid var(--app-select-border) !important; border-radius: 12px !important; background: var(--app-select-surface) !important; color: var(--app-select-ink) !important; box-shadow: 0 16px 38px color-mix(in srgb, var(--app-select-shadow) 28%, transparent) !important; animation: none !important; transition: none !important; }
+.free-scroll-select-viewport { max-height: min(42vh, 320px); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; touch-action: pan-y; }
+.free-scroll-select-viewport::-webkit-scrollbar { display: none; }
+.free-scroll-select-edge { position: absolute; z-index: 2; right: 4px; left: 4px; display: none; height: 24px; min-height: 24px; align-items: center; justify-content: center; padding: 0; border: 0; border-radius: 8px; color: var(--app-select-accent); cursor: default; opacity: .96; }
+.free-scroll-select-edge-up { top: 4px; background: linear-gradient(to bottom, var(--app-select-surface) 42%, color-mix(in srgb, var(--app-select-surface) 78%, transparent)); }
+.free-scroll-select-edge-down { bottom: 4px; background: linear-gradient(to top, var(--app-select-surface) 42%, color-mix(in srgb, var(--app-select-surface) 78%, transparent)); }
+@media (hover: hover) and (pointer: fine) { .free-scroll-select-edge.is-active { display: flex; } .free-scroll-select-viewport { padding-block: 21px; } }
+@media (hover: none), (pointer: coarse) { .free-scroll-select-edge { display: none; } }
 .free-scroll-select-content > div { display: grid; gap: 2px; }
 .free-scroll-select-content [data-slot="select-item"] { display: flex; width: 100%; min-height: 35px; align-items: center; justify-content: space-between; gap: 9px; padding: 7px 9px; border: 0; border-radius: 8px; background: transparent; color: var(--app-select-ink); font: 700 12px/1.25 Manrope, Arial, sans-serif; text-align: left; }
 .free-scroll-select-content [data-slot="select-item"]:focus-visible { outline: 2px solid color-mix(in srgb, var(--app-select-accent) 55%, transparent); outline-offset: -2px; }
@@ -4398,3 +4405,6 @@ html[data-audit-theme="dark"] .password-input-toggle { color: #c7bdcc; }
 .price-select-content [data-slot="select-item"][data-state="checked"] { background: color-mix(in srgb, var(--price-menu-accent) 16%, var(--price-menu-surface)); color: var(--price-menu-accent); }
 @media (hover: hover) { .price-select-content [data-slot="select-item"]:hover:not(:disabled) { background: color-mix(in srgb, var(--price-menu-accent) 16%, var(--price-menu-surface)); color: var(--price-menu-accent); } }
 .price-select-content [data-slot="select-item"] svg { color: var(--price-menu-accent); }
+.price-select-content .free-scroll-select-edge { color: var(--price-menu-accent); }
+.price-select-content .free-scroll-select-edge-up { background: linear-gradient(to bottom, var(--price-menu-surface) 42%, color-mix(in srgb, var(--price-menu-surface) 78%, transparent)); }
+.price-select-content .free-scroll-select-edge-down { background: linear-gradient(to top, var(--price-menu-surface) 42%, color-mix(in srgb, var(--price-menu-surface) 78%, transparent)); }
