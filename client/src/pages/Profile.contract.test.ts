@@ -24,4 +24,10 @@ describe("страница «Профиль»", () => {
     expect(profile).toContain('const visibleFor = new Promise<void>(resolve => window.setTimeout(resolve, 620));');
     expect(styles).toContain('.packet .profile-cache-reset.is-clearing .profile-cache-reset-icon');
   });
+
+  it("объясняет отказ Android passkey и не скрывает NotAllowedError", () => {
+    expect(profile).toContain('import { passkeyErrorText } from "@/lib/passkeyError";');
+    expect(profile).toContain('toast.error(passkeyErrorText(error), { duration: 9000 });');
+    expect(profile).toContain("На Android нужен установленный PIN");
+  });
 });

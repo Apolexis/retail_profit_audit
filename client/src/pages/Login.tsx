@@ -9,6 +9,7 @@ import { authErrorText } from "@/lib/authError";
 import { passkeyErrorText } from "@/lib/passkeyError";
 import { useAudit } from "@/contexts/AuditContext";
 import { BrandMark } from "@/components/AuditShell";
+import { PasswordInput } from "@/components/PasswordInput";
 
 export default function Login({ accessError }: { accessError?: unknown }) {
   const { theme, toggleTheme } = useAudit();
@@ -67,7 +68,7 @@ export default function Login({ accessError }: { accessError?: unknown }) {
         <h1>Вход в управленческий контур</h1>
         <form onSubmit={submit}>
           <label>Номер телефона<PhoneInput value={phone} onValueChange={setPhone} required /></label>
-          <label>Пароль<input type="password" autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} required /></label>
+          <label>Пароль<PasswordInput autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} required /></label>
           {(accessError || login.error) && <div className="login-error">{authErrorText(accessError ?? login.error)}</div>}
           <button className="login-submit" disabled={login.isPending}><LockKeyhole size={16} />{login.isPending ? "Проверяем доступ…" : "Войти"}</button>
           {passkeySupported && <button type="button" className="login-passkey" onClick={fastLogin} disabled={passkeyBusy}><Fingerprint size={17} />{passkeyBusy ? "Подтвердите на устройстве…" : "Войти с ключом доступа"}</button>}

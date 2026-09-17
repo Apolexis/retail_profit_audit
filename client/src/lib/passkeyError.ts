@@ -2,7 +2,7 @@ export function passkeyErrorText(error: unknown) {
   const message = error instanceof Error ? error.message : "";
   const normalized = message.toLowerCase();
   if (normalized.includes("notallowederror") || normalized.includes("not allowed") || normalized.includes("timed out") || normalized.includes("aborterror") || normalized.includes("aborted")) {
-    return "Подтверждение ключа доступа отменено или не выполнено. Попробуйте еще раз.";
+    return "Устройство не создало ключ или не завершило подтверждение ключа доступа. Разблокируйте экран, проверьте PIN/отпечаток/лицо и менеджер ключей (на Android обычно Google), затем повторите. Телефон и пароль остаются резервным входом.";
   }
   if (normalized.includes("not supported") || normalized.includes("not implemented") || normalized.includes("notsupportederror")) {
     return "На этом устройстве быстрый вход не поддерживается. Используйте телефон и пароль.";

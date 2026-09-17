@@ -7,7 +7,7 @@ const overrides = readFileSync(new URL("../final-overrides.css", import.meta.url
 describe("защищенный импорт", () => {
   it("показывает только статус конфигурации и два закрытых поля замены", () => {
     expect(page).toContain("importCredentialStatus");
-    expect(page).toContain('type="password"');
+    expect(page).toContain("PasswordInput");
     expect(page).toContain("Пароль открытия книги");
     expect(page).toContain("Пароль защиты листов и структуры (резерв)");
     expect(page).toContain("Оставьте пустым, чтобы не менять");

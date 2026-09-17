@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { passkeyRelyingParty } from "./passkeys";
+import { passkeyRegistrationPolicy, passkeyRelyingParty } from "./passkeys";
 
 describe("контекст passkey", () => {
   it("использует фактический HTTPS Origin телефона даже при внутреннем host прокси", () => {
@@ -12,5 +12,10 @@ describe("контекст passkey", () => {
 
   it("отделяет порт разработки от RP ID localhost", () => {
     expect(passkeyRelyingParty({ protocol: "http", headers: { host: "localhost:3000" } })).toEqual({ rpId: "localhost", origin: "http://localhost:3000" });
+  });
+
+  it("не требует discoverable credential до показа Android platform authenticator", () => {
+    expect(passkeyRegistrationPolicy.timeout).toBe(120_000);
+    expect(passkeyRegistrationPolicy.authenticatorSelection).toEqual({ residentKey: "preferred", userVerification: "required" });
   });
 });

@@ -4324,3 +4324,14 @@ html[data-audit-theme="light"] .packet .price-preview .inline-error {
   .packet .price-preview-table > div.is-mobile-swipe-exit-to-left,
   .packet .price-preview-table > div.is-mobile-swipe-exit-to-right { animation: none; }
 }
+
+/* Пароль можно проверить до отправки формы: переключатель встроен в поле и не меняет его геометрию. */
+.password-input { position: relative; display: block; width: 100%; min-width: 0; }
+.password-input > input { width: 100%; min-width: 0; padding-right: 42px !important; }
+.password-input-toggle { position: absolute; top: 50%; right: 5px; display: grid; width: 32px; height: 32px; min-height: 32px; place-items: center; padding: 0; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--muted); transform: translateY(-50%); transition: color 150ms var(--audit-hover-ease), background 150ms var(--audit-hover-ease), border-color 150ms var(--audit-hover-ease), transform 150ms var(--audit-hover-ease); }
+.password-input-toggle:active { transform: translateY(-50%) scale(.94); }
+.password-input-toggle:focus-visible { border-color: var(--price-accent); outline: none; box-shadow: 0 0 0 2px color-mix(in srgb, var(--price-accent) 24%, transparent); }
+@media (hover: hover) { .password-input-toggle:hover { border-color: color-mix(in srgb, var(--price-accent) 32%, var(--line)); background: color-mix(in srgb, var(--price-accent) 8%, transparent); color: var(--price-accent); } }
+html[data-audit-theme="light"] .password-input-toggle { color: #47708e; }
+html[data-audit-theme="light"] .password-input-toggle:focus-visible { border-color: #0a63c8; box-shadow: 0 0 0 2px rgba(10, 99, 200, .18); }
+html[data-audit-theme="dark"] .password-input-toggle { color: #c7bdcc; }
