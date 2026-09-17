@@ -3977,7 +3977,10 @@ html[data-audit-theme="light"] .packet .price-preview-name-edit :is(input, texta
 /* Точная кинематика 1c6f03bd: каждая рыба идет по своей SVG-орбите.
    Косяк не скрывается перед стартом SMIL: рыбы видны уже в первом кадре загрузки. */
 .facts-loader .facts-loader-art { width: 150px !important; height: 150px !important; }
-.facts-loader .facts-school { transform: none !important; animation: none !important; }
+.facts-loader .facts-school { opacity: 0; transform: none !important; animation: none !important; transition: opacity 80ms linear; }
+.facts-loader .facts-school.is-ready { opacity: 1; }
+.facts-loader .facts-school-first-frame { opacity: 1; pointer-events: none; transition: opacity 80ms linear; }
+.facts-loader .facts-school-first-frame.is-fading { opacity: 0; }
 .facts-loader .facts-fish { transform: none !important; transform-box: fill-box; transform-origin: 0 0; }
 .facts-loader .facts-fish-size { transform-box: fill-box; transform-origin: 0 0; }
 .facts-loader .facts-fish-body { transform-box: fill-box; transform-origin: 50% 50%; animation: facts-fish-pulse 2.8s ease-in-out infinite alternate !important; }
@@ -4010,7 +4013,7 @@ html[data-audit-theme="light"] .packet .price-preview-name-edit :is(input, texta
 @keyframes facts-fish-pulse { from { transform: scale(.94); opacity: .82; } to { transform: scale(1.08); opacity: 1; } }
 .ocean-loader .facts-loader-art { width: min(268px, 68vw) !important; height: min(268px, 68vw) !important; }
 @media (max-width: 520px) { .facts-loader .facts-loader-art { width: 128px !important; height: 128px !important; } .ocean-loader .facts-loader-art { width: min(242px, 72vw) !important; height: min(242px, 72vw) !important; } }
-@media (prefers-reduced-motion: reduce) { .facts-loader .facts-school, .facts-loader .facts-fish-body { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .facts-loader .facts-school, .facts-loader .facts-fish-body { animation: none !important; } .facts-loader .facts-school { opacity: 0; } .facts-loader .facts-school-first-frame { opacity: 1; } }
 
 /* Справочник на телефоне: основная область не резервирует скрытую боковую колонку. */
 @media (max-width: 560px) {
@@ -4271,7 +4274,7 @@ html[data-audit-theme="light"] .packet .price-preview .inline-error {
   .packet .price-preview-swipe-hint-left,
   .packet .price-preview-swipe-hint-right { flex: 0 0 auto; animation: price-preview-swipe-hint-left 1.45s cubic-bezier(.23, 1, .32, 1) infinite alternate; }
   .packet .price-preview-swipe-hint-right { animation-name: price-preview-swipe-hint-right; }
-  .packet .price-preview-table { display: grid; grid-template-areas: "carousel"; padding: 2px; isolation: isolate; }
+  .packet .price-preview-table { display: grid; grid-template-areas: "carousel"; padding: 0; isolation: isolate; }
   .packet .price-preview-table > div.is-mobile-carousel-visible { display: grid; grid-area: carousel; }
   .packet .price-preview-table > div.is-mobile-current { will-change: transform; transform: translateX(var(--price-preview-swipe-offset, 0px)); transition: transform 230ms cubic-bezier(.23, 1, .32, 1); }
   .packet .price-preview-table > div.is-mobile-current.is-mobile-swipe-dragging { transition: none; }
@@ -4284,10 +4287,10 @@ html[data-audit-theme="light"] .packet .price-preview .inline-error {
   .packet .price-preview-table > div.is-mobile-swipe-exit-to-right { animation: price-preview-exit-to-right 250ms cubic-bezier(.23, 1, .32, 1) both; }
   @keyframes price-preview-swipe-hint-left { from { transform: translateX(-2px); opacity: .62; } to { transform: translateX(-8px); opacity: 1; } }
   @keyframes price-preview-swipe-hint-right { from { transform: translateX(2px); opacity: .62; } to { transform: translateX(8px); opacity: 1; } }
-  @keyframes price-preview-enter-from-right { from { transform: translateX(102%); opacity: .72; } to { transform: translateX(0); opacity: 1; } }
-  @keyframes price-preview-enter-from-left { from { transform: translateX(-102%); opacity: .72; } to { transform: translateX(0); opacity: 1; } }
-  @keyframes price-preview-exit-to-left { from { transform: translateX(var(--price-preview-swipe-offset, 0px)); opacity: 1; } to { transform: translateX(-102%); opacity: .72; } }
-  @keyframes price-preview-exit-to-right { from { transform: translateX(var(--price-preview-swipe-offset, 0px)); opacity: 1; } to { transform: translateX(102%); opacity: .72; } }
+  @keyframes price-preview-enter-from-right { from { transform: translateX(calc(100% + 2px)); opacity: .72; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes price-preview-enter-from-left { from { transform: translateX(calc(-100% - 2px)); opacity: .72; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes price-preview-exit-to-left { from { transform: translateX(var(--price-preview-swipe-offset, 0px)); opacity: 1; } to { transform: translateX(calc(-100% - 2px)); opacity: .72; } }
+  @keyframes price-preview-exit-to-right { from { transform: translateX(var(--price-preview-swipe-offset, 0px)); opacity: 1; } to { transform: translateX(calc(100% + 2px)); opacity: .72; } }
 }
 @media (prefers-reduced-motion: reduce) {
   .packet .price-preview-swipe-hint,

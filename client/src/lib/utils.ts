@@ -5,6 +5,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/** Normalizes editable decimal values while the user types. */
+export function normalizeDecimalInputText(value: string) {
+  return value.replace(/,/g, ".");
+}
+
 export const MOSCOW_TIME_ZONE = "Europe/Moscow";
 
 /** Formats an absolute timestamp for the business interface, independent of the device timezone. */

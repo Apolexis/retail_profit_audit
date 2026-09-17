@@ -1,4 +1,5 @@
 import { Toaster } from "@/components/ui/sonner";
+import { DecimalInputNormalizerBootstrap } from "@/components/DecimalInputNormalizerBootstrap";
 import { OceanLoader } from "@/components/OceanLoader";
 import { SortableTablesBootstrap } from "@/components/SortableTablesBootstrap";
 import { toast } from "sonner";
@@ -140,6 +141,7 @@ export default function App() {
         <AuditProvider>
           <TooltipProvider>
             <Toaster />
+            <DecimalInputNormalizerBootstrap />
             <SortableTablesBootstrap />
             <LocalAccessGate />
           </TooltipProvider>

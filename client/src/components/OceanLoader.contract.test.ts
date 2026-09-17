@@ -16,14 +16,17 @@ describe("векторная загрузка", () => {
     expect(component).not.toContain("<img");
   });
 
-  it("сохраняет траекторию версии 1c6f03bd, показывает рыб уже в первом кадре и уважает системное уменьшение анимации", () => {
+  it("сохраняет траекторию версии 1c6f03bd, показывает рыб сразу по кругу и уважает системное уменьшение анимации", () => {
     expect(styles).toContain("@media (prefers-reduced-motion: reduce)");
-    expect(component).toContain('className="facts-school"');
-    expect(component).not.toContain('className="facts-school" opacity="0"');
-    expect(component).not.toContain('<animate attributeName="opacity"');
+    expect(component).toContain('firstFrameTransform: "translate(80 18) rotate(0)"');
+    expect(component).toContain('firstFrameTransform: "translate(36 36) rotate(315)"');
+    expect(component).toContain('function FirstFrameFish');
+    expect(component).toContain('timer = window.setTimeout(() => setMotionReady(true), 64)');
+    expect(component).toContain('facts-school-first-frame');
     expect(component).not.toContain("facts-school-orbit");
     expect(component).not.toContain("animateTransform");
-    expect(styles).toContain(".facts-loader .facts-school { transform: none !important; animation: none !important; }");
+    expect(styles).toContain(".facts-loader .facts-school { opacity: 0; transform: none !important; animation: none !important; transition: opacity 80ms linear; }");
+    expect(styles).toContain(".facts-loader .facts-school-first-frame { opacity: 1; pointer-events: none; transition: opacity 80ms linear; }");
     expect(styles).toContain(".facts-loader .facts-fish-body { transform-box: fill-box; transform-origin: 50% 50%; animation: facts-fish-pulse");
     expect(styles).toContain("@keyframes facts-fish-pulse");
     expect(styles).toContain(".facts-loader .facts-loader-art { width: 150px !important; height: 150px !important; }");

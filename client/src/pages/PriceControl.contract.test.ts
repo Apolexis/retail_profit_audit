@@ -238,7 +238,9 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain(".packet .price-preview-table > div.is-mobile-current.is-mobile-swipe-dragging");
     expect(styles).toContain("@keyframes price-preview-enter-from-right");
     expect(styles).toContain("@keyframes price-preview-exit-to-left");
-    expect(styles).toContain("padding: 2px; isolation: isolate;");
+    expect(styles).toContain('grid-template-areas: "carousel"; padding: 0; isolation: isolate;');
+    expect(styles).toContain("translateX(calc(100% + 2px))");
+    expect(styles).toContain("translateX(calc(-100% - 2px))");
     expect(styles).toContain(".packet .price-preview-check:has(input:checked)");
   });
 
