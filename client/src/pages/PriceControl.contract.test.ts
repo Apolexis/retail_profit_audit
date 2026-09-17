@@ -213,12 +213,14 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).not.toContain("manufacturerCharacteristicId");
   });
 
-  it("на телефоне показывает одну позицию preview с подсказкой и анимацией живого свайпа", () => {
+  it("на touch-устройствах показывает одну позицию preview, не блокируя быструю навигацию во время анимации", () => {
     expect(page).toContain("price-preview-mobile-pager");
     expect(page).toContain("Позиция {currentMobilePreviewPosition + 1}");
     expect(page).toContain("is-mobile-current");
     expect(page).toContain("const moveMobilePreview = (direction: -1 | 1)");
     expect(page).toContain("(from + direction + total) % total");
+    expect(page).toContain("setMobilePreviewPosition(to);");
+    expect(page).not.toContain("disabled={Boolean(mobilePreviewTransition)}");
     expect(page).toContain("onPointerDown={startPreviewSwipe}");
     expect(page).toContain("onPointerMove={updatePreviewSwipe}");
     expect(page).toContain("onPointerUp={finishPreviewSwipe}");
@@ -238,9 +240,11 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain(".packet .price-preview-table > div.is-mobile-current.is-mobile-swipe-dragging");
     expect(styles).toContain("@keyframes price-preview-enter-from-right");
     expect(styles).toContain("@keyframes price-preview-exit-to-left");
-    expect(styles).toContain('grid-template-areas: "carousel"; padding: 0; isolation: isolate;');
-    expect(styles).toContain("translateX(calc(100% + 2px))");
-    expect(styles).toContain("translateX(calc(-100% - 2px))");
+    expect(styles).toContain('grid-template-areas: "carousel"; row-gap: 0; padding: 0; isolation: isolate;');
+    expect(styles).toContain("translateX(100%)");
+    expect(styles).toContain("translateX(-100%)");
+    expect(styles).toContain("row-gap: 2px; background: var(--price-surface);");
+    expect(styles).toContain("(hover: none) and (pointer: coarse) and (min-width: 561px) and (max-width: 1120px)");
     expect(styles).toContain(".packet .price-preview-check:has(input:checked)");
   });
 
@@ -260,7 +264,7 @@ describe("страница «Прайс‑контроль»", () => {
   });
 
   it("не ограничивает широкий preview тремя строками и перестраивает связь с категорией без наложений", () => {
-    expect(styles).toContain(".packet .price-preview-table { max-height: none; overflow: visible; }");
+    expect(styles).toContain(".packet .price-preview-table { max-height: none; overflow: visible; row-gap: 2px; background: var(--price-surface); }");
     expect(styles).toContain("@media (min-width: 761px)");
     expect(styles).toContain(".price-preview-new-row .price-preview-product-link { grid-column: 2; grid-row: 2;");
     expect(styles).toContain(".price-preview-new-row .price-preview-category-select { grid-column: 3; grid-row: 2;");

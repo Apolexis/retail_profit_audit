@@ -4069,8 +4069,9 @@ html[data-audit-theme="dark"] .packet .scroll-top svg { color: #ff9b88; }
   .packet .price-import-workbench.is-preview-ready .price-preview-create-category { flex: 0 1 380px; }
 }
 
-/* Preview не обрезает список до трех строк: вся выборка доступна обычной прокруткой страницы. */
-.packet .price-preview-table { max-height: none; overflow: visible; }
+/* Preview не обрезает список до трех строк: вся выборка доступна обычной прокруткой страницы.
+   Между обычными соседними карточками оставлен нейтральный зазор, чтобы их рамки не сливались в двойную линию. */
+.packet .price-preview-table { max-height: none; overflow: visible; row-gap: 2px; background: var(--price-surface); }
 .packet .price-preview-table > div.price-preview-row,
 .packet .price-preview-table > div.price-preview-new-row { align-items: start; min-height: 0; }
 .packet .price-preview-date { display: grid; min-width: 0; gap: 6px; color: var(--price-muted); font-size: 11px; font-weight: 700; }
@@ -4282,12 +4283,16 @@ html[data-audit-theme="light"] .packet .price-preview .inline-error {
   .packet .profile-cache-reset.is-clearing .profile-cache-reset-icon { animation: none !important; }
 }
 
-@media (max-width: 560px) {
+/* Карусель нужна на телефонах и планшетах с touch: на мыши средняя ширина остается обычным списком для быстрого обзора. */
+@media (max-width: 560px), (hover: none) and (pointer: coarse) and (min-width: 561px) and (max-width: 1120px) {
+  .packet .price-preview-mobile-pager { display: grid; }
   .packet .price-preview-swipe-hint { grid-column: 1 / -1; display: inline-flex; align-items: center; justify-content: center; gap: 2px; margin-top: -2px; color: var(--price-accent); font: 750 9px/1.2 "IBM Plex Mono", monospace; letter-spacing: .035em; }
   .packet .price-preview-swipe-hint-left,
   .packet .price-preview-swipe-hint-right { flex: 0 0 auto; animation: price-preview-swipe-hint-left 1.45s cubic-bezier(.23, 1, .32, 1) infinite alternate; }
   .packet .price-preview-swipe-hint-right { animation-name: price-preview-swipe-hint-right; }
-  .packet .price-preview-table { display: grid; grid-template-areas: "carousel"; padding: 0; isolation: isolate; }
+  .packet .price-preview-table { display: grid; grid-template-areas: "carousel"; row-gap: 0; padding: 0; isolation: isolate; }
+  .packet .price-preview-table > div.price-preview-row,
+  .packet .price-preview-table > div.price-preview-new-row { display: none; }
   .packet .price-preview-table > div.is-mobile-carousel-visible { display: grid; grid-area: carousel; }
   .packet .price-preview-table > div.is-mobile-current { will-change: transform; transform: translateX(var(--price-preview-swipe-offset, 0px)); transition: transform 230ms cubic-bezier(.23, 1, .32, 1); }
   .packet .price-preview-table > div.is-mobile-current.is-mobile-swipe-dragging { transition: none; }
@@ -4300,10 +4305,15 @@ html[data-audit-theme="light"] .packet .price-preview .inline-error {
   .packet .price-preview-table > div.is-mobile-swipe-exit-to-right { animation: price-preview-exit-to-right 250ms cubic-bezier(.23, 1, .32, 1) both; }
   @keyframes price-preview-swipe-hint-left { from { transform: translateX(-2px); opacity: .62; } to { transform: translateX(-8px); opacity: 1; } }
   @keyframes price-preview-swipe-hint-right { from { transform: translateX(2px); opacity: .62; } to { transform: translateX(8px); opacity: 1; } }
-  @keyframes price-preview-enter-from-right { from { transform: translateX(calc(100% + 2px)); opacity: .72; } to { transform: translateX(0); opacity: 1; } }
-  @keyframes price-preview-enter-from-left { from { transform: translateX(calc(-100% - 2px)); opacity: .72; } to { transform: translateX(0); opacity: 1; } }
-  @keyframes price-preview-exit-to-left { from { transform: translateX(var(--price-preview-swipe-offset, 0px)); opacity: 1; } to { transform: translateX(calc(-100% - 2px)); opacity: .72; } }
-  @keyframes price-preview-exit-to-right { from { transform: translateX(var(--price-preview-swipe-offset, 0px)); opacity: 1; } to { transform: translateX(calc(100% + 2px)); opacity: .72; } }
+  @keyframes price-preview-enter-from-right { from { transform: translateX(100%); opacity: .72; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes price-preview-enter-from-left { from { transform: translateX(-100%); opacity: .72; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes price-preview-exit-to-left { from { transform: translateX(var(--price-preview-swipe-offset, 0px)); opacity: 1; } to { transform: translateX(-100%); opacity: .72; } }
+  @keyframes price-preview-exit-to-right { from { transform: translateX(var(--price-preview-swipe-offset, 0px)); opacity: 1; } to { transform: translateX(100%); opacity: .72; } }
+}
+@media (hover: none) and (pointer: coarse) and (min-width: 561px) and (max-width: 1120px) {
+  .packet .price-preview-mobile-pager { grid-template-columns: 40px minmax(0, 1fr) 40px; gap: 10px; padding: 8px; }
+  .packet .price-preview-mobile-pager button { width: 40px; height: 36px; min-height: 36px; }
+  .packet .price-preview-mobile-pager span { font-size: 11px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .packet .price-preview-swipe-hint,

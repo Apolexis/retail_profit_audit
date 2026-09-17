@@ -65,6 +65,10 @@ describe("матрица доступа к импорту",()=>{
   it("размещает действие смены пароля отдельной строкой под заголовком безопасности",()=>{
     const page=readFileSync(resolve(process.cwd(),"client/src/pages/AccessAdmin.tsx"),"utf8");
     expect(page).toContain('className="admin-password-reset-title"');
+    expect(page).toContain('type="button" className="packet-link compact"');
+    expect(page).toContain('Осталось символов: {10 - resetPassword.length}');
+    expect(page).toContain('toast.error("Пароль не изменен"');
+    expect(page).toContain('"Откроется подтверждение смены пароля"');
     expect(overrides).toContain(".packet .admin-password-reset-title { display: block;");
     expect(overrides).toContain('.packet .admin-password-reset > div { display: grid; gap: 4px; }');
   });

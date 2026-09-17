@@ -885,7 +885,7 @@ export default function PriceControl({
   const currentMobilePreviewRowIndex = previewActiveRows[currentMobilePreviewPosition]?.index ?? null;
   const moveMobilePreview = (direction: -1 | 1) => {
     const total = previewActiveRows.length;
-    if (total < 2 || mobilePreviewTransition) return;
+    if (total < 2) return;
     const from = currentMobilePreviewPosition;
     const to = (from + direction + total) % total;
     if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -893,10 +893,12 @@ export default function PriceControl({
       setMobilePreviewPosition(to);
       return;
     }
+    setMobilePreviewSwipeOffset(0);
+    setMobilePreviewPosition(to);
     setMobilePreviewTransition({ from, to, direction });
   };
   const startPreviewSwipe = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (mobilePreviewTransition || event.pointerType !== "touch" || (event.target as HTMLElement).closest("input, textarea, button, [data-slot='select-trigger']")) return;
+    if (event.pointerType !== "touch" || (event.target as HTMLElement).closest("input, textarea, button, [data-slot='select-trigger']")) return;
     previewSwipeStart.current = { x: event.clientX, y: event.clientY };
     event.currentTarget.setPointerCapture(event.pointerId);
   };
@@ -2190,7 +2192,6 @@ export default function PriceControl({
                         type="button"
                         aria-label="Предыдущая позиция"
                         onClick={() => moveMobilePreview(-1)}
-                        disabled={Boolean(mobilePreviewTransition)}
                       >
                         <ChevronLeft size={17} />
                       </button>
@@ -2199,7 +2200,6 @@ export default function PriceControl({
                         type="button"
                         aria-label="Следующая позиция"
                         onClick={() => moveMobilePreview(1)}
-                        disabled={Boolean(mobilePreviewTransition)}
                       >
                         <ChevronRight size={17} />
                       </button>
@@ -2215,7 +2215,7 @@ export default function PriceControl({
                   <div className="price-preview-table" onPointerDown={startPreviewSwipe} onPointerMove={updatePreviewSwipe} onPointerUp={finishPreviewSwipe} onPointerCancel={cancelPreviewSwipe}>
                     {previewActiveRows.map(({ row, index }, position) => {
                       const isMobileCurrent = currentMobilePreviewRowIndex === index;
-                      const isMobileOutgoing = mobilePreviewTransition?.from === currentMobilePreviewPosition && isMobileCurrent;
+                      const isMobileOutgoing = mobilePreviewTransition?.from === position;
                       const isMobileIncoming = mobilePreviewTransition?.to === position;
                       const transitionClass = isMobileOutgoing
                         ? mobilePreviewTransition?.direction === 1
@@ -2226,7 +2226,7 @@ export default function PriceControl({
                             ? " is-mobile-carousel-incoming is-mobile-swipe-enter-from-right"
                             : " is-mobile-carousel-incoming is-mobile-swipe-enter-from-left"
                           : "";
-                      const isMobileVisible = isMobileCurrent || isMobileIncoming;
+                      const isMobileVisible = isMobileCurrent || isMobileOutgoing || isMobileIncoming;
                       return (
                         <div
                           key={`${row.rawName}-${index}`}
@@ -2236,9 +2236,8 @@ export default function PriceControl({
                           style={isMobileCurrent ? ({ "--price-preview-swipe-offset": `${mobilePreviewSwipeOffset}px` } as CSSProperties) : undefined}
                           onAnimationEnd={event => {
                             if (event.currentTarget !== event.target || !isMobileIncoming || !mobilePreviewTransition) return;
-                            setMobilePreviewPosition(mobilePreviewTransition.to);
                             setMobilePreviewSwipeOffset(0);
-                            setMobilePreviewTransition(null);
+                            setMobilePreviewTransition(current => current?.to === position ? null : current);
                           }}
                         >
                         {canEdit && previewNewRowIndexes.has(index) && (
