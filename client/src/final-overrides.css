@@ -3030,10 +3030,10 @@ html.pwa-fixed-reflow .scroll-top { position: fixed !important; transform: trans
 }
 
 /* Итоговая строка аналитических таблиц отделена от интервалов, но не создает отдельную визуальную карточку. */
-.packet .data-table tfoot .table-total > :is(th, td) { border-top: 1px solid var(--line); background: color-mix(in srgb, var(--card) 76%, var(--accent) 7%); color: var(--ink); font-size: 13px; font-weight: 850; }
-.packet .data-table tfoot .table-total > :is(th, td):first-child { letter-spacing: .04em; }
+.packet .data-table tfoot .table-total > :is(th, td) { border-top: 1px solid var(--line); background: color-mix(in srgb, var(--card) 76%, var(--accent) 7%); color: var(--ink); font-weight: 800; }
+.packet .data-table tfoot .table-total > th:first-child { font-size: 13px; font-weight: 900; letter-spacing: .04em; }
 .packet .data-table tfoot .table-total .numeric-column { font-variant-numeric: tabular-nums; }
-@media (max-width: 560px) { .packet .data-table tfoot .table-total > :is(th, td) { font-size: 12px; } }
+@media (max-width: 560px) { .packet .data-table tfoot .table-total > th:first-child { font-size: 12px; } }
 @media (max-width: 420px) {
   :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) :is(.tiny-tooltip.tiny-tooltip-dense, .tiny-tooltip.tiny-tooltip-monetary-dense):not(.tiny-tooltip-single) {
     width: var(--tiny-tooltip-chart-width, calc(100vw - 16px)) !important;
@@ -4002,7 +4002,8 @@ html[data-audit-theme="light"] .packet .price-preview-name-edit :is(input, texta
 .facts-loader .facts-school { opacity: 0; transform: none !important; animation: none !important; transition: opacity 80ms linear; }
 .facts-loader .facts-school.is-ready { opacity: 1; }
 .facts-loader .facts-school-first-frame { opacity: 1; pointer-events: none; transition: opacity 80ms linear; }
-.facts-loader .facts-fish { transform-box: fill-box; transform-origin: 0 0; }
+.facts-loader .facts-school-first-frame.is-fading { opacity: 0; }
+.facts-loader .facts-fish { transform: none !important; transform-box: fill-box; transform-origin: 0 0; }
 .facts-loader .facts-fish-size { transform-box: fill-box; transform-origin: 0 0; }
 .facts-loader .facts-fish-body { transform-box: fill-box; transform-origin: 50% 50%; animation: facts-fish-pulse 2.8s ease-in-out infinite alternate !important; }
 .facts-loader .facts-fish-b .facts-fish-body { animation-delay: -.7s !important; }
