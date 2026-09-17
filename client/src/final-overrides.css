@@ -3021,7 +3021,19 @@ html.pwa-fixed-reflow .scroll-top { position: fixed !important; transform: trans
 }
 :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip.tiny-tooltip-dense .tiny-tooltip-values-3 > span,
 :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip.tiny-tooltip-dense .tiny-tooltip-values-2 > span {
-  grid-template-columns: 8px minmax(4.2em, 1fr) max-content;
+  grid-template-columns: 8px minmax(6ch, 1fr) max-content;
+}
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip.tiny-tooltip-dense .tiny-tooltip-name {
+  min-width: 6ch;
+  overflow: visible;
+  text-overflow: clip;
+}
+@media (min-width: 421px) {
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) .tiny-tooltip.tiny-tooltip-dense:not(.tiny-tooltip-single) {
+    width: min(450px, calc(100vw - 16px)) !important;
+    min-width: min(420px, calc(100vw - 16px)) !important;
+    max-width: min(450px, calc(100vw - 16px)) !important;
+  }
 }
 
 /* Длинное пояснение сопоставления периодов не покидает карточку на узком темном экране. */
