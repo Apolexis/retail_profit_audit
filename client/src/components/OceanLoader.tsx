@@ -55,7 +55,7 @@ function FishSpinner({ className, label }: { className: string; label: string })
   }, []);
   return <section className={className} role="status" aria-live="polite"><p>{label}</p><svg className="facts-loader-art" viewBox="0 0 160 160" aria-hidden="true" focusable="false">
     <g className={motionReady ? "facts-school is-ready" : "facts-school"}>{SCHOOL_PATHS.map(fish => <OrbitFish key={fish.id} {...fish}/>)}</g>
-    <g className={motionReady ? "facts-school-first-frame is-fading" : "facts-school-first-frame"}>{SCHOOL_PATHS.map(fish => <FirstFrameFish key={fish.id} {...fish}/>)}</g>
+    {!motionReady && <g className="facts-school-first-frame">{SCHOOL_PATHS.map(fish => <FirstFrameFish key={fish.id} {...fish}/>)}</g>}
   </svg></section>;
 }
 

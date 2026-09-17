@@ -75,7 +75,7 @@ describe("мобильный контракт графических контр�
     expect(styles).toContain('.tiny-tooltip-monetary .tiny-tooltip-values-2 > span { white-space: nowrap; }');
     expect(styles).toContain('.tiny-tooltip-monetary-dense { width: fit-content !important; min-width: 0 !important; max-width: min(300px, calc(100vw - 32px)) !important;');
     expect(styles).toContain('.tiny-tooltip.tiny-tooltip-monetary-dense):not(.tiny-tooltip-single)');
-    expect(styles).toContain('width: min(680px, var(--tiny-tooltip-chart-width, calc(100vw - 16px))) !important;');
+    expect(styles).toContain('width: fit-content !important;');
     expect(styles).toContain('width: var(--tiny-tooltip-chart-width, calc(100vw - 16px)) !important;');
   });
 
@@ -104,6 +104,8 @@ describe("мобильный контракт графических контр�
   it("дает периоду и строкам значений одинаковый вертикальный воздух", () => {
     expect(styles).toContain('.tiny-tooltip { padding: 7px 9px !important; }');
     expect(styles).toContain('.tiny-tooltip > b { margin-bottom: 3px !important; line-height: 1.12; }');
-    expect(styles).toContain('.tiny-tooltip .tiny-tooltip-values { row-gap: 2px; column-gap: 8px !important; }');
+    expect(styles).toContain('.tiny-tooltip .tiny-tooltip-values { width: max-content; max-width: 100%; row-gap: 2px; column-gap: 5px !important; }');
+    expect(styles).toContain('@media (min-width: 421px) and (max-width: 560px)');
+    expect(styles).toContain('width: var(--tiny-tooltip-chart-width, calc(100vw - 16px)) !important;');
   });
 });

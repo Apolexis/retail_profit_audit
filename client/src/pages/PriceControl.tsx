@@ -2244,6 +2244,8 @@ export default function PriceControl({
                             <div className={`price-preview-name-edit${expandedPreviewNameRows[index] ? " is-expanded" : ""}`}>
                               <label htmlFor={`price-preview-name-${index}`}>
                                 <span>Название в этом прайсе</span>
+                              </label>
+                              <div className="price-preview-name-field">
                                 <textarea
                                   id={`price-preview-name-${index}`}
                                   rows={expandedPreviewNameRows[index] ? 4 : 2}
@@ -2252,7 +2254,18 @@ export default function PriceControl({
                                   maxLength={255}
                                   aria-label={`Название позиции ${row.rawName}`}
                                 />
-                              </label>
+                                <button
+                                  type="button"
+                                  className="price-preview-name-expand"
+                                  aria-label={expandedPreviewNameRows[index] ? "Свернуть поле названия" : "Развернуть поле названия"}
+                                  title={expandedPreviewNameRows[index] ? "Свернуть поле названия" : "Развернуть поле названия"}
+                                  aria-expanded={Boolean(expandedPreviewNameRows[index])}
+                                  aria-controls={`price-preview-name-${index}`}
+                                  onClick={() => setExpandedPreviewNameRows(current => ({ ...current, [index]: !current[index] }))}
+                                >
+                                  {expandedPreviewNameRows[index] ? <Minimize2 size={15} aria-hidden="true" /> : <Maximize2 size={15} aria-hidden="true" />}
+                                </button>
+                              </div>
                             </div>
                           ) : <strong>{row.rawName}</strong>}
                           <span>
@@ -2307,19 +2320,6 @@ export default function PriceControl({
                             )}
                           </div>
                         </div>
-                        {canUpload && (
-                          <button
-                            type="button"
-                            className="price-preview-name-expand"
-                            aria-label={expandedPreviewNameRows[index] ? "Свернуть поле названия" : "Развернуть поле названия"}
-                            title={expandedPreviewNameRows[index] ? "Свернуть поле названия" : "Развернуть поле названия"}
-                            aria-expanded={Boolean(expandedPreviewNameRows[index])}
-                            aria-controls={`price-preview-name-${index}`}
-                            onClick={() => setExpandedPreviewNameRows(current => ({ ...current, [index]: !current[index] }))}
-                          >
-                            {expandedPreviewNameRows[index] ? <Minimize2 size={15} aria-hidden="true" /> : <Maximize2 size={15} aria-hidden="true" />}
-                          </button>
-                        )}
                         <div className="price-preview-prices" aria-label={`Цены позиции ${row.rawName}`}>
                           {row.priceOptions.map((option, optionIndex) => {
                             const draft = previewPriceEdits[previewPriceKey(index, optionIndex)];

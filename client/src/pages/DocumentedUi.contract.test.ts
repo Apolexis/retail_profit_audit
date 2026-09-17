@@ -28,7 +28,7 @@ describe("правки из документа", () => {
     expect(css).toContain("tiny-tooltip-single");
     expect(css).not.toContain("tiny-tooltip-short-label");
     expect(css).toContain("text-overflow: ellipsis;");
-    expect(css).toContain("width: min(680px, var(--tiny-tooltip-chart-width, calc(100vw - 16px))) !important;");
+    expect(css).toContain("width: fit-content !important;");
     expect(css).toContain('html[data-audit-theme="light"] .packet .card-title > small');
     expect(css).toContain("max-block-size: calc(100dvh - 24px)");
   });

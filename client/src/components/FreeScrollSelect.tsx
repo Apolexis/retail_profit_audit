@@ -74,7 +74,7 @@ export function FreeScrollSelect({
           <ChevronDown size={16} aria-hidden="true" />
         </button>
       </PopoverTrigger>
-      <PopoverContent
+      {open && <PopoverContent
         ref={contentRef}
         id={listId}
         role="listbox"
@@ -103,7 +103,7 @@ export function FreeScrollSelect({
             </button>
           </div>
         ))}
-      </PopoverContent>
+      </PopoverContent>}
     </Popover>
   );
 }

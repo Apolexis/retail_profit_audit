@@ -11,6 +11,7 @@ describe("немодальный тематичный select", () => {
     expect(component).toContain('useLayoutEffect(() => {');
     expect(component).toContain('window.addEventListener("scroll", closeOnDocumentScroll, { capture: true, passive: true })');
     expect(component).toContain('window.removeEventListener("scroll", closeOnDocumentScroll, true)');
+    expect(component).toContain('{open && <PopoverContent');
     expect(component).not.toContain("RemoveScroll");
   });
 
@@ -22,5 +23,6 @@ describe("немодальный тематичный select", () => {
     expect(styles).toContain('.free-scroll-select-content { z-index: 90 !important;');
     expect(styles).toContain('overflow-y: auto;');
     expect(styles).toContain('animation: none !important; transition: none !important;');
+    expect(styles).toContain('.packet [data-slot="select-trigger"] { align-items: center; line-height: 1.2; }');
   });
 });

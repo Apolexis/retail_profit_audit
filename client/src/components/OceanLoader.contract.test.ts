@@ -23,12 +23,14 @@ describe("векторная загрузка", () => {
     expect(component).toContain('function FirstFrameFish');
     expect(component).toContain('timer = window.setTimeout(() => setMotionReady(true), 64)');
     expect(component).toContain('facts-school-first-frame');
+    expect(component).toContain('{!motionReady && <g className="facts-school-first-frame">');
+    expect(component).not.toContain('facts-school-first-frame is-fading');
     expect(component).not.toContain("facts-school-orbit");
     expect(component).not.toContain("animateTransform");
     expect(styles).toContain(".facts-loader .facts-school { opacity: 0; transform: none !important; animation: none !important; transition: opacity 80ms linear; }");
     expect(styles).toContain(".facts-loader .facts-school-first-frame { opacity: 1; pointer-events: none; transition: opacity 80ms linear; }");
-    expect(styles).toContain(".facts-loader .facts-school .facts-fish { transform: none !important; transform-box: fill-box; transform-origin: 0 0; }");
-    expect(styles).toContain(".facts-loader .facts-school-first-frame .facts-fish { transform-box: fill-box; transform-origin: 0 0; }");
+    expect(styles).toContain(".facts-loader .facts-fish { transform-box: fill-box; transform-origin: 0 0; }");
+    expect(styles).not.toContain(".facts-loader .facts-school .facts-fish { transform: none !important;");
     expect(styles).toContain(".facts-loader .facts-fish-body { transform-box: fill-box; transform-origin: 50% 50%; animation: facts-fish-pulse");
     expect(styles).toContain("@keyframes facts-fish-pulse");
     expect(styles).toContain(".facts-loader .facts-loader-art { width: 150px !important; height: 150px !important; }");

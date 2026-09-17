@@ -2999,7 +2999,7 @@ html.pwa-fixed-reflow .scroll-top { position: fixed !important; transform: trans
 }
 :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip { padding: 7px 9px !important; }
 :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip > b { margin-bottom: 3px !important; line-height: 1.12; }
-:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip .tiny-tooltip-values { row-gap: 2px; column-gap: 8px !important; }
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip .tiny-tooltip-values { width: max-content; max-width: 100%; row-gap: 2px; column-gap: 5px !important; }
 
 /* Tooltip использует фактическую ширину колонок: сокращение срабатывает только при реальном дефиците места. */
 :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) .tiny-tooltip.tiny-tooltip-single {
@@ -3024,7 +3024,7 @@ html.pwa-fixed-reflow .scroll-top { position: fixed !important; transform: trans
   grid-template-columns: 8px minmax(0, 1fr) max-content;
 }
 :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) :is(.tiny-tooltip.tiny-tooltip-dense, .tiny-tooltip.tiny-tooltip-monetary-dense):not(.tiny-tooltip-single) {
-  width: min(680px, var(--tiny-tooltip-chart-width, calc(100vw - 16px))) !important;
+  width: fit-content !important;
   min-width: 0 !important;
   max-width: min(680px, var(--tiny-tooltip-chart-width, calc(100vw - 16px))) !important;
 }
@@ -3046,6 +3046,18 @@ html.pwa-fixed-reflow .scroll-top { position: fixed !important; transform: trans
     column-gap: 3px;
   }
   :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.tiny-tooltip.tiny-tooltip-dense, .tiny-tooltip.tiny-tooltip-monetary-dense) .tiny-tooltip-values-3 {
+    column-gap: 4px !important;
+  }
+}
+
+@media (min-width: 421px) and (max-width: 560px) {
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) :is(.tiny-tooltip.tiny-tooltip-dense, .tiny-tooltip.tiny-tooltip-monetary-dense):not(.tiny-tooltip-single) {
+    width: var(--tiny-tooltip-chart-width, calc(100vw - 16px)) !important;
+    min-width: 0 !important;
+    max-width: var(--tiny-tooltip-chart-width, calc(100vw - 16px)) !important;
+  }
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.tiny-tooltip.tiny-tooltip-dense, .tiny-tooltip.tiny-tooltip-monetary-dense) .tiny-tooltip-values-3 {
+    width: 100%;
     column-gap: 4px !important;
   }
 }
@@ -3480,6 +3492,10 @@ html[data-audit-theme="dark"] .packet .price-preview select option { background:
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--price-accent) 16%, transparent) !important;
 }
 .packet .price-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  line-height: 1.2;
   width: 100% !important;
   min-height: 42px;
   height: 42px;
@@ -3578,6 +3594,8 @@ html[data-audit-theme="light"] { --app-select-surface: #ffffff; --app-select-bor
 .packet :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), textarea, [data-slot="select-trigger"]):focus-visible,
 .packet [data-slot="select-trigger"][data-state="open"] { outline: none !important; border-color: var(--price-accent) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--price-accent) 16%, transparent) !important; }
 .packet [data-slot="select-trigger"] { display: flex; width: 100%; min-width: 0; height: 42px; justify-content: space-between; gap: 9px; font: 700 12px Manrope, Arial, sans-serif; }
+.packet [data-slot="select-trigger"] { align-items: center; line-height: 1.2; }
+.packet [data-slot="select-trigger"] > [data-slot="select-value"] { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2; }
 .packet [data-slot="select-content"] { z-index: 90; min-width: var(--radix-select-trigger-width); border: 1px solid var(--price-menu-border); border-radius: 12px; background: var(--price-menu-surface); color: var(--price-menu-ink); box-shadow: 0 16px 38px color-mix(in srgb, var(--price-menu-shadow) 28%, transparent); }
 .packet [data-slot="select-content"] [data-slot="select-item"] { min-height: 35px; border-radius: 8px; color: var(--price-menu-ink); font: 700 12px Manrope, Arial, sans-serif; }
 .packet [data-slot="select-content"] [data-slot="select-item"][data-highlighted],
@@ -3984,9 +4002,7 @@ html[data-audit-theme="light"] .packet .price-preview-name-edit :is(input, texta
 .facts-loader .facts-school { opacity: 0; transform: none !important; animation: none !important; transition: opacity 80ms linear; }
 .facts-loader .facts-school.is-ready { opacity: 1; }
 .facts-loader .facts-school-first-frame { opacity: 1; pointer-events: none; transition: opacity 80ms linear; }
-.facts-loader .facts-school-first-frame.is-fading { opacity: 0; }
-.facts-loader .facts-school .facts-fish { transform: none !important; transform-box: fill-box; transform-origin: 0 0; }
-.facts-loader .facts-school-first-frame .facts-fish { transform-box: fill-box; transform-origin: 0 0; }
+.facts-loader .facts-fish { transform-box: fill-box; transform-origin: 0 0; }
 .facts-loader .facts-fish-size { transform-box: fill-box; transform-origin: 0 0; }
 .facts-loader .facts-fish-body { transform-box: fill-box; transform-origin: 50% 50%; animation: facts-fish-pulse 2.8s ease-in-out infinite alternate !important; }
 .facts-loader .facts-fish-b .facts-fish-body { animation-delay: -.7s !important; }
@@ -4110,17 +4126,17 @@ html[data-audit-theme="dark"] .packet .scroll-top svg { color: #ff9b88; }
 .packet .price-preview-name-edit textarea { resize: vertical; min-height: 44px; max-height: 96px; line-height: 1.35; overflow-y: auto; }
 .packet .price-preview-name-edit > label { display: grid; min-width: 0; gap: 4px; }
 .packet .price-preview-name-edit > label > span { color: var(--price-muted); font: 750 9px "IBM Plex Mono", monospace; letter-spacing: .05em; text-transform: uppercase; }
-.packet .price-preview-name-expand { display: none; }
+.packet .price-preview-name-field { position: relative; min-width: 0; }
+.packet .price-preview-name-field textarea { width: 100%; padding-right: 42px; }
+.packet .price-preview-name-expand { position: absolute; z-index: 1; top: 8px; right: 7px; display: inline-grid; width: 26px; height: 26px; min-height: 26px; place-items: center; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--price-accent); box-shadow: none; transform: none !important; }
+.packet .price-preview-name-expand:focus-visible { outline: 0; box-shadow: none; color: var(--price-accent); }
+.packet .price-preview-name-expand:active { transform: none !important; }
 
 /* Дата прайса начинает тот же верхний ряд, что и выбор поставщика, а не прилипает к его нижнему действию. */
 .packet .price-import-workbench.is-preview-ready .price-preview-date { align-self: start; margin-top: 0; }
 
-/* У touch-устройств нет надежного resize-уголка textarea: иконка занимает правую колонку непосредственно под удалением и не перекрывает название. */
-@media (hover: none) and (pointer: coarse), (max-width: 560px) {
-  .packet .price-preview-name-expand { position: static; z-index: auto; display: inline-grid; grid-column: 3; grid-row: 2; width: 32px; height: 32px; min-height: 32px; place-items: center; align-self: start; justify-self: end; margin: 0; padding: 0; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--price-accent); box-shadow: none; }
-  .packet .price-preview-name-expand:active { transform: scale(.97); }
-  .packet .price-preview-name-edit.is-expanded textarea { min-height: 96px; max-height: none; }
-}
+/* Иконка встроена в поле названия на всех ширинах; отдельная карточечная колонка ей не нужна. */
+.packet .price-preview-name-edit.is-expanded textarea { min-height: 96px; max-height: none; }
 .packet .mobile-quick-refresh.is-refreshing { pointer-events: none; }
 .packet .mobile-quick-refresh-icon { display: inline-flex; flex: 0 0 auto; transform-origin: center; }
 .packet .mobile-quick-refresh.is-refreshing .mobile-quick-refresh-icon { animation: mobile-refresh-spin 620ms linear infinite !important; }
@@ -4189,7 +4205,6 @@ html[data-audit-theme="light"] .packet .price-preview-offer-metadata input { bor
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-product-link { grid-column: 2; grid-row: 2; min-width: 0; }
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-category-select { grid-column: 3; grid-row: 2; min-width: 0; }
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-remove { position: static; grid-column: 4; grid-row: 1; align-self: start; justify-self: end; }
-  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-name-expand { grid-column: 4; grid-row: 2; }
   .packet .price-preview-price-edit { grid-template-columns: minmax(0, .9fr) minmax(0, 1fr); }
   .packet .price-preview-price-edit .price-preview-mode-select { grid-column: auto; }
 }
@@ -4198,7 +4213,6 @@ html[data-audit-theme="light"] .packet .price-preview-offer-metadata input { bor
   .packet .price-import-workbench.is-preview-ready .price-preview-table > div.price-preview-new-row { grid-template-columns: 28px minmax(0, 1fr) 36px; grid-template-rows: auto auto auto auto; gap: 12px 14px; inline-size: 100%; max-inline-size: 100%; box-sizing: border-box; }
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-product { grid-column: 2; grid-row: 1; min-width: 0; }
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-remove { position: static; grid-column: 3; grid-row: 1; align-self: start; justify-self: end; }
-  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-name-expand { grid-column: 3; grid-row: 2; }
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-prices { grid-column: 2; grid-row: 2; min-width: 0; }
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-product-link { grid-column: 2; grid-row: 3; min-width: 0; }
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-category-select { grid-column: 2; grid-row: 4; min-width: 0; }
