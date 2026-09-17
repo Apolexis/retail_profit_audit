@@ -20,10 +20,10 @@ describe("единый контракт полей и списков", () => {
     expect(select).toContain('rounded-[11px]');
   });
 
-  it("использует тематичный портальный список как совместимую замену native select", () => {
+  it("использует тематичный немодальный список, не блокирующий прокрутку страницы", () => {
     expect(themedSelect).toContain("function ThemedSelect");
-    expect(themedSelect).toContain("SelectContent");
-    expect(themedSelect).toContain("SelectItem");
+    expect(themedSelect).toContain("FreeScrollSelect");
+    expect(themedSelect).toContain('contentClassName="app-select-content"');
     expect(themedSelect).toContain("EMPTY_VALUE");
   });
 

@@ -116,9 +116,9 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain(".packet .price-import-workbench.is-preview-ready");
   });
 
-  it("заменяет нативные селекты тематичными списками приложения", () => {
+  it("заменяет нативные селекты тематичными немодальными списками приложения", () => {
     expect(page).toContain("function PriceSelect");
-    expect(page).toContain("<SelectTrigger");
+    expect(page).toContain("<FreeScrollSelect");
     expect(page).toContain("price-select-content");
     expect(page).not.toContain("<select");
     expect(styles).toContain(".packet .price-select-trigger");
@@ -244,7 +244,8 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain("translateX(100%)");
     expect(styles).toContain("translateX(-100%)");
     expect(styles).toContain("row-gap: 2px; background: var(--price-surface);");
-    expect(styles).toContain("(hover: none) and (pointer: coarse) and (min-width: 561px) and (max-width: 1120px)");
+    expect(styles).toContain("@media (hover: none) and (pointer: coarse) and (max-width: 1120px)");
+    expect(styles).toContain("border: 0 !important; box-shadow: none !important;");
     expect(styles).toContain(".packet .price-preview-check:has(input:checked)");
   });
 
@@ -252,12 +253,15 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("<textarea");
     expect(page).toContain("expandedPreviewNameRows");
     expect(page).toContain('className="price-preview-name-expand"');
-    expect(page).toContain('"Развернуть поле"');
-    expect(page).toContain('"Свернуть поле"');
+    expect(page).toContain('"Развернуть поле названия"');
+    expect(page).toContain('"Свернуть поле названия"');
+    expect(page).toContain("<Maximize2 size={15}");
+    expect(page).toContain("<Minimize2 size={15}");
     expect(styles).toContain(".packet .price-preview-name-edit :is(input, textarea) { min-width: 0; padding-inline: 7px; font-size: 12px;");
     expect(styles).toContain(".packet .price-preview-name-edit textarea { resize: vertical;");
     expect(styles).toContain(".packet .price-preview-name-edit > label { display: grid;");
     expect(styles).toContain("@media (hover: none) and (pointer: coarse)");
+    expect(styles).toContain(".packet .price-preview-name-expand { display: inline-grid; grid-column: 3; grid-row: 2;");
     expect(styles).toContain(".packet .price-preview-name-edit.is-expanded textarea { min-height: 96px;");
     expect(styles).toContain("@media (max-width: 420px)");
     expect(styles).toContain("@media (max-width: 560px) { .packet .price-preview-table { overflow: clip; touch-action: pan-y; } }");

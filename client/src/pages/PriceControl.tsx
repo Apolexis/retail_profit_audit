@@ -23,13 +23,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   BookOpenCheck,
   Check,
   CheckCircle2,
@@ -45,6 +38,8 @@ import {
   History,
   Link2,
   Loader2,
+  Maximize2,
+  Minimize2,
   PackageSearch,
   Pencil,
   Plus,
@@ -62,6 +57,7 @@ import {
 import { toast } from "sonner";
 import { AuditShell } from "@/components/AuditShell";
 import { ExactDateControl } from "@/components/DateRangeControl";
+import { FreeScrollSelect } from "@/components/FreeScrollSelect";
 import { trpc } from "@/lib/trpc";
 
 type Preview = {
@@ -148,22 +144,14 @@ function PriceSelect({
   className?: string;
 }) {
   return (
-    <Select value={value || undefined} onValueChange={onValueChange}>
-      <SelectTrigger className={`price-select-trigger ${className}`}>
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent className="price-select-content" align="start">
-        {options.map(option => (
-          <SelectItem
-            key={option.value}
-            value={option.value}
-            disabled={option.disabled}
-          >
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <FreeScrollSelect
+      value={value}
+      onValueChange={onValueChange}
+      placeholder={placeholder}
+      options={options}
+      className={`price-select-trigger ${className}`}
+      contentClassName="price-select-content"
+    />
   );
 }
 
@@ -2265,15 +2253,6 @@ export default function PriceControl({
                                   aria-label={`Название позиции ${row.rawName}`}
                                 />
                               </label>
-                              <button
-                                type="button"
-                                className="price-preview-name-expand"
-                                aria-expanded={Boolean(expandedPreviewNameRows[index])}
-                                aria-controls={`price-preview-name-${index}`}
-                                onClick={() => setExpandedPreviewNameRows(current => ({ ...current, [index]: !current[index] }))}
-                              >
-                                {expandedPreviewNameRows[index] ? "Свернуть поле" : "Развернуть поле"}
-                              </button>
                             </div>
                           ) : <strong>{row.rawName}</strong>}
                           <span>
@@ -2328,6 +2307,19 @@ export default function PriceControl({
                             )}
                           </div>
                         </div>
+                        {canUpload && (
+                          <button
+                            type="button"
+                            className="price-preview-name-expand"
+                            aria-label={expandedPreviewNameRows[index] ? "Свернуть поле названия" : "Развернуть поле названия"}
+                            title={expandedPreviewNameRows[index] ? "Свернуть поле названия" : "Развернуть поле названия"}
+                            aria-expanded={Boolean(expandedPreviewNameRows[index])}
+                            aria-controls={`price-preview-name-${index}`}
+                            onClick={() => setExpandedPreviewNameRows(current => ({ ...current, [index]: !current[index] }))}
+                          >
+                            {expandedPreviewNameRows[index] ? <Minimize2 size={15} aria-hidden="true" /> : <Maximize2 size={15} aria-hidden="true" />}
+                          </button>
+                        )}
                         <div className="price-preview-prices" aria-label={`Цены позиции ${row.rawName}`}>
                           {row.priceOptions.map((option, optionIndex) => {
                             const draft = previewPriceEdits[previewPriceKey(index, optionIndex)];

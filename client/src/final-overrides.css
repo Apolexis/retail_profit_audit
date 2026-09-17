@@ -3938,7 +3938,7 @@ html[data-audit-theme="light"] .packet .price-preview-table { overflow: hidden; 
 html[data-audit-theme="light"] .packet .price-preview-table > div { background: #ffffff; }
 html[data-audit-theme="light"] .packet .price-preview-table > div.is-selected { background: #e9f4ff; }
 html[data-audit-theme="light"] .packet .price-preview-name-edit :is(input, textarea) { border-color: #c8d9e9; background: #fff; }
-@media (max-width: 560px) {
+@media (max-width: 560px) and (hover: none) and (pointer: coarse) {
   .packet .price-preview { gap: 9px; padding: 9px; }
   .packet .price-preview-categorization { gap: 8px; padding: 9px; }
   .packet .price-preview-categorization > div:first-child > strong { font-size: 19px; }
@@ -4110,9 +4110,9 @@ html[data-audit-theme="dark"] .packet .scroll-top svg { color: #ff9b88; }
 /* Дата прайса начинает тот же верхний ряд, что и выбор поставщика, а не прилипает к его нижнему действию. */
 .packet .price-import-workbench.is-preview-ready .price-preview-date { align-self: start; margin-top: 0; }
 
-/* У touch-устройств нет надежного resize-уголка textarea: раскрытие дает явную, не конфликтующую со свайпом альтернативу. */
+/* У touch-устройств нет надежного resize-уголка textarea: иконка стоит справа под удалением и не занимает строку текста. */
 @media (hover: none) and (pointer: coarse) {
-  .packet .price-preview-name-expand { display: inline-flex; align-items: center; justify-content: center; justify-self: start; min-height: 32px; margin-top: 2px; padding: 6px 9px; border: 1px solid var(--price-border); border-radius: 8px; background: color-mix(in srgb, var(--price-accent) 6%, var(--price-surface)); color: var(--price-accent); font: 750 10px Manrope, Arial, sans-serif; }
+  .packet .price-preview-name-expand { display: inline-grid; grid-column: 3; grid-row: 2; width: 32px; height: 32px; min-height: 32px; place-items: center; align-self: start; justify-self: end; margin: 0; padding: 0; border: 1px solid var(--price-border); border-radius: 8px; background: color-mix(in srgb, var(--price-accent) 6%, var(--price-surface)); color: var(--price-accent); }
   .packet .price-preview-name-expand:active { transform: scale(.97); }
   .packet .price-preview-name-edit.is-expanded textarea { min-height: 96px; max-height: none; }
 }
@@ -4283,8 +4283,8 @@ html[data-audit-theme="light"] .packet .price-preview .inline-error {
   .packet .profile-cache-reset.is-clearing .profile-cache-reset-icon { animation: none !important; }
 }
 
-/* Карусель нужна на телефонах и планшетах с touch: на мыши средняя ширина остается обычным списком для быстрого обзора. */
-@media (max-width: 560px), (hover: none) and (pointer: coarse) and (min-width: 561px) and (max-width: 1120px) {
+/* Карусель нужна только на touch: на мыши, в том числе на узком экране, остается обычный список. */
+@media (hover: none) and (pointer: coarse) and (max-width: 1120px) {
   .packet .price-preview-mobile-pager { display: grid; }
   .packet .price-preview-swipe-hint { grid-column: 1 / -1; display: inline-flex; align-items: center; justify-content: center; gap: 2px; margin-top: -2px; color: var(--price-accent); font: 750 9px/1.2 "IBM Plex Mono", monospace; letter-spacing: .035em; }
   .packet .price-preview-swipe-hint-left,
@@ -4292,7 +4292,7 @@ html[data-audit-theme="light"] .packet .price-preview .inline-error {
   .packet .price-preview-swipe-hint-right { animation-name: price-preview-swipe-hint-right; }
   .packet .price-preview-table { display: grid; grid-template-areas: "carousel"; row-gap: 0; padding: 0; isolation: isolate; }
   .packet .price-preview-table > div.price-preview-row,
-  .packet .price-preview-table > div.price-preview-new-row { display: none; }
+  .packet .price-preview-table > div.price-preview-new-row { display: none; border: 0 !important; box-shadow: none !important; }
   .packet .price-preview-table > div.is-mobile-carousel-visible { display: grid; grid-area: carousel; }
   .packet .price-preview-table > div.is-mobile-current { will-change: transform; transform: translateX(var(--price-preview-swipe-offset, 0px)); transition: transform 230ms cubic-bezier(.23, 1, .32, 1); }
   .packet .price-preview-table > div.is-mobile-current.is-mobile-swipe-dragging { transition: none; }
@@ -4335,3 +4335,19 @@ html[data-audit-theme="light"] .packet .price-preview .inline-error {
 html[data-audit-theme="light"] .password-input-toggle { color: #47708e; }
 html[data-audit-theme="light"] .password-input-toggle:focus-visible { border-color: #0a63c8; box-shadow: 0 0 0 2px rgba(10, 99, 200, .18); }
 html[data-audit-theme="dark"] .password-input-toggle { color: #c7bdcc; }
+
+/* Портальный список не блокирует прокрутку страницы: при листании страницы он закрывается, а выбор остается под пальцем. */
+.free-scroll-select-content { z-index: 90 !important; width: var(--radix-popover-trigger-width) !important; min-width: min(calc(100vw - 24px), var(--radix-popover-trigger-width)) !important; max-height: min(42vh, 320px); overflow-x: hidden; overflow-y: auto; padding: 4px !important; border: 1px solid var(--app-select-border) !important; border-radius: 12px !important; background: var(--app-select-surface) !important; color: var(--app-select-ink) !important; box-shadow: 0 16px 38px color-mix(in srgb, var(--app-select-shadow) 28%, transparent) !important; }
+.free-scroll-select-content > div { display: grid; gap: 2px; }
+.free-scroll-select-content [data-slot="select-item"] { display: flex; width: 100%; min-height: 35px; align-items: center; justify-content: space-between; gap: 9px; padding: 7px 9px; border: 0; border-radius: 8px; background: transparent; color: var(--app-select-ink); font: 700 12px/1.25 Manrope, Arial, sans-serif; text-align: left; }
+.free-scroll-select-content [data-slot="select-item"]:focus-visible { outline: 2px solid color-mix(in srgb, var(--app-select-accent) 55%, transparent); outline-offset: -2px; }
+.free-scroll-select-content [data-slot="select-item"][data-state="checked"] { background: color-mix(in srgb, var(--app-select-accent) 16%, var(--app-select-surface)); color: var(--app-select-accent); }
+@media (hover: hover) { .free-scroll-select-content [data-slot="select-item"]:hover:not(:disabled) { background: color-mix(in srgb, var(--app-select-accent) 16%, var(--app-select-surface)); color: var(--app-select-accent); } }
+.free-scroll-select-content [data-slot="select-item"]:disabled { cursor: not-allowed; opacity: .48; }
+.free-scroll-select-content [data-slot="select-item"] svg { flex: 0 0 auto; color: var(--app-select-accent); }
+.free-scroll-select-group { display: block; padding: 7px 8px 3px; color: var(--faint); font: 750 9px/1.2 "IBM Plex Mono", monospace; letter-spacing: .055em; text-transform: uppercase; }
+.price-select-content { min-width: min(calc(100vw - 24px), var(--radix-popover-trigger-width)) !important; border-color: var(--price-menu-border) !important; background: var(--price-menu-surface) !important; color: var(--price-menu-ink) !important; box-shadow: 0 16px 38px color-mix(in srgb, var(--price-menu-shadow) 28%, transparent) !important; }
+.price-select-content [data-slot="select-item"] { color: var(--price-menu-ink); }
+.price-select-content [data-slot="select-item"][data-state="checked"] { background: color-mix(in srgb, var(--price-menu-accent) 16%, var(--price-menu-surface)); color: var(--price-menu-accent); }
+@media (hover: hover) { .price-select-content [data-slot="select-item"]:hover:not(:disabled) { background: color-mix(in srgb, var(--price-menu-accent) 16%, var(--price-menu-surface)); color: var(--price-menu-accent); } }
+.price-select-content [data-slot="select-item"] svg { color: var(--price-menu-accent); }
