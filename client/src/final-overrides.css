@@ -3024,25 +3024,29 @@ html.pwa-fixed-reflow .scroll-top { position: fixed !important; transform: trans
   grid-template-columns: 8px minmax(0, 1fr) max-content;
 }
 :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) :is(.tiny-tooltip.tiny-tooltip-dense, .tiny-tooltip.tiny-tooltip-monetary-dense):not(.tiny-tooltip-single) {
-  width: min(680px, calc(100vw - 16px)) !important;
-  min-width: min(420px, calc(100vw - 16px)) !important;
-  max-width: min(680px, calc(100vw - 16px)) !important;
+  width: min(680px, var(--tiny-tooltip-chart-width, calc(100vw - 16px))) !important;
+  min-width: 0 !important;
+  max-width: min(680px, var(--tiny-tooltip-chart-width, calc(100vw - 16px))) !important;
 }
 
 /* Итоговая строка аналитических таблиц отделена от интервалов, но не создает отдельную визуальную карточку. */
-.packet .data-table tfoot .table-total > :is(th, td) { border-top: 1px solid var(--line); background: color-mix(in srgb, var(--card) 76%, var(--accent) 7%); color: var(--ink); font-weight: 800; }
+.packet .data-table tfoot .table-total > :is(th, td) { border-top: 1px solid var(--line); background: color-mix(in srgb, var(--card) 76%, var(--accent) 7%); color: var(--ink); font-size: 13px; font-weight: 850; }
 .packet .data-table tfoot .table-total > :is(th, td):first-child { letter-spacing: .04em; }
 .packet .data-table tfoot .table-total .numeric-column { font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) { .packet .data-table tfoot .table-total > :is(th, td) { font-size: 12px; } }
 @media (max-width: 420px) {
   :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) :is(.tiny-tooltip.tiny-tooltip-dense, .tiny-tooltip.tiny-tooltip-monetary-dense):not(.tiny-tooltip-single) {
-    width: calc(100vw - 8px) !important;
+    width: var(--tiny-tooltip-chart-width, calc(100vw - 16px)) !important;
     min-width: 0 !important;
-    max-width: calc(100vw - 8px) !important;
+    max-width: var(--tiny-tooltip-chart-width, calc(100vw - 16px)) !important;
     padding-inline: 6px !important;
     font-size: 9px;
   }
   :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.tiny-tooltip.tiny-tooltip-dense, .tiny-tooltip.tiny-tooltip-monetary-dense) .tiny-tooltip-values-3 > span {
     column-gap: 3px;
+  }
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.tiny-tooltip.tiny-tooltip-dense, .tiny-tooltip.tiny-tooltip-monetary-dense) .tiny-tooltip-values-3 {
+    column-gap: 4px !important;
   }
 }
 
@@ -3981,7 +3985,8 @@ html[data-audit-theme="light"] .packet .price-preview-name-edit :is(input, texta
 .facts-loader .facts-school.is-ready { opacity: 1; }
 .facts-loader .facts-school-first-frame { opacity: 1; pointer-events: none; transition: opacity 80ms linear; }
 .facts-loader .facts-school-first-frame.is-fading { opacity: 0; }
-.facts-loader .facts-fish { transform: none !important; transform-box: fill-box; transform-origin: 0 0; }
+.facts-loader .facts-school .facts-fish { transform: none !important; transform-box: fill-box; transform-origin: 0 0; }
+.facts-loader .facts-school-first-frame .facts-fish { transform-box: fill-box; transform-origin: 0 0; }
 .facts-loader .facts-fish-size { transform-box: fill-box; transform-origin: 0 0; }
 .facts-loader .facts-fish-body { transform-box: fill-box; transform-origin: 50% 50%; animation: facts-fish-pulse 2.8s ease-in-out infinite alternate !important; }
 .facts-loader .facts-fish-b .facts-fish-body { animation-delay: -.7s !important; }
@@ -4110,11 +4115,9 @@ html[data-audit-theme="dark"] .packet .scroll-top svg { color: #ff9b88; }
 /* Дата прайса начинает тот же верхний ряд, что и выбор поставщика, а не прилипает к его нижнему действию. */
 .packet .price-import-workbench.is-preview-ready .price-preview-date { align-self: start; margin-top: 0; }
 
-/* У touch-устройств нет надежного resize-уголка textarea: иконка стоит в правой шапке карточки рядом с удалением и не занимает строку текста. */
+/* У touch-устройств нет надежного resize-уголка textarea: иконка занимает правую колонку непосредственно под удалением и не перекрывает название. */
 @media (hover: none) and (pointer: coarse), (max-width: 560px) {
-  .packet .price-preview-table > div.price-preview-row,
-  .packet .price-preview-table > div.price-preview-new-row { position: relative; }
-  .packet .price-preview-name-expand { position: absolute; z-index: 2; top: 10px; right: 51px; display: inline-grid; width: 32px; height: 32px; min-height: 32px; place-items: center; margin: 0; padding: 0; border: 1px solid var(--price-border); border-radius: 8px; background: color-mix(in srgb, var(--price-accent) 6%, var(--price-surface)); color: var(--price-accent); }
+  .packet .price-preview-name-expand { position: static; z-index: auto; display: inline-grid; grid-column: 3; grid-row: 2; width: 32px; height: 32px; min-height: 32px; place-items: center; align-self: start; justify-self: end; margin: 0; padding: 0; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--price-accent); box-shadow: none; }
   .packet .price-preview-name-expand:active { transform: scale(.97); }
   .packet .price-preview-name-edit.is-expanded textarea { min-height: 96px; max-height: none; }
 }
@@ -4186,6 +4189,7 @@ html[data-audit-theme="light"] .packet .price-preview-offer-metadata input { bor
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-product-link { grid-column: 2; grid-row: 2; min-width: 0; }
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-category-select { grid-column: 3; grid-row: 2; min-width: 0; }
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-remove { position: static; grid-column: 4; grid-row: 1; align-self: start; justify-self: end; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-name-expand { grid-column: 4; grid-row: 2; }
   .packet .price-preview-price-edit { grid-template-columns: minmax(0, .9fr) minmax(0, 1fr); }
   .packet .price-preview-price-edit .price-preview-mode-select { grid-column: auto; }
 }
@@ -4194,6 +4198,7 @@ html[data-audit-theme="light"] .packet .price-preview-offer-metadata input { bor
   .packet .price-import-workbench.is-preview-ready .price-preview-table > div.price-preview-new-row { grid-template-columns: 28px minmax(0, 1fr) 36px; grid-template-rows: auto auto auto auto; gap: 12px 14px; inline-size: 100%; max-inline-size: 100%; box-sizing: border-box; }
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-product { grid-column: 2; grid-row: 1; min-width: 0; }
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-remove { position: static; grid-column: 3; grid-row: 1; align-self: start; justify-self: end; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-name-expand { grid-column: 3; grid-row: 2; }
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-prices { grid-column: 2; grid-row: 2; min-width: 0; }
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-product-link { grid-column: 2; grid-row: 3; min-width: 0; }
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-category-select { grid-column: 2; grid-row: 4; min-width: 0; }
@@ -4330,10 +4335,10 @@ html[data-audit-theme="light"] .packet .price-preview .inline-error {
 /* Пароль можно проверить до отправки формы: переключатель встроен в поле и не меняет его геометрию. */
 .password-input { position: relative; display: block; width: 100%; min-width: 0; }
 .password-input > input { width: 100%; min-width: 0; padding-right: 42px !important; }
-.password-input-toggle { position: absolute; top: 50%; right: 5px; display: grid; width: 32px; height: 32px; min-height: 32px; place-items: center; margin: 0 !important; padding: 0; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--muted); transform: translateY(-50%) !important; transition: color 150ms var(--audit-hover-ease), background 150ms var(--audit-hover-ease), border-color 150ms var(--audit-hover-ease), transform 150ms var(--audit-hover-ease); }
-.password-input-toggle:active { transform: translateY(-50%) scale(.94); }
+.password-input-toggle { position: absolute; top: 5px; right: 5px; bottom: 5px; display: grid; width: 32px; height: auto; min-height: 0; place-items: center; margin: 0 !important; padding: 0; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--muted); transform: none !important; transition: color 150ms var(--audit-hover-ease), background 150ms var(--audit-hover-ease), border-color 150ms var(--audit-hover-ease); }
+.password-input-toggle:active { transform: none !important; }
 .password-input-toggle:focus-visible { border-color: var(--price-accent); outline: none; box-shadow: 0 0 0 2px color-mix(in srgb, var(--price-accent) 24%, transparent); }
-@media (hover: hover) { .packet .password-input-toggle:hover, .login-gate .password-input-toggle:hover { border-color: color-mix(in srgb, var(--price-accent) 32%, var(--line)) !important; background: color-mix(in srgb, var(--price-accent) 8%, transparent) !important; color: var(--price-accent) !important; transform: translateY(-50%) !important; box-shadow: none !important; } }
+@media (hover: hover) { .packet .password-input-toggle:hover, .login-gate .password-input-toggle:hover { border-color: color-mix(in srgb, var(--price-accent) 32%, var(--line)) !important; background: color-mix(in srgb, var(--price-accent) 8%, transparent) !important; color: var(--price-accent) !important; transform: none !important; box-shadow: none !important; } }
 html[data-audit-theme="light"] .password-input-toggle { color: #47708e; }
 html[data-audit-theme="light"] .password-input-toggle:focus-visible { border-color: #0a63c8; box-shadow: 0 0 0 2px rgba(10, 99, 200, .18); }
 html[data-audit-theme="dark"] .password-input-toggle { color: #c7bdcc; }

@@ -34,5 +34,7 @@ describe("итоговые строки аналитических таблиц"
     expect(stores).toContain("const expenseShare");
     expect(stores).toContain('className="table-total"');
     expect(styles).toContain(".packet .data-table tfoot .table-total");
+    expect(styles).toContain("font-size: 13px; font-weight: 850;");
+    expect(styles).toContain("@media (max-width: 560px) { .packet .data-table tfoot .table-total > :is(th, td) { font-size: 12px; } }");
   });
 });

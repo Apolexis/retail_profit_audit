@@ -16,6 +16,8 @@ describe("показ пароля", () => {
     expect(component).toContain('aria-pressed={visible}');
     expect(component).toContain('type={visible ? "text" : "password"}');
     expect(styles).toContain('.password-input > input { width: 100%; min-width: 0; padding-right: 42px !important; }');
+    expect(styles).toContain('.password-input-toggle { position: absolute; top: 5px; right: 5px; bottom: 5px;');
+    expect(styles).toContain('transform: none !important;');
     expect(styles).toContain('.password-input-toggle:focus-visible');
   });
 

@@ -59,6 +59,8 @@ describe("мобильный контракт графических контр�
     expect(chart).toContain('wrapper.style.setProperty("--tiny-tooltip-shift-y"');
     expect(chart).toContain('tiny-tooltip-values-${columns}');
     expect(chart).toContain('gridAutoFlow:"column"');
+    expect(chart).toContain('gridTemplateColumns:`repeat(${columns}, minmax(0, 1fr))`');
+    expect(chart).toContain('wrapper.style.setProperty("--tiny-tooltip-chart-width"');
     expect(chart).toContain('data-tooltip-count={tooltipRows.length}');
     expect(chart).toContain('const densePercent=mode==="percent"&&sortedValues.length>2');
     expect(chart).toContain('const denseMoney=mode!=="percent"&&sortedValues.length>12');
@@ -73,8 +75,8 @@ describe("мобильный контракт графических контр�
     expect(styles).toContain('.tiny-tooltip-monetary .tiny-tooltip-values-2 > span { white-space: nowrap; }');
     expect(styles).toContain('.tiny-tooltip-monetary-dense { width: fit-content !important; min-width: 0 !important; max-width: min(300px, calc(100vw - 32px)) !important;');
     expect(styles).toContain('.tiny-tooltip.tiny-tooltip-monetary-dense):not(.tiny-tooltip-single)');
-    expect(styles).toContain('width: min(680px, calc(100vw - 16px)) !important;');
-    expect(styles).toContain('width: calc(100vw - 8px) !important;');
+    expect(styles).toContain('width: min(680px, var(--tiny-tooltip-chart-width, calc(100vw - 16px))) !important;');
+    expect(styles).toContain('width: var(--tiny-tooltip-chart-width, calc(100vw - 16px)) !important;');
   });
 
   it("сокращает левый резерв компактного медианного графика на телефоне и не меняет развернутый вариант", () => {
