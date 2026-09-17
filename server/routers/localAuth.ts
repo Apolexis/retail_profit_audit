@@ -9,7 +9,7 @@ import { createNotifications, getNotificationSummary, getPushStatus, hasNotifica
 import { PASSKEY_ATTEMPT_COOKIE, beginPasskeyAuthentication, beginPasskeyRegistration, deleteAccountPasskey, finishPasskeyAuthentication, finishPasskeyRegistration, listAccountPasskeys } from "../passkeys";
 
 const password = z.string().min(10, "Пароль должен содержать не менее 10 символов").max(128);
-const role = z.enum(["admin", "analyst", "seller"]);
+const role = z.enum(["admin", "analyst", "seller", "manager"]);
 const createAccountInput = z.object({ username: z.string().min(1).max(64), password: z.string().min(1).max(128), role }).superRefine((value, ctx) => {
   if (value.role !== "seller" && value.password.length < 10) ctx.addIssue({ code: "custom", path: ["password"], message: "Пароль должен содержать не менее 10 символов" });
 });
@@ -144,7 +144,7 @@ export const localAuthRouter = router({
   }),
   importAlertDetails: protectedProcedure.input(z.object({ importId: z.number().int().positive(), limit: z.number().int().min(10).max(100).optional(), cursor: z.number().int().nonnegative().optional() })).query(async ({ input, ctx }) => {
     const account = await localAccountFromContext(ctx.user?.openId);
-    if (account.role === "seller") throw new TRPCError({ code: "FORBIDDEN", message: "Продавцу недоступны финансовые сигналы и детали импорта" });
+    if (account.role === "seller" || account.role === "manager") throw new TRPCError({ code: "FORBIDDEN", message: "Операционной роли недоступны финансовые сигналы и детали импорта" });
     if (account.role !== "admin" && !await hasNotificationEntityAccess(account.id, "alert_feed", String(input.importId))) throw new TRPCError({ code: "FORBIDDEN", message: "Нет доступа к деталям этого уведомления" });
     return getImportThresholdBreachPage(input.importId, await getAccessibleStoreIds(ctx.user?.openId), input);
   }),

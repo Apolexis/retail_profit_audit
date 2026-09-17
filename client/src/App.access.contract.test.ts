@@ -10,4 +10,10 @@ describe("начальный пароль магазина", () => {
     expect(app).toContain('if (!allowed) setLocation("/profile")');
     expect(app).toContain('if (session.data.mustChangePassword) return <InitialPasswordGate><Router /></InitialPasswordGate>');
   });
+
+  it("ограничивает руководителя операционным контуром", () => {
+    expect(app).toContain('const managerPaths = new Set(["/inventory-control", "/profile"])');
+    expect(app).toContain('function ManagerRouteGate');
+    expect(app).toContain('if (session.data.role === "manager") return <ManagerRouteGate><Router /></ManagerRouteGate>');
+  });
 });

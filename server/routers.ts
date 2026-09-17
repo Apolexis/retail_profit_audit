@@ -6,6 +6,7 @@ import { auditRouter } from "./routers/audit";
 import { localAuthRouter } from "./routers/localAuth";
 import { priceControlRouter } from "./routers/priceControl";
 import { revenueRegistryRouter } from "./routers/revenueRegistry";
+import { inventoryRegistryRouter } from "./routers/inventoryRegistry";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -24,6 +25,7 @@ export const appRouter = router({
   localAuth: localAuthRouter,
   priceControl: priceControlRouter,
   revenueRegistry: revenueRegistryRouter,
+  inventoryRegistry: inventoryRegistryRouter,
 
   // TODO: add feature routers here, e.g.
   // todo: router({

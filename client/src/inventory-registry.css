@@ -1,0 +1,84 @@
+/* Isolated operating inventory: inherits shared packet tokens and signal-form geometry. */
+.packet .inventory-layout { display: grid; gap: 18px; }
+.packet .inventory-lede { margin-bottom: 0; }
+.packet .inventory-rule-disclosure { display: grid; gap: 0; margin: 18px 0; }
+.packet .inventory-rule-disclosure > summary { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: baseline; cursor: pointer; list-style: none; }
+.packet .inventory-rule-disclosure > summary::-webkit-details-marker { display: none; }
+.packet .inventory-rule-disclosure > summary > span { color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .08em; }
+.packet .inventory-rule-disclosure > summary > strong { min-width: 0; color: var(--ink); font-size: 14px; }
+.packet .inventory-rule-disclosure > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(250px, .85fr); gap: 16px 24px; padding-top: 14px; }
+.packet .inventory-rule-disclosure ol { display: grid; gap: 7px; margin: 0; padding-left: 22px; color: var(--ink); font-size: 13px; line-height: 1.4; }
+.packet .inventory-rule-disclosure .packet-note { margin: 0; }
+
+.packet :is(.inventory-create-card, .inventory-draft-card, .inventory-history) { display: grid; gap: 16px; min-width: 0; }
+.packet .inventory-meta-grid { display: grid; grid-template-columns: minmax(190px, .75fr) minmax(190px, 1fr); gap: 12px; }
+.packet .inventory-meta-grid > label,
+.packet .inventory-store-readonly,
+.packet .inventory-note,
+.packet .inventory-note-form > label,
+.packet .inventory-line-create > label { display: grid; gap: 6px; min-width: 0; color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.packet .inventory-store-readonly { align-content: center; min-height: 42px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); }
+.packet .inventory-store-readonly strong { overflow: hidden; color: var(--ink); letter-spacing: normal; text-overflow: ellipsis; text-transform: none; white-space: nowrap; }
+.packet .inventory-note small,
+.packet .inventory-note-form small,
+.packet .inventory-line-create label > small { color: var(--faint); font-size: 10px; font-weight: 650; letter-spacing: normal; text-transform: none; }
+.packet .inventory-note textarea,
+.packet .inventory-note-form textarea { min-height: 70px; width: 100%; resize: vertical; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); color: var(--ink); font: 650 12px Manrope, Arial, sans-serif; letter-spacing: normal; outline: none; text-transform: none; }
+.packet .inventory-note textarea:focus-visible,
+.packet .inventory-note-form textarea:focus-visible,
+.packet .inventory-line-create input:focus-visible { border-color: var(--packet-accent); box-shadow: 0 0 0 2px var(--packet-accent-faint); }
+.packet .inventory-create-actions { display: flex; justify-content: flex-end; }
+
+.packet .inventory-note-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: end; }
+.packet .inventory-note-form .subtle-button,
+.packet .inventory-line-create .packet-link { min-height: 38px; margin: 0; white-space: nowrap; }
+.packet .inventory-line-create { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(210px, 1.1fr) minmax(150px, .65fr) auto; gap: 12px; align-items: end; padding: 14px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface-2); }
+.packet .inventory-search { position: relative; display: grid; align-items: center; }
+.packet .inventory-search svg { position: absolute; left: 10px; color: var(--faint); pointer-events: none; }
+.packet .inventory-line-create input { width: 100%; min-width: 0; height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ink); font: 700 13px Manrope, Arial, sans-serif; outline: none; }
+.packet .inventory-search input { padding-left: 31px; }
+.packet .inventory-lines-wrap { overflow-x: auto; cursor: default; }
+.packet .inventory-lines { min-width: 660px; }
+.packet .inventory-lines tbody tr:nth-child(even) { background: color-mix(in srgb, var(--surface-2) 72%, transparent); }
+.packet .inventory-lines td small { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+.packet .inventory-lines td:last-child { white-space: nowrap; }
+.packet .inventory-empty-lines { display: flex; align-items: flex-start; gap: 11px; padding: 14px; border: 1px dashed var(--line); border-radius: 12px; color: var(--muted); }
+.packet .inventory-empty-lines svg { color: var(--packet-accent); flex: 0 0 auto; }
+.packet .inventory-empty-lines div { display: grid; gap: 3px; }
+.packet .inventory-empty-lines strong { color: var(--ink); font-size: 13px; }
+.packet .inventory-empty-lines p { margin: 0; font-size: 12px; line-height: 1.4; }
+.packet .inventory-close-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+.packet .inventory-close-actions .packet-note { margin: 0; max-width: 520px; font-size: 12px; text-align: right; }
+.packet .inventory-closed-note { display: flex; align-items: center; gap: 8px; margin: 0; padding: 11px 12px; border: 1px solid var(--packet-accent-soft); border-radius: 10px; background: var(--packet-accent-faint); color: var(--ink); font-size: 12px; }
+.packet .inventory-closed-note svg { color: var(--packet-accent); flex: 0 0 auto; }
+
+.packet .inventory-history { margin-top: 18px; }
+.packet .inventory-history-list { display: grid; gap: 7px; }
+.packet .inventory-history-list > button { display: grid; grid-template-columns: minmax(110px, .6fr) minmax(180px, 1.25fr) minmax(170px, 1fr) auto; gap: 10px; align-items: center; width: 100%; padding: 12px 13px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); text-align: left; }
+.packet .inventory-history-list > button.selected { border-color: var(--packet-accent); background: var(--packet-accent-faint); }
+.packet .inventory-history-list span,
+.packet .inventory-history-list small { color: var(--muted); font-size: 11px; }
+.packet .inventory-history-list strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.packet .inventory-history-list b { justify-self: end; color: var(--packet-accent); font-size: 11px; white-space: nowrap; }
+
+@media (max-width: 760px) {
+  .packet .inventory-meta-grid,
+  .packet .inventory-rule-disclosure > div,
+  .packet .inventory-note-form,
+  .packet .inventory-line-create { grid-template-columns: 1fr; }
+  .packet .inventory-create-actions,
+  .packet .inventory-close-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .packet .inventory-create-actions .packet-link,
+  .packet .inventory-close-actions .packet-link,
+  .packet .inventory-note-form .subtle-button,
+  .packet .inventory-line-create .packet-link { width: 100%; justify-content: center; }
+  .packet .inventory-close-actions .packet-note { max-width: none; text-align: left; }
+  .packet .inventory-history-list > button { grid-template-columns: minmax(0, 1fr) auto; gap: 3px 10px; }
+  .packet .inventory-history-list > button small { grid-column: 1; }
+  .packet .inventory-history-list > button b { grid-column: 2; grid-row: 1 / span 2; }
+}
+@media (max-width: 400px) {
+  .packet .inventory-rule-disclosure > summary { grid-template-columns: 1fr; gap: 4px; }
+  .packet .inventory-history-list > button { grid-template-columns: 1fr; }
+  .packet .inventory-history-list > button b { grid-column: 1; grid-row: auto; justify-self: start; }
+}

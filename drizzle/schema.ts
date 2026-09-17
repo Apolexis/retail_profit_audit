@@ -104,7 +104,7 @@ export const localAccounts = mysqlTable("audit_local_accounts", {
   username: varchar("username", { length: 64 }).notNull().unique(),
   displayName: varchar("displayName", { length: 128 }).notNull(),
   passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
-  role: mysqlEnum("role", ["admin", "analyst", "seller"]).default("analyst").notNull(),
+  role: mysqlEnum("role", ["admin", "analyst", "seller", "manager"]).default("analyst").notNull(),
   importAccessLevel: mysqlEnum("importAccessLevel", ["none", "upload", "edit"]).default("none").notNull(),
   priceAccessLevel: mysqlEnum("priceAccessLevel", ["none", "view", "upload", "edit"]).default("none").notNull(),
   canViewImportControls: boolean("canViewImportControls").default(false).notNull(),
@@ -296,6 +296,53 @@ export const operationalRevenueRecordVersions = mysqlTable("operational_revenue_
 
 export type OperationalRevenueRecord = typeof operationalRevenueRecords.$inferSelect;
 export type OperationalRevenueRecordVersion = typeof operationalRevenueRecordVersions.$inferSelect;
+
+/**
+ * This register is separate from the financial workbook and the old analytical
+ * "Остатки" page. A draft becomes immutable after a manager closes it.
+ */
+export const operationalInventories = mysqlTable("operational_inventories", {
+  id: int("id").autoincrement().primaryKey(),
+  storeId: int("storeId").notNull(),
+  businessDate: varchar("businessDate", { length: 10 }).notNull(),
+  status: mysqlEnum("status", ["draft", "closed"]).default("draft").notNull(),
+  createdByAccountId: int("createdByAccountId").notNull(),
+  closedByAccountId: int("closedByAccountId"),
+  closedAt: timestamp("closedAt"),
+  note: text("note"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [unique("operational_inventory_store_date_uq").on(table.storeId, table.businessDate)]);
+
+/** A zero is valid: absence must never be represented by silently omitting a counted product. */
+export const operationalInventoryLines = mysqlTable("operational_inventory_lines", {
+  id: int("id").autoincrement().primaryKey(),
+  inventoryId: int("inventoryId").notNull(),
+  productId: int("productId").notNull(),
+  countedQuantity: decimal("countedQuantity", { precision: 16, scale: 3 }).notNull(),
+  unit: mysqlEnum("unit", ["kg", "l", "piece"]).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [unique("operational_inventory_line_product_uq").on(table.inventoryId, table.productId)]);
+
+/** Immutable stock adjustments are emitted solely on closing an inventory. */
+export const operationalStockMovements = mysqlTable("operational_stock_movements", {
+  id: int("id").autoincrement().primaryKey(),
+  storeId: int("storeId").notNull(),
+  productId: int("productId").notNull(),
+  inventoryId: int("inventoryId").notNull(),
+  kind: mysqlEnum("kind", ["first_count", "inventory_adjustment"]).notNull(),
+  previousQuantity: decimal("previousQuantity", { precision: 16, scale: 3 }).notNull(),
+  countedQuantity: decimal("countedQuantity", { precision: 16, scale: 3 }).notNull(),
+  quantityDelta: decimal("quantityDelta", { precision: 16, scale: 3 }).notNull(),
+  unit: mysqlEnum("unit", ["kg", "l", "piece"]).notNull(),
+  createdByAccountId: int("createdByAccountId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => [unique("operational_stock_movement_inventory_product_uq").on(table.inventoryId, table.productId)]);
+
+export type OperationalInventory = typeof operationalInventories.$inferSelect;
+export type OperationalInventoryLine = typeof operationalInventoryLines.$inferSelect;
+export type OperationalStockMovement = typeof operationalStockMovements.$inferSelect;
 
 /** Supplier catalog is deliberately isolated from financial facts and financial workbook imports. */
 export const priceSuppliers = mysqlTable("price_suppliers", {

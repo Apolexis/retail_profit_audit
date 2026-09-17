@@ -12,7 +12,7 @@ const compactBrandIcon={dark:"/manus-storage/rybny_pwa_dark_transparent_110da59a
 const quickRouteStorageKey="audit-quick-route-history";
 export function BrandMark({theme}:{theme:"dark"|"light"}){return <span className="brand-mark-switch" aria-hidden="true">{(["dark","light"] as const).map(markTheme=><img key={markTheme} className={markTheme===theme?"brand-mark is-visible":"brand-mark"} src={compactBrandIcon[markTheme]} alt="" loading="eager" decoding="sync" draggable={false}/>)}</span>}
 const isStandalonePwa=()=>typeof window!=="undefined"&&(window.matchMedia("(display-mode: standalone)").matches||(window.navigator as Navigator&{standalone?:boolean}).standalone===true||document.documentElement.dataset.pwaStandalone==="true");
-type NavAccess = boolean | "price" | "operations";
+type NavAccess = boolean | "price" | "operations" | "revenue";
 type NavItem = readonly [string, string, string, NavAccess];
 type NavGroup = { title?: string; items: readonly NavItem[] };
 type NavSection = { title: string; groups: readonly NavGroup[] };
@@ -24,7 +24,7 @@ const navSections: readonly NavSection[] = [
     { title: "УПРАВЛЕНИЕ", items: [["/import", "12", "Импорт", true], ["/manage", "13", "База", true]] },
   ] },
   { title: "ПРАЙС‑КОНТРОЛЬ", groups: [{ items: [["/price-control", "20", "Сравнение", "price"], ["/price-control/import", "21", "Импорт прайсов", "price"], ["/price-control/directory", "22", "Справочник", "price"]] }] },
-  { title: "УПРАВЛЕНИЕ МАГАЗИНАМИ", groups: [{ items: [["/revenue", "23", "Выручка", "operations"]] }] },
+  { title: "УПРАВЛЕНИЕ МАГАЗИНАМИ", groups: [{ items: [["/revenue", "23", "Выручка", "revenue"], ["/inventory-control", "24", "Инвентаризации", "operations"]] }] },
   { title: "УПРАВЛЕНИЕ", groups: [{ items: [["/notifications", "17", "Сигналы", false], ["/reports", "18", "Отчеты", true], ["/access", "15", "Доступ", true], ["/history", "16", "Журнал", true]] }] },
 ];
 const profileItem=["/profile","14","Профиль",false] as const;
@@ -34,6 +34,7 @@ recommendations["11"]={title:"План‑факт: управляйте ожид
 recommendations["19"]={title:"Прогноз: сначала проверьте основу",text:"Прогноз масштабирует сезонность только по завершенным фактическим месяцам. Отсутствующие факты не заменяются усреднением.",action:"Сопоставьте ожидаемый месяц с планом, закупками и будущими операционными изменениями."};
 recommendations["20"]={title:"Прайс‑контроль: сравнивайте сопоставимое",text:"Низкая цена полезна только при одинаковом товаре, фасовке и условиях. Сначала подтвердите связь поставщика с внутренним товаром, затем выбирайте лучшее предложение.",action:"Проверьте строки на сопоставление и закрепите только подтвержденные соответствия поставщиков."};
 recommendations["23"]={title:"Выручка: передавайте фактический день",text:"Наличные расходы должны быть разнесены по строкам. Пояснение обязательно для нецелевых трат, но не требуется для зарплаты, премии, отпускных и коммунальных платежей. Это операционный реестр, который не заменяет финансовый факт и не меняет P&L.",action:"Перед передачей проверьте итог и пояснения к тем расходам, для которых они нужны."};
+recommendations["24"]={title:"Инвентаризация: сначала подтверждайте физический факт",text:"Пересчет фиксирует то, что реально есть в магазине. До закрытия строки можно исправить; после закрытия корректировка остается отдельным неизменяемым движением.",action:"Откройте пересчет по своей точке, внесите только посчитанные позиции и передайте черновик руководителю на закрытие."};
 
 export function AuditShell({title,kicker,children}:{title:string;kicker:string;children:ReactNode}){
   const [location,setLocation]=useLocation();
@@ -76,8 +77,9 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
   useEffect(()=>{if(!standalone)return;let firstFrame:number|undefined;let secondFrame:number|undefined;let settleTimer:number|undefined;const refreshFixedControls=()=>{if(document.visibilityState==="hidden")return;if(firstFrame!==undefined)window.cancelAnimationFrame(firstFrame);if(secondFrame!==undefined)window.cancelAnimationFrame(secondFrame);if(settleTimer!==undefined)window.clearTimeout(settleTimer);document.documentElement.classList.add("pwa-fixed-reflow");firstFrame=window.requestAnimationFrame(()=>{secondFrame=window.requestAnimationFrame(()=>{setFixedEpoch(epoch=>epoch+1);settleTimer=window.setTimeout(()=>{setFixedEpoch(epoch=>epoch+1);document.documentElement.classList.remove("pwa-fixed-reflow");},220);});});};const viewport=window.visualViewport;const onVisible=()=>{if(document.visibilityState==="visible")refreshFixedControls();};refreshFixedControls();window.addEventListener("pageshow",refreshFixedControls);window.addEventListener("focus",refreshFixedControls);window.addEventListener("orientationchange",refreshFixedControls);document.addEventListener("visibilitychange",onVisible);viewport?.addEventListener("resize",refreshFixedControls);viewport?.addEventListener("scroll",refreshFixedControls);return()=>{if(firstFrame!==undefined)window.cancelAnimationFrame(firstFrame);if(secondFrame!==undefined)window.cancelAnimationFrame(secondFrame);if(settleTimer!==undefined)window.clearTimeout(settleTimer);document.documentElement.classList.remove("pwa-fixed-reflow");window.removeEventListener("pageshow",refreshFixedControls);window.removeEventListener("focus",refreshFixedControls);window.removeEventListener("orientationchange",refreshFixedControls);document.removeEventListener("visibilitychange",onVisible);viewport?.removeEventListener("resize",refreshFixedControls);viewport?.removeEventListener("scroll",refreshFixedControls);};},[standalone]);
   const isAdmin=me.data?.role==="admin";
   const isSeller=me.data?.role==="seller";
+  const isManager=me.data?.role==="manager";
   const hasPriceAccess=isAdmin||Boolean(me.data?.priceAccessLevel&&me.data.priceAccessLevel!=="none");
-  const visibleNav=navSections.map(section=>({...section,groups:section.groups.map(group=>({...group,items:group.items.filter(([, , ,access])=>access==="operations"?(isAdmin||isSeller):isSeller?false:access===true?isAdmin:access==="price"?hasPriceAccess:true)})).filter(group=>group.items.length>0)})).filter(section=>section.groups.length>0);
+  const visibleNav=navSections.map(section=>({...section,groups:section.groups.map(group=>({...group,items:group.items.filter(([, , ,access])=>access==="revenue"?(isAdmin||isSeller):access==="operations"?(isAdmin||isSeller||isManager):(isSeller||isManager)?false:access===true?isAdmin:access==="price"?hasPriceAccess:true)})).filter(group=>group.items.length>0)})).filter(section=>section.groups.length>0);
   const closeMenu=()=>{if(document.activeElement instanceof HTMLElement)document.activeElement.blur();setMenuOpen(false)};
   const refreshPage=async()=>{
     if(isRefreshing)return;
@@ -112,7 +114,7 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
   const matches=storeSearch.trim()?((availableStores.data??[]).filter(store=>store.name.toLowerCase().includes(storeSearch.trim().toLowerCase())).slice(0,6)):[];
   const chooseStore=(store:string)=>{setSelectedStore(store);setStoreSearch("");closeMenu();setLocation("/stores")};
   const guidance=recommendations[kicker.slice(0,2)]??recommendations["00"];
-  const analyticsSection=!['12','13','14','15','16','17','18','20','21','22','23'].includes(kicker.slice(0,2));
+  const analyticsSection=!['12','13','14','15','16','17','18','20','21','22','23','24'].includes(kicker.slice(0,2));
   const unread=notificationSummary.data?.unread??0;
   const sectionIsActive=(groups:readonly NavGroup[])=>groups.some(group=>group.items.some(([href])=>href===location));
   const sectionIsOpen=(section:NavSection)=>Object.hasOwn(expandedSections,section.title)?Boolean(expandedSections[section.title]):sectionIsActive(section.groups);
@@ -133,7 +135,7 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
       <button className={demoMode?"packet-demo-toggle is-active":"packet-demo-toggle"} type="button" aria-pressed={demoMode} onClick={toggleDemo}><Presentation size={15}/><span>Демо‑режим</span><em>{demoMode?"Включен":"Выключен"}</em></button>
       <div className="packet-period"><span>АКТИВНЫЙ СРЕЗ</span><strong>{rangeLabel}</strong></div>
     </aside>
-    <header key={`packet-top-${theme}`} className="packet-top" data-audit-theme={theme} style={{backgroundColor:theme==="dark"?"#0c0b12":"#ffffff",colorScheme:theme}}><div><span className="packet-kicker">{kicker.replace(/^\d+\s*\/\s*/,"")}</span><h1>{title}</h1></div><div className="packet-actions">{!isSeller&&<Link href="/notifications" className="alert-link" aria-label={`Уведомления${unread?`, ${unread} непрочитанных`:""}`}><BellRing size={17}/>{unread>0&&<i>{unread>99?"99+":unread}</i>}</Link>}<button className="theme-button" aria-label="Переключить тему" onClick={toggleTheme}>{theme==="dark"?<Sun size={17}/>:<Moon size={17}/>}</button><button className="packet-mobile menu-button" aria-label={menuOpen?"Закрыть меню":"Открыть меню"} aria-expanded={menuOpen} onClick={event=>{event.currentTarget.blur();setMenuOpen(value=>!value)}}>{menuOpen?<X size={18}/>:<Menu size={18}/>}</button></div></header>
+    <header key={`packet-top-${theme}`} className="packet-top" data-audit-theme={theme} style={{backgroundColor:theme==="dark"?"#0c0b12":"#ffffff",colorScheme:theme}}><div><span className="packet-kicker">{kicker.replace(/^\d+\s*\/\s*/,"")}</span><h1>{title}</h1></div><div className="packet-actions">{!isSeller&&!isManager&&<Link href="/notifications" className="alert-link" aria-label={`Уведомления${unread?`, ${unread} непрочитанных`:""}`}><BellRing size={17}/>{unread>0&&<i>{unread>99?"99+":unread}</i>}</Link>}<button className="theme-button" aria-label="Переключить тему" onClick={toggleTheme}>{theme==="dark"?<Sun size={17}/>:<Moon size={17}/>}</button><button className="packet-mobile menu-button" aria-label={menuOpen?"Закрыть меню":"Открыть меню"} aria-expanded={menuOpen} onClick={event=>{event.currentTarget.blur();setMenuOpen(value=>!value)}}>{menuOpen?<X size={18}/>:<Menu size={18}/>}</button></div></header>
     {menuOpen&&<button className="mobile-backdrop" aria-label="Закрыть меню" onClick={closeMenu}/>}<nav className={menuOpen?"mobile-drawer open":"mobile-drawer"} aria-label="Мобильная навигация" onPointerDown={event=>{gestureStart.current=event.clientX}} onPointerUp={event=>{if(gestureStart.current!==null&&event.clientX-gestureStart.current>60)closeMenu();gestureStart.current=null}}>
       <div className="drawer-top"><span>НАВИГАЦИЯ</span><button aria-label="Закрыть меню" onClick={closeMenu}><X size={20}/></button></div>
       <div className="drawer-search"><input value={storeSearch} onChange={event=>setStoreSearch(event.target.value)} placeholder="Найти назначенный магазин…"/>{matches.length>0&&<div>{matches.map(store=><button key={store.id} onClick={()=>chooseStore(store.name)}>{store.name}</button>)}</div>}</div>

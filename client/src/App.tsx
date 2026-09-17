@@ -33,6 +33,7 @@ import PlanFact from "./pages/PlanFact";
 import Forecast from "./pages/Forecast";
 import PriceControl from "./pages/PriceControl";
 import RevenueRegistry from "./pages/RevenueRegistry";
+import InventoryRegistry from "./pages/InventoryRegistry";
 import { trpc } from "./lib/trpc";
 import "./access.css";
 import "./theme-refresh.css";
@@ -66,6 +67,7 @@ function Router() {
         <PriceControl />
       </Route>
       <Route path="/revenue" component={RevenueRegistry} />
+      <Route path="/inventory-control" component={InventoryRegistry} />
       <Route path="/import" component={ImportData} />
       <Route path="/manage" component={ManageData} />
       <Route path="/profile" component={Profile} />
@@ -116,7 +118,8 @@ function AdminSignalOnLogin() {
   return null;
 }
 
-const sellerPaths = new Set(["/revenue", "/profile"]);
+const sellerPaths = new Set(["/revenue", "/inventory-control", "/profile"]);
+const managerPaths = new Set(["/inventory-control", "/profile"]);
 
 function SellerRouteGate({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
@@ -136,6 +139,15 @@ function InitialPasswordGate({ children }: { children: ReactNode }) {
   return allowed ? <>{children}</> : <div className="app-loading"><OceanLoader overlay label="Требуется смена пароля…" /></div>;
 }
 
+function ManagerRouteGate({ children }: { children: ReactNode }) {
+  const [location, setLocation] = useLocation();
+  const allowed = managerPaths.has(location);
+  useEffect(() => {
+    if (!allowed) setLocation("/inventory-control");
+  }, [allowed, setLocation]);
+  return allowed ? <>{children}</> : <div className="app-loading"><OceanLoader overlay label="Открываем управление магазинами…" /></div>;
+}
+
 function LocalAccessGate() {
   const session = trpc.localAuth.me.useQuery(undefined, { retry: false });
   const loaderPreview =
@@ -151,6 +163,7 @@ function LocalAccessGate() {
   if (!session.data) return <Login />;
   if (session.data.mustChangePassword) return <InitialPasswordGate><Router /></InitialPasswordGate>;
   if (session.data.role === "seller") return <SellerRouteGate><Router /></SellerRouteGate>;
+  if (session.data.role === "manager") return <ManagerRouteGate><Router /></ManagerRouteGate>;
   return (
     <>
       <AdminSignalOnLogin />
