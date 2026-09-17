@@ -85,6 +85,7 @@ describe("прайс‑контроль: нормализация товарны
     ]);
     XLSX.utils.book_append_sheet(workbook, worksheet, "Прайс");
     const rows = parseExcel(Buffer.from(XLSX.write(workbook, { type: "buffer", bookType: "xlsx" })));
+    expect(rows.map(row => row.rawName)).toEqual(["Палтус тушка", "Филе тресковых пород"]);
     expect(rows.map(row => row.placeContents)).toEqual(["1/21кг", "1/5кг/7кг"]);
     expect(rows.every(row => row.priceOptions[0]?.priceBasis === "kg")).toBe(true);
   });
@@ -92,9 +93,13 @@ describe("прайс‑контроль: нормализация товарны
   it("читает Word-колонку коробки как состав места, не меняя килограммовую цену", () => {
     const rows = parseDocxTableRows([[
       ["Тунец филе", "Короб, 1/25кг", "Таиланд", "Склад", "770"],
+      ["Форель ПСГ", "Короб, фас 2*10", "РФ", "Склад", "890"],
+      ["Форель ПБГ", "Короб, фас 1*13", "РФ", "Склад", "950"],
     ]]);
     expect(rows[0]).toMatchObject({ packaging: "Короб, 1/25кг", placeContents: "1/25кг" });
     expect(rows[0]?.priceOptions[0]).toMatchObject({ priceAmount: 770, priceBasis: "kg" });
+    expect(rows[1]).toMatchObject({ placeContents: "1/20кг/10кг" });
+    expect(rows[2]).toMatchObject({ placeContents: "1/13кг" });
   });
 
   it("не принимает фасовку и квант PDF за цену и записывает квант как состав места", () => {

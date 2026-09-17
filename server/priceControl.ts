@@ -143,6 +143,17 @@ function hasExplicitPlaceUnit(value: string | null | undefined) {
 function placePartFromText(value: string | null | undefined, context?: string | null, fallbackUnit?: "кг" | "шт") {
   const source = text(value);
   if (!source || !/\d/.test(source)) return null;
+  const cartonMultiplier = /фас(?:овка)?\s*(\d+(?:[.,]\d+)?)\s*[*×xх]\s*(\d+(?:[.,]\d+)?)/i.exec(source);
+  if (cartonMultiplier && /(?:^|[\s,;])короб(?:ка)?(?:[\s,;]|$)/i.test(source)) {
+    const count = Number(cartonMultiplier[1].replace(",", "."));
+    const innerWeight = Number(cartonMultiplier[2].replace(",", "."));
+    const total = count * innerWeight;
+    if (Number.isFinite(total) && total > 0) {
+      const normalizedTotal = Number(total.toFixed(3));
+      const normalizedInnerWeight = Number(innerWeight.toFixed(3));
+      return count > 1 ? `1/${normalizedTotal}кг/${normalizedInnerWeight}кг` : `1/${normalizedTotal}кг`;
+    }
+  }
   const numericStart = source.search(/\d/);
   const candidate = numericStart >= 0 ? source.slice(numericStart) : source;
   const directPlace = /^\s*(\d+\s*\/\s*\d+(?:[.,]\d+)?(?:\s*(?:кг|kg|г|гр|gr|g|л|l|мл|ml|шт|pcs?|штук)(?![a-zа-я]))?)(?=\s|$)/i.exec(candidate);
@@ -179,6 +190,14 @@ function placeContentsFromProductName(rawName: string) {
   const trailing = Array.from(source.matchAll(/(?:^|[,;(])\s*(\d+(?:[.,]\d+)?(?:\s*(?:и|\/)\s*\d+(?:[.,]\d+)?)?\s*(?:кг|kg|г|гр|gr|g|л|l|мл|ml|шт|pcs?|штук))(?![a-zа-я])/gi))
     .map(match => match[1]);
   return placePartFromText(labeled.at(-1) ?? trailing.at(-1) ?? null, rawName);
+}
+
+/** Removes only a comma/semicolon-delimited tail that was already recognized as case contents. */
+function stripRecognizedPlaceContentsFromName(rawName: string, placeContents: string | null) {
+  const source = normalizeProductDisplayName(rawName);
+  if (!placeContents) return source;
+  const caseSuffix = /(?:[,;(]\s*(?:(?:тара|короб(?:ка)?|ящик|мешок|упак(?:овка)?|место)\s*)?\d+(?:[.,]\d+)?(?:\s*(?:и|\/)\s*\d+(?:[.,]\d+)?)*\s*(?:кг|kg|г|гр|gr|g|л|l|мл|ml|шт|pcs?|штук))\s*$/i;
+  return normalizeProductDisplayName(source.replace(caseSuffix, ""));
 }
 
 function isVariableWeightRange(value: string | null | undefined) {
@@ -471,12 +490,14 @@ export function parseExcel(buffer: Buffer) {
     const manufacturerIndex = columnIndex(headers, /производител|изготовител|бренд/);
     const availabilityIndex = columnIndex(headers, /налич|остат|склад/);
     matrix.slice(headerRow + 1).forEach((cells, offset) => {
-      const rawName = normalizeProductDisplayName(text(cells[nameIndex]));
-      if (!rawName || rawName.length < 2 || isAdministrativeText(rawName)) return;
+      const sourceName = normalizeProductDisplayName(text(cells[nameIndex]));
+      if (!sourceName || sourceName.length < 2 || isAdministrativeText(sourceName)) return;
       const packaging = normalizePackagingDisplay(text(cells[packagingIndex])) || null;
-      const caseContents = placePartFromText(text(cells[caseContentsIndex]), rawName);
-      const namedContents = placeContentsFromProductName(rawName);
-      const consumerPacking = isVariableWeightRange(packaging) ? null : placePartFromText(packaging, rawName);
+      const caseContents = placePartFromText(text(cells[caseContentsIndex]), sourceName);
+      const namedContents = placeContentsFromProductName(sourceName);
+      const rawName = stripRecognizedPlaceContentsFromName(sourceName, namedContents);
+      if (!rawName || rawName.length < 2) return;
+      const consumerPacking = isVariableWeightRange(packaging) ? null : placePartFromText(packaging, sourceName);
       const placeContents = mergePlaceContents([caseContents, namedContents, consumerPacking]);
       const options = prioritizePriceOptions(priceIndexes.map(({ header, index }) => {
         const context = /(?:налич|безнал)/i.test(header) && !/(?:за\s*|\/\s*)(?:кг|л|шт)/i.test(header)
@@ -603,13 +624,16 @@ export function parseDocxTableRows(tables: string[][][]) {
       const nameCell = nonEmpty
         .filter(cell => cell.index < lastCell.index)
         .find(cell => !/^\d+$/.test(cell.value) && !isProductHeader(cell.value));
-      const rawName = normalizeProductDisplayName(nameCell?.value ?? "");
-      if (!rawName || rawName.length < 2 || isAdministrativeText(rawName)) return;
+      const sourceName = normalizeProductDisplayName(nameCell?.value ?? "");
+      if (!sourceName || sourceName.length < 2 || isAdministrativeText(sourceName)) return;
 
-      const packaging = wordPackagingFromRow(normalizedCells, nameCell!.index, lastCell.index, rawName);
+      const packaging = wordPackagingFromRow(normalizedCells, nameCell!.index, lastCell.index, sourceName);
+      const namedContents = placeContentsFromProductName(sourceName);
+      const rawName = stripRecognizedPlaceContentsFromName(sourceName, namedContents);
+      if (!rawName || rawName.length < 2) return;
       const placeContents = mergePlaceContents([
-        placePartFromText(packaging, rawName),
-        placeContentsFromProductName(rawName),
+        placePartFromText(packaging, sourceName),
+        namedContents,
       ]);
       const option = hasAmount
         ? makeOption(lastCell.value, priceHeader, rawName, packaging || rawName)
