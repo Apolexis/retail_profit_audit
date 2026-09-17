@@ -3300,6 +3300,13 @@ html[data-audit-theme="dark"] .packet {
 .packet .price-file-drop svg { color: var(--price-accent); }
 .packet .price-file-drop strong { color: var(--price-ink); font-size: 15px; }
 .packet .price-file-drop small { color: var(--price-muted); font-size: 11px; }
+/* Темная зона прайс‑контроля повторяет подложку проверенного финансового импорта. */
+html[data-audit-theme="dark"] .packet .price-file-drop {
+  background: radial-gradient(circle at 50% 0, rgba(101, 38, 65, .19), transparent 55%), #170f17;
+  border-color: #88495f;
+  color: #f5dce5;
+}
+html[data-audit-theme="dark"] .packet .price-file-drop small { color: #d8bfc9; }
 .packet .price-selected-file {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
