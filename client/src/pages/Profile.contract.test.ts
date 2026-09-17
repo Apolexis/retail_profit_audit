@@ -25,9 +25,14 @@ describe("страница «Профиль»", () => {
     expect(styles).toContain('.packet .profile-cache-reset.is-clearing .profile-cache-reset-icon');
   });
 
-  it("объясняет отказ Android passkey и не скрывает NotAllowedError", () => {
+  it("подготавливает ключ отдельным действием и запускает Android prompt только вторым прямым нажатием", () => {
     expect(profile).toContain('import { passkeyErrorText } from "@/lib/passkeyError";');
-    expect(profile).toContain('toast.error(passkeyErrorText(error), { duration: 9000 });');
-    expect(profile).toContain("На Android нужен установленный PIN");
+    expect(profile).toContain('import { getPasskeyPlatform, passkeyPlatformGuidance } from "@/lib/passkeyPlatform";');
+    expect(profile).toContain("const [preparedPasskeyOptions, setPreparedPasskeyOptions]");
+    expect(profile).toContain("const confirmPasskeyOnDevice = async () =>");
+    expect(profile).toContain("await startRegistration({ optionsJSON: preparedPasskeyOptions })");
+    expect(profile).toContain("Подтвердить ключ на устройстве");
+    expect(profile).toContain("passkeyPlatformGuidance(passkeyPlatform)");
+    expect(profile).toContain("passkeyErrorText(error, getPasskeyPlatform())");
   });
 });

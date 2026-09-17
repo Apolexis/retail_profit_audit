@@ -8,10 +8,11 @@ import { ensureCoreUserForPasskey, formatRussianPhone, normalizeRussianPhone, re
 
 export const PASSKEY_ATTEMPT_COOKIE = "audit_passkey_attempt";
 const CHALLENGE_MS = 1000 * 60 * 5;
-/** Compatibility policy for Android and other platform authenticators. */
+/** Compatibility policy for mobile platform authenticators. */
 export const passkeyRegistrationPolicy = {
   timeout: 120_000,
   authenticatorSelection: { residentKey: "preferred", userVerification: "required" },
+  preferredAuthenticatorType: "localDevice",
 } as const;
 
 type RequestLike = { protocol?: string; headers: Record<string, string | string[] | undefined> };
@@ -85,8 +86,8 @@ export async function beginPasskeyRegistration(account: { id: number; username: 
     userDisplayName: account.displayName,
     attestationType: "none",
     excludeCredentials: existing.map(item => ({ id: item.credentialId, transports: Array.isArray(item.transports) ? item.transports.map(String) : undefined })),
-    // Android/Samsung may reject a strict discoverable-key demand before it can offer its platform authenticator.
-    // A non-discoverable key still works when the user enters the phone number on the login form.
+    // Prefer the device authenticator (Face ID/Touch ID/Windows Hello/Android Credential Manager)
+    // and do not reject Android before it can offer its platform prompt.
     ...passkeyRegistrationPolicy,
   });
   const ceremony = await saveChallenge(account.id, "registration", options.challenge, req);

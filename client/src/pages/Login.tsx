@@ -7,6 +7,7 @@ import { trpc } from "@/lib/trpc";
 import { normalizeRussianPhone } from "@/lib/phone";
 import { authErrorText } from "@/lib/authError";
 import { passkeyErrorText } from "@/lib/passkeyError";
+import { getPasskeyPlatform } from "@/lib/passkeyPlatform";
 import { useAudit } from "@/contexts/AuditContext";
 import { BrandMark } from "@/components/AuditShell";
 import { PasswordInput } from "@/components/PasswordInput";
@@ -16,6 +17,7 @@ export default function Login({ accessError }: { accessError?: unknown }) {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [passkeySupported, setPasskeySupported] = useState(false);
+  const passkeyPlatform = getPasskeyPlatform();
   const utils = trpc.useUtils();
   const login = trpc.localAuth.login.useMutation({
     onSuccess: result => {
@@ -52,7 +54,7 @@ export default function Login({ accessError }: { accessError?: unknown }) {
       await finishPasskey.mutateAsync({ ...phonePayload, response });
       toast.success("Вход подтвержден", { description: "Быстрый вход выполнен успешно." });
     } catch (error) {
-      toast.error(passkeyErrorText(error));
+      toast.error(passkeyErrorText(error, passkeyPlatform));
     }
   };
 

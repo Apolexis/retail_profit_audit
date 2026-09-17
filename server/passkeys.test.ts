@@ -14,8 +14,9 @@ describe("контекст passkey", () => {
     expect(passkeyRelyingParty({ protocol: "http", headers: { host: "localhost:3000" } })).toEqual({ rpId: "localhost", origin: "http://localhost:3000" });
   });
 
-  it("не требует discoverable credential до показа Android platform authenticator", () => {
+  it("предпочитает локальный authenticator и не требует discoverable credential до показа Android platform prompt", () => {
     expect(passkeyRegistrationPolicy.timeout).toBe(120_000);
     expect(passkeyRegistrationPolicy.authenticatorSelection).toEqual({ residentKey: "preferred", userVerification: "required" });
+    expect(passkeyRegistrationPolicy.preferredAuthenticatorType).toBe("localDevice");
   });
 });
