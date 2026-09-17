@@ -8,11 +8,17 @@ const design=readFileSync(resolve(process.cwd(),"client/src/design-system.css"),
 
 describe("AuditShell navigation contract",()=>{
   it("groups routes by clear management purpose without removing them",()=>{
-    expect(shell).toContain('title:"АНАЛИТИКА"');
-    expect(shell).toContain('title:"РЕШЕНИЯ"');
-    expect(shell).toContain('title:"УПРАВЛЕНИЕ"');
-    expect(shell).toContain('["/cadence","08","Ритм",false]');
-    expect(shell).toContain('["/reports","18","Отчеты",true]');
+    expect(shell).toContain('title: "АНАЛИЗ МАГАЗИНОВ"');
+    expect(shell).toContain('title: "АНАЛИТИКА"');
+    expect(shell).toContain('title: "РЕШЕНИЯ"');
+    expect(shell).toContain('title: "УПРАВЛЕНИЕ МАГАЗИНАМИ"');
+    expect(shell).toContain('title: "УПРАВЛЕНИЕ"');
+    expect(shell).toContain('["/cadence", "08", "Ритм", false]');
+    expect(shell).toContain('["/reports", "18", "Отчеты", true]');
+    expect(shell).toContain('["/import", "12", "Импорт", true]');
+    expect(shell).toContain('["/manage", "13", "База", true]');
+    expect(shell).toContain('className="nav-subsection"');
+    expect(shell).toContain('className="nav-drawer-subsection"');
     expect(shell).toContain('const profileItem=["/profile","14","Профиль",false]');
   });
 
@@ -25,10 +31,10 @@ describe("AuditShell navigation contract",()=>{
 
   it("lets the user collapse any group, including the active one",()=>{
     expect(shell).toContain("const sectionIsOpen=");
-    expect(shell).toContain("Object.hasOwn(expandedSections,section.title)?Boolean(expandedSections[section.title]):sectionIsActive(section.items)");
+    expect(shell).toContain('Object.hasOwn(expandedSections,section.title)?Boolean(expandedSections[section.title]):sectionIsActive(section.groups)');
     expect(shell).toContain("const toggleSection=(title:string,defaultOpen:boolean)");
     expect(shell).toContain("Object.hasOwn(current,title)?Boolean(current[title]):defaultOpen");
-    expect(shell).toContain("toggleSection(section.title,sectionIsActive(section.items))");
+    expect(shell).toContain("toggleSection(section.title,sectionIsActive(section.groups))");
     expect(shell).toContain('className="nav-section-trigger"');
     expect(shell).toContain('className="nav-drawer-section-trigger"');
     expect(shell).toContain('aria-expanded={open}');
@@ -39,7 +45,7 @@ describe("AuditShell navigation contract",()=>{
   });
 
   it("does not render ordinal numbers beside page titles",()=>{
-    expect(shell).toContain('section.items.map(([href,,label])');
+    expect(shell).toContain('group.items.map(([href,,label])');
     expect(shell).not.toContain('<b>{number}</b>');
     expect(shell).not.toContain('<b>{profileItem[1]}</b>');
     expect(shell).toContain('kicker.replace(/^\\d+\\s*\\/\\s*/,"")');
