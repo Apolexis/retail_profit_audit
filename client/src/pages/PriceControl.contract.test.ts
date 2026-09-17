@@ -264,8 +264,10 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain(".packet .price-preview-name-edit > label { display: grid;");
     expect(page).toContain('className="price-preview-name-field"');
     expect(styles).toContain(".packet .price-preview-name-field { position: relative; min-width: 0; }");
-    expect(styles).toContain(".packet .price-preview-name-expand { position: absolute; z-index: 1; top: 8px; right: 7px;");
+    expect(styles).toContain(".packet .price-preview-name-expand { position: absolute; z-index: 1; top: 8px; right: 7px; display: none;");
     expect(styles).toContain("border: 0; border-radius: 0; background: transparent;");
+    expect(styles).toContain("@media (hover: none), (pointer: coarse) {");
+    expect(styles).toContain(".packet .price-preview-name-expand { display: inline-grid; }");
     expect(styles).toContain(".packet .price-preview-name-edit.is-expanded textarea { min-height: 96px;");
     expect(styles).toContain("@media (max-width: 420px)");
     expect(styles).toContain("@media (max-width: 560px) { .packet .price-preview-table { overflow: clip; touch-action: pan-y; } }");

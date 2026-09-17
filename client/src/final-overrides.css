@@ -4135,9 +4135,12 @@ html[data-audit-theme="dark"] .packet .scroll-top svg { color: #ff9b88; }
 .packet .price-preview-name-edit > label > span { color: var(--price-muted); font: 750 9px "IBM Plex Mono", monospace; letter-spacing: .05em; text-transform: uppercase; }
 .packet .price-preview-name-field { position: relative; min-width: 0; }
 .packet .price-preview-name-field textarea { width: 100%; padding-right: 42px; }
-.packet .price-preview-name-expand { position: absolute; z-index: 1; top: 8px; right: 7px; display: inline-grid; width: 26px; height: 26px; min-height: 26px; place-items: center; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--price-accent); box-shadow: none; transform: none !important; }
+.packet .price-preview-name-expand { position: absolute; z-index: 1; top: 8px; right: 7px; display: none; width: 26px; height: 26px; min-height: 26px; place-items: center; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--price-accent); box-shadow: none; transform: none !important; }
 .packet .price-preview-name-expand:focus-visible { outline: 0; box-shadow: none; color: var(--price-accent); }
 .packet .price-preview-name-expand:active { transform: none !important; }
+@media (hover: none), (pointer: coarse) {
+  .packet .price-preview-name-expand { display: inline-grid; }
+}
 
 /* Дата прайса начинает тот же верхний ряд, что и выбор поставщика, а не прилипает к его нижнему действию. */
 .packet .price-import-workbench.is-preview-ready .price-preview-date { align-self: start; margin-top: 0; }
