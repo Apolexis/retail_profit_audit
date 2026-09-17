@@ -612,6 +612,7 @@ export default function PriceControl({
     Record<string, { priceAmount: string; priceBasis: PriceBasis; priceMode: PricePaymentMode; market: PriceMarket }>
   >({});
   const [previewNameEdits, setPreviewNameEdits] = useState<Record<number, string>>({});
+  const [expandedPreviewNameRows, setExpandedPreviewNameRows] = useState<Record<number, boolean>>({});
   const [previewMetadataEdits, setPreviewMetadataEdits] = useState<
     Record<number, { manufacturer: string; placeContents: string; manufacturedOn: string; shelfLifeMonths: number | null; expiresOn: string }>
   >({});
@@ -964,6 +965,7 @@ export default function PriceControl({
     setPreviewNewCategoryName("");
     setPreviewPriceEdits({});
     setPreviewNameEdits({});
+    setExpandedPreviewNameRows({});
     setPreviewMetadataEdits({});
     setPreviewProductLinks({});
     setExcludedPreviewRowIndexes([]);
@@ -1277,6 +1279,7 @@ export default function PriceControl({
     setPreviewCategoryTargets(current => Object.fromEntries(Object.entries(current).filter(([rowIndex]) => !removing.has(Number(rowIndex)))));
     setPreviewPriceEdits(current => Object.fromEntries(Object.entries(current).filter(([key]) => !removing.has(Number(key.split(":" )[0])))));
     setPreviewNameEdits(current => Object.fromEntries(Object.entries(current).filter(([rowIndex]) => !removing.has(Number(rowIndex)))));
+    setExpandedPreviewNameRows(current => Object.fromEntries(Object.entries(current).filter(([rowIndex]) => !removing.has(Number(rowIndex)))));
     setPreviewMetadataEdits(current => Object.fromEntries(Object.entries(current).filter(([rowIndex]) => !removing.has(Number(rowIndex)))));
     setPreviewProductLinks(current => Object.fromEntries(Object.entries(current).filter(([rowIndex]) => !removing.has(Number(rowIndex)))));
     toast.success(removing.size === 1 ? "Позиция исключена из этого импорта" : `Исключено из этого импорта: ${removing.size} позиций`, {
@@ -2251,16 +2254,28 @@ export default function PriceControl({
                         )}
                         <div className="price-preview-product">
                           {canUpload ? (
-                            <label className="price-preview-name-edit">
-                              <span>Название в этом прайсе</span>
-                              <textarea
-                                rows={2}
-                                value={previewNameEdits[index] ?? row.rawName}
-                                onChange={event => updatePreviewNameDraft(index, event.target.value)}
-                                maxLength={255}
-                                aria-label={`Название позиции ${row.rawName}`}
-                              />
-                            </label>
+                            <div className={`price-preview-name-edit${expandedPreviewNameRows[index] ? " is-expanded" : ""}`}>
+                              <label htmlFor={`price-preview-name-${index}`}>
+                                <span>Название в этом прайсе</span>
+                                <textarea
+                                  id={`price-preview-name-${index}`}
+                                  rows={expandedPreviewNameRows[index] ? 4 : 2}
+                                  value={previewNameEdits[index] ?? row.rawName}
+                                  onChange={event => updatePreviewNameDraft(index, event.target.value)}
+                                  maxLength={255}
+                                  aria-label={`Название позиции ${row.rawName}`}
+                                />
+                              </label>
+                              <button
+                                type="button"
+                                className="price-preview-name-expand"
+                                aria-expanded={Boolean(expandedPreviewNameRows[index])}
+                                aria-controls={`price-preview-name-${index}`}
+                                onClick={() => setExpandedPreviewNameRows(current => ({ ...current, [index]: !current[index] }))}
+                              >
+                                {expandedPreviewNameRows[index] ? "Свернуть поле" : "Развернуть поле"}
+                              </button>
+                            </div>
                           ) : <strong>{row.rawName}</strong>}
                           <span>
                             {row.category || "Без категории"} ·{" "}

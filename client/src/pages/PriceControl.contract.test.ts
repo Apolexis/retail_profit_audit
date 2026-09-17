@@ -246,8 +246,15 @@ describe("страница «Прайс‑контроль»", () => {
 
   it("отдает названию позиции приоритетную ширину и не обрезает нижние поля карточки на телефоне", () => {
     expect(page).toContain("<textarea");
+    expect(page).toContain("expandedPreviewNameRows");
+    expect(page).toContain('className="price-preview-name-expand"');
+    expect(page).toContain('"Развернуть поле"');
+    expect(page).toContain('"Свернуть поле"');
     expect(styles).toContain(".packet .price-preview-name-edit :is(input, textarea) { min-width: 0; padding-inline: 7px; font-size: 12px;");
     expect(styles).toContain(".packet .price-preview-name-edit textarea { resize: vertical;");
+    expect(styles).toContain(".packet .price-preview-name-edit > label { display: grid;");
+    expect(styles).toContain("@media (hover: none) and (pointer: coarse)");
+    expect(styles).toContain(".packet .price-preview-name-edit.is-expanded textarea { min-height: 96px;");
     expect(styles).toContain("@media (max-width: 420px)");
     expect(styles).toContain("@media (max-width: 560px) { .packet .price-preview-table { overflow: clip; touch-action: pan-y; } }");
   });
@@ -279,6 +286,7 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain('<ExactDateControl');
     expect(page).toContain('title="ДАТА ПРАЙСА"');
     expect(page).toContain('value={sourceDate}');
+    expect(styles).toContain(".packet .price-import-workbench.is-preview-ready .price-preview-date { align-self: start;");
   });
 
   it("делает скрытие товара явным состоянием формы, а не только кнопкой списка", () => {
