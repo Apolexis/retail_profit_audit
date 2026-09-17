@@ -3964,6 +3964,9 @@ html[data-audit-theme="dark"] .packet .visibility-toggle.active { border-color: 
 .packet .price-preview-check:has(input:checked) { border-color: var(--price-accent); background: var(--price-accent); }
 .packet .price-preview-check:has(input:checked) > span { color: var(--price-surface); transform: scale(1); }
 .packet .price-preview-check:has(input:focus-visible) { box-shadow: 0 0 0 2px color-mix(in srgb, var(--price-accent) 24%, transparent); }
+.packet .price-preview-selection-marker { display: grid; grid-column: 1; grid-row: 1; align-content: start; justify-items: center; gap: 5px; min-width: 24px; }
+.packet .price-preview-selection-marker .price-preview-check { margin: 0; }
+.packet .price-preview-row-number { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; min-height: 16px; color: var(--price-muted); font: 800 9px/1 "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; letter-spacing: .02em; white-space: nowrap; }
 html[data-audit-theme="light"] .packet .price-preview { padding: 12px; border: 1px solid #d4e0ea; border-radius: 14px; background: #f6faff; }
 html[data-audit-theme="light"] .packet .price-preview-categorization { border-color: #bed3e8; background: #eaf4ff; }
 html[data-audit-theme="light"] .packet .price-preview-table { overflow: hidden; border: 1px solid #c9d9e8; border-radius: 13px; background: #ffffff; }

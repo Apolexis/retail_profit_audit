@@ -2355,15 +2355,18 @@ export default function PriceControl({
                           }}
                         >
                         {canEdit && previewNewRowIndexes.has(index) && (
-                          <label className="price-preview-check">
-                            <input
-                              type="checkbox"
-                              checked={selectedPreviewRowIndexes.includes(index)}
-                              onChange={() => togglePreviewRow(index)}
-                              aria-label={`Выбрать новую позицию «${row.rawName}»`}
-                            />
-                            <span aria-hidden="true"><Check size={12} /></span>
-                          </label>
+                          <div className="price-preview-selection-marker">
+                            <label className="price-preview-check">
+                              <input
+                                type="checkbox"
+                                checked={selectedPreviewRowIndexes.includes(index)}
+                                onChange={() => togglePreviewRow(index)}
+                                aria-label={`Выбрать новую позицию «${row.rawName}»`}
+                              />
+                              <span aria-hidden="true"><Check size={12} /></span>
+                            </label>
+                            <span className="price-preview-row-number" aria-label={`Позиция ${position + 1}`}>№ {position + 1}</span>
+                          </div>
                         )}
                         <div className="price-preview-product">
                           {canUpload ? (

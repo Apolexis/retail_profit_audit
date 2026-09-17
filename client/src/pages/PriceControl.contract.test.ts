@@ -179,6 +179,13 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain(".packet .price-preview-price-edit > .price-preview-price-remove");
   });
 
+  it("показывает порядковый номер новой позиции непосредственно под галочкой выбора", () => {
+    expect(page).toContain('className="price-preview-selection-marker"');
+    expect(page).toContain("№ {position + 1}");
+    expect(styles).toContain(".packet .price-preview-selection-marker { display: grid; grid-column: 1; grid-row: 1;");
+    expect(styles).toContain(".packet .price-preview-row-number");
+  });
+
   it("пересчитывает предупреждение о цене после ручной правки и использует нейтральный светлый акцент", () => {
     expect(page).toContain("const unresolvedPreviewPriceCount = useMemo");
     expect(page).toContain("unresolvedPreviewPriceCount > 0");
