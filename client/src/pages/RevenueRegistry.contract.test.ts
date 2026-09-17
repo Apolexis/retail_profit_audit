@@ -18,6 +18,15 @@ describe("контракт страницы Выручка", () => {
     expect(page).toContain('displayMoscowTimestamp');
   });
 
+  it("использует общий календарь периода и утвержденную карточную форму", () => {
+    expect(page).toContain('DateRangeControl value={adminRange}');
+    expect(page).toContain('title="ПЕРИОД РЕЕСТРА ВЫРУЧКИ"');
+    expect(page).toContain('className="packet-card revenue-rule-disclosure"');
+    expect(styles).toContain('.packet .revenue-input-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));');
+    expect(styles).toContain('@media (max-width: 680px)');
+    expect(styles).toContain('.packet .revenue-input-grid,');
+  });
+
   it("делает печать журналируемой и выводит раздельные блоки со всеми строками", () => {
     expect(page).toContain('trpc.revenueRegistry.print.useMutation()');
     expect(page).toContain('window.print()');
