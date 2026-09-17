@@ -16,11 +16,11 @@ describe("векторная загрузка", () => {
     expect(component).not.toContain("<img");
   });
 
-  it("сохраняет траекторию версии 1c6f03bd, скрывает только нерассчитанный стартовый кадр и уважает системное уменьшение анимации", () => {
+  it("сохраняет траекторию версии 1c6f03bd, показывает рыб уже в первом кадре и уважает системное уменьшение анимации", () => {
     expect(styles).toContain("@media (prefers-reduced-motion: reduce)");
     expect(component).toContain('className="facts-school"');
-    expect(component).toContain('className="facts-school" opacity="0"');
-    expect(component).toContain('<animate attributeName="opacity" from="0" to="1" dur="0.08s" begin="0s" fill="freeze" />');
+    expect(component).not.toContain('className="facts-school" opacity="0"');
+    expect(component).not.toContain('<animate attributeName="opacity"');
     expect(component).not.toContain("facts-school-orbit");
     expect(component).not.toContain("animateTransform");
     expect(styles).toContain(".facts-loader .facts-school { transform: none !important; animation: none !important; }");

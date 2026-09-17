@@ -3975,7 +3975,7 @@ html[data-audit-theme="light"] .packet .price-preview-name-edit :is(input, texta
 }
 
 /* Точная кинематика 1c6f03bd: каждая рыба идет по своей SVG-орбите.
-   Невидимый первый SMIL-кадр не показывает старое наложение, затем виден исходный косяк. */
+   Косяк не скрывается перед стартом SMIL: рыбы видны уже в первом кадре загрузки. */
 .facts-loader .facts-loader-art { width: 150px !important; height: 150px !important; }
 .facts-loader .facts-school { transform: none !important; animation: none !important; }
 .facts-loader .facts-fish { transform: none !important; transform-box: fill-box; transform-origin: 0 0; }

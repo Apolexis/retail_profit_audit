@@ -30,7 +30,7 @@ function OrbitFish({ id, begin, duration, scale }: FishPath) {
 
 function FishSpinner({ className, label }: { className: string; label: string }) {
   return <section className={className} role="status" aria-live="polite"><p>{label}</p><svg className="facts-loader-art" viewBox="0 0 160 160" aria-hidden="true" focusable="false">
-    <g className="facts-school" opacity="0"><animate attributeName="opacity" from="0" to="1" dur="0.08s" begin="0s" fill="freeze" />{SCHOOL_PATHS.map(fish => <OrbitFish key={fish.id} {...fish}/>)}</g>
+    <g className="facts-school">{SCHOOL_PATHS.map(fish => <OrbitFish key={fish.id} {...fish}/>)}</g>
   </svg></section>;
 }
 
