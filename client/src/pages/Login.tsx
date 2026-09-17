@@ -14,8 +14,9 @@ import { PasswordInput } from "@/components/PasswordInput";
 
 export default function Login({ accessError }: { accessError?: unknown }) {
   const { theme, toggleTheme } = useAudit();
-  const [phone, setPhone] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [storeLoginMode, setStoreLoginMode] = useState(false);
   const [passkeySupported, setPasskeySupported] = useState(false);
   const passkeyPlatform = getPasskeyPlatform();
   const utils = trpc.useUtils();
@@ -37,12 +38,12 @@ export default function Login({ accessError }: { accessError?: unknown }) {
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
-    login.mutate({ username: normalizeRussianPhone(phone), password });
+    login.mutate({ username: storeLoginMode ? identifier.trim() : normalizeRussianPhone(identifier), password });
   };
 
   const fastLogin = async () => {
-    const hasPhone = Boolean(phone.replace(/\D/g, ""));
-    const normalized = hasPhone ? normalizeRussianPhone(phone) : "";
+    const hasPhone = Boolean(identifier.replace(/\D/g, ""));
+    const normalized = hasPhone ? normalizeRussianPhone(identifier) : "";
     if (normalized && normalized.length !== 11) {
       toast.error("Введите полный номер телефона", { description: "Для быстрого входа нужен тот же номер, на который был зарегистрирован passkey." });
       return;
@@ -67,15 +68,16 @@ export default function Login({ accessError }: { accessError?: unknown }) {
           <BrandMark theme={theme} />
           <span>Аналитика «Рыбный»</span>
         </div>
-        <h1>Вход в управленческий контур</h1>
+        <h1>{storeLoginMode ? "Вход магазина" : "Вход в управленческий контур"}</h1>
         <form onSubmit={submit}>
-          <label>Номер телефона<PhoneInput value={phone} onValueChange={setPhone} required /></label>
+          <label className="login-store-mode"><input type="checkbox" checked={storeLoginMode} onChange={event => { setStoreLoginMode(event.target.checked); setIdentifier(""); }} /><span>Вход для магазинов</span></label>
+          {storeLoginMode ? <label>Логин магазина<input type="text" inputMode="text" autoComplete="username" value={identifier} onChange={event => setIdentifier(event.target.value)} placeholder="Логин магазина" maxLength={64} required /></label> : <label>Номер телефона<PhoneInput value={identifier} onValueChange={setIdentifier} required /></label>}
           <label>Пароль<PasswordInput autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} required /></label>
           {(accessError || login.error) && <div className="login-error">{authErrorText(accessError ?? login.error)}</div>}
           <button className="login-submit" disabled={login.isPending}><LockKeyhole size={16} />{login.isPending ? "Проверяем доступ…" : "Войти"}</button>
-          {passkeySupported && <button type="button" className="login-passkey" onClick={fastLogin} disabled={passkeyBusy}><Fingerprint size={17} />{passkeyBusy ? "Подтвердите на устройстве…" : "Войти с ключом доступа"}</button>}
+          {!storeLoginMode && passkeySupported && <button type="button" className="login-passkey" onClick={fastLogin} disabled={passkeyBusy}><Fingerprint size={17} />{passkeyBusy ? "Подтвердите на устройстве…" : "Войти с ключом доступа"}</button>}
         </form>
-        <small>{passkeySupported ? "Можно ввести номер, чтобы выбрать ключ, или нажать кнопку без номера. Устройство предложит Face ID, Touch ID, ключ Google, Windows Hello или PIN — в зависимости от устройства." : "Можно начать ввод с 9, 7 или 8 — система приведет номер к виду +7 (900) 000-00-00. Скобки и дефисы не блокируют удаление цифр."}</small>
+        <small>{storeLoginMode ? "Для магазина используйте выданные логин и пароль. Вход с ключом доступа для магазинов отключен." : passkeySupported ? "Можно ввести номер, чтобы выбрать ключ, или нажать кнопку без номера. Устройство предложит Face ID, Touch ID, ключ Google, Windows Hello или PIN — в зависимости от устройства." : "Можно начать ввод с 9, 7 или 8 — система приведет номер к виду +7 (900) 000-00-00. Скобки и дефисы не блокируют удаление цифр."}</small>
       </section>
     </main>
   );

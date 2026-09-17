@@ -83,4 +83,12 @@ describe("матрица доступа к импорту",()=>{
     expect(overrides).toContain('.packet .access-store-list > div > span { display: grid !important; justify-self: start !important;');
     expect(overrides).toContain('text-align: left !important;');
   });
+
+  it("создает продавца по логину магазина и не требует для него ключ доступа",()=>{
+    const page=readFileSync(resolve(process.cwd(),"client/src/pages/AccessAdmin.tsx"),"utf8");
+    expect(page).toContain('role === "seller" ? <label>Логин магазина');
+    expect(page).toContain('role === "seller" ? phone.trim() : normalizeRussianPhone(phone)');
+    expect(page).toContain('minLength={role === "seller" ? undefined : 10}');
+    expect(page).toContain('ключ доступа для магазина отключен');
+  });
 });

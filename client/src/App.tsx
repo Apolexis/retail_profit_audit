@@ -127,6 +127,15 @@ function SellerRouteGate({ children }: { children: ReactNode }) {
   return allowed ? <>{children}</> : <div className="app-loading"><OceanLoader overlay label="Открываем операционный контур…" /></div>;
 }
 
+function InitialPasswordGate({ children }: { children: ReactNode }) {
+  const [location, setLocation] = useLocation();
+  const allowed = location === "/profile";
+  useEffect(() => {
+    if (!allowed) setLocation("/profile");
+  }, [allowed, setLocation]);
+  return allowed ? <>{children}</> : <div className="app-loading"><OceanLoader overlay label="Требуется смена пароля…" /></div>;
+}
+
 function LocalAccessGate() {
   const session = trpc.localAuth.me.useQuery(undefined, { retry: false });
   const loaderPreview =
@@ -140,6 +149,7 @@ function LocalAccessGate() {
     );
   if (session.error) return <Login accessError={session.error} />;
   if (!session.data) return <Login />;
+  if (session.data.mustChangePassword) return <InitialPasswordGate><Router /></InitialPasswordGate>;
   if (session.data.role === "seller") return <SellerRouteGate><Router /></SellerRouteGate>;
   return (
     <>

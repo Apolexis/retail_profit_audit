@@ -13,8 +13,8 @@ describe("русские сообщения быстрого входа", () => 
   it("запускает discoverable key без обязательного номера телефона", () => {
     const page = readFileSync(new URL("./Login.tsx", import.meta.url), "utf8");
     expect(page).toContain('import { passkeyErrorText } from "@/lib/passkeyError";');
-    expect(page).toContain('const hasPhone = Boolean(phone.replace(/\\D/g, ""));');
-    expect(page).toContain('const normalized = hasPhone ? normalizeRussianPhone(phone) : "";');
+    expect(page).toContain('const hasPhone = Boolean(identifier.replace(/\\D/g, ""));');
+    expect(page).toContain('const normalized = hasPhone ? normalizeRussianPhone(identifier) : "";');
     expect(page).toContain('const phonePayload = normalized.length === 11 ? { phone: normalized } : {};');
   });
 

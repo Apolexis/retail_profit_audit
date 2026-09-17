@@ -4,7 +4,7 @@ import { parse as parseCookie } from "cookie";
 import { generateAuthenticationOptions, generateRegistrationOptions, verifyAuthenticationResponse, verifyRegistrationResponse, type AuthenticationResponseJSON, type RegistrationResponseJSON } from "@simplewebauthn/server";
 import { localAccounts, localPasskeyChallenges, localPasskeys } from "../drizzle/schema";
 import { getDb } from "./db";
-import { ensureCoreUserForPasskey, formatRussianPhone, normalizeRussianPhone, recordChange } from "./localAuth";
+import { ensureCoreUserForPasskey, formatLocalAccountLabel, normalizeRussianPhone, recordChange } from "./localAuth";
 
 export const PASSKEY_ATTEMPT_COOKIE = "audit_passkey_attempt";
 const CHALLENGE_MS = 1000 * 60 * 5;
@@ -112,6 +112,7 @@ async function activeAccountForPhone(phone: string) {
   const username = normalizeRussianPhone(phone);
   const [account] = await db.select().from(localAccounts).where(eq(localAccounts.username, username)).limit(1);
   if (!account || !account.isActive) throw new Error("Для этого номера быстрый вход недоступен");
+  if (account.role === "seller") throw new Error("Для входа магазина используйте логин и пароль");
   return account;
 }
 
@@ -146,7 +147,7 @@ export async function finishPasskeyAuthentication(phone: string | undefined, res
     [passkey] = await db.select().from(localPasskeys).where(eq(localPasskeys.credentialId, response.id)).limit(1);
     if (passkey) {
       const [storedAccount] = await db.select().from(localAccounts).where(eq(localAccounts.id, passkey.accountId)).limit(1);
-      if (storedAccount?.isActive) account = storedAccount;
+      if (storedAccount?.isActive && storedAccount.role !== "seller") account = storedAccount;
     }
   }
   if (!passkey) throw new Error("Ключ быстрого входа не найден");
@@ -171,4 +172,4 @@ export async function deleteAccountPasskey(accountId: number, passkeyId: number)
   return { success: true };
 }
 
-export const passkeyAccountLabel = (account: { username: string; displayName: string }) => ({ phone: formatRussianPhone(account.username), displayName: account.displayName });
+export const passkeyAccountLabel = (account: { username: string; displayName: string }) => ({ phone: formatLocalAccountLabel(account.username), displayName: account.displayName });

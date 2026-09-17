@@ -109,6 +109,7 @@ export const localAccounts = mysqlTable("audit_local_accounts", {
   priceAccessLevel: mysqlEnum("priceAccessLevel", ["none", "view", "upload", "edit"]).default("none").notNull(),
   canViewImportControls: boolean("canViewImportControls").default(false).notNull(),
   isActive: boolean("isActive").default(true).notNull(),
+  mustChangePassword: boolean("mustChangePassword").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastLoginAt: timestamp("lastLoginAt"),
@@ -168,6 +169,18 @@ export const storeAccess = mysqlTable("audit_store_access", {
   accessLevel: mysqlEnum("accessLevel", ["view", "edit"]).default("view").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, table => [unique("audit_store_access_account_store_uq").on(table.accountId, table.storeId)]);
+
+/** Human-confirmed Evotor store mapping; API UUIDs remain optional until read-only discovery. */
+export const operationalStoreMappings = mysqlTable("operational_store_mappings", {
+  id: int("id").autoincrement().primaryKey(),
+  storeId: int("storeId").notNull().unique(),
+  evotorStoreName: varchar("evotorStoreName", { length: 255 }).notNull(),
+  evotorAddress: varchar("evotorAddress", { length: 512 }).notNull(),
+  evotorTerminalUuid: varchar("evotorTerminalUuid", { length: 128 }),
+  configuredByAccountId: int("configuredByAccountId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
 
 export const auditNotifications = mysqlTable("audit_notifications", {
   id: int("id").autoincrement().primaryKey(),

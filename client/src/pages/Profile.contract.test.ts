@@ -37,4 +37,11 @@ describe("страница «Профиль»", () => {
     expect(profile).toContain("passkeyPlatformGuidance(passkeyPlatform)");
     expect(profile).toContain("passkeyErrorText(error, getPasskeyPlatform())");
   });
+
+  it("скрывает настройку ключа доступа для продавца", () => {
+    expect(profile).toContain('const isSeller = account?.role === "seller"');
+    expect(profile).toContain('enabled: Boolean(account) && !isSeller');
+    expect(profile).toContain('{!isSeller && <section className="packet-card passkey-settings">');
+    expect(profile).toContain('Логин магазина');
+  });
 });

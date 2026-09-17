@@ -10,6 +10,9 @@ import { PASSKEY_ATTEMPT_COOKIE, beginPasskeyAuthentication, beginPasskeyRegistr
 
 const password = z.string().min(10, "Пароль должен содержать не менее 10 символов").max(128);
 const role = z.enum(["admin", "analyst", "seller"]);
+const createAccountInput = z.object({ username: z.string().min(1).max(64), password: z.string().min(1).max(128), role }).superRefine((value, ctx) => {
+  if (value.role !== "seller" && value.password.length < 10) ctx.addIssue({ code: "custom", path: ["password"], message: "Пароль должен содержать не менее 10 символов" });
+});
 const importAccessLevel = z.enum(["none", "upload", "edit"]);
 const priceAccessLevel = z.enum(["none", "view", "upload", "edit"]);
 const broadcastAudience = z.discriminatedUnion("kind", [z.object({ kind: z.literal("all") }), z.object({ kind: z.literal("account"), accountId: z.number().int().positive() }), z.object({ kind: z.literal("role"), role })]);
@@ -20,6 +23,10 @@ async function localAccountFromContext(openId?: string | null) {
   if (!account) throw new TRPCError({ code: "UNAUTHORIZED", message: "Требуется локальный вход" });
   return account;
 }
+function requirePasskeyAccount(account: Awaited<ReturnType<typeof localAccountFromContext>>) {
+  if (account.role === "seller") throw new TRPCError({ code: "FORBIDDEN", message: "Для входа магазина используйте логин и пароль" });
+  return account;
+}
 async function localAdminFromContext(openId?: string | null) {
   const account = await localAccountFromContext(openId);
   if (account.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Рассылка доступна только администратору" });
@@ -28,12 +35,14 @@ async function localAdminFromContext(openId?: string | null) {
 
 const accountResponse = (account: Awaited<ReturnType<typeof localAccountFromContext>>) => ({
   id: account.id,
-  phone: formatRussianPhone(account.username),
+  phone: account.username,
+  login: account.username,
   displayName: account.displayName,
   role: account.role,
   importAccessLevel: account.role === "admin" ? "edit" : account.importAccessLevel,
   priceAccessLevel: account.role === "admin" ? "edit" : account.priceAccessLevel,
   canViewImportControls: account.role === "admin" || account.canViewImportControls,
+  mustChangePassword: account.mustChangePassword,
 });
 
 export const localAuthRouter = router({
@@ -55,20 +64,20 @@ export const localAuthRouter = router({
     if (account) await recordChange({ actorId: account.id, action: "account.logout", entityType: "account", entityId: String(account.id) });
     return { success: true };
   }),
-  passkeys: protectedProcedure.query(async ({ ctx }) => listAccountPasskeys((await localAccountFromContext(ctx.user?.openId)).id)),
+  passkeys: protectedProcedure.query(async ({ ctx }) => listAccountPasskeys(requirePasskeyAccount(await localAccountFromContext(ctx.user?.openId)).id)),
   beginPasskeyRegistration: protectedProcedure.mutation(async ({ ctx }) => {
-    const account = await localAccountFromContext(ctx.user?.openId);
+    const account = requirePasskeyAccount(await localAccountFromContext(ctx.user?.openId));
     const result = await beginPasskeyRegistration(account, ctx.req);
     ctx.res.cookie(PASSKEY_ATTEMPT_COOKIE, result.attempt, { ...getSessionCookieOptions(ctx.req), sameSite: "lax", maxAge: result.expiresAt.getTime() - Date.now() });
     return result.options;
   }),
   finishPasskeyRegistration: protectedProcedure.input(z.object({ response: passkeyResponse })).mutation(async ({ input, ctx }) => {
-    const account = await localAccountFromContext(ctx.user?.openId);
+    const account = requirePasskeyAccount(await localAccountFromContext(ctx.user?.openId));
     const result = await finishPasskeyRegistration(account, input.response, ctx.req.headers.cookie);
     ctx.res.clearCookie(PASSKEY_ATTEMPT_COOKIE, { ...getSessionCookieOptions(ctx.req), sameSite: "lax", maxAge: -1 });
     return result;
   }),
-  deletePasskey: protectedProcedure.input(z.object({ id: z.number().int() })).mutation(async ({ input, ctx }) => deleteAccountPasskey((await localAccountFromContext(ctx.user?.openId)).id, input.id)),
+  deletePasskey: protectedProcedure.input(z.object({ id: z.number().int() })).mutation(async ({ input, ctx }) => deleteAccountPasskey(requirePasskeyAccount(await localAccountFromContext(ctx.user?.openId)).id, input.id)),
   beginPasskeyLogin: publicProcedure.input(z.object({ phone: z.string().regex(/^7\d{10}$/, "Введите номер телефона полностью").optional() })).mutation(async ({ input, ctx }) => {
     const result = await beginPasskeyAuthentication(input.phone, ctx.req);
     ctx.res.cookie(PASSKEY_ATTEMPT_COOKIE, result.attempt, { ...getSessionCookieOptions(ctx.req), sameSite: "lax", maxAge: result.expiresAt.getTime() - Date.now() });
@@ -89,7 +98,7 @@ export const localAuthRouter = router({
     await localAccountFromContext(ctx.user?.openId);
     return listLocalAccounts();
   }),
-  create: adminProcedure.input(z.object({ username: z.string().min(10).max(24), password, role })).mutation(async ({ input, ctx }) => {
+  create: adminProcedure.input(createAccountInput).mutation(async ({ input, ctx }) => {
     const actor = await localAccountFromContext(ctx.user?.openId);
     return { id: await createLocalAccount(input, actor.id) };
   }),

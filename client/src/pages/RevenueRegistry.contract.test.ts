@@ -57,4 +57,9 @@ describe("контракт страницы Выручка", () => {
     expect(accessRouter).toContain('targetBefore.role === "seller" && (input.grants.length !== 1');
     expect(accessRouter).toContain('операционным доступом «Просмотр»');
   });
+
+  it("не открывает реестр до обязательной смены первичного пароля магазина", () => {
+    expect(router).toContain('if (account.mustChangePassword) throw new TRPCError');
+    expect(router).toContain('Сначала измените первичный пароль в профиле');
+  });
 });

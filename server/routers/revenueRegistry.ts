@@ -14,6 +14,7 @@ const revenueEntry = z.object({ ...amounts, expenseComments: z.object(comments) 
 async function requireOperationalActor(openId?: string | null) {
   const account = await getCurrentLocalAccount(openId);
   if (!account) throw new TRPCError({ code: "UNAUTHORIZED", message: "Требуется локальный вход" });
+  if (account.mustChangePassword) throw new TRPCError({ code: "FORBIDDEN", message: "Сначала измените первичный пароль в профиле" });
   return account;
 }
 

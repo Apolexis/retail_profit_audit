@@ -26,4 +26,12 @@ describe("универсальный вход с ключом доступа", (
     expect(login).toContain('className="login-error"');
     expect(styles).toContain('html[data-audit-theme="light"] .login-error { border-color: #bdd9f6 !important; background: #f5faff !important; color: #244864 !important; }');
   });
+
+  it("дает магазинам отдельный логин без ключа доступа", () => {
+    expect(login).toContain('const [storeLoginMode, setStoreLoginMode] = useState(false)');
+    expect(login).toContain('Вход для магазинов');
+    expect(login).toContain('Логин магазина');
+    expect(login).toContain('storeLoginMode ? identifier.trim() : normalizeRussianPhone(identifier)');
+    expect(login).toContain('!storeLoginMode && passkeySupported');
+  });
 });
