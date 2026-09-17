@@ -1,10 +1,19 @@
-import { FilePlus2, PencilLine, Printer, ReceiptText, RotateCcw } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { FilePlus2, PencilLine, Printer, ReceiptText, RotateCcw, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { AuditShell } from "@/components/AuditShell";
-import { DateRangeControl, ExactDateControl } from "@/components/DateRangeControl";
+import { ExactDateControl } from "@/components/DateRangeControl";
 import { ThemedSelect } from "@/components/ui/themed-select";
-import type { DateRangeValue } from "@/contexts/AuditContext";
 import { normalizeDecimalInputText } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import "@/revenue-registry.css";
@@ -38,9 +47,17 @@ const fields: Array<{ key: AmountField; label: string; kind: "receipt" | "expens
   { key: "extraPaymentCash", label: "Доплата нал", kind: "expense" },
   { key: "bonusCash", label: "Премия нал", kind: "expense" },
   { key: "vacationCash", label: "Отпускные нал", kind: "expense" },
-  { key: "utilitiesCash", label: "Ком. плат. нал", kind: "expense" },
+  { key: "utilitiesCash", label: "Коммунальные платежи нал", kind: "expense" },
   { key: "deliveryCash", label: "Доставка нал", kind: "expense" },
 ];
+const commentRequiredExpenseFields = new Set<ExpenseField>([
+  "cashExpenses",
+  "householdCash",
+  "cleaningCash",
+  "serviceCash",
+  "extraPaymentCash",
+  "deliveryCash",
+]);
 
 const emptyAmounts = (): AmountDraft => Object.fromEntries(fields.map(field => [field.key, ""])) as AmountDraft;
 const formatAmount = (value: number) => `${value.toFixed(2).replace(/\.00$/, "").replace(/\B(?=(\d{3})+(?!\d))/g, " ")} ₽`;
@@ -48,15 +65,14 @@ const parseAmount = (value: string) => {
   const parsed = Number(normalizeDecimalInputText(value));
   return Number.isFinite(parsed) ? Math.round(parsed * 100) / 100 : 0;
 };
-const entryFor = (amounts: AmountDraft, comments: CommentDraft) => ({ ...Object.fromEntries(fields.map(field => [field.key, parseAmount(amounts[field.key])])) as Record<AmountField, number>, expenseComments: comments });
+const entryFor = (amounts: AmountDraft, comments: CommentDraft) => ({
+  ...Object.fromEntries(fields.map(field => [field.key, parseAmount(amounts[field.key])])) as Record<AmountField, number>,
+  expenseComments: comments,
+});
 const toMoscowDate = () => {
   const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Moscow", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
   const part = (type: string) => parts.find(item => item.type === type)?.value ?? "";
   return `${part("year")}-${part("month")}-${part("day")}`;
-};
-const initialAdminRange = (): DateRangeValue => {
-  const today = toMoscowDate();
-  return { from: `${today.slice(0, 7)}-01`, to: today };
 };
 const displayDate = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString("ru-RU", { day: "2-digit", month: "long", year: "numeric" });
 const displayMoscowTimestamp = (value: Date | string) => new Intl.DateTimeFormat("ru-RU", { timeZone: "Europe/Moscow", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
@@ -71,11 +87,14 @@ export default function RevenueRegistry() {
   const [comments, setComments] = useState<CommentDraft>({});
   const [correctionReason, setCorrectionReason] = useState("");
   const [editing, setEditing] = useState<RevenueRecord | null>(null);
-  const [adminRange, setAdminRange] = useState<DateRangeValue>(initialAdminRange);
+  const [registryDate, setRegistryDate] = useState(toMoscowDate);
   const [adminStoreId, setAdminStoreId] = useState("");
+  const [voidCandidate, setVoidCandidate] = useState<RevenueRecord | null>(null);
+  const [voidReason, setVoidReason] = useState("");
+  const registerScrollRef = useRef<{ startX: number; scrollLeft: number; pointerId: number } | null>(null);
   const isAdmin = me.data?.role === "admin";
   const isSeller = me.data?.role === "seller";
-  const adminFilter = useMemo(() => ({ from: adminRange.from, to: adminRange.to, storeId: adminStoreId ? Number(adminStoreId) : undefined }), [adminRange, adminStoreId]);
+  const adminFilter = useMemo(() => ({ from: registryDate, to: registryDate, storeId: adminStoreId ? Number(adminStoreId) : undefined }), [registryDate, adminStoreId]);
   const myRecords = trpc.revenueRegistry.myLatest.useQuery(undefined, { retry: false, enabled: isSeller || isAdmin });
   const adminRecords = trpc.revenueRegistry.adminList.useQuery(adminFilter, { retry: false, enabled: isAdmin });
   const currentRecords = (isAdmin ? adminRecords.data : myRecords.data ?? []) as RevenueRecord[];
@@ -105,8 +124,18 @@ export default function RevenueRegistry() {
   const refresh = async () => {
     await Promise.all([utils.revenueRegistry.myLatest.invalidate(), utils.revenueRegistry.adminList.invalidate(), utils.audit.changes.invalidate()]);
   };
-  const create = trpc.revenueRegistry.create.useMutation({ onSuccess: async () => { await refresh(); resetForm(); toast.success("Выручка передана", { description: "Операционная запись сохранена отдельно от финансового факта." }); }, onError: error => toast.error("Запись не передана", { description: error.message }) });
-  const correct = trpc.revenueRegistry.correct.useMutation({ onSuccess: async () => { await refresh(); resetForm(); toast.success("Исправление сохранено новой версией"); }, onError: error => toast.error("Запись не исправлена", { description: error.message }) });
+  const create = trpc.revenueRegistry.create.useMutation({
+    onSuccess: async () => { await refresh(); resetForm(); toast.success("Выручка передана", { description: "Операционная запись сохранена отдельно от финансового факта." }); },
+    onError: error => toast.error("Запись не передана", { description: error.message }),
+  });
+  const correct = trpc.revenueRegistry.correct.useMutation({
+    onSuccess: async () => { await refresh(); resetForm(); toast.success("Изменение сохранено новой версией"); },
+    onError: error => toast.error("Запись не изменена", { description: error.message }),
+  });
+  const voidRevenue = trpc.revenueRegistry.remove.useMutation({
+    onSuccess: async () => { await refresh(); if (editing?.id === voidCandidate?.id) resetForm(); setVoidCandidate(null); setVoidReason(""); toast.success("Передача удалена из реестра", { description: "Исходная версия сохранена в общем журнале." }); },
+    onError: error => toast.error("Передача не удалена", { description: error.message }),
+  });
   const printRegistry = trpc.revenueRegistry.print.useMutation();
   const total = fields.reduce((sum, field) => sum + parseAmount(amounts[field.key]), 0);
   const expenseTotal = (record: RevenueRecord) => fields.filter(field => field.kind === "expense").reduce((sum, field) => sum + record[field.key], 0);
@@ -116,30 +145,58 @@ export default function RevenueRegistry() {
     if (!storeId) { toast.error("Выберите магазин"); return; }
     const entry = entryFor(amounts, comments);
     if (editing) {
-      if (!correctionReason.trim()) { toast.error("Укажите причину исправления"); return; }
+      if (!correctionReason.trim()) { toast.error("Укажите причину изменения"); return; }
       correct.mutate({ recordId: editing.id, correctionReason, entry });
       return;
     }
     create.mutate({ storeId: Number(storeId), businessDate, entry });
   };
+  const beginRegisterDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.target instanceof HTMLElement && event.target.closest("button, summary")) return;
+    const container = event.currentTarget;
+    if (container.scrollWidth <= container.clientWidth) return;
+    registerScrollRef.current = { startX: event.clientX, scrollLeft: container.scrollLeft, pointerId: event.pointerId };
+    container.setPointerCapture(event.pointerId);
+    container.classList.add("is-dragging");
+  };
+  const moveRegisterDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = registerScrollRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    event.currentTarget.scrollLeft = drag.scrollLeft - (event.clientX - drag.startX);
+  };
+  const endRegisterDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (registerScrollRef.current?.pointerId !== event.pointerId) return;
+    registerScrollRef.current = null;
+    event.currentTarget.classList.remove("is-dragging");
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+  };
 
   if (!isAdmin && !isSeller && !me.isLoading) return <AuditShell kicker="23 / ВЫРУЧКА" title="Операционный реестр «Выручка»"><section className="empty-state"><ReceiptText size={28}/><h2>Нет операционного доступа</h2><p>Эта страница доступна только назначенному продавцу или администратору.</p></section></AuditShell>;
 
   return <AuditShell kicker="23 / ВЫРУЧКА" title="Операционный реестр «Выручка»">
-    <section className="page-lede revenue-lede"><div><span>ОПЕРАЦИОННЫЙ КОНТУР</span><h2>{editing ? `Исправление записи · ${displayDate(editing.businessDate)}` : "Передача выручки за день"}</h2><p>Итог равен сумме сданных наличных, безналичных оплат и наличных расходов. Это отдельная операционная запись: она не меняет финансовый факт, P&L или Excel.</p></div>{editing && <button type="button" className="subtle-button" onClick={resetForm}><RotateCcw size={15}/>Новая запись</button>}</section>
-    <details className="packet-card revenue-rule-disclosure"><summary><span>ПРАВИЛО РЕЕСТРА</span><strong>Расход — с обязательным объяснением</strong></summary><div className="revenue-rule-content"><ol><li>Введите нал и Б/Нал по кассе</li><li>Укажите отдельно каждую наличную трату</li><li>Для ненулевой траты обязательны куда / зачем / за что</li><li>Проверьте итог перед передачей</li></ol><p className="packet-note">Продавец создает запись только для своей назначенной точки и видит только пять собственных последних передач. Удаления нет.</p></div></details>
-    <section className="revenue-layout">
-      <form className="packet-card revenue-entry-card" onSubmit={submit}>
-        <div className="card-title"><div><span>{editing ? "АДМИНИСТРАТИВНОЕ ИСПРАВЛЕНИЕ" : "ЕЖЕДНЕВНАЯ ПЕРЕДАЧА"}</span><h3>{selectedStore?.name ?? "Выберите магазин"}</h3></div><ReceiptText size={20}/></div>
-        <div className="revenue-meta-row"><label>Дата<ExactDateControl value={businessDate} onChange={setBusinessDate} title="ДАТА ВЫРУЧКИ" ariaLabel="Выбрать дату выручки"/></label>{isAdmin || (stores.data?.length ?? 0) > 1 ? <label>Магазин<ThemedSelect value={storeId} onChange={event => setStoreId(event.target.value)}><option value="">Выберите магазин</option>{(stores.data ?? []).filter(store => !store.isHidden).map(store => <option key={store.id} value={store.id}>{store.name}</option>)}</ThemedSelect></label> : <div className="revenue-store-readonly"><span>Магазин</span><strong>{selectedStore?.name ?? "Назначение загружается…"}</strong></div>}</div>
-        <div className="revenue-input-grid">{fields.map(field => <label className="revenue-amount" key={field.key}><span>{field.label}</span><input data-decimal-input type="text" inputMode="decimal" pattern="[0-9]*[.]?[0-9]*" value={amounts[field.key]} onChange={event => setAmounts(current => ({ ...current, [field.key]: normalizeDecimalInputText(event.target.value).replace(/[^0-9.]/g, "") }))} placeholder="0" aria-label={field.label}/>{field.kind === "expense" && parseAmount(amounts[field.key]) > 0 && <textarea value={comments[field.key as ExpenseField] ?? ""} onChange={event => setComments(current => ({ ...current, [field.key as ExpenseField]: event.target.value }))} maxLength={500} required placeholder="Куда / зачем / за что" aria-label={`Комментарий: ${field.label}`}/>}</label>)}</div>
-        <div className="revenue-total"><span>Итого</span><strong>{formatAmount(total)}</strong><small>Нал + Б/Нал + все наличные расходы</small></div>
-        {editing && <label className="revenue-correction-reason"><span>Причина исправления</span><textarea value={correctionReason} onChange={event => setCorrectionReason(event.target.value)} maxLength={500} required placeholder="Что и почему исправлено"/></label>}
-        {(create.error || correct.error) && <p className="inline-error">{(create.error ?? correct.error)?.message}</p>}
-        <div className="revenue-form-actions"><button className="packet-link" disabled={!storeId || create.isPending || correct.isPending}><FilePlus2 size={16}/>{editing ? "Сохранить новой версией" : "Передать выручку"}</button>{editing && <small>Версия {editing.currentVersion + 1}; исходная запись сохранится в истории.</small>}</div>
-      </form>
-    </section>
-    {isAdmin && <section className="packet-card revenue-admin-register"><div className="card-title"><div><span>РЕЕСТР ВСЕХ МАГАЗИНОВ</span><h3>Печать, контроль и исправления</h3></div></div><div className="revenue-filter-row"><div><span>Период</span><DateRangeControl value={adminRange} onChange={setAdminRange} title="ПЕРИОД РЕЕСТРА ВЫРУЧКИ" ariaLabel="Изменить период реестра выручки"/></div><label>Магазин<ThemedSelect value={adminStoreId} onChange={event => setAdminStoreId(event.target.value)}><option value="">Все магазины</option>{(stores.data ?? []).map(store => <option key={store.id} value={store.id}>{store.name}</option>)}</ThemedSelect></label></div><div className="revenue-register-actions"><button type="button" className="subtle-button" disabled={printRegistry.isPending} onClick={() => printRegistry.mutate(adminFilter, { onSuccess: async () => { await refresh(); window.print(); }, onError: error => toast.error("Печать не выполнена", { description: error.message }) })}><Printer size={14}/>{printRegistry.isPending ? "Готовим…" : "Печать"}</button></div>{adminRecords.isLoading ? <p className="packet-note">Загружаем операционный реестр…</p> : currentRecords.length ? <><div className="revenue-register-table-wrap"><table className="data-table revenue-register-table"><thead><tr><th>Дата</th><th>Магазин</th><th>Нал</th><th>Б/Нал</th><th>Расходы нал</th><th>Итого</th><th>Версия</th><th className="revenue-not-for-print">Детали и действие</th></tr></thead><tbody>{currentRecords.map(record => <tr key={record.id}><td>{displayDate(record.businessDate)}</td><td><strong>{record.storeName}</strong><small>{record.createdByName}</small></td><td>{formatAmount(record.cash)}</td><td>{formatAmount(record.cashless)}</td><td>{formatAmount(expenseTotal(record))}</td><td><strong>{formatAmount(record.total)}</strong></td><td>v{record.currentVersion}</td><td className="revenue-not-for-print"><details className="revenue-details"><summary>Расходы</summary><dl>{fields.filter(field => field.kind === "expense" && record[field.key] > 0).map(field => <div key={field.key}><dt>{field.label}</dt><dd>{formatAmount(record[field.key])}<small>{record.expenseComments[field.key as ExpenseField]}</small></dd></div>)}</dl></details><button type="button" className="subtle-button" onClick={() => fillEdit(record)}><PencilLine size={14}/>Исправить</button></td></tr>)}</tbody><tfoot><tr><th colSpan={2}>Итого</th><td>{formatAmount(currentRecords.reduce((sum, record) => sum + record.cash, 0))}</td><td>{formatAmount(currentRecords.reduce((sum, record) => sum + record.cashless, 0))}</td><td>{formatAmount(currentRecords.reduce((sum, record) => sum + expenseTotal(record), 0))}</td><td>{formatAmount(currentRecords.reduce((sum, record) => sum + record.total, 0))}</td><td colSpan={2}/></tr></tfoot></table></div><div className="revenue-print-details">{currentRecords.map(record => <article key={record.id}><header><strong>{record.storeName}</strong><span>{displayDate(record.businessDate)} · {record.createdByName} · v{record.currentVersion}</span></header><dl>{fields.map(field => <div key={field.key}><dt>{field.label}</dt><dd>{formatAmount(record[field.key])}{field.kind === "expense" && record[field.key] > 0 && <small>{record.expenseComments[field.key as ExpenseField]}</small>}</dd></div>)}</dl><footer>Итого: {formatAmount(record.total)}</footer></article>)}</div></> : <div className="empty-state compact"><ReceiptText size={25}/><h2>Записей пока нет</h2><p>Переданные продавцами или администратором дневные суммы появятся здесь.</p></div>}</section>}
+    <section className="page-lede revenue-lede"><div><span>ОПЕРАЦИОННЫЙ КОНТУР</span><h2>{editing ? `Изменение записи · ${displayDate(editing.businessDate)}` : "Передача выручки за день"}</h2><p>Итог равен сумме сданных наличных, безналичных оплат и наличных расходов. Это отдельная операционная запись: она не меняет финансовый факт, P&L или Excel.</p></div>{editing && <button type="button" className="subtle-button" onClick={resetForm}><RotateCcw size={15}/>Новая запись</button>}</section>
+    <details className="packet-card revenue-rule-disclosure"><summary><span>ПРАВИЛО РЕЕСТРА</span><strong>Пояснение нужно только для нецелевых наличных расходов</strong></summary><div className="revenue-rule-content"><ol><li>Введите нал и Б/Нал по кассе</li><li>Укажите отдельно каждую наличную трату</li><li>Для расходов, кроме зарплаты, премии, отпуска и коммунальных платежей, укажите куда / зачем / за что</li><li>Проверьте итог перед передачей</li></ol><p className="packet-note">Продавец создает запись только для своей назначенной точки и видит только пять собственных последних передач. Удаления нет.</p></div></details>
+    <section className="revenue-layout"><form className="packet-card revenue-entry-card" onSubmit={submit}>
+      <div className="card-title"><div><span>{editing ? "АДМИНИСТРАТИВНОЕ ИЗМЕНЕНИЕ" : "ЕЖЕДНЕВНАЯ ПЕРЕДАЧА"}</span><h3>{selectedStore?.name ?? "Выберите магазин"}</h3></div><ReceiptText size={20}/></div>
+      <div className="revenue-meta-row"><label>Дата<ExactDateControl value={businessDate} onChange={setBusinessDate} title="ДАТА ВЫРУЧКИ" ariaLabel="Выбрать дату выручки"/></label>{isAdmin || (stores.data?.length ?? 0) > 1 ? <label>Магазин<ThemedSelect value={storeId} onChange={event => setStoreId(event.target.value)}><option value="">Выберите магазин</option>{(stores.data ?? []).filter(store => !store.isHidden).map(store => <option key={store.id} value={store.id}>{store.name}</option>)}</ThemedSelect></label> : <div className="revenue-store-readonly"><span>Магазин</span><strong>{selectedStore?.name ?? "Назначение загружается…"}</strong></div>}</div>
+      <div className="revenue-input-grid">{fields.map(field => { const commentRequired = field.kind === "expense" && commentRequiredExpenseFields.has(field.key as ExpenseField); return <label className="revenue-amount" key={field.key}><span>{field.label}</span><input data-decimal-input type="text" inputMode="decimal" pattern="[0-9]*[.]?[0-9]*" value={amounts[field.key]} onChange={event => setAmounts(current => ({ ...current, [field.key]: normalizeDecimalInputText(event.target.value).replace(/[^0-9.]/g, "") }))} placeholder="0" aria-label={field.label}/>{commentRequired && parseAmount(amounts[field.key]) > 0 && <textarea value={comments[field.key as ExpenseField] ?? ""} onChange={event => setComments(current => ({ ...current, [field.key as ExpenseField]: event.target.value }))} maxLength={500} required placeholder="Куда / зачем / за что" aria-label={`Комментарий: ${field.label}`}/>}</label>; })}</div>
+      <div className="revenue-total"><span>Итого</span><strong>{formatAmount(total)}</strong><small>Нал + Б/Нал + все наличные расходы</small></div>
+      {editing && <label className="revenue-correction-reason"><span>Причина изменения</span><textarea value={correctionReason} onChange={event => setCorrectionReason(event.target.value)} maxLength={500} required placeholder="Что и почему изменено"/></label>}
+      {(create.error || correct.error) && <p className="inline-error">{(create.error ?? correct.error)?.message}</p>}
+      <div className="revenue-form-actions"><button className="packet-link" disabled={!storeId || create.isPending || correct.isPending}><FilePlus2 size={16}/>{editing ? "Сохранить новой версией" : "Передать выручку"}</button>{editing && <small>Версия {editing.currentVersion + 1}; исходная запись сохранится в истории.</small>}</div>
+    </form></section>
+    {isAdmin && <section className="packet-card revenue-admin-register">
+      <div className="card-title"><div><span>РЕЕСТР ВСЕХ МАГАЗИНОВ</span><h3>Печать, контроль и изменения</h3></div></div>
+      <div className="revenue-filter-row"><div><span>Дата</span><ExactDateControl value={registryDate} onChange={setRegistryDate} title="ДАТА РЕЕСТРА ВЫРУЧКИ" ariaLabel="Изменить дату реестра выручки"/></div><label>Магазин<ThemedSelect value={adminStoreId} onChange={event => setAdminStoreId(event.target.value)}><option value="">Все магазины</option>{(stores.data ?? []).map(store => <option key={store.id} value={store.id}>{store.name}</option>)}</ThemedSelect></label></div>
+      <div className="revenue-register-actions"><button type="button" className="subtle-button" disabled={printRegistry.isPending} onClick={() => printRegistry.mutate(adminFilter, { onSuccess: async () => { await refresh(); window.print(); }, onError: error => toast.error("Печать не выполнена", { description: error.message }) })}><Printer size={14}/>{printRegistry.isPending ? "Готовим…" : "Печать"}</button></div>
+      {adminRecords.isLoading ? <p className="packet-note">Загружаем операционный реестр…</p> : currentRecords.length ? <>
+        <div className="revenue-register-table-wrap" onPointerDown={beginRegisterDrag} onPointerMove={moveRegisterDrag} onPointerUp={endRegisterDrag} onPointerCancel={endRegisterDrag}>
+          <table className="data-table revenue-register-table"><thead><tr><th>Дата</th><th>Магазин</th><th>Нал</th><th>Б/Нал</th><th>Расходы нал</th><th>Итого</th><th>Версия</th><th className="revenue-not-for-print">Действия</th></tr></thead><tbody>{currentRecords.map(record => <tr key={record.id}><td>{displayDate(record.businessDate)}</td><td><strong>{record.storeName}</strong><small>{record.createdByName}</small></td><td>{formatAmount(record.cash)}</td><td>{formatAmount(record.cashless)}</td><td>{formatAmount(expenseTotal(record))}</td><td><strong>{formatAmount(record.total)}</strong></td><td>v{record.currentVersion}</td><td className="revenue-not-for-print"><details className="revenue-details"><summary>Расходы</summary><dl>{fields.filter(field => field.kind === "expense" && record[field.key] > 0).map(field => <div key={field.key}><dt>{field.label}</dt><dd>{formatAmount(record[field.key])}{record.expenseComments[field.key as ExpenseField] && <small>{record.expenseComments[field.key as ExpenseField]}</small>}</dd></div>)}</dl></details><button type="button" className="subtle-button" onClick={() => fillEdit(record)}><PencilLine size={14}/>Изменить</button><button type="button" className="subtle-button subtle-danger" onClick={() => { setVoidCandidate(record); setVoidReason(""); }}><Trash2 size={14}/>Удалить</button></td></tr>)}</tbody><tfoot><tr><th colSpan={2}>Итого</th><td>{formatAmount(currentRecords.reduce((sum, record) => sum + record.cash, 0))}</td><td>{formatAmount(currentRecords.reduce((sum, record) => sum + record.cashless, 0))}</td><td>{formatAmount(currentRecords.reduce((sum, record) => sum + expenseTotal(record), 0))}</td><td>{formatAmount(currentRecords.reduce((sum, record) => sum + record.total, 0))}</td><td colSpan={2}/></tr></tfoot></table>
+        </div>
+        <section className="revenue-print-summary" aria-label="Комментарии к расходам"><section className="revenue-print-comments"><h4>Комментарии к расходам</h4>{currentRecords.flatMap(record => fields.filter(field => field.kind === "expense" && record[field.key] > 0 && record.expenseComments[field.key as ExpenseField]).map(field => ({ record, field }))).map(({ record, field }) => <p key={`${record.id}:${field.key}`}><strong>{record.storeName} · {field.label} · {formatAmount(record[field.key])}</strong><span>{record.expenseComments[field.key as ExpenseField]}</span></p>)}</section></section>
+      </> : <div className="empty-state compact"><ReceiptText size={25}/><h2>Записей пока нет</h2><p>Переданные продавцами или администратором дневные суммы появятся здесь.</p></div>}
+    </section>}
     {!isAdmin && <section className="packet-card revenue-own-history"><div className="card-title"><div><span>МОИ ПОСЛЕДНИЕ ПЕРЕДАЧИ</span><h3>До пяти собственных записей</h3></div></div>{myRecords.isLoading ? <p className="packet-note">Загружаем ваши записи…</p> : currentRecords.length ? <div className="revenue-history-list">{currentRecords.map(record => <article key={record.id}><div><span>{displayDate(record.businessDate)}</span><strong>{record.storeName}</strong><small>Нал {formatAmount(record.cash)} · Б/Нал {formatAmount(record.cashless)} · Расходы {formatAmount(expenseTotal(record))}</small><small>Передано {displayMoscowTimestamp(record.createdAt)} МСК</small></div><b>{formatAmount(record.total)}</b></article>)}</div> : <div className="empty-state compact"><ReceiptText size={25}/><h2>Передач еще нет</h2><p>После первой передачи здесь будут показаны пять последних записей этой учетной записи.</p></div>}</section>}
+    <AlertDialog open={Boolean(voidCandidate)} onOpenChange={open => { if (!open) { setVoidCandidate(null); setVoidReason(""); } }}><AlertDialogContent className="danger-confirm-dialog"><AlertDialogHeader><AlertDialogTitle>Удалить передачу из реестра?</AlertDialogTitle><AlertDialogDescription>Запись за {voidCandidate ? displayDate(voidCandidate.businessDate) : "выбранную дату"} исчезнет из рабочего реестра. Ее исходная версия и причина удаления останутся в общем журнале и истории версий.</AlertDialogDescription></AlertDialogHeader><label className="revenue-void-reason"><span>Причина удаления</span><textarea value={voidReason} onChange={event => setVoidReason(event.target.value)} maxLength={500} required placeholder="Почему запись нужно удалить из рабочего реестра"/></label><AlertDialogFooter><AlertDialogCancel>Отмена</AlertDialogCancel><AlertDialogAction className="danger-confirm-action" disabled={!voidCandidate || !voidReason.trim() || voidRevenue.isPending} onClick={() => { if (voidCandidate) voidRevenue.mutate({ recordId: voidCandidate.id, reason: voidReason }); }}>{voidRevenue.isPending ? "Удаляем…" : "Удалить из реестра"}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </AuditShell>;
 }

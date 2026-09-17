@@ -30,11 +30,26 @@ export const REVENUE_EXPENSE_FIELDS = [
   "deliveryCash",
 ] as const;
 
+/** Payroll and utility payments are self-describing in the daily register; the remaining cash expenses require an explanation. */
+export const REVENUE_COMMENT_REQUIRED_EXPENSE_FIELDS = [
+  "cashExpenses",
+  "householdCash",
+  "cleaningCash",
+  "serviceCash",
+  "extraPaymentCash",
+  "deliveryCash",
+] as const;
+const revenueCommentRequiredFieldSet = new Set<string>(REVENUE_COMMENT_REQUIRED_EXPENSE_FIELDS);
+
 export type RevenueAmountField = (typeof REVENUE_AMOUNT_FIELDS)[number];
 export type RevenueExpenseField = (typeof REVENUE_EXPENSE_FIELDS)[number];
 export type RevenueExpenseComments = Partial<Record<RevenueExpenseField, string>>;
 export type RevenueAmounts = Record<RevenueAmountField, number>;
 export type RevenueEntryInput = RevenueAmounts & { expenseComments: RevenueExpenseComments };
+
+export function isRevenueExpenseCommentRequired(field: RevenueExpenseField) {
+  return revenueCommentRequiredFieldSet.has(field);
+}
 
 export const REVENUE_FIELD_LABELS: Record<RevenueAmountField, string> = {
   cash: "Нал",
@@ -47,7 +62,7 @@ export const REVENUE_FIELD_LABELS: Record<RevenueAmountField, string> = {
   extraPaymentCash: "Доплата нал",
   bonusCash: "Премия нал",
   vacationCash: "Отпускные нал",
-  utilitiesCash: "Ком. плат. нал",
+  utilitiesCash: "Коммунальные платежи нал",
   deliveryCash: "Доставка нал",
 };
 
@@ -67,8 +82,8 @@ export function validateRevenueEntry(input: RevenueEntryInput) {
   const comments: RevenueExpenseComments = {};
   for (const field of REVENUE_EXPENSE_FIELDS) {
     const comment = (input.expenseComments[field] ?? "").trim().replace(/\s+/g, " ");
-    if (input[field] > 0 && !comment) throw new Error(`Для строки «${REVENUE_FIELD_LABELS[field]}» укажите, куда / зачем / за что потрачены наличные`);
-    if (input[field] > 0) comments[field] = comment.slice(0, 500);
+    if (input[field] > 0 && isRevenueExpenseCommentRequired(field) && !comment) throw new Error(`Для строки «${REVENUE_FIELD_LABELS[field]}» укажите, куда / зачем / за что потрачены наличные`);
+    if (input[field] > 0 && comment) comments[field] = comment.slice(0, 500);
   }
   return { ...input, expenseComments: comments };
 }
@@ -82,6 +97,10 @@ function recordState(row: typeof operationalRevenueRecords.$inferSelect) {
     storeId: row.storeId,
     businessDate: row.businessDate,
     currentVersion: row.currentVersion,
+    isVoided: row.isVoided,
+    voidReason: row.voidReason,
+    voidedByAccountId: row.voidedByAccountId,
+    voidedAt: row.voidedAt,
     ...numericRecord(row),
     expenseComments: (row.expenseComments ?? {}) as RevenueExpenseComments,
     total: calculateOperationalRevenueTotal(numericRecord(row)),
@@ -120,6 +139,7 @@ export async function listRevenueRecords(input: RevenueRegistryFilter = {}) {
   if (!db) return [];
   if (Array.isArray(input.storeIds) && !input.storeIds.length) return [];
   const conditions = [
+    eq(operationalRevenueRecords.isVoided, false),
     input.from ? gte(operationalRevenueRecords.businessDate, input.from) : undefined,
     input.to ? lte(operationalRevenueRecords.businessDate, input.to) : undefined,
     input.storeId ? eq(operationalRevenueRecords.storeId, input.storeId) : undefined,
@@ -178,13 +198,25 @@ export async function createRevenueRecord(input: { storeId: number; businessDate
   const db = await getDb();
   if (!db) throw new Error("База данных недоступна");
   const entry = validateRevenueEntry(input.entry);
-  const [existing] = await db.select({ id: operationalRevenueRecords.id }).from(operationalRevenueRecords).where(and(eq(operationalRevenueRecords.storeId, input.storeId), eq(operationalRevenueRecords.businessDate, input.businessDate))).limit(1);
-  if (existing) throw new Error("За эту дату по выбранному магазину запись «Выручки» уже передана");
+  const [existing] = await db.select().from(operationalRevenueRecords).where(and(eq(operationalRevenueRecords.storeId, input.storeId), eq(operationalRevenueRecords.businessDate, input.businessDate))).limit(1);
+  if (existing && !existing.isVoided) throw new Error("За эту дату по выбранному магазину запись «Выручки» уже передана");
+  if (existing?.isVoided) {
+    const nextVersion = existing.currentVersion + 1;
+    await db.update(operationalRevenueRecords).set({ ...entryColumns(entry), createdByAccountId: input.createdByAccountId, currentVersion: nextVersion, isVoided: false, voidReason: null, voidedByAccountId: null, voidedAt: null }).where(eq(operationalRevenueRecords.id, existing.id));
+    const [recreated] = await db.select().from(operationalRevenueRecords).where(eq(operationalRevenueRecords.id, existing.id)).limit(1);
+    if (!recreated) throw new Error("Не удалось прочитать повторно переданную запись «Выручки»");
+    await db.insert(operationalRevenueRecordVersions).values({ revenueRecordId: recreated.id, version: nextVersion, action: "recreate", changedByAccountId: input.createdByAccountId, state: recordState(recreated) });
+    const recreatedRecord = await getRevenueRecord(recreated.id);
+    if (!recreatedRecord) throw new Error("Не удалось получить повторно переданную запись «Выручки»");
+    return { ...recreatedRecord, wasRecreated: true };
+  }
   const [inserted] = await db.insert(operationalRevenueRecords).values({ storeId: input.storeId, businessDate: input.businessDate, createdByAccountId: input.createdByAccountId, ...entryColumns(entry) }).$returningId();
   const [created] = await db.select().from(operationalRevenueRecords).where(eq(operationalRevenueRecords.id, inserted.id)).limit(1);
   if (!created) throw new Error("Не удалось прочитать созданную запись «Выручки»");
   await db.insert(operationalRevenueRecordVersions).values({ revenueRecordId: created.id, version: 1, action: "create", changedByAccountId: input.createdByAccountId, state: recordState(created) });
-  return getRevenueRecord(created.id);
+  const createdRecord = await getRevenueRecord(created.id);
+  if (!createdRecord) throw new Error("Не удалось получить созданную запись «Выручки»");
+  return { ...createdRecord, wasRecreated: false };
 }
 
 export async function correctRevenueRecord(input: { recordId: number; changedByAccountId: number; correctionReason: string; entry: RevenueEntryInput }) {
@@ -195,12 +227,30 @@ export async function correctRevenueRecord(input: { recordId: number; changedByA
   const entry = validateRevenueEntry(input.entry);
   const [before] = await db.select().from(operationalRevenueRecords).where(eq(operationalRevenueRecords.id, input.recordId)).limit(1);
   if (!before) throw new Error("Запись «Выручки» не найдена");
+  if (before.isVoided) throw new Error("Удаленную из рабочего реестра запись нельзя изменить");
   const nextVersion = before.currentVersion + 1;
   await db.update(operationalRevenueRecords).set({ ...entryColumns(entry), currentVersion: nextVersion }).where(eq(operationalRevenueRecords.id, before.id));
   const [after] = await db.select().from(operationalRevenueRecords).where(eq(operationalRevenueRecords.id, before.id)).limit(1);
   if (!after) throw new Error("Не удалось прочитать исправленную запись «Выручки»");
   await db.insert(operationalRevenueRecordVersions).values({ revenueRecordId: after.id, version: nextVersion, action: "correct", changedByAccountId: input.changedByAccountId, correctionReason: reason.slice(0, 500), state: recordState(after) });
   return { before: recordState(before), after: await getRevenueRecord(after.id), correctionReason: reason.slice(0, 500) };
+}
+
+/** Removes a mistaken submission from the active register without discarding the immutable version history. */
+export async function voidRevenueRecord(input: { recordId: number; changedByAccountId: number; reason: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const reason = input.reason.trim().replace(/\s+/g, " ");
+  if (!reason) throw new Error("Укажите причину удаления записи «Выручки»");
+  const [before] = await db.select().from(operationalRevenueRecords).where(eq(operationalRevenueRecords.id, input.recordId)).limit(1);
+  if (!before) throw new Error("Запись «Выручки» не найдена");
+  if (before.isVoided) throw new Error("Запись «Выручки» уже удалена из рабочего реестра");
+  const nextVersion = before.currentVersion + 1;
+  await db.update(operationalRevenueRecords).set({ isVoided: true, voidReason: reason.slice(0, 500), voidedByAccountId: input.changedByAccountId, voidedAt: new Date(), currentVersion: nextVersion }).where(eq(operationalRevenueRecords.id, before.id));
+  const [after] = await db.select().from(operationalRevenueRecords).where(eq(operationalRevenueRecords.id, before.id)).limit(1);
+  if (!after) throw new Error("Не удалось прочитать удаленную запись «Выручки»");
+  await db.insert(operationalRevenueRecordVersions).values({ revenueRecordId: after.id, version: nextVersion, action: "void", changedByAccountId: input.changedByAccountId, correctionReason: reason.slice(0, 500), state: recordState(after) });
+  return { before: recordState(before), after: recordState(after), reason: reason.slice(0, 500) };
 }
 
 export async function listRevenueRecordVersions(recordId: number) {

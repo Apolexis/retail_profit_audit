@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  REVENUE_COMMENT_REQUIRED_EXPENSE_FIELDS,
   REVENUE_AMOUNT_FIELDS,
   calculateOperationalRevenueTotal,
   emptyRevenueAmounts,
+  isRevenueExpenseCommentRequired,
   validateRevenueEntry,
 } from "./revenueRegistry";
 
@@ -21,6 +23,18 @@ describe("операционный реестр Выручка", () => {
     amounts.cashExpenses = 200;
     const entry = validateRevenueEntry({ ...amounts, expenseComments: { cashExpenses: "  Мелкие  расходы   на  рынке ", deliveryCash: "Черновик" } });
     expect(entry.expenseComments).toEqual({ cashExpenses: "Мелкие расходы на рынке" });
+  });
+
+  it("не требует и не создает поля комментария для зарплаты, премии, отпуска и коммунальных платежей", () => {
+    const amounts = emptyRevenueAmounts();
+    amounts.salaryCash = 5_000;
+    amounts.bonusCash = 2_000;
+    amounts.vacationCash = 1_500;
+    amounts.utilitiesCash = 800;
+    expect(validateRevenueEntry({ ...amounts, expenseComments: {} }).expenseComments).toEqual({});
+    expect(REVENUE_COMMENT_REQUIRED_EXPENSE_FIELDS).not.toEqual(expect.arrayContaining(["salaryCash", "bonusCash", "vacationCash", "utilitiesCash"]));
+    expect(isRevenueExpenseCommentRequired("salaryCash")).toBe(false);
+    expect(isRevenueExpenseCommentRequired("utilitiesCash")).toBe(false);
   });
 
   it("не принимает расход без пояснения, отрицательные суммы и третью дробную часть", () => {

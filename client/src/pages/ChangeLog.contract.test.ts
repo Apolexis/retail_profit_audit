@@ -71,4 +71,10 @@ describe("компактный журнал изменений", () => {
     expect(journal).toContain('audit-price-import-product-list');
     expect(overrides).toContain('.packet .audit-price-import-product-list');
   });
+
+  it("называет удаление выручки из рабочего реестра и его причину", () => {
+    expect(journal).toContain('"operational_revenue.remove":"Удаление выручки из реестра"');
+    expect(journal).toContain('voidReason:"Причина удаления"');
+    expect(journal).toContain('correctionReason:"Причина изменения"');
+  });
 });

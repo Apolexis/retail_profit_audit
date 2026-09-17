@@ -7,20 +7,21 @@ const accessRouter = readFileSync(new URL("../../../server/routers/localAuth.ts"
 const styles = readFileSync(new URL("../revenue-registry.css", import.meta.url), "utf8");
 
 describe("контракт страницы Выручка", () => {
-  it("показывает все согласованные поля, комментарии расходов и живой итог", () => {
+  it("показывает все согласованные поля, пояснения расходов и живой итог", () => {
     expect(page).toContain('label: "Нал"');
     expect(page).toContain('label: "Б/Нал"');
     expect(page).toContain('label: "Расходы нал"');
-    expect(page).toContain('label: "Ком. плат. нал"');
+    expect(page).toContain('label: "Коммунальные платежи нал"');
     expect(page).toContain('label: "Доставка нал"');
     expect(page).toContain('placeholder="Куда / зачем / за что"');
     expect(page).toContain('Нал + Б/Нал + все наличные расходы');
+    expect(page).toContain('commentRequiredExpenseFields');
     expect(page).toContain('displayMoscowTimestamp');
   });
 
-  it("использует общий календарь периода и утвержденную карточную форму", () => {
-    expect(page).toContain('DateRangeControl value={adminRange}');
-    expect(page).toContain('title="ПЕРИОД РЕЕСТРА ВЫРУЧКИ"');
+  it("использует общий календарь одной даты и утвержденную карточную форму", () => {
+    expect(page).toContain('ExactDateControl value={registryDate}');
+    expect(page).toContain('title="ДАТА РЕЕСТРА ВЫРУЧКИ"');
     expect(page).toContain('className="packet-card revenue-rule-disclosure"');
     expect(styles).toContain('.packet .revenue-input-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));');
     expect(styles).toContain('@media (max-width: 760px)');
@@ -28,14 +29,24 @@ describe("контракт страницы Выручка", () => {
     expect(styles).toContain('.packet .revenue-amount { display: grid; align-content: start; gap: 8px; min-width: 0; min-height: 104px; padding: 15px; border: 1px solid var(--line);');
   });
 
-  it("делает печать журналируемой и выводит раздельные блоки со всеми строками", () => {
+  it("делает печать журналируемой, компактной таблицей, после выбора даты", () => {
     expect(page).toContain('trpc.revenueRegistry.print.useMutation()');
     expect(page).toContain('window.print()');
     expect(page).toContain('<Printer size={14}/>');
     expect(page.indexOf('className="revenue-filter-row"')).toBeLessThan(page.indexOf('className="revenue-register-actions"'));
-    expect(page).toContain('className="revenue-print-details"');
-    expect(styles).toContain('.packet .revenue-print-details { display: none; }');
-    expect(styles).toContain('.packet .revenue-print-details { display: grid;');
+    expect(page).toContain('className="revenue-print-summary"');
+    expect(styles).toContain('.packet .revenue-print-summary { display: none; }');
+    expect(styles).toContain('.packet .revenue-register-table tbody tr:nth-child(even) { background: #f1f1f1; }');
+  });
+
+  it("делает удаление администратора обратимым, с причиной и общим журналом", () => {
+    expect(page).toContain('trpc.revenueRegistry.remove.useMutation({');
+    expect(page).toContain('Причина удаления');
+    expect(page).toContain('Удалить из реестра');
+    expect(page).toContain('<Trash2 size={14}/>Удалить');
+    expect(router).toContain('operational_revenue.remove');
+    expect(router).toContain('created.wasRecreated ? "operational_revenue.recreate"');
+    expect(router).toContain('businessDate: input.from ?? input.to ?? null');
   });
 
   it("ограничивает продавца одной точкой, пятью собственными записями и исключает финансовые права", () => {

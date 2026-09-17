@@ -3,7 +3,7 @@ import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getCurrentLocalAccount, getAccessibleStoreIds, hasStoreAccess } from "../accessControl";
 import { recordChange } from "../localAuth";
-import { REVENUE_AMOUNT_FIELDS, REVENUE_EXPENSE_FIELDS, correctRevenueRecord, createRevenueRecord, getRevenueRecord, listRevenueRecordVersions, listRevenueRecords, type RevenueAmountField, type RevenueExpenseField } from "../revenueRegistry";
+import { REVENUE_AMOUNT_FIELDS, REVENUE_EXPENSE_FIELDS, correctRevenueRecord, createRevenueRecord, getRevenueRecord, listRevenueRecordVersions, listRevenueRecords, voidRevenueRecord, type RevenueAmountField, type RevenueExpenseField } from "../revenueRegistry";
 
 const businessDate = z.string().regex(/^20\d{2}-\d{2}-\d{2}$/, "Выберите дату в формате ГГГГ-ММ-ДД");
 const money = z.number().finite().min(0).multipleOf(0.01, "Сумма допускает не более двух знаков после точки");
@@ -46,7 +46,7 @@ export const revenueRegistryRouter = router({
     await requireRevenueStorePermission(ctx.user?.openId, input.storeId);
     const created = await createRevenueRecord({ storeId: input.storeId, businessDate: input.businessDate, createdByAccountId: actor.id, entry: input.entry });
     if (!created) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Не удалось создать запись «Выручки»" });
-    await recordChange({ actorId: actor.id, action: "operational_revenue.create", entityType: "operational_revenue", entityId: String(created.id), beforeState: null, afterState: { ...created, actorRole: actor.role } });
+    await recordChange({ actorId: actor.id, action: created.wasRecreated ? "operational_revenue.recreate" : "operational_revenue.create", entityType: "operational_revenue", entityId: String(created.id), beforeState: null, afterState: { ...created, actorRole: actor.role } });
     return created;
   }),
   adminList: protectedProcedure.input(z.object({ from: businessDate.optional(), to: businessDate.optional(), storeId: z.number().int().positive().optional() }).refine(input => !input.from || !input.to || input.from <= input.to, { message: "Дата начала не может быть позже даты окончания" })).query(async ({ input, ctx }) => {
@@ -58,7 +58,7 @@ export const revenueRegistryRouter = router({
     const actor = await requireOperationalActor(ctx.user?.openId);
     if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Печать реестра доступна только администратору" });
     const records = await listRevenueRecords({ ...input, limit: 500 });
-    await recordChange({ actorId: actor.id, action: "operational_revenue.print", entityType: "operational_revenue_register", entityId: `${input.from ?? "all"}:${input.to ?? "all"}:${input.storeId ?? "all"}`, afterState: { filter: input, recordCount: records.length, storeCount: new Set(records.map(record => record.storeId)).size } });
+    await recordChange({ actorId: actor.id, action: "operational_revenue.print", entityType: "operational_revenue_register", entityId: `${input.from ?? "all"}:${input.to ?? "all"}:${input.storeId ?? "all"}`, afterState: { businessDate: input.from ?? input.to ?? null, storeId: input.storeId ?? null, recordCount: records.length, storeCount: new Set(records.map(record => record.storeId)).size } });
     return { recordCount: records.length };
   }),
   correct: protectedProcedure.input(z.object({ recordId: z.number().int().positive(), correctionReason: z.string().trim().min(1, "Укажите причину исправления").max(500), entry: revenueEntry })).mutation(async ({ input, ctx }) => {
@@ -67,6 +67,13 @@ export const revenueRegistryRouter = router({
     const corrected = await correctRevenueRecord({ recordId: input.recordId, changedByAccountId: actor.id, correctionReason: input.correctionReason, entry: input.entry });
     await recordChange({ actorId: actor.id, action: "operational_revenue.correct", entityType: "operational_revenue", entityId: String(input.recordId), beforeState: corrected.before, afterState: { ...corrected.after, correctionReason: corrected.correctionReason } });
     return corrected.after;
+  }),
+  remove: protectedProcedure.input(z.object({ recordId: z.number().int().positive(), reason: z.string().trim().min(1, "Укажите причину удаления").max(500) })).mutation(async ({ input, ctx }) => {
+    const actor = await requireOperationalActor(ctx.user?.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Удалять записи «Выручки» может только администратор" });
+    const removed = await voidRevenueRecord({ recordId: input.recordId, changedByAccountId: actor.id, reason: input.reason });
+    await recordChange({ actorId: actor.id, action: "operational_revenue.remove", entityType: "operational_revenue", entityId: String(input.recordId), beforeState: removed.before, afterState: { ...removed.after, reason: removed.reason } });
+    return removed.after;
   }),
   versions: protectedProcedure.input(z.object({ recordId: z.number().int().positive() })).query(async ({ input, ctx }) => {
     const actor = await requireOperationalActor(ctx.user?.openId);
