@@ -3001,7 +3001,7 @@ html.pwa-fixed-reflow .scroll-top { position: fixed !important; transform: trans
 :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip > b { margin-bottom: 3px !important; line-height: 1.12; }
 :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip .tiny-tooltip-values { row-gap: 2px; column-gap: 8px !important; }
 
-/* Tooltip: код до пяти символов не теряет полезные символы; длинные подписи уже сокращены в компоненте. */
+/* Tooltip использует фактическую ширину колонок: сокращение срабатывает только при реальном дефиците места. */
 :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) .tiny-tooltip.tiny-tooltip-single {
   display: block !important;
   width: fit-content !important;
@@ -3023,16 +3023,16 @@ html.pwa-fixed-reflow .scroll-top { position: fixed !important; transform: trans
 :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.tiny-tooltip.tiny-tooltip-dense, .tiny-tooltip.tiny-tooltip-monetary-dense) .tiny-tooltip-values-2 > span {
   grid-template-columns: 8px minmax(0, 1fr) max-content;
 }
-:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.tiny-tooltip.tiny-tooltip-dense, .tiny-tooltip.tiny-tooltip-monetary-dense) .tiny-tooltip-name.tiny-tooltip-short-label {
-  min-width: 5ch;
-  overflow: visible;
-  text-overflow: clip;
-}
 :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) :is(.tiny-tooltip.tiny-tooltip-dense, .tiny-tooltip.tiny-tooltip-monetary-dense):not(.tiny-tooltip-single) {
-  width: min(520px, calc(100vw - 16px)) !important;
-  min-width: min(360px, calc(100vw - 16px)) !important;
-  max-width: min(520px, calc(100vw - 16px)) !important;
+  width: min(680px, calc(100vw - 16px)) !important;
+  min-width: min(420px, calc(100vw - 16px)) !important;
+  max-width: min(680px, calc(100vw - 16px)) !important;
 }
+
+/* Итоговая строка аналитических таблиц отделена от интервалов, но не создает отдельную визуальную карточку. */
+.packet .data-table tfoot .table-total > :is(th, td) { border-top: 1px solid var(--line); background: color-mix(in srgb, var(--card) 76%, var(--accent) 7%); color: var(--ink); font-weight: 800; }
+.packet .data-table tfoot .table-total > :is(th, td):first-child { letter-spacing: .04em; }
+.packet .data-table tfoot .table-total .numeric-column { font-variant-numeric: tabular-nums; }
 @media (max-width: 420px) {
   :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) :is(.tiny-tooltip.tiny-tooltip-dense, .tiny-tooltip.tiny-tooltip-monetary-dense):not(.tiny-tooltip-single) {
     width: calc(100vw - 8px) !important;

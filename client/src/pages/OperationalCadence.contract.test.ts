@@ -26,6 +26,8 @@ describe("страница «Ритм»", () => {
     expect(page).toContain("!showStoreSeries || seriesStores.length < 2 || selectedMetrics.length !== 1");
     expect(page).toContain("StoreSeriesModeToggle");
     expect(page).toContain('active={showStoreSeries}');
+    expect(page).toContain("const chartTableTotals");
+    expect(page).toContain('<tfoot><tr className="table-total"><th scope="row">Итого</th>');
   });
 
   it("выделяет наличные расходы и НДФЛ 22% в понятную группу", () => {
@@ -44,6 +46,9 @@ describe("страница «Ритм»", () => {
     expect(page).toContain("СОСТАВ РАСХОДОВ");
     expect(page).toContain("без двойного учета агрегатов");
     expect(page).toContain('className="expense-breakdown-note"');
+    expect(page).toContain("const expenseBreakdownLedger");
+    expect(page).toContain("const expenseBreakdownTotal");
+    expect(page).toContain("Исходная статья");
     expect(styles).toContain(".packet .expense-breakdown-card .expense-breakdown-note {");
     expect(styles).toContain("text-wrap: pretty;");
     expect(styles).toContain("background: transparent !important;");

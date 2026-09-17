@@ -34,7 +34,17 @@ describe("страница «Расходы»", () => {
     expect(page).toContain("СОСТАВ ТРАТ НАЛ");
     expect(page).toContain("cashTrend");
     expect(page).toContain("cashLedger");
+    expect(page).toContain("const cashLedgerTotal");
+    expect(page).toContain('className="table-total"');
     expect(page).not.toContain("НДФЛ 22% вынесен в контрольную карточку");
+  });
+
+  it("дает таблицам динамики и полному P&L проверяемые итоги", () => {
+    expect(page).toContain("const trendTableTotals");
+    expect(page).toContain("const ledgerTotal");
+    expect(page).toContain("Итого");
+    expect(page).toContain("<tfoot>");
+    expect(overrides).toContain(".packet .data-table tfoot .table-total");
   });
 
   it("на телефоне выводит наличные статьи и полный расходный срез карточками", () => {

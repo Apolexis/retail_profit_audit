@@ -73,7 +73,7 @@ describe("мобильный контракт графических контр�
     expect(styles).toContain('.tiny-tooltip-monetary .tiny-tooltip-values-2 > span { white-space: nowrap; }');
     expect(styles).toContain('.tiny-tooltip-monetary-dense { width: fit-content !important; min-width: 0 !important; max-width: min(300px, calc(100vw - 32px)) !important;');
     expect(styles).toContain('.tiny-tooltip.tiny-tooltip-monetary-dense):not(.tiny-tooltip-single)');
-    expect(styles).toContain('width: min(520px, calc(100vw - 16px)) !important;');
+    expect(styles).toContain('width: min(680px, calc(100vw - 16px)) !important;');
     expect(styles).toContain('width: calc(100vw - 8px) !important;');
   });
 
@@ -87,18 +87,16 @@ describe("мобильный контракт графических контр�
     expect(styles).toContain('.tiny-tooltip[data-tooltip-count="1"]');
   });
 
-  it("держит маркер, подпись и значение tooltip в одной строке: до пяти символов полностью, далее многоточие", () => {
+  it("держит маркер, подпись и значение tooltip в одной строке и сокращает только при реальном дефиците ширины", () => {
     expect(styles).toContain('grid-template-columns: 8px minmax(0, 1fr) max-content;');
     expect(styles).toContain('text-overflow: ellipsis;');
     expect(styles).toContain('font-variant-numeric: tabular-nums;');
     expect(styles).toContain('white-space: nowrap !important;');
-    expect(chart).toContain('export const truncateTooltipLabel=(value:string,limit=5)');
-    expect(chart).toContain('const shortLabel=Array.from(item.name).length<=5');
+    expect(chart).toContain('export const truncateTooltipLabel=(value:string)=>value;');
     expect(chart).toContain('const displayName=truncateTooltipLabel(item.name)');
     expect(chart).toContain('title={item.name}');
-    expect(chart).toContain('"tiny-tooltip-name tiny-tooltip-short-label"');
-    expect(styles).toContain('min-width: 5ch;');
-    expect(styles).toContain('.tiny-tooltip-name.tiny-tooltip-short-label');
+    expect(chart).toContain('className="tiny-tooltip-name"');
+    expect(styles).not.toContain('.tiny-tooltip-name.tiny-tooltip-short-label');
   });
 
   it("дает периоду и строкам значений одинаковый вертикальный воздух", () => {

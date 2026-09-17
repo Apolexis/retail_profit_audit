@@ -26,9 +26,9 @@ describe("правки из документа", () => {
     expect(css).toContain("pricing-chart-stack");
     expect(css).toContain("tiny-tooltip-values-3");
     expect(css).toContain("tiny-tooltip-single");
-    expect(css).toContain("tiny-tooltip-short-label");
-    expect(css).toContain("min-width: 5ch;");
-    expect(css).toContain("width: min(520px, calc(100vw - 16px)) !important;");
+    expect(css).not.toContain("tiny-tooltip-short-label");
+    expect(css).toContain("text-overflow: ellipsis;");
+    expect(css).toContain("width: min(680px, calc(100vw - 16px)) !important;");
     expect(css).toContain('html[data-audit-theme="light"] .packet .card-title > small');
     expect(css).toContain("max-block-size: calc(100dvh - 24px)");
   });
