@@ -3996,13 +3996,9 @@ html[data-audit-theme="light"] .packet .price-preview-name-edit :is(input, texta
   .packet .price-preview-remove { grid-column: 3; grid-row: 1; width: 32px; height: 32px; min-height: 32px; }
 }
 
-/* Точная кинематика 1c6f03bd: каждая рыба идет по своей SVG-орбите.
-   Косяк не скрывается перед стартом SMIL: рыбы видны уже в первом кадре загрузки. */
+/* Один косяк: каждая рыба появляется в своей точке кольца и продолжает движение без второго слоя. */
 .facts-loader .facts-loader-art { width: 150px !important; height: 150px !important; }
-.facts-loader .facts-school { opacity: 0; transform: none !important; animation: none !important; transition: opacity 80ms linear; }
-.facts-loader .facts-school.is-ready { opacity: 1; }
-.facts-loader .facts-school-first-frame { opacity: 1; pointer-events: none; transition: opacity 80ms linear; }
-.facts-loader .facts-school-first-frame.is-fading { opacity: 0; }
+.facts-loader .facts-school { opacity: 1; transform: none !important; animation: none !important; }
 .facts-loader .facts-fish { transform: none !important; transform-box: fill-box; transform-origin: 0 0; }
 .facts-loader .facts-fish-size { transform-box: fill-box; transform-origin: 0 0; }
 .facts-loader .facts-fish-body { transform-box: fill-box; transform-origin: 50% 50%; animation: facts-fish-pulse 2.8s ease-in-out infinite alternate !important; }
