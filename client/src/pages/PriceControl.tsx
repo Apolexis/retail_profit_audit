@@ -60,6 +60,7 @@ import { AuditShell } from "@/components/AuditShell";
 import { ExactDateControl } from "@/components/DateRangeControl";
 import { FreeScrollSelect } from "@/components/FreeScrollSelect";
 import { trpc } from "@/lib/trpc";
+import { normalizeDecimalInputText } from "@/lib/utils";
 
 type Preview = {
   fileName: string;
@@ -515,6 +516,15 @@ export default function PriceControl({
     },
     onError: error => toast.error(error.message),
   });
+  const repairRecognizedVariants = trpc.priceControl.repairRecognizedVariants.useMutation({
+    onSuccess: result => {
+      invalidate();
+      toast.success("Варианты из названий добавлены", {
+        description: `Обновлено товаров: ${result.updated}.`,
+      });
+    },
+    onError: error => toast.error(error.message),
+  });
   const bulkAssignCategory = trpc.priceControl.bulkAssignCategory.useMutation({
     onSuccess: result => {
       invalidate();
@@ -716,6 +726,7 @@ export default function PriceControl({
   const [offerDrafts, setOfferDrafts] = useState<
     Record<number, { priceAmount: string; priceBasis: PriceBasis; priceMode: PricePaymentMode; market: PriceMarket; manufacturer: string; placeContents: string; manufacturedOn: string; shelfLifeMonths: number | null; expiresOn: string }>
   >({});
+  const [editingOfferId, setEditingOfferId] = useState<number | null>(null);
   const [dateDrafts, setDateDrafts] = useState<Record<number, string>>({});
   const [deleteSavedRowCandidate, setDeleteSavedRowCandidate] = useState<{
     rowId: number;
@@ -893,7 +904,11 @@ export default function PriceControl({
     sourceDate: offer.sourceDate,
     sourcePriceText: offer.sourcePriceText,
     priceChange: offer.priceChange,
-    name: offer.supplierName,
+    name: [
+      offer.supplierName,
+      modeLabel[canonicalPriceMode(offer.priceMode)],
+      offer.market !== "unknown" ? marketLabel[offer.market] : null,
+    ].filter(Boolean).join(" · "),
     price: offer.normalizedPrice,
     winner: selected?.recommendation?.supplierId === offer.supplierId,
   }));
@@ -1727,10 +1742,10 @@ export default function PriceControl({
             </div>
           </section>
           <section className="packet-card price-comparison">
-            <div className="card-title">
-              <div>
-                <span>ГДЕ ВЫГОДНЕЕ КУПИТЬ</span>
-                <h3>Сравнение текущих предложений</h3>
+              <div className="card-title">
+                <div>
+                  <span>ГДЕ ВЫГОДНЕЕ КУПИТЬ</span>
+                  <h3>Выберите товар и сравните предложения</h3>
               </div>
               <GitCompareArrows size={21} />
             </div>
@@ -1822,10 +1837,10 @@ export default function PriceControl({
                   ]}
                 />
               </label>
-              <small>
-                Фильтры применяются одновременно к списку, таблице, графику и
-                рекомендации. Фасовка пересчитывается в цену за кг или литр;
-                предложения Москвы и СПБ не сравниваются между собой.
+              <small className="price-toolbar-note">
+                Фильтры применяются сразу ко всему сравнению. Для сопоставимых
+                фасовок цена приводится к кг или литру; Москва и СПБ не
+                сравниваются между собой.
               </small>
             </div>
             {overview.isLoading ? (
@@ -1845,7 +1860,7 @@ export default function PriceControl({
                   <div className="price-product-panel-heading">
                     <span>СОПОСТАВЛЕННЫЕ ПОЗИЦИИ</span>
                     <strong>{filteredComparisons.length}</strong>
-                    <small>выберите товар для проверки предложений</small>
+                    <small>найдите товар или выберите его из списка</small>
                   </div>
                   <div
                     className="price-product-list"
@@ -1929,9 +1944,9 @@ export default function PriceControl({
                       <div className="price-chart-heading">
                         <div>
                           <span>ТЕКУЩИЕ ПРЕДЛОЖЕНИЯ</span>
-                          <h5>Нормализованная цена поставщиков</h5>
+                          <h5>Цена по текущим предложениям</h5>
                         </div>
-                        <small>Наведите на столбец, чтобы увидеть источник и условия</small>
+                        <small>Ниже столбец — выгоднее. Наведите, чтобы увидеть полные данные предложения.</small>
                       </div>
                     <div className="price-chart">
                       <ResponsiveContainer width="100%" height={250}>
@@ -2061,6 +2076,7 @@ export default function PriceControl({
                           const expiresOn = calculateExpiryDate(next.manufacturedOn, next.shelfLifeMonths);
                           setOfferDrafts(current => ({ ...current, [offer.priceId]: { ...next, expiresOn } }));
                         };
+                        const isEditingOffer = editingOfferId === offer.priceId;
                         return (
                           <div
                             className={selected.recommendation?.supplierId === offer.supplierId ? "price-offer winner" : "price-offer"}
@@ -2083,53 +2099,34 @@ export default function PriceControl({
                                 </small>
                               )}
                             </span>
-                            <span>
-                              {canEdit ? (
-                                <div className="price-inline-edit">
-                                  <input inputMode="decimal" value={currentDraft.priceAmount} onChange={event => patchDraft({ priceAmount: event.target.value })} />
-                                  <PriceSelect value={currentDraft.priceBasis} onValueChange={value => patchDraft({ priceBasis: value as PriceBasis })} placeholder="База цены" className="price-select-compact" options={priceBasisOptions(offer.packaging ?? offer.rawName)} />
-                                  <PriceSelect value={currentDraft.priceMode} onValueChange={value => patchDraft({ priceMode: value as PricePaymentMode })} placeholder="Условие цены" className="price-select-compact" options={editablePriceModes} />
-                                  <PriceSelect value={currentDraft.market} onValueChange={value => patchDraft({ market: value as PriceMarket })} placeholder="Город" className="price-select-compact" options={priceMarketOptions} />
-                                  <div className="price-offer-meta-edit">
-                                    <PriceSelect value={currentDraft.manufacturer} onValueChange={manufacturer => patchDraft({ manufacturer })} placeholder="Производитель" options={offerCharacteristicOptions("manufacturer", currentDraft.manufacturer)} />
-                                    <PriceSelect value={currentDraft.placeContents} onValueChange={placeContents => patchDraft({ placeContents })} placeholder="Состав места" options={offerCharacteristicOptions("place_contents", currentDraft.placeContents)} />
-                                    <ExactDateControl value={currentDraft.manufacturedOn} onChange={manufacturedOn => patchDraft({ manufacturedOn })} title="ДАТА ИЗГОТОВЛЕНИЯ" ariaLabel="Указать дату изготовления" emptyLabel="Дата изготовления" />
-                                    <div className="price-shelf-life-picker" aria-label="Срок годности">
-                                      {shelfLifeOptions.map(option => <button type="button" key={option.value} className={currentDraft.shelfLifeMonths === option.value ? "active" : ""} onClick={() => patchDraft({ shelfLifeMonths: option.value })}>{option.label}</button>)}
-                                    </div>
-                                    <small className="price-expiry-date">{currentDraft.expiresOn ? `Годен до: ${dateLabel(currentDraft.expiresOn)}` : "Срок годности не указан"}</small>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    className="packet-link compact"
-                                    onClick={() => {
-                                      const value = Number(currentDraft.priceAmount.replace(/\s/g, "").replace(",", "."));
-                                      if (value > 0) updateOffer.mutate({
-                                        priceId: offer.priceId,
-                                        priceAmount: value,
-                                        priceBasis: currentDraft.priceBasis,
-                                        priceMode: currentDraft.priceMode,
-                                        market: currentDraft.market,
-                                        manufacturer: currentDraft.manufacturer.trim() || null,
-                                        placeContents: currentDraft.placeContents.trim() || null,
-                                        manufacturedOn: currentDraft.manufacturedOn || null,
-                                        shelfLifeMonths: currentDraft.shelfLifeMonths,
-                                        expiresOn: currentDraft.expiresOn || null,
-                                      });
-                                    }}
-                                    disabled={updateOffer.isPending}
-                                  >
-                                    <Save size={13} />
-                                    Сохранить
-                                  </button>
-                                </div>
-                              ) : `${formatMoney(offer.priceAmount)} ₽/${offer.priceBasis === "kg" ? "кг" : offer.priceBasis === "l" ? "л" : "шт"}`}
+                            <span className="price-offer-price">
+                              <strong>{formatMoney(offer.priceAmount)} ₽/{offer.priceBasis === "kg" ? "кг" : offer.priceBasis === "l" ? "л" : "шт"}</strong>
+                              <small>{modeLabel[currentDraft.priceMode]} · {marketLabel[currentDraft.market]}</small>
+                              {canEdit && !isEditingOffer && <button type="button" className="price-offer-edit-action" onClick={() => setEditingOfferId(offer.priceId)}><Pencil size={13} /> Изменить</button>}
                             </span>
                             <span>
                               <strong>{priceLabel({ normalizedPrice: offer.normalizedPrice, normalizedUnit: offer.normalizedUnit ?? "kg" })}</strong>
                               <PriceChangeBadge change={offer.priceChange} unit={offer.normalizedUnit ?? "kg"} />
                               {offer.minimumQuantityKg && <small>от {formatMoney(offer.minimumQuantityKg)} кг</small>}
                             </span>
+                            {canEdit && isEditingOffer && (
+                              <div className="price-offer-edit-panel">
+                                <div className="price-offer-edit-heading"><strong>Изменение предложения</strong><button type="button" onClick={() => setEditingOfferId(null)} aria-label="Свернуть изменение предложения"><X size={14} /></button></div>
+                                <label>Цена, ₽<input data-decimal-input inputMode="decimal" value={currentDraft.priceAmount} onChange={event => patchDraft({ priceAmount: normalizeDecimalInputText(event.target.value).replace(/[^0-9.]/g, "") })} /></label>
+                                <label>База цены<PriceSelect value={currentDraft.priceBasis} onValueChange={value => patchDraft({ priceBasis: value as PriceBasis })} placeholder="База цены" options={priceBasisOptions(offer.packaging ?? offer.rawName)} /></label>
+                                <label>Условие оплаты<PriceSelect value={currentDraft.priceMode} onValueChange={value => patchDraft({ priceMode: value as PricePaymentMode })} placeholder="Условие цены" options={editablePriceModes} /></label>
+                                <label>Город<PriceSelect value={currentDraft.market} onValueChange={value => patchDraft({ market: value as PriceMarket })} placeholder="Город" options={priceMarketOptions} /></label>
+                                <label>Производитель<PriceSelect value={currentDraft.manufacturer} onValueChange={manufacturer => patchDraft({ manufacturer })} placeholder="Производитель" options={offerCharacteristicOptions("manufacturer", currentDraft.manufacturer)} /></label>
+                                <label>Состав места<PriceSelect value={currentDraft.placeContents} onValueChange={placeContents => patchDraft({ placeContents })} placeholder="Состав места" options={offerCharacteristicOptions("place_contents", currentDraft.placeContents)} /></label>
+                                <ExactDateControl value={currentDraft.manufacturedOn} onChange={manufacturedOn => patchDraft({ manufacturedOn })} title="ДАТА ИЗГОТОВЛЕНИЯ" ariaLabel="Указать дату изготовления" emptyLabel="Дата изготовления" />
+                                <div className="price-shelf-life-picker" aria-label="Срок годности">{shelfLifeOptions.map(option => <button type="button" key={option.value} className={currentDraft.shelfLifeMonths === option.value ? "active" : ""} onClick={() => patchDraft({ shelfLifeMonths: option.value })}>{option.label}</button>)}</div>
+                                <small className="price-expiry-date">{currentDraft.expiresOn ? `Годен до: ${dateLabel(currentDraft.expiresOn)}` : "Срок годности не указан"}</small>
+                                <button type="button" className="packet-link compact" onClick={() => {
+                                  const value = Number(currentDraft.priceAmount.replace(/\s/g, "").replace(",", "."));
+                                  if (value > 0) updateOffer.mutate({ priceId: offer.priceId, priceAmount: value, priceBasis: currentDraft.priceBasis, priceMode: currentDraft.priceMode, market: currentDraft.market, manufacturer: currentDraft.manufacturer.trim() || null, placeContents: currentDraft.placeContents.trim() || null, manufacturedOn: currentDraft.manufacturedOn || null, shelfLifeMonths: currentDraft.shelfLifeMonths, expiresOn: currentDraft.expiresOn || null }, { onSuccess: () => setEditingOfferId(null) });
+                                }} disabled={updateOffer.isPending}><Save size={13} /> Сохранить изменения</button>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -2426,6 +2423,9 @@ export default function PriceControl({
                             : " is-mobile-carousel-incoming is-mobile-swipe-enter-from-left"
                           : "";
                       const isMobileVisible = isMobileCurrent || isMobileOutgoing || isMobileIncoming;
+                      const linkedProduct = previewProductLinks[index]
+                        ? catalogProducts.find(product => product.id === Number(previewProductLinks[index])) ?? null
+                        : null;
                       return (
                         <div
                           key={`${row.rawName}-${index}`}
@@ -2545,9 +2545,10 @@ export default function PriceControl({
                                 {canUpload ? (
                                   <div className="price-preview-price-edit">
                                     <input
+                                      data-decimal-input
                                       inputMode="decimal"
                                       value={draft?.priceAmount ?? (option.priceAmount === null ? "" : String(option.priceAmount))}
-                                      onChange={event => updatePreviewPriceDraft(index, optionIndex, option, { priceAmount: event.target.value })}
+                                      onChange={event => updatePreviewPriceDraft(index, optionIndex, option, { priceAmount: normalizeDecimalInputText(event.target.value).replace(/[^0-9.]/g, "") })}
                                       aria-label={`Цена «${row.rawName}», ${modeLabel[option.priceMode] ?? "б/нал с НДС"}`}
                                     />
                                     <PriceSelect
@@ -2594,9 +2595,10 @@ export default function PriceControl({
                               <small>цена добавлена вручную</small>
                               <div className="price-preview-price-edit">
                                 <input
+                                  data-decimal-input
                                   inputMode="decimal"
                                   value={option.priceAmount}
-                                  onChange={event => updatePreviewAddedPriceOption(index, option.id, { priceAmount: event.target.value })}
+                                  onChange={event => updatePreviewAddedPriceOption(index, option.id, { priceAmount: normalizeDecimalInputText(event.target.value).replace(/[^0-9.]/g, "") })}
                                   aria-label={`Добавленная цена «${row.rawName}»`}
                                 />
                                 <PriceSelect
@@ -2644,19 +2646,22 @@ export default function PriceControl({
                           )}
                         </div>
                         {canEdit && (
-                          <PriceSelect
-                            value={previewProductLinks[index] ?? "__unlinked"}
-                            onValueChange={value => setPreviewProductLink(index, value)}
-                            placeholder="Связать с внутренним товаром"
-                            className="price-preview-product-link"
-                            options={[
-                              { value: "__unlinked", label: "Не связывать сейчас" },
-                              ...catalogProducts.filter(product => product.isActive).map(product => ({
-                                value: String(product.id),
-                                label: `${product.internalCode} · ${product.canonicalName}`,
-                              })),
-                            ]}
-                          />
+                          <label className="price-preview-product-link">
+                            <span>Внутренний товар</span>
+                            <PriceSelect
+                              value={previewProductLinks[index] ?? "__unlinked"}
+                              onValueChange={value => setPreviewProductLink(index, value)}
+                              placeholder="Связать с внутренним товаром"
+                              options={[
+                                { value: "__unlinked", label: "Не связывать сейчас" },
+                                ...catalogProducts.filter(product => product.isActive).map(product => ({
+                                  value: String(product.id),
+                                  label: `${product.internalCode} · ${product.canonicalName}`,
+                                })),
+                              ]}
+                            />
+                            <small>{linkedProduct ? `Связано: ${linkedProduct.internalCode} · ${linkedProduct.canonicalName}` : "Укажите существующий товар, только если это та же позиция."}</small>
+                          </label>
                         )}
                         {canEdit && previewNewRowIndexes.has(index) && (
                           <PriceSelect
@@ -2954,6 +2959,20 @@ export default function PriceControl({
               </div>
               {canEdit && (
                 <div className="price-characteristics-actions">
+                  {overview.data?.repairableVariants.count ? (
+                    <button
+                      type="button"
+                      className="packet-link compact price-repair-variants"
+                      onClick={() => repairRecognizedVariants.mutate()}
+                      disabled={repairRecognizedVariants.isPending}
+                      title={`Добавить варианты из ${overview.data.repairableVariants.count} сохраненных названий`}
+                    >
+                      <WandSparkles size={13} />
+                      {repairRecognizedVariants.isPending
+                        ? "Проверяем…"
+                        : `Добавить варианты · ${overview.data.repairableVariants.count}`}
+                    </button>
+                  ) : null}
                   <button type="button" className="packet-link compact" onClick={() => setCharacteristicDraft({ id: null, kind: "variant", value: "", isActive: true })}>
                     <Plus size={13} /> Вариант
                   </button>
@@ -3175,9 +3194,10 @@ export default function PriceControl({
                       <label>
                         Цена, ₽
                         <input
+                          data-decimal-input
                           inputMode="decimal"
                           value={productDraft.manualOffer.priceAmount}
-                          onChange={event => patchProductManualOffer({ priceAmount: event.target.value })}
+                          onChange={event => patchProductManualOffer({ priceAmount: normalizeDecimalInputText(event.target.value).replace(/[^0-9.]/g, "") })}
                           placeholder="Например, 925"
                         />
                       </label>

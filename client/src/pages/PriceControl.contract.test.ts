@@ -61,9 +61,9 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("Все поставщики");
     expect(page).toContain("Город предложения");
     expect(page).toContain("offerMarketFilter");
-    expect(page).toContain("предложения Москвы и СПБ не сравниваются между собой");
-    expect(page).toContain("Фильтры применяются одновременно");
-    expect(page).toContain("предложения Москвы и СПБ не сравниваются между собой");
+    expect(page).toContain("Москва и СПБ не");
+    expect(page).toContain("Фильтры применяются сразу ко всему сравнению");
+    expect(page).toContain('className="price-toolbar-note"');
     expect(page).toContain("ИСТОРИЯ ЦЕН");
     expect(page).toContain("updateProduct");
     expect(page).toContain("updateSupplier");
@@ -111,6 +111,12 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain(".packet .price-characteristic-action");
   });
 
+  it("явно предлагает исправить только пропущенные варианты, распознанные в уже сохраненных названиях", () => {
+    expect(page).toContain("repairRecognizedVariants");
+    expect(page).toContain("Добавить варианты");
+    expect(page).toContain("Обновлено товаров:");
+  });
+
   it("показывает полный контекст конкретного предложения в tooltip графиков", () => {
     expect(page).toContain("function PriceOfferTooltip");
     expect(page).toContain("function PriceHistoryTooltip");
@@ -119,6 +125,12 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain('content={<PriceOfferTooltip />}');
     expect(page).toContain('content={<PriceHistoryTooltip />}');
     expect(styles).toContain(".packet .price-offer-tooltip");
+  });
+
+  it("нормализует десятичную запятую во всех редактируемых ценах сразу при вводе", () => {
+    expect(page).toContain('import { normalizeDecimalInputText } from "@/lib/utils"');
+    expect(page).toContain("data-decimal-input");
+    expect(page).toContain('normalizeDecimalInputText(event.target.value).replace(/[^0-9.]/g, "")');
   });
 
   it("использует знакомую двухколоночную панель импорта и тематичные состояния полей", () => {
@@ -228,8 +240,18 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("previewProductLinks");
     expect(page).toContain("Название в этом прайсе");
     expect(page).toContain("Связать с внутренним товаром");
+    expect(page).toContain("Укажите существующий товар, только если это та же позиция.");
+    expect(page).toContain("Связано:");
     expect(page).toContain("productLinks:");
     expect(page).toContain("rowEdits,");
+  });
+
+  it("держит сохраненное предложение компактным и раскрывает изменение только по действию", () => {
+    expect(page).toContain("editingOfferId");
+    expect(page).toContain('className="price-offer-edit-action"');
+    expect(page).toContain("Изменение предложения");
+    expect(page).toContain("Сохранить изменения");
+    expect(styles).toContain(".packet .price-offer-edit-panel");
   });
 
   it("дает уточнить оплату, город и метаданные предложения вместе с ручной ценой", () => {

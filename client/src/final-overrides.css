@@ -4480,3 +4480,119 @@ html[data-audit-theme="dark"] .password-input-toggle { color: #c7bdcc; }
 .packet .price-characteristic-action { display: grid; width: 28px; min-width: 28px; height: 28px; min-height: 28px; place-items: center; padding: 0; border: 1px solid var(--price-border); border-radius: 8px; background: transparent; color: var(--price-muted); }
 .packet .price-characteristic-action:hover, .packet .price-characteristic-action:focus-visible { border-color: var(--price-accent); background: color-mix(in srgb, var(--price-accent) 8%, var(--price-surface)); color: var(--price-accent); outline: none; box-shadow: none; }
 @media (max-width: 720px) { .packet .price-characteristics-list { grid-template-columns: minmax(0, 1fr); } .packet .price-chart-heading { display: grid; } .packet .price-chart-heading > small { max-width: none; text-align: left; } }
+
+/* Прайс‑контроль: фильтры образуют цельный первый шаг, а не разрывают карточку на узкие колонки. */
+.packet .price-toolbar {
+  display: grid;
+  grid-template-columns: minmax(230px, 1.45fr) repeat(4, minmax(132px, .8fr));
+  align-items: end;
+  gap: 10px;
+  margin: 15px 0 16px;
+}
+.packet .price-toolbar-note {
+  grid-column: 1 / -1;
+  max-width: none !important;
+  margin: 0;
+  padding-top: 2px;
+  color: var(--price-muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.packet .price-comparison-body {
+  grid-template-columns: minmax(286px, .72fr) minmax(0, 1.65fr);
+  gap: 16px;
+}
+.packet .price-product-panel { position: sticky; top: 16px; }
+.packet .price-product-list { max-height: min(62vh, 590px); }
+.packet .price-detail-heading { padding-bottom: 2px; border-bottom: 1px solid var(--price-border); }
+.packet .price-detail-heading h4 { max-width: 760px; }
+
+/* Связь строки с товаром названа прямо: селектор больше не выглядит необъяснимой кнопкой. */
+.packet label.price-preview-product-link {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  gap: 4px;
+  align-content: start;
+}
+.packet .price-preview-product-link > span {
+  overflow: hidden;
+  color: var(--price-muted);
+  font: 750 9px/1.2 "IBM Plex Mono", monospace;
+  letter-spacing: .055em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.packet .price-preview-product-link > small {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--price-muted);
+  font-size: 9px;
+  line-height: 1.32;
+}
+.packet .price-preview-product-link [data-slot="select-trigger"] { width: 100%; min-width: 0; }
+
+/* Таблица предложений читается как таблица; полный редактор раскрывается только по явному действию. */
+.packet .price-offer { align-items: start; }
+.packet .price-offer-price { display: grid; gap: 3px; align-content: start; }
+.packet .price-offer-price > strong { color: var(--price-ink); font-variant-numeric: tabular-nums; }
+.packet .price-offer-price > small { color: var(--price-muted); white-space: normal; }
+.packet .price-offer-edit-action {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 27px;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+  padding: 4px 8px;
+  border: 1px solid var(--price-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--price-muted);
+  font: 750 10px/1 Manrope, Arial, sans-serif;
+}
+.packet .price-offer-edit-action:hover,
+.packet .price-offer-edit-action:focus-visible { border-color: var(--price-accent); color: var(--price-accent); outline: none; }
+.packet .price-offer-edit-panel {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+  margin: 2px -2px -2px;
+  padding: 11px;
+  border: 1px solid var(--price-border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--price-accent) 6%, var(--price-surface));
+}
+.packet .price-offer-edit-panel > label { display: grid; min-width: 0; gap: 5px; color: var(--price-muted); font-size: 10px; font-weight: 750; }
+.packet .price-offer-edit-panel :is(input, [data-slot="select-trigger"]) { width: 100%; min-width: 0; min-height: 35px; }
+.packet .price-offer-edit-heading { display: flex; grid-column: 1 / -1; align-items: center; justify-content: space-between; gap: 8px; color: var(--price-ink); font-size: 12px; }
+.packet .price-offer-edit-heading button { display: grid; width: 27px; height: 27px; place-items: center; padding: 0; border: 1px solid var(--price-border); border-radius: 7px; background: transparent; color: var(--price-muted); }
+.packet .price-offer-edit-panel > .price-shelf-life-picker,
+.packet .price-offer-edit-panel > .price-expiry-date { grid-column: span 2; }
+.packet .price-offer-edit-panel > .packet-link { grid-column: 1 / -1; justify-self: start; }
+
+@media (min-width: 901px) and (max-width: 1240px) {
+  .packet .price-toolbar { grid-template-columns: minmax(220px, 1.3fr) repeat(2, minmax(155px, .85fr)); }
+}
+@media (max-width: 900px) {
+  .packet .price-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .packet .price-toolbar label:first-child { grid-column: 1 / -1; }
+  .packet .price-comparison-body { grid-template-columns: minmax(0, 1fr); }
+  .packet .price-product-panel { position: static; }
+  .packet .price-product-list { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 340px; }
+  .packet .price-offer-edit-panel { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .packet .price-toolbar { grid-template-columns: minmax(0, 1fr); }
+  .packet .price-toolbar label:first-child { grid-column: auto; }
+  .packet .price-toolbar-note { grid-column: auto; }
+  .packet .price-product-list { grid-template-columns: minmax(0, 1fr); max-height: 370px; }
+  .packet .price-offer-edit-panel { grid-template-columns: minmax(0, 1fr); }
+  .packet .price-offer-edit-panel > .price-shelf-life-picker,
+  .packet .price-offer-edit-panel > .price-expiry-date { grid-column: auto; }
+  .packet .price-offer-edit-panel > .packet-link { width: 100%; justify-content: center; }
+  .packet .price-preview-product-link > small { font-size: 10px; }
+}

@@ -1317,6 +1317,9 @@ export async function listPriceControlData() {
     db.select({ aliasId: priceSupplierAliases.id, supplierId: priceSupplierAliases.supplierId, supplierName: priceSuppliers.name, productId: priceSupplierAliases.productId, internalCode: priceProducts.internalCode, canonicalName: priceProducts.canonicalName, normalizedName: priceSupplierAliases.normalizedName, packagingSignature: priceSupplierAliases.packagingSignature, updatedAt: priceSupplierAliases.updatedAt }).from(priceSupplierAliases).innerJoin(priceSuppliers, eq(priceSupplierAliases.supplierId, priceSuppliers.id)).innerJoin(priceProducts, eq(priceSupplierAliases.productId, priceProducts.id)).orderBy(priceSuppliers.name, priceSupplierAliases.normalizedName).limit(500),
   ]);
   const catalogProducts = products.map(product => ({ ...product, category: product.categoryName ?? product.legacyCategory, categoryIsActive: product.categoryIsActive ?? true }));
+  const repairableVariants = catalogProducts
+    .map(product => ({ id: product.id, canonicalName: product.canonicalName, variant: extractVariant(product.canonicalName) }))
+    .filter((product): product is { id: number; canonicalName: string; variant: string } => Boolean(product.variant) && !catalogProducts.find(item => item.id === product.id)?.variant);
   const productMap = new Map(catalogProducts.map(product => [product.id, product]));
   const priceChangeSources = rows.flatMap(row => row.priceId !== null && row.productId !== null && row.normalizedPrice !== null && row.normalizedUnit !== null ? [{ priceId: row.priceId, importId: row.importId, productId: row.productId, supplierId: row.supplierId, priceMode: row.priceMode, market: row.market, normalizedUnit: row.normalizedUnit, normalizedPrice: row.normalizedPrice, sourceDate: row.sourceDate, importedAt: row.importedAt }] : []);
   const priceChanges = calculatePriceChanges(priceChangeSources);
@@ -1344,9 +1347,9 @@ export async function listPriceControlData() {
     const preview = previewMap.get(row.importId);
     if (preview && preview.rows.length < 24) preview.rows.push({ rowId: row.rowId, rawName: row.rawName, rawCategory: row.rawCategory, rawPackaging: row.rawPackaging, manufacturer: row.manufacturer, placeContents: row.placeContents, productName: row.productName, priceAmount: row.priceAmount === null ? null : Number(row.priceAmount) });
   });
-  return { suppliers, categories, characteristics, products: catalogProducts, imports, comparisons, unmappedRows, aliases, history, importPreviews: Array.from(previewMap.values()) };
+  return { suppliers, categories, characteristics, products: catalogProducts, imports, comparisons, unmappedRows, aliases, history, importPreviews: Array.from(previewMap.values()), repairableVariants: { count: repairableVariants.length, values: Array.from(new Set(repairableVariants.map(product => product.variant))).sort() } };
 }
-function emptyPriceData() { return { suppliers: [], categories: [], characteristics: [], products: [], imports: [], comparisons: [], unmappedRows: [], aliases: [], history: [], importPreviews: [] }; }
+function emptyPriceData() { return { suppliers: [], categories: [], characteristics: [], products: [], imports: [], comparisons: [], unmappedRows: [], aliases: [], history: [], importPreviews: [], repairableVariants: { count: 0, values: [] as string[] } }; }
 
 export async function listSignificantPriceIncreases(importId: number) {
   const db = await getDb();
@@ -1405,6 +1408,30 @@ export async function createPriceProductCharacteristic(input: { kind: PriceChara
   const value = text(input.value);
   if (value.length < 1 || value.length > 160) throw new Error("Укажите характеристику товара: от 1 до 160 символов.");
   return ensurePriceProductCharacteristic(input.kind, value);
+}
+
+/** Repairs only empty variant fields when an already saved canonical name contains a recognized variant. */
+export async function repairRecognizedPriceProductVariants() {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const products = await db
+    .select({ id: priceProducts.id, canonicalName: priceProducts.canonicalName, variant: priceProducts.variant, variantCharacteristicId: priceProducts.variantCharacteristicId })
+    .from(priceProducts);
+  const candidates = products
+    .map(product => ({ ...product, nextVariant: product.variant ? null : extractVariant(product.canonicalName) }))
+    .filter((product): product is typeof product & { nextVariant: string } => Boolean(product.nextVariant));
+  const recognizedVariants = Array.from(new Set(candidates.map(product => product.nextVariant))).sort();
+  const variants: string[] = [];
+  for (const product of candidates) {
+    const variant = await ensurePriceProductCharacteristic("variant", product.nextVariant);
+    if (!variant) continue;
+    await db
+      .update(priceProducts)
+      .set({ variantCharacteristicId: variant.id, variant: variant.value })
+      .where(eq(priceProducts.id, product.id));
+    variants.push(variant.value);
+  }
+  return { updated: variants.length, variants: Array.from(new Set(variants)).sort(), recognizedVariants };
 }
 
 export async function updatePriceProductCharacteristic(input: { id: number; value: string; isActive?: boolean }) {

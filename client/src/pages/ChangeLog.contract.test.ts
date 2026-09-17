@@ -52,6 +52,7 @@ describe("компактный журнал изменений", () => {
 
   it("показывает в том же журнале все операции прайс‑контроля с понятными названиями и значениями до/после", () => {
     expect(journal).toContain('"price_product.update":"Изменение товара"');
+    expect(journal).toContain('"price_product.variant_repair":"Восстановление вариантов товаров"');
     expect(journal).toContain('"price_category.update":"Изменение категории"');
     expect(journal).toContain('"price_supplier.update":"Изменение поставщика"');
     expect(journal).toContain('"price_import.commit":"Сохранение прайс‑листа"');
@@ -64,6 +65,8 @@ describe("компактный журнал изменений", () => {
     expect(journal).toContain('priceAmount:"Цена, ₽"');
     expect(journal).toContain('manufacturer:"Производитель"');
     expect(journal).toContain('placeContents:"Состав места"');
+    expect(journal).toContain('productsUpdated:"Обновлено товаров"');
+    expect(journal).toContain('repair:"Правило"');
     expect(journal).toContain('market:"Город / склад"');
     expect(journal).toContain('account:"Учетная запись"');
     expect(journal).toContain('value.toFixed(2)');

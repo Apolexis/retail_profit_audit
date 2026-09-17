@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getCurrentLocalAccount, hasPriceAccess } from "../accessControl";
 import { protectedProcedure, router } from "../_core/trpc";
-import { bulkAssignPriceCategory, createManualPriceOffer, createPriceCategory, createPriceProduct, createPriceProductCharacteristic, createPriceSupplier, deletePriceImport, deletePriceImportRow, deletePriceSupplier, getPriceCategoryAuditState, getPriceImportAuditState, getPriceImportDownload, getPriceImportRowAuditState, getPriceOfferAuditState, getPriceProductAuditState, getPriceProductCharacteristicAuditState, getPriceProductsAuditStates, getPriceSupplierAuditState, linkPriceImportRow, listPriceControlData, reassignPriceSupplierAlias, setPriceSupplierActive, unlinkPriceSupplierAlias, updatePriceCategory, updatePriceImportDate, updatePriceOffer, updatePriceProduct, updatePriceProductCharacteristic, updatePriceSupplier } from "../priceControl";
+import { bulkAssignPriceCategory, createManualPriceOffer, createPriceCategory, createPriceProduct, createPriceProductCharacteristic, createPriceSupplier, deletePriceImport, deletePriceImportRow, deletePriceSupplier, getPriceCategoryAuditState, getPriceImportAuditState, getPriceImportDownload, getPriceImportRowAuditState, getPriceOfferAuditState, getPriceProductAuditState, getPriceProductCharacteristicAuditState, getPriceProductsAuditStates, getPriceSupplierAuditState, linkPriceImportRow, listPriceControlData, reassignPriceSupplierAlias, repairRecognizedPriceProductVariants, setPriceSupplierActive, unlinkPriceSupplierAlias, updatePriceCategory, updatePriceImportDate, updatePriceOffer, updatePriceProduct, updatePriceProductCharacteristic, updatePriceSupplier } from "../priceControl";
 import { recordChange } from "../localAuth";
 
 async function requirePricePermission(openId: string | null | undefined, required: "view" | "upload" | "edit") {
@@ -50,6 +50,29 @@ export const priceControlRouter = router({
     if (!characteristic) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Не удалось создать характеристику товара." });
     await recordChange({ actorId: actor.id, action: "price_product_characteristic.create", entityType: "price_product_characteristic", entityId: String(characteristic.id), afterState: await getPriceProductCharacteristicAuditState(characteristic.id) });
     return characteristic;
+  }),
+  repairRecognizedVariants: protectedProcedure.mutation(async ({ ctx }) => {
+    await requirePricePermission(ctx.user.openId, "edit");
+    const actor = await localActor(ctx.user.openId);
+    const result = await repairRecognizedPriceProductVariants();
+    if (result.updated) {
+      await recordChange({
+        actorId: actor.id,
+        action: "price_product.variant_repair",
+        entityType: "price_product",
+        entityId: `recognized-variants:${result.updated}`,
+        beforeState: {
+          productsMissingVariant: result.updated,
+          recognizedVariants: result.recognizedVariants,
+        },
+        afterState: {
+          productsUpdated: result.updated,
+          variants: result.variants,
+          repair: "Вариант распознан из сохраненного названия",
+        },
+      });
+    }
+    return result;
   }),
   updateCharacteristic: protectedProcedure.input(z.object({ id: z.number().int().positive(), value: z.string().trim().min(1).max(160), isActive: z.boolean().optional() })).mutation(async ({ ctx, input }) => {
     await requirePricePermission(ctx.user.openId, "edit");
