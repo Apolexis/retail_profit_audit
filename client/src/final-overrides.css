@@ -3001,6 +3001,29 @@ html.pwa-fixed-reflow .scroll-top { position: fixed !important; transform: trans
 :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip > b { margin-bottom: 3px !important; line-height: 1.12; }
 :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip .tiny-tooltip-values { row-gap: 2px; column-gap: 8px !important; }
 
+/* Tooltip: короткое имя магазина не теряет полезные символы из-за жесткой трехколоночной сетки. */
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) .tiny-tooltip.tiny-tooltip-single {
+  display: block !important;
+  width: fit-content !important;
+  min-width: 0 !important;
+  max-width: min(320px, calc(100vw - 32px)) !important;
+}
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) .tiny-tooltip.tiny-tooltip-single .tiny-tooltip-values,
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip .tiny-tooltip-values-1 {
+  display: block !important;
+  width: max-content;
+  max-width: 100%;
+}
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) .tiny-tooltip.tiny-tooltip-dense:not(.tiny-tooltip-single) {
+  width: min(420px, calc(100vw - 24px)) !important;
+  min-width: min(360px, calc(100vw - 24px)) !important;
+  max-width: min(420px, calc(100vw - 24px)) !important;
+}
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip.tiny-tooltip-dense .tiny-tooltip-values-3 > span,
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip.tiny-tooltip-dense .tiny-tooltip-values-2 > span {
+  grid-template-columns: 8px minmax(4.2em, 1fr) max-content;
+}
+
 /* Длинное пояснение сопоставления периодов не покидает карточку на узком темном экране. */
 html[data-audit-theme="dark"] .packet .comparison-chart-stack .card-title small {
   display: block;

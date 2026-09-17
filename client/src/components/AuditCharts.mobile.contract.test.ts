@@ -65,7 +65,8 @@ describe("мобильный контракт графических контр�
     expect(chart).not.toContain('longestValueLabel');
     expect(chart).not.toContain('const [chartWidth,setChartWidth]=useState(0)');
     expect(chart).toContain('data-tooltip-columns={columns}');
-    expect(chart).toContain('className={`tiny-tooltip${densePercent?" tiny-tooltip-dense":""}${moneyTooltip?" tiny-tooltip-monetary":""}${denseMoney?" tiny-tooltip-monetary-dense":""}`}');
+    expect(chart).toContain('const denseColumns=narrowTooltip?1:compactTooltip?2:3');
+    expect(chart).toContain('className={`tiny-tooltip${singleTooltip?" tiny-tooltip-single":""}${densePercent?" tiny-tooltip-dense":""}${moneyTooltip?" tiny-tooltip-monetary":""}${denseMoney?" tiny-tooltip-monetary-dense":""}`}');
     expect(chart).toContain('item.missing?"Нет факта":chartTick(item.value??0,mode,mode==="amount"||mode==="million")');
     expect(styles).toContain('.tiny-tooltip-monetary { width: fit-content !important; min-width: 0 !important; max-width: min(300px, calc(100vw - 32px)) !important; }');
     expect(styles).toContain('.tiny-tooltip-monetary .tiny-tooltip-values-2 > span { white-space: nowrap; }');

@@ -25,6 +25,8 @@ describe("правки из документа", () => {
     const css = read("../final-overrides.css");
     expect(css).toContain("pricing-chart-stack");
     expect(css).toContain("tiny-tooltip-values-3");
+    expect(css).toContain("tiny-tooltip-single");
+    expect(css).toContain("minmax(4.2em, 1fr)");
     expect(css).toContain('html[data-audit-theme="light"] .packet .card-title > small');
     expect(css).toContain("max-block-size: calc(100dvh - 24px)");
   });
