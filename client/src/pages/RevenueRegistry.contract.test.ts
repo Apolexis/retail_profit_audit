@@ -23,13 +23,16 @@ describe("контракт страницы Выручка", () => {
     expect(page).toContain('title="ПЕРИОД РЕЕСТРА ВЫРУЧКИ"');
     expect(page).toContain('className="packet-card revenue-rule-disclosure"');
     expect(styles).toContain('.packet .revenue-input-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));');
-    expect(styles).toContain('@media (max-width: 680px)');
+    expect(styles).toContain('@media (max-width: 760px)');
     expect(styles).toContain('.packet .revenue-input-grid,');
+    expect(styles).toContain('.packet .revenue-amount { display: grid; align-content: start; gap: 8px; min-width: 0; min-height: 104px; padding: 15px; border: 1px solid var(--line);');
   });
 
   it("делает печать журналируемой и выводит раздельные блоки со всеми строками", () => {
     expect(page).toContain('trpc.revenueRegistry.print.useMutation()');
     expect(page).toContain('window.print()');
+    expect(page).toContain('<Printer size={14}/>');
+    expect(page.indexOf('className="revenue-filter-row"')).toBeLessThan(page.indexOf('className="revenue-register-actions"'));
     expect(page).toContain('className="revenue-print-details"');
     expect(styles).toContain('.packet .revenue-print-details { display: none; }');
     expect(styles).toContain('.packet .revenue-print-details { display: grid;');

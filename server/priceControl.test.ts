@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import * as XLSX from "xlsx";
-import { calculatePriceChanges, calculatePriceOfferExpiry, deduplicatePdfRows, normalizePackagingDisplay, normalizePlaceContents, normalizePrice, normalizeProductDisplayName, normalizeProductName, packagingSignature, parseDocxTableRows, parseExcel, parsePdfExtractedText, parsePdfPositionedPages, preparePriceImportRows, productSignature, resolvePriceMapping, sourceDateFromText, synchronizePlaceContentsBasis } from "./priceControl";
+import { calculatePriceChanges, calculatePriceOfferExpiry, deduplicatePdfRows, extractVariant, normalizePackagingDisplay, normalizePlaceContents, normalizePrice, normalizeProductDisplayName, normalizeProductName, packagingSignature, parseDocxTableRows, parseExcel, parsePdfExtractedText, parsePdfPositionedPages, preparePriceImportRows, productSignature, resolvePriceMapping, sourceDateFromText, synchronizePlaceContentsBasis } from "./priceControl";
 import { readFileSync } from "node:fs";
 
 describe("прайс‑контроль: нормализация товарных строк", () => {
@@ -9,6 +9,11 @@ describe("прайс‑контроль: нормализация товарны
     expect(normalizeProductName("Лосось (2–3)")).toBe("лосось 2-3");
     expect(productSignature("Сёмга 2-3")).toBe(productSignature("Лосось (2–3)"));
     expect(productSignature("Лосось 2-3 Sup")).toBe(productSignature("Лосось 2-3"));
+  });
+
+  it("распознает IQF как вариант, не смешивая его с базовой товарной сигнатурой", () => {
+    expect(extractVariant("Креветка северная IQF 90-120")).toBe("IQF");
+    expect(productSignature("Креветка северная IQF 90-120")).toBe(productSignature("Креветка северная 90-120"));
   });
 
   it("сохраняет фасовку и переводит цену упаковки в цену за килограмм", () => {

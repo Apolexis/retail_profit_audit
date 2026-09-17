@@ -307,6 +307,67 @@ function PriceChangeBadge({ change, unit }: { change: PriceChangeView; unit: str
   const label = direction === "up" ? "Подорожало" : direction === "down" ? "Подешевело" : "Без изменения";
   return <small className={`price-change ${direction}`}><Icon size={13} />{label} {direction === "same" ? "" : `${Math.abs(change.percent)}%`} · было {formatMoney(change.previousPrice)} ₽/{unitLabel(unit)}</small>;
 }
+type PriceOfferTooltipDatum = {
+  supplierName: string;
+  rawName: string;
+  packaging: string | null;
+  manufacturer: string | null;
+  placeContents: string | null;
+  priceMode: PricePaymentMode;
+  market: PriceMarket;
+  priceAmount: number;
+  priceBasis: PriceBasis;
+  normalizedPrice: number;
+  normalizedUnit: string;
+  sourceDate: string | null;
+  sourcePriceText: string | null;
+  priceChange: PriceChangeView;
+};
+type PriceChartPoint = PriceOfferTooltipDatum & {
+  name: string;
+  price: number;
+  winner: boolean;
+};
+type PriceHistoryPoint = {
+  date: string;
+  offerDetails: Record<string, PriceOfferTooltipDatum>;
+  [key: string]: string | number | Record<string, PriceOfferTooltipDatum>;
+};
+function PriceOfferTooltipDetails({ offer }: { offer: PriceOfferTooltipDatum }) {
+  return <>
+    <div className="price-offer-tooltip-main">
+      <strong>{offer.supplierName}</strong>
+      <b>{priceLabel(offer)}</b>
+    </div>
+    <dl className="price-offer-tooltip-details">
+      <div><dt>Город</dt><dd>{marketLabel[offer.market]}</dd></div>
+      <div><dt>Условие</dt><dd>{modeLabel[offer.priceMode]}</dd></div>
+      <div><dt>Исходная строка</dt><dd>{offer.rawName}</dd></div>
+      <div><dt>Фасовка</dt><dd>{formatPackaging(offer.packaging) || "Не указана"}</dd></div>
+      <div><dt>Производитель</dt><dd>{offer.manufacturer || "Не указан"}</dd></div>
+      <div><dt>Состав места</dt><dd>{formatPlaceContents(offer.placeContents) || "Не указан"}</dd></div>
+      <div><dt>В прайсе</dt><dd>{offer.sourcePriceText || `${formatMoney(offer.priceAmount)} ₽`} · {basisLabel[offer.priceBasis]}</dd></div>
+      <div><dt>Дата</dt><dd>{dateLabel(offer.sourceDate)}</dd></div>
+    </dl>
+    <PriceChangeBadge change={offer.priceChange} unit={offer.normalizedUnit} />
+  </>;
+}
+function PriceOfferTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload?: PriceChartPoint }> }) {
+  const offer = active ? payload?.[0]?.payload : null;
+  return offer ? <div className="price-offer-tooltip" role="status"><PriceOfferTooltipDetails offer={offer} /></div> : null;
+}
+function PriceHistoryTooltip({ active, label, payload }: { active?: boolean; label?: string | number; payload?: Array<{ payload?: PriceHistoryPoint; dataKey?: string | number; name?: string | number }> }) {
+  if (!active || !payload?.length) return null;
+  const offers = payload.map(entry => {
+    const supplier = String(entry.dataKey ?? entry.name ?? "");
+    return entry.payload?.offerDetails[supplier];
+  }).filter((offer): offer is PriceOfferTooltipDatum => Boolean(offer));
+  if (!offers.length) return null;
+  return <div className="price-offer-tooltip price-history-tooltip" role="status">
+    <span className="price-history-tooltip-date">{dateLabel(String(label ?? offers[0].sourceDate ?? ""))}</span>
+    {offers.map(offer => <section key={`${offer.supplierName}-${offer.sourceDate}-${offer.priceAmount}`}><PriceOfferTooltipDetails offer={offer} /></section>)}
+  </div>;
+}
 const basisLabel: Record<PriceBasis, string> = {
   kg: "за кг",
   l: "за л",
@@ -662,6 +723,8 @@ export default function PriceControl({
   } | null>(null);
   const categoryEditorRef = useRef<HTMLDivElement>(null);
   const supplierEditorRef = useRef<HTMLDivElement>(null);
+  const previewPriceKey = (rowIndex: number, optionIndex: number) => `${rowIndex}:${optionIndex}`;
+  const previewAddedPriceKey = (rowIndex: number, id: string) => `${rowIndex}:${id}`;
 
   const categories = overview.data?.categories ?? [];
   const selectableCategories = categories.filter(category => category.isActive);
@@ -680,6 +743,12 @@ export default function PriceControl({
   const characteristics = overview.data?.characteristics ?? [];
   const selectableCharacteristics = (kind: CharacteristicDraft["kind"]) =>
     characteristics.filter(item => item.kind === kind && item.isActive);
+  const characteristicGroups = useMemo(() => ([
+    { kind: "variant" as const, label: "Вариант", items: characteristics.filter(item => item.kind === "variant") },
+    { kind: "size" as const, label: "Фасовка / вес", items: characteristics.filter(item => item.kind === "size") },
+    { kind: "place_contents" as const, label: "Состав места", items: characteristics.filter(item => item.kind === "place_contents") },
+    { kind: "manufacturer" as const, label: "Производитель", items: characteristics.filter(item => item.kind === "manufacturer") },
+  ]), [characteristics]);
   const offerCharacteristicOptions = (kind: "manufacturer" | "place_contents", currentValue: string | null | undefined) => {
     const values = selectableCharacteristics(kind).map(item => ({ value: item.value, label: item.value }));
     const current = String(currentValue ?? "").trim();
@@ -809,11 +878,24 @@ export default function PriceControl({
     filteredComparisons.find(item => item.product.id === selectedProductId) ??
     filteredComparisons[0] ??
     null;
-  const chartData = (selected?.offers ?? []).map(offer => ({
+  const chartData: PriceChartPoint[] = (selected?.offers ?? []).map(offer => ({
+    supplierName: offer.supplierName,
+    rawName: offer.rawName,
+    packaging: offer.packaging,
+    manufacturer: offer.manufacturer,
+    placeContents: offer.placeContents,
+    priceMode: canonicalPriceMode(offer.priceMode),
+    market: marketFromPriceMode(offer.market, offer.priceMode),
+    priceAmount: offer.priceAmount,
+    priceBasis: offer.priceBasis,
+    normalizedPrice: offer.normalizedPrice,
+    normalizedUnit: offer.normalizedUnit ?? "unknown",
+    sourceDate: offer.sourceDate,
+    sourcePriceText: offer.sourcePriceText,
+    priceChange: offer.priceChange,
     name: offer.supplierName,
     price: offer.normalizedPrice,
     winner: selected?.recommendation?.supplierId === offer.supplierId,
-    priceChange: offer.priceChange,
   }));
   const historyRows = useMemo(
     () =>
@@ -836,13 +918,30 @@ export default function PriceControl({
     () => Array.from(new Set(historyRows.map(item => item.supplierName))),
     [historyRows]
   );
-  const historyData = useMemo(() => {
-    const dates = new Map<string, Record<string, string | number>>();
+  const historyData = useMemo<PriceHistoryPoint[]>(() => {
+    const dates = new Map<string, PriceHistoryPoint>();
     historyRows.forEach(item => {
-      const point = dates.get(item.date) ?? { date: item.date };
+      const point: PriceHistoryPoint = dates.get(item.date) ?? { date: item.date, offerDetails: {} };
       const current = point[item.supplierName];
-      if (typeof current !== "number" || item.normalizedPrice < current)
+      if (typeof current !== "number" || item.normalizedPrice < current) {
         point[item.supplierName] = item.normalizedPrice;
+        point.offerDetails[item.supplierName] = {
+          supplierName: item.supplierName,
+          rawName: item.rawName,
+          packaging: item.packaging,
+          manufacturer: item.manufacturer,
+          placeContents: item.placeContents,
+          priceMode: canonicalPriceMode(item.priceMode),
+          market: marketFromPriceMode(item.market, item.priceMode),
+          priceAmount: Number(item.priceAmount),
+          priceBasis: item.priceBasis as PriceBasis,
+          normalizedPrice: item.normalizedPrice,
+          normalizedUnit: item.normalizedUnit ?? "unknown",
+          sourceDate: item.sourceDate ?? item.date,
+          sourcePriceText: item.sourcePriceText,
+          priceChange: item.priceChange,
+        };
+      }
       dates.set(item.date, point);
     });
     return Array.from(dates.values()).sort((a, b) =>
@@ -856,6 +955,9 @@ export default function PriceControl({
     (overview.data?.importPreviews ?? []).find(
       item => item.importId === selectedImport?.id
     ) ?? null;
+  const selectedImportDate = selectedImport
+    ? dateDrafts[selectedImport.id] ?? selectedImport.sourceDate ?? ""
+    : "";
   const previewNewRows = useMemo(
     () =>
       (preview?.rows ?? [])
@@ -1384,8 +1486,6 @@ export default function PriceControl({
       /* уведомление показывает mutation */
     }
   };
-  const previewPriceKey = (rowIndex: number, optionIndex: number) => `${rowIndex}:${optionIndex}`;
-  const previewAddedPriceKey = (rowIndex: number, id: string) => `${rowIndex}:${id}`;
   const addPreviewPriceOption = (rowIndex: number, row: Preview["rows"][number]) => {
     const fallback = row.priceOptions.find(option => option.priceAmount !== null) ?? row.priceOptions[0];
     if (!fallback) return;
@@ -1626,31 +1726,6 @@ export default function PriceControl({
               </p>
             </div>
           </section>
-          <section
-            className="price-summary-grid"
-            aria-label="Сводка прайс-контроля"
-          >
-            <article>
-              <span>Поставщики</span>
-              <strong>{overview.data?.suppliers.length ?? 0}</strong>
-              <small>в сохраненной базе</small>
-            </article>
-            <article>
-              <span>Прайс‑листы</span>
-              <strong>{overview.data?.imports.length ?? 0}</strong>
-              <small>с историей строк</small>
-            </article>
-            <article>
-              <span>Сопоставленные товары</span>
-              <strong>{overview.data?.comparisons.length ?? 0}</strong>
-              <small>готовы к сравнению</small>
-            </article>
-            <article>
-              <span>Нужны связи</span>
-              <strong>{overview.data?.unmappedRows.length ?? 0}</strong>
-              <small>строк на проверке</small>
-            </article>
-          </section>
           <section className="packet-card price-comparison">
             <div className="card-title">
               <div>
@@ -1766,11 +1841,17 @@ export default function PriceControl({
               </div>
             ) : (
               <div className="price-comparison-body">
-                <div
-                  className="price-product-list"
-                  role="list"
-                  aria-label="Сопоставленные товары"
-                >
+                <aside className="price-product-panel">
+                  <div className="price-product-panel-heading">
+                    <span>СОПОСТАВЛЕННЫЕ ПОЗИЦИИ</span>
+                    <strong>{filteredComparisons.length}</strong>
+                    <small>выберите товар для проверки предложений</small>
+                  </div>
+                  <div
+                    className="price-product-list"
+                    role="list"
+                    aria-label="Сопоставленные товары"
+                  >
                   {filteredComparisons.map(item => (
                     <button
                       type="button"
@@ -1798,7 +1879,8 @@ export default function PriceControl({
                       </small>
                     </button>
                   ))}
-                </div>
+                  </div>
+                </aside>
                 {selected && (
                   <div className="price-detail">
                     <div className="price-detail-heading">
@@ -1843,6 +1925,14 @@ export default function PriceControl({
                         </aside>
                       )}
                     </div>
+                    <section className="price-chart-card" aria-label="Текущие предложения поставщиков">
+                      <div className="price-chart-heading">
+                        <div>
+                          <span>ТЕКУЩИЕ ПРЕДЛОЖЕНИЯ</span>
+                          <h5>Нормализованная цена поставщиков</h5>
+                        </div>
+                        <small>Наведите на столбец, чтобы увидеть источник и условия</small>
+                      </div>
                     <div className="price-chart">
                       <ResponsiveContainer width="100%" height={250}>
                         <BarChart
@@ -1865,14 +1955,9 @@ export default function PriceControl({
                             tickFormatter={value => `${formatMoney(value)} ₽`}
                           />
                           <Tooltip
-                            formatter={(value: number) => [
-                              priceLabel({
-                                normalizedPrice: Number(value),
-                                normalizedUnit:
-                                  selected.offers[0]?.normalizedUnit ?? "kg",
-                              }),
-                              "Цена",
-                            ]}
+                            content={<PriceOfferTooltip />}
+                            allowEscapeViewBox={{ x: false, y: false }}
+                            wrapperStyle={{ outline: "none" }}
                           />
                           <Bar dataKey="price" radius={[7, 7, 2, 2]}>
                             {chartData.map(item => (
@@ -1885,6 +1970,7 @@ export default function PriceControl({
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
+                    </section>
                     <section className="price-history-chart">
                       <div>
                         <span>ИСТОРИЯ ЦЕН</span>
@@ -1915,10 +2001,9 @@ export default function PriceControl({
                               tickFormatter={value => `${formatMoney(value)} ₽`}
                             />
                             <Tooltip
-                              formatter={(value: number) => [
-                                `${formatMoney(Number(value))} ₽`,
-                                "Нормализованная цена",
-                              ]}
+                              content={<PriceHistoryTooltip />}
+                              allowEscapeViewBox={{ x: false, y: false }}
+                              wrapperStyle={{ outline: "none" }}
                             />
                             <Legend />
                             {historySuppliers.map((supplier, index) => (
@@ -2726,24 +2811,25 @@ export default function PriceControl({
               </div>
               <div className="price-import-meta">
                 <strong>{selectedImport.supplierName}</strong>
-                <label>
-                  Дата прайса
-                  <input
-                    type="date"
-                    value={
-                      dateDrafts[selectedImport.id] ??
-                      selectedImport.sourceDate ??
-                      ""
-                    }
-                    onChange={event =>
-                      setDateDrafts(current => ({
-                        ...current,
-                        [selectedImport.id]: event.target.value,
-                      }))
-                    }
-                    disabled={!canEdit}
-                  />
-                </label>
+                <div className="price-import-date-control">
+                  <span>Дата прайса</span>
+                  {canEdit ? (
+                    <ExactDateControl
+                      value={selectedImportDate}
+                      onChange={sourceDate =>
+                        setDateDrafts(current => ({
+                          ...current,
+                          [selectedImport.id]: sourceDate,
+                        }))
+                      }
+                      title="ДАТА ПРАЙСА"
+                      ariaLabel="Изменить дату сохраненного прайс-листа"
+                      emptyLabel="Дата не указана"
+                    />
+                  ) : (
+                    <strong>{selectedImportDate ? dateLabel(selectedImportDate) : "Дата не указана"}</strong>
+                  )}
+                </div>
                 {canEdit && (
                   <button
                     type="button"
@@ -2751,10 +2837,7 @@ export default function PriceControl({
                     onClick={() =>
                       updateImportDate.mutate({
                         importId: selectedImport.id,
-                        sourceDate:
-                          dateDrafts[selectedImport.id] ??
-                          selectedImport.sourceDate ??
-                          null,
+                        sourceDate: selectedImportDate || null,
                       })
                     }
                     disabled={updateImportDate.isPending}
@@ -2917,13 +3000,48 @@ export default function PriceControl({
                 </div>
               )}
               {!!characteristics.length && (
-                <div className="price-characteristics-list">
-                  {characteristics.map(item => (
-                    <button type="button" key={item.id} className={item.isActive ? "" : "is-hidden"} onClick={() => canEdit && setCharacteristicDraft({ id: item.id, kind: item.kind, value: item.value, isActive: item.isActive })} disabled={!canEdit}>
-                      <small>{item.kind === "variant" ? "ВАРИАНТ" : item.kind === "size" ? "ФАСОВКА" : item.kind === "place_contents" ? "СОСТАВ МЕСТА" : "ПРОИЗВОДИТЕЛЬ"}</small>
-                      <strong>{item.value}</strong>
-                      {!item.isActive && <em>Скрыта</em>}
-                    </button>
+                <div className="price-characteristics-list" aria-label="Списки характеристик товаров">
+                  {characteristicGroups.filter(group => group.items.length).map(group => (
+                    <details key={group.kind} className="price-characteristics-group">
+                      <summary>
+                        <span>{group.label}</span>
+                        <strong>{group.items.length}</strong>
+                        <ChevronRight size={15} aria-hidden="true" />
+                      </summary>
+                      <div role="list">
+                        {group.items.map(item => (
+                          <article key={item.id} className={item.isActive ? "" : "is-hidden"} role="listitem">
+                            <div>
+                              <strong>{item.value}</strong>
+                              <small>{item.isActive ? "Доступна в новых выборах" : "Скрыта из новых выборов"}</small>
+                            </div>
+                            {canEdit && (
+                              <div className="price-characteristic-actions">
+                                <button
+                                  type="button"
+                                  className="price-characteristic-action"
+                                  onClick={() => updateCharacteristic.mutate({ id: item.id, value: item.value, isActive: !item.isActive })}
+                                  disabled={updateCharacteristic.isPending}
+                                  aria-label={`${item.isActive ? "Скрыть" : "Показать"} характеристику «${item.value}»`}
+                                  title={item.isActive ? "Скрыть из новых выборов" : "Показать в новых выборах"}
+                                >
+                                  {item.isActive ? <EyeOff size={15} /> : <Eye size={15} />}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="price-characteristic-action"
+                                  onClick={() => setCharacteristicDraft({ id: item.id, kind: item.kind, value: item.value, isActive: item.isActive })}
+                                  aria-label={`Изменить характеристику «${item.value}»`}
+                                  title="Изменить характеристику"
+                                >
+                                  <Pencil size={14} />
+                                </button>
+                              </div>
+                            )}
+                          </article>
+                        ))}
+                      </div>
+                    </details>
                   ))}
                 </div>
               )}
@@ -3372,23 +3490,23 @@ export default function PriceControl({
                               : "Скрыта из новых выборов"}
                           </span>
                           <strong>{category.name}</strong>
-                          <small>
-                            Входит товаров: {(categoryMembers.get(category.id) ?? []).length}
-                          </small>
-                          {(categoryMembers.get(category.id) ?? []).length > 0 && (
-                            <div className="price-category-members">
-                              {(categoryMembers.get(category.id) ?? []).map(product => (
-                                <button
-                                  type="button"
-                                  key={product.id}
-                                  onClick={() => openProductEditor(product)}
-                                  title={`Открыть товар «${product.canonicalName}»`}
-                                >
-                                  {product.canonicalName}
-                                </button>
-                              ))}
-                            </div>
-                          )}
+                          {(categoryMembers.get(category.id) ?? []).length > 0 ? (
+                            <details className="price-category-members">
+                              <summary>Товары в категории · {(categoryMembers.get(category.id) ?? []).length}</summary>
+                              <div>
+                                {(categoryMembers.get(category.id) ?? []).map(product => (
+                                  <button
+                                    type="button"
+                                    key={product.id}
+                                    onClick={() => openProductEditor(product)}
+                                    title={`Открыть товар «${product.canonicalName}»`}
+                                  >
+                                    {product.canonicalName}
+                                  </button>
+                                ))}
+                              </div>
+                            </details>
+                          ) : <small>Товары пока не добавлены</small>}
                         </div>
                         {canEdit && (
                           <div className="price-directory-actions">

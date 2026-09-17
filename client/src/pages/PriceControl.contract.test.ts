@@ -29,6 +29,8 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("downloadImport");
     expect(page).toContain("Удалить сохраненный прайс‑лист?");
     expect(page).toContain("ПРЕДПРОСМОТР СОХРАНЕННОГО ПРАЙСА");
+    expect(page).toContain('ariaLabel="Изменить дату сохраненного прайс-листа"');
+    expect(page).not.toContain('type="date"');
   });
 
   it("сохраняет приоритет точной связи поставщика с внутренним товаром", () => {
@@ -96,8 +98,27 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("hiddenCategoriesCount");
     expect(page).toContain("bulkAssignCategory");
     expect(page).toContain("Назначить категорию");
-    expect(page).toContain("Входит товаров:");
+    expect(page).toContain("Товары в категории ·");
     expect(page).toContain("openProductEditor");
+  });
+
+  it("раскрывает товары категории и характеристики только по действию, с компактными кнопками показа и редактирования", () => {
+    expect(page).toContain('<details className="price-category-members">');
+    expect(page).toContain("characteristicGroups");
+    expect(page).toContain('<details key={group.kind} className="price-characteristics-group">');
+    expect(page).toContain('item.isActive ? "Скрыть" : "Показать"');
+    expect(styles).toContain(".packet .price-characteristics-group");
+    expect(styles).toContain(".packet .price-characteristic-action");
+  });
+
+  it("показывает полный контекст конкретного предложения в tooltip графиков", () => {
+    expect(page).toContain("function PriceOfferTooltip");
+    expect(page).toContain("function PriceHistoryTooltip");
+    expect(page).toContain("Исходная строка");
+    expect(page).toContain("Состав места");
+    expect(page).toContain('content={<PriceOfferTooltip />}');
+    expect(page).toContain('content={<PriceHistoryTooltip />}');
+    expect(styles).toContain(".packet .price-offer-tooltip");
   });
 
   it("использует знакомую двухколоночную панель импорта и тематичные состояния полей", () => {
@@ -223,6 +244,11 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("Годен до:");
     expect(page).toContain("shelfLifeOptions.map");
     expect(page).toContain("calculateExpiryDate");
+  });
+
+  it("не обращается к ключу цены до его инициализации после загрузки preview", () => {
+    expect(page.indexOf("const previewPriceKey")).toBeLessThan(page.indexOf("const unresolvedPreviewPriceCount"));
+    expect(page.indexOf("const previewAddedPriceKey")).toBeLessThan(page.indexOf("const unresolvedPreviewPriceCount"));
   });
 
   it("ведет производителя и состав места через управляемый справочник, сохраняя распознанное значение до явного редактирования", () => {

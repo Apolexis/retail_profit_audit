@@ -15,6 +15,11 @@ describe("немодальный тематичный select", () => {
     expect(component).not.toContain("RemoveScroll");
   });
 
+  it("открывает список вплотную к полю, без пустого зазора", () => {
+    expect(component).toContain('align="start"');
+    expect(component).toContain("sideOffset={0}");
+  });
+
   it("сохраняет доступную роль списка, выбранный пункт и групповые заголовки", () => {
     expect(component).toContain('role="listbox"');
     expect(component).toContain('role="option"');

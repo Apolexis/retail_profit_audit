@@ -120,7 +120,7 @@ export function FreeScrollSelect({
         id={listId}
         role="listbox"
         align="start"
-        sideOffset={5}
+        sideOffset={0}
         collisionPadding={12}
         className={cn("free-scroll-select-content", contentClassName)}
       >
