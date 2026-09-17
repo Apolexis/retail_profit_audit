@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { calculatePriceChanges, calculatePriceOfferExpiry, deduplicatePdfRows, normalizePackagingDisplay, normalizePlaceContents, normalizePrice, normalizeProductDisplayName, normalizeProductName, packagingSignature, parsePdfExtractedText, parsePdfPositionedPages, preparePriceImportRows, productSignature, resolvePriceMapping, sourceDateFromText, synchronizePlaceContentsBasis } from "./priceControl";
+import * as XLSX from "xlsx";
+import { calculatePriceChanges, calculatePriceOfferExpiry, deduplicatePdfRows, normalizePackagingDisplay, normalizePlaceContents, normalizePrice, normalizeProductDisplayName, normalizeProductName, packagingSignature, parseDocxTableRows, parseExcel, parsePdfExtractedText, parsePdfPositionedPages, preparePriceImportRows, productSignature, resolvePriceMapping, sourceDateFromText, synchronizePlaceContentsBasis } from "./priceControl";
 import { readFileSync } from "node:fs";
 
 describe("прайс‑контроль: нормализация товарных строк", () => {
@@ -14,6 +15,48 @@ describe("прайс‑контроль: нормализация товарны
     expect(packagingSignature("банка 430 г")).toBe("g430");
     expect(normalizePrice(344, "package", "банка 430 г")).toEqual({ normalizedPrice: 800, normalizedUnit: "kg" });
     expect(normalizePrice(180, "package", "бутылка 500 мл")).toEqual({ normalizedPrice: 360, normalizedUnit: "l" });
+  });
+
+  it("читает Word-строку по ячейкам: цена берется из последней колонки, а не из веса в названии", () => {
+    const rows = parseDocxTableRows([[
+      ["№", "Наименование", "Цена за 1 банку (руб.) опт"],
+      ["", "Варенье из морошки 100 гр.", "270"],
+      ["", "Варенье из морошки 250 гр.", "600"],
+    ]]);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({ rawName: "Варенье из морошки 100гр", packaging: "100гр" });
+    expect(rows[0]?.priceOptions[0]).toMatchObject({ priceAmount: 270, priceBasis: "package", normalizedPrice: 2700, normalizedUnit: "kg" });
+    expect(rows[1]?.priceOptions[0]?.priceAmount).toBe(600);
+  });
+
+  it("сохраняет договорную Word-цену как ручную и не наследует соседнюю цену", () => {
+    const rows = parseDocxTableRows([[
+      ["Форель 1,0 - ПСГ", "Короб, эл. вес", "РФ, ЧФ", "Склад", "550"],
+      ["Масляная рыба тушка 1-3 кг", "Мешок, эл. вес", "Китай, Вьетнам", "Подход", "Дог."],
+      ["Тунец обрезь в/у", "Короб, 1/20кг", "Таиланд", "Склад", "490"],
+    ]]);
+    expect(rows).toHaveLength(3);
+    expect(rows[0]?.priceOptions[0]).toMatchObject({ priceAmount: 550, priceBasis: "kg" });
+    expect(rows[1]?.priceOptions[0]).toMatchObject({ priceAmount: null, priceBasis: "kg", sourcePriceText: "Дог." });
+    expect(rows[2]?.priceOptions[0]).toMatchObject({ priceAmount: 490, priceBasis: "kg", normalizedPrice: 490 });
+  });
+
+  it("импортирует все самостоятельные ценовые колонки Excel, но не надбавку мелкого опта", () => {
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.aoa_to_sheet([
+      ["Наименование", "Фасовка", "Наличные", "Безнал без НДС", "Безнал с НДС 22%", "Мелкий ОПТ до 100 кг плюс к цене"],
+      ["Икра горбуши", "125гр", "1500", "1550", "1600", "50"],
+    ]);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Прайс");
+    const rows = parseExcel(Buffer.from(XLSX.write(workbook, { type: "buffer", bookType: "xlsx" })));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.priceOptions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ priceAmount: 1500, priceMode: "cash" }),
+      expect.objectContaining({ priceAmount: 1550, priceMode: "cashless_no_vat" }),
+      expect.objectContaining({ priceAmount: 1600, priceMode: "cashless_vat", includesVat: true }),
+    ]));
+    expect(rows[0]?.priceOptions[0]).toMatchObject({ priceAmount: 1600, priceMode: "cashless_vat" });
+    expect(rows[0]?.priceOptions).toHaveLength(3);
   });
 
   it("компактно нормализует единицы, дроби и лишние пробелы в названии без склейки слов", () => {

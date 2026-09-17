@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { createRequire } from "node:module";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import mammoth from "mammoth";
 import { PDFParse } from "pdf-parse";
@@ -36,6 +37,11 @@ const MAX_IMPORT_ROWS = 3000;
 export const PRICE_SHELF_LIFE_MONTHS = [1, 2, 3, 6, 12, 18, 24] as const;
 const supplierHints: Array<[RegExp, string]> = [[/moreodor|мореодор/i, "Мореодор"], [/lucky\s*fish/i, "Lucky Fish"], [/купеческ/i, "Купеческий"], [/атлантид/i, "Атлантида"], [/вкус\s*север/i, "Вкус Севера"], [/mir\s*delicatesov|мир\s*деликатес/i, "Mir Delicatesov"], [/redgm|красн(?:ый|ого)\s+жемчуг/i, "Красный Жемчуг"], [/арктическ.*вкус/i, "Арктический Вкус"], [/даллос/i, "Даллос"]];
 const synonymTokens: Record<string, string> = { "семга": "лосось", "сёмга": "лосось", "лососевая": "лосось", "лососевые": "лосось" };
+const mammothInternalRequire = createRequire(import.meta.url);
+const mammothUnzip = mammothInternalRequire("mammoth/lib/unzip") as { openZip(input: { buffer: Buffer }): Promise<unknown> };
+const mammothDocxReader = mammothInternalRequire("mammoth/lib/docx/docx-reader") as { read(archive: unknown): Promise<{ value: DocxNode }> };
+
+type DocxNode = { type?: string; value?: string; children?: DocxNode[] };
 
 function text(value: unknown) { return String(value ?? "").replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim(); }
 function fold(value: string) { return text(value).toLowerCase().replace(/ё/g, "е"); }
@@ -162,7 +168,18 @@ function numberFromText(value: unknown) {
   if (!raw || /дог|запрос|уточн|нет\s*цен|n\/a/i.test(raw)) return null;
   const match = raw.match(/-?(?:\d{1,3}(?:[\s.,]\d{3})+|\d+)(?:[.,]\d{1,2})?/);
   if (!match) return null;
-  const parsed = Number(match[0].replace(/[\s]/g, "").replace(",", "."));
+  const numeric = match[0].replace(/\s/g, "");
+  const lastComma = numeric.lastIndexOf(",");
+  const lastDot = numeric.lastIndexOf(".");
+  const decimalSeparator = lastComma >= 0 && lastDot >= 0
+    ? (lastComma > lastDot ? "," : ".")
+    : (lastComma >= 0 ? "," : lastDot >= 0 ? "." : null);
+  const decimalTail = decimalSeparator === null ? "" : numeric.slice(numeric.lastIndexOf(decimalSeparator) + 1);
+  const hasDecimalPart = decimalSeparator !== null && decimalTail.length > 0 && decimalTail.length <= 2;
+  const compact = hasDecimalPart
+    ? `${numeric.slice(0, numeric.lastIndexOf(decimalSeparator)).replace(/[.,]/g, "")}.${decimalTail}`
+    : numeric.replace(/[.,]/g, "");
+  const parsed = Number(compact);
   return Number.isFinite(parsed) && parsed > 0 && parsed < 10_000_000 ? parsed : null;
 }
 
@@ -367,13 +384,23 @@ function makeOption(raw: unknown, header: string, rawName: string, packaging: st
   const rawMode = priceModeFromHeader(header);
   return { priceAmount, priceBasis, ...normalized, priceMode: canonicalPriceMode(rawMode), market: priceMarketFromText(`${header} ${text(raw)}`), minimumQuantityKg: threshold ? Number(threshold[1].replace(",", ".")) : null, includesVat: /с\s*ндс|ндс\s*\d+/.test(fold(header)) ? true : /без\s*ндс/.test(fold(header)) ? false : null, sourcePriceText: text(raw) };
 }
+function priceOptionPriority(option: ParsedPriceOption) {
+  return ({ cashless_vat: 0, cashless_no_vat: 1, cash: 2 } as Record<PriceMode, number>)[canonicalPriceMode(option.priceMode)];
+}
+function prioritizePriceOptions(options: ParsedPriceOption[]) {
+  return options.slice().sort((left, right) => priceOptionPriority(left) - priceOptionPriority(right));
+}
 function isProductHeader(value: unknown) { return /^(наименовани\w*|товар\w*|номенклатур\w*|позици\w*|продукт\w*)/i.test(text(value)); }
-function isPriceHeader(value: unknown) { return /цен|стоим|прайс|опт|налич|безнал/i.test(text(value)); }
+function isPriceSurchargeHeader(value: unknown) {
+  const title = fold(text(value));
+  return /(?:плюс\s+к\s+цен|надбавк|доплат)|(?:мелк\w*\s+опт.*(?:\+|плюс|к\s+цен))/i.test(title);
+}
+function isPriceHeader(value: unknown) { return !isPriceSurchargeHeader(value) && /цен|стоим|прайс|опт|налич|безнал/i.test(text(value)); }
 function findHeaderIndex(rows: unknown[][]) {
   return rows.slice(0, 90).findIndex(row => row.some(isProductHeader) && row.some(isPriceHeader));
 }
 function columnIndex(headers: string[], expression: RegExp) { return headers.findIndex(value => expression.test(fold(value))); }
-function parseExcel(buffer: Buffer) {
+export function parseExcel(buffer: Buffer) {
   const workbook = XLSX.read(buffer, { type: "buffer", cellDates: false, raw: false });
   const rows: ParsedPriceRow[] = [];
   workbook.SheetNames.forEach(sheetName => {
@@ -382,7 +409,7 @@ function parseExcel(buffer: Buffer) {
     if (headerRow < 0) return;
     const headers = matrix[headerRow].map(cell => text(cell));
     const nameIndex = headers.findIndex(isProductHeader);
-    const priceIndexes = headers.map((header, index) => ({ header, index })).filter(({ header }) => /цен|стоим|прайс|опт|налич|безнал/i.test(header));
+    const priceIndexes = headers.map((header, index) => ({ header, index })).filter(({ header }) => isPriceHeader(header));
     const skuIndex = columnIndex(headers, /артикул|код\s*(товара)?|^код$/);
     const categoryIndex = columnIndex(headers, /катег|раздел|групп/);
     const packagingIndex = columnIndex(headers, /фас|упак|тара|вес|короб|нетто/);
@@ -393,7 +420,7 @@ function parseExcel(buffer: Buffer) {
       const rawName = normalizeProductDisplayName(text(cells[nameIndex]));
       if (!rawName || rawName.length < 2 || isAdministrativeText(rawName)) return;
       const packaging = normalizePackagingDisplay(text(cells[packagingIndex])) || null;
-      const options = priceIndexes.map(({ header, index }) => makeOption(cells[index], header, rawName, packaging || rawName)).filter((value): value is ParsedPriceOption => Boolean(value));
+      const options = prioritizePriceOptions(priceIndexes.map(({ header, index }) => makeOption(cells[index], header, rawName, packaging || rawName)).filter((value): value is ParsedPriceOption => Boolean(value)));
       if (!options.length) return;
       const rowNumber = headerRow + offset + 2;
       const rawPayload = Object.fromEntries(headers.map((header, index) => [header || `Колонка ${index + 1}`, text(cells[index])]).filter(([, value]) => value));
@@ -439,6 +466,123 @@ function parseExtractedText(documentText: string) {
     rows.push({ sourceSheet: "Документ", sourceRowNumber: index + 1, sourceSku: null, rawName, normalizedName: normalizeProductName(rawName), canonicalHint: rawName, normalizedSignature: productSignature(rawName), category: null, packaging, packagingSignature: packagingSignature(packaging || rawName), manufacturer: null, placeContents: null, manufacturedOn: null, shelfLifeMonths: null, expiresOn: null, availability: null, variant: extractVariant(rawName), sizeText: extractSizeText(rawName), priceOptions: [option], rawPayload: { line } });
   });
   return rows;
+}
+
+function docxNodeText(node: DocxNode): string {
+  if (node.type === "text") return node.value ?? "";
+  if (node.type === "tab") return "\t";
+  return (node.children ?? []).map(docxNodeText).join("");
+}
+
+function collectDocxTables(node: DocxNode, tables: string[][][]) {
+  if (node.type === "table") {
+    tables.push((node.children ?? [])
+      .filter(row => row.type === "tableRow")
+      .map(row => (row.children ?? [])
+        .filter(cell => cell.type === "tableCell")
+        .map(cell => text(docxNodeText(cell)))));
+  }
+  (node.children ?? []).forEach(child => collectDocxTables(child, tables));
+}
+
+function manualPriceOption(header: string, rawName: string, packaging: string | null, sourcePriceText: string): ParsedPriceOption {
+  const priceBasis = priceBasisFromText(header, rawName, packaging);
+  return {
+    priceAmount: null,
+    priceBasis,
+    normalizedPrice: null,
+    normalizedUnit: "unknown",
+    priceMode: canonicalPriceMode(priceModeFromHeader(header)),
+    market: priceMarketFromText(header),
+    minimumQuantityKg: null,
+    includesVat: /с\s*ндс|ндс\s*\d+/.test(fold(header)) ? true : /без\s*ндс/.test(fold(header)) ? false : null,
+    sourcePriceText,
+  };
+}
+
+function isManualPriceText(value: string) {
+  return /(?:дог\.?|запрос|уточн|нет\s*цен|n\/a)/i.test(value);
+}
+
+function isWordPriceHeader(value: string) {
+  const title = fold(value);
+  return /(?:^|\s)(?:цена|стоимость|прайс)(?:\s|$)/i.test(title) &&
+    (/за\s*\d+|руб|опт/i.test(title) || /^(?:цена|стоимость|прайс)$/i.test(title));
+}
+
+function wordPackagingFromRow(cells: string[], nameIndex: number, priceIndex: number, rawName: string) {
+  const following = cells.slice(nameIndex + 1, priceIndex).map(text).filter(Boolean);
+  const descriptiveCell = following.find(value => /(?:короб|мешок|ящик|упак|фас|бан(?:ка|ку)|бутыл|пачк|вес|\d\s*(?:кг|г|гр|л|мл|шт))/i.test(value));
+  const fromName = rawName.match(/\d+(?:[.,]\d+)?\s*(?:кг|г|гр|л|мл|шт)(?![a-zа-я])/i)?.[0] ?? "";
+  return normalizePackagingDisplay(descriptiveCell || fromName) || null;
+}
+
+/** Reads product rows from Word tables without confusing a weight in the product name with the price cell. */
+export function parseDocxTableRows(tables: string[][][]) {
+  const rows: ParsedPriceRow[] = [];
+  let sourceRowNumber = 0;
+  tables.forEach(table => {
+    // Fish price tables often omit a column title but quote a wholesale price per kg.
+    // A specific Word header such as «Цена за банку» below always takes precedence.
+    let priceHeader = "Цена за кг";
+    table.forEach(cells => {
+      const normalizedCells = cells.map(text);
+      const nonEmpty = normalizedCells.map((value, index) => ({ value, index })).filter(cell => Boolean(cell.value));
+      const lastCell = nonEmpty.at(-1);
+      if (!lastCell || nonEmpty.length < 2) return;
+      if (isWordPriceHeader(lastCell.value)) {
+        priceHeader = lastCell.value;
+        return;
+      }
+
+      const hasAmount = numberFromText(lastCell.value) !== null;
+      if (!hasAmount && !isManualPriceText(lastCell.value)) return;
+      const nameCell = nonEmpty
+        .filter(cell => cell.index < lastCell.index)
+        .find(cell => !/^\d+$/.test(cell.value) && !isProductHeader(cell.value));
+      const rawName = normalizeProductDisplayName(nameCell?.value ?? "");
+      if (!rawName || rawName.length < 2 || isAdministrativeText(rawName)) return;
+
+      const packaging = wordPackagingFromRow(normalizedCells, nameCell!.index, lastCell.index, rawName);
+      const option = hasAmount
+        ? makeOption(lastCell.value, priceHeader, rawName, packaging || rawName)
+        : manualPriceOption(priceHeader, rawName, packaging || rawName, lastCell.value);
+      if (!option) return;
+
+      sourceRowNumber += 1;
+      rows.push({
+        sourceSheet: "Word",
+        sourceRowNumber,
+        sourceSku: null,
+        rawName,
+        normalizedName: normalizeProductName(rawName),
+        canonicalHint: rawName,
+        normalizedSignature: productSignature(rawName),
+        category: null,
+        packaging,
+        packagingSignature: packagingSignature(packaging || rawName),
+        manufacturer: null,
+        placeContents: null,
+        manufacturedOn: null,
+        shelfLifeMonths: null,
+        expiresOn: null,
+        availability: null,
+        variant: extractVariant(rawName),
+        sizeText: extractSizeText(rawName),
+        priceOptions: [option],
+        rawPayload: Object.fromEntries(normalizedCells.map((value, index) => [`Колонка ${index + 1}`, value]).filter(([, value]) => Boolean(value))),
+      });
+    });
+  });
+  return rows;
+}
+
+async function parseDocxTables(buffer: Buffer) {
+  const archive = await mammothUnzip.openZip({ buffer });
+  const documentResult = await mammothDocxReader.read(archive);
+  const tables: string[][][] = [];
+  collectDocxTables(documentResult.value, tables);
+  return parseDocxTableRows(tables);
 }
 
 const pdfPricePattern = /\b\d{1,3}(?:[\s.,]\d{3})*(?:[.,]\d{1,2})?\s*(?:₽|руб(?:\.|лей)?|р\.)/gi;
@@ -860,7 +1004,11 @@ export async function previewPriceImport(buffer: Buffer, fileName: string): Prom
   let documentText = "";
   let rows: ParsedPriceRow[] = [];
   if (sourceType === "xls" || sourceType === "xlsx") { documentText = extractExcelText(buffer); rows = parseExcel(buffer); }
-  if (sourceType === "docx") { documentText = (await mammoth.extractRawText({ buffer })).value; rows = parseExtractedText(documentText); }
+  if (sourceType === "docx") {
+    documentText = (await mammoth.extractRawText({ buffer })).value;
+    rows = await parseDocxTables(buffer);
+    if (!rows.length) rows = parseExtractedText(documentText);
+  }
   let pdfFirstPageHeader = "";
   if (sourceType === "pdf") {
     const parser = new PDFParse({ data: buffer });
