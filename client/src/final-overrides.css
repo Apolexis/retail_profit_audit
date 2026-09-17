@@ -4300,6 +4300,19 @@ html[data-audit-theme="light"] .packet .price-preview .inline-error {
   .packet .price-preview-price-edit { grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr) !important; }
 }
 
+/* Варианты цены редактируются до сохранения: отдельное действие не меняет исходный файл. */
+.packet .price-preview-price-edit { grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr) 32px !important; }
+.packet .price-preview-price-edit > :nth-child(3) { grid-column: 1; grid-row: 2; }
+.packet .price-preview-price-edit > :nth-child(4) { grid-column: 2; grid-row: 2; }
+.packet .price-preview-price-edit > .price-preview-price-remove { grid-column: 3; grid-row: 1; display: grid; width: 32px; min-width: 32px; height: 34px; min-height: 34px; place-items: center; padding: 0; border: 1px solid var(--price-border); border-radius: 9px; background: transparent; color: var(--price-muted); }
+.packet .price-preview-price-edit > .price-preview-price-remove:hover,
+.packet .price-preview-price-edit > .price-preview-price-remove:focus-visible { border-color: var(--price-accent); background: color-mix(in srgb, var(--price-accent) 9%, var(--price-surface)); color: var(--price-accent); outline: none; box-shadow: none; }
+.packet .price-preview-price-add { justify-self: start; margin-top: -1px; }
+@media (max-width: 420px) {
+  .packet .price-preview-price-edit { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 32px !important; gap: 5px; }
+  .packet .price-preview-price-edit > .price-preview-price-remove { width: 30px; min-width: 30px; height: 34px; }
+}
+
 /* Нижнее меню: стрелки кратко идут в направлении действия, а обновление не меняет локальный кэш. */
 .packet .mobile-quick-action.is-navigating { pointer-events: none; }
 .packet .mobile-quick-back.is-navigating svg { animation: mobile-quick-back-run 180ms var(--audit-hover-ease) 2 alternate; }

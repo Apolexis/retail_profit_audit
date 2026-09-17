@@ -165,6 +165,20 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain(".packet .price-preview-table > div.price-preview-row.is-selected");
   });
 
+  it("дает назначить город отмеченным строкам и до сохранения добавить или убрать отдельный вариант цены", () => {
+    expect(page).toContain("previewBulkMarket");
+    expect(page).toContain("assignPreviewMarketToSelected");
+    expect(page).toContain("Город для отмеченных");
+    expect(page).toContain("Назначить город");
+    expect(page).toContain("previewAddedPriceOptions");
+    expect(page).toContain("previewRemovedPriceOptions");
+    expect(page).toContain("Добавить цену");
+    expect(page).toContain("Удалить вариант цены");
+    expect(page).toContain("priceAdditions");
+    expect(page).toContain("priceRemovals");
+    expect(styles).toContain(".packet .price-preview-price-edit > .price-preview-price-remove");
+  });
+
   it("пересчитывает предупреждение о цене после ручной правки и использует нейтральный светлый акцент", () => {
     expect(page).toContain("const unresolvedPreviewPriceCount = useMemo");
     expect(page).toContain("unresolvedPreviewPriceCount > 0");

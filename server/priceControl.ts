@@ -20,6 +20,8 @@ export type PriceImportPreview = { fileName: string; sourceType: "xls" | "xlsx" 
 export type PriceChange = { previousPrice: number; previousDate: string | null; delta: number; percent: number; direction: "up" | "down" | "same" };
 export type PriceImportCategorySelection = { rowIndex: number; categoryId: number };
 export type PriceImportPriceEdit = { rowIndex: number; optionIndex: number; priceAmount: number; priceBasis?: PriceBasis; priceMode?: PriceMode; market?: PriceMarket };
+export type PriceImportPriceAddition = { rowIndex: number; priceAmount: number; priceBasis: PriceBasis; priceMode: PriceMode; market: PriceMarket };
+export type PriceImportPriceRemoval = { rowIndex: number; optionIndex: number };
 export type PriceImportRowEdit = { rowIndex: number; rawName: string };
 export type PriceImportMetadataEdit = { rowIndex: number; manufacturer: string | null; placeContents: string | null; manufacturedOn: string | null; shelfLifeMonths: number | null; expiresOn: string | null };
 export type PriceImportProductLink = { rowIndex: number; productId: number };
@@ -27,6 +29,8 @@ export type PreparedPriceImportRows = {
   rows: Array<{ rowIndex: number; row: ParsedPriceRow }>;
   excludedRowIndexes: number[];
   editedPriceOptions: number;
+  addedPriceOptions: number;
+  removedPriceOptions: number;
   editedNames: number;
   editedMetadata: number;
 };
@@ -328,9 +332,12 @@ export function preparePriceImportRows(
   priceEdits: PriceImportPriceEdit[] = [],
   excludedRowIndexes: number[] = [],
   rowEdits: PriceImportRowEdit[] = [],
-  metadataEdits: PriceImportMetadataEdit[] = []
+  metadataEdits: PriceImportMetadataEdit[] = [],
+  priceAdditions: PriceImportPriceAddition[] = [],
+  priceRemovals: PriceImportPriceRemoval[] = []
 ): PreparedPriceImportRows {
   if (priceEdits.length > MAX_IMPORT_ROWS * 12) throw new Error("Слишком много ручных правок цен для одного прайс‑листа.");
+  if (priceAdditions.length > MAX_IMPORT_ROWS * 12 || priceRemovals.length > MAX_IMPORT_ROWS * 12) throw new Error("Слишком много изменений вариантов цены для одного прайс‑листа.");
   if (excludedRowIndexes.length > MAX_IMPORT_ROWS) throw new Error("Слишком много исключенных строк прайс‑листа.");
   if (rowEdits.length > MAX_IMPORT_ROWS) throw new Error("Слишком много ручных правок названий для одного прайс‑листа.");
   if (metadataEdits.length > MAX_IMPORT_ROWS) throw new Error("Слишком много правок характеристик предложения для одного прайс‑листа.");
@@ -360,6 +367,32 @@ export function preparePriceImportRows(
     if (rowEdits.has(edit.optionIndex)) throw new Error("Одна цена прайс‑листа изменена повторно.");
     rowEdits.set(edit.optionIndex, edit);
     editsByRow.set(edit.rowIndex, rowEdits);
+  });
+
+  const removedByRow = new Map<number, Set<number>>();
+  priceRemovals.forEach(removal => {
+    if (!Number.isInteger(removal.rowIndex) || removal.rowIndex < 0 || removal.rowIndex >= rows.length ||
+      !Number.isInteger(removal.optionIndex) || removal.optionIndex < 0 || removal.optionIndex >= rows[removal.rowIndex]!.priceOptions.length) {
+      throw new Error("Передан некорректный вариант цены для удаления.");
+    }
+    if (excluded.has(removal.rowIndex)) throw new Error("Нельзя удалять цену у исключенной из импорта строки.");
+    const removed = removedByRow.get(removal.rowIndex) ?? new Set<number>();
+    if (removed.has(removal.optionIndex)) throw new Error("Вариант цены уже удален из предпросмотра.");
+    if (editsByRow.get(removal.rowIndex)?.has(removal.optionIndex)) throw new Error("Нельзя одновременно изменить и удалить один вариант цены.");
+    removed.add(removal.optionIndex);
+    removedByRow.set(removal.rowIndex, removed);
+  });
+
+  const additionsByRow = new Map<number, PriceImportPriceAddition[]>();
+  priceAdditions.forEach(addition => {
+    if (!Number.isInteger(addition.rowIndex) || addition.rowIndex < 0 || addition.rowIndex >= rows.length ||
+      !Number.isFinite(addition.priceAmount) || addition.priceAmount <= 0 || addition.priceAmount >= 10_000_000 ||
+      !editablePriceBases.includes(addition.priceBasis) || !editablePriceModes.includes(addition.priceMode) ||
+      !["unknown", "spb", "moscow"].includes(addition.market)) {
+      throw new Error("Передан некорректный добавленный вариант цены прайс‑листа.");
+    }
+    if (excluded.has(addition.rowIndex)) throw new Error("Нельзя добавлять цену к исключенной из импорта строке.");
+    additionsByRow.set(addition.rowIndex, [...(additionsByRow.get(addition.rowIndex) ?? []), addition]);
   });
 
   const nameEditsByRow = new Map<number, string>();
@@ -398,13 +431,16 @@ export function preparePriceImportRows(
     const rowPriceEdits = editsByRow.get(rowIndex);
     const rawName = nameEditsByRow.get(rowIndex);
     const metadata = metadataEditsByRow.get(rowIndex);
-    if (!rowPriceEdits?.size && !rawName && !metadata) return [{ rowIndex, row: sourceRow }];
-    const priceOptions = sourceRow.priceOptions.map((option, optionIndex) => {
+    const removals = removedByRow.get(rowIndex) ?? new Set<number>();
+    const additions = additionsByRow.get(rowIndex) ?? [];
+    if (!rowPriceEdits?.size && !removals.size && !additions.length && !rawName && !metadata) return [{ rowIndex, row: sourceRow }];
+    const priceOptions = sourceRow.priceOptions.flatMap((option, optionIndex) => {
+      if (removals.has(optionIndex)) return [];
       const edit = rowPriceEdits?.get(optionIndex);
-      if (!edit) return option;
+      if (!edit) return [option];
       const priceBasis = edit.priceBasis ?? option.priceBasis;
       const normalized = normalizePrice(edit.priceAmount, priceBasis, sourceRow.packaging || sourceRow.rawName);
-      return {
+      return [{
         ...option,
         priceAmount: Number(edit.priceAmount.toFixed(2)),
         priceBasis,
@@ -412,8 +448,21 @@ export function preparePriceImportRows(
         market: edit.market ?? option.market,
         ...normalized,
         sourcePriceText: String(Number(edit.priceAmount.toFixed(2))),
+      }];
+    }).concat(additions.map(addition => {
+      const normalized = normalizePrice(addition.priceAmount, addition.priceBasis, sourceRow.packaging || sourceRow.rawName);
+      return {
+        priceAmount: Number(addition.priceAmount.toFixed(2)),
+        priceBasis: addition.priceBasis,
+        priceMode: canonicalPriceMode(addition.priceMode),
+        market: addition.market,
+        ...normalized,
+        minimumQuantityKg: null,
+        includesVat: addition.priceMode === "cashless_vat" ? true : addition.priceMode === "cashless_no_vat" ? false : null,
+        sourcePriceText: "Введено вручную",
       };
-    });
+    }));
+    if (!priceOptions.length) throw new Error("В позиции должна остаться хотя бы одна цена. Исключите всю позицию, если она не нужна.");
     const nextName = rawName ?? sourceRow.rawName;
     const nextPlaceContents = metadata?.placeContents ?? (
       synchronizePlaceContentsBasis(
@@ -443,6 +492,8 @@ export function preparePriceImportRows(
     rows: preparedRows,
     excludedRowIndexes: Array.from(excluded).sort((left, right) => left - right),
     editedPriceOptions: priceEdits.length,
+    addedPriceOptions: priceAdditions.length,
+    removedPriceOptions: priceRemovals.length,
     editedNames: rowEdits.length,
     editedMetadata: metadataEdits.length,
   };
@@ -1044,11 +1095,13 @@ function pdfPriceOptionKey(option: ParsedPriceOption) {
   return [option.priceAmount ?? "manual", option.priceBasis, canonicalPriceMode(option.priceMode), option.market, option.includesVat ? "vat" : "no-vat"].join("|");
 }
 
-/** Keeps a single PDF row for repeated cells while preserving every distinct offer condition. */
+/** Keeps a single PDF row for repeated cells while preserving every distinct supplier variant. */
 export function deduplicatePdfRows(rows: ParsedPriceRow[]) {
   const unique = new Map<string, ParsedPriceRow>();
   rows.forEach(row => {
-    const key = [row.normalizedSignature, row.packagingSignature, fold(row.manufacturer ?? ""), normalizePlaceContents(row.placeContents)].join("|");
+    // `normalizedSignature` deliberately removes Sup/Ord for cross-supplier matching,
+    // but the source preview must not turn those distinct grades into two prices of one row.
+    const key = [row.normalizedSignature, fold(row.variant ?? ""), row.packagingSignature, fold(row.manufacturer ?? ""), normalizePlaceContents(row.placeContents)].join("|");
     const existing = unique.get(key);
     if (!existing) {
       unique.set(key, { ...row, priceOptions: [...row.priceOptions] });
@@ -1176,10 +1229,10 @@ export async function createPriceSupplier(input: { name: string; contactNote?: s
   const [supplier] = await db.select().from(priceSuppliers).where(eq(priceSuppliers.id, inserted.id)).limit(1);
   return supplier!;
 }
-export async function commitPriceImport(input: { buffer: Buffer; fileName: string; supplierName: string; sourceDate?: string | null; actorId: number; categorySelections?: PriceImportCategorySelection[]; priceEdits?: PriceImportPriceEdit[]; rowEdits?: PriceImportRowEdit[]; metadataEdits?: PriceImportMetadataEdit[]; productLinks?: PriceImportProductLink[]; excludedRowIndexes?: number[] }) {
+export async function commitPriceImport(input: { buffer: Buffer; fileName: string; supplierName: string; sourceDate?: string | null; actorId: number; categorySelections?: PriceImportCategorySelection[]; priceEdits?: PriceImportPriceEdit[]; rowEdits?: PriceImportRowEdit[]; metadataEdits?: PriceImportMetadataEdit[]; priceAdditions?: PriceImportPriceAddition[]; priceRemovals?: PriceImportPriceRemoval[]; productLinks?: PriceImportProductLink[]; excludedRowIndexes?: number[] }) {
   const preview = await previewPriceImport(input.buffer, input.fileName);
   if (!preview.rows.length) throw new Error("Импорт не сохранен: в документе не найдено ни одной товарной строки с ценой.");
-  const preparedRows = preparePriceImportRows(preview.rows, input.priceEdits, input.excludedRowIndexes, input.rowEdits, input.metadataEdits);
+  const preparedRows = preparePriceImportRows(preview.rows, input.priceEdits, input.excludedRowIndexes, input.rowEdits, input.metadataEdits, input.priceAdditions, input.priceRemovals);
   if (!preparedRows.rows.length) throw new Error("Импорт не сохранен: все распознанные строки исключены до сохранения.");
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
   const categoryByRow = new Map<number, number>();
@@ -1249,7 +1302,7 @@ export async function commitPriceImport(input: { buffer: Buffer; fileName: strin
     const storedOptions = row.priceOptions.filter((option): option is ParsedPriceOption & { priceAmount: number } => option.priceAmount !== null);
     if (storedOptions.length) await db.insert(priceOfferPrices).values(storedOptions.map(option => ({ importRowId: rowInserted.id, priceMode: canonicalPriceMode(option.priceMode), market: option.market, priceAmount: option.priceAmount.toFixed(2), priceBasis: option.priceBasis, normalizedPrice: option.normalizedPrice === null ? null : option.normalizedPrice.toFixed(2), normalizedUnit: option.normalizedUnit, minimumQuantityKg: option.minimumQuantityKg === null ? null : option.minimumQuantityKg.toFixed(2), includesVat: option.includesVat, sourcePriceText: option.sourcePriceText })));
   }
-  return { importId: inserted.id, supplier: { id: supplier.id, name: supplier.name }, supplierWasCreated: ensuredSupplier.created, rowCount: preparedRows.rows.length, linked, suggested, unmapped: preparedRows.rows.length - linked - suggested, createdProducts, createdProductDetails, createdAliasDetails, categorizedRows, explicitlyLinked, warningCount: preview.warningCount, excludedRows: preparedRows.excludedRowIndexes.length, editedPriceOptions: preparedRows.editedPriceOptions, editedNames: preparedRows.editedNames, editedMetadata: preparedRows.editedMetadata };
+  return { importId: inserted.id, supplier: { id: supplier.id, name: supplier.name }, supplierWasCreated: ensuredSupplier.created, rowCount: preparedRows.rows.length, linked, suggested, unmapped: preparedRows.rows.length - linked - suggested, createdProducts, createdProductDetails, createdAliasDetails, categorizedRows, explicitlyLinked, warningCount: preview.warningCount, excludedRows: preparedRows.excludedRowIndexes.length, editedPriceOptions: preparedRows.editedPriceOptions, addedPriceOptions: preparedRows.addedPriceOptions, removedPriceOptions: preparedRows.removedPriceOptions, editedNames: preparedRows.editedNames, editedMetadata: preparedRows.editedMetadata };
 }
 function sourceMimeType(sourceType: PriceImportPreview["sourceType"]) { return sourceType === "pdf" ? "application/pdf" : sourceType === "docx" ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "application/vnd.ms-excel"; }
 export async function listPriceControlData() {

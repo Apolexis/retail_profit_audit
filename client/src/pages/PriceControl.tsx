@@ -38,6 +38,7 @@ import {
   History,
   Link2,
   Loader2,
+  MapPin,
   Maximize2,
   Minimize2,
   PackageSearch,
@@ -93,6 +94,13 @@ type PriceBasis = "kg" | "l" | "piece" | "package" | "unknown";
 type PriceMode = "standard" | "cash" | "cashless_no_vat" | "cashless_vat" | "spb" | "moscow" | "special" | "threshold";
 type PricePaymentMode = "cash" | "cashless_no_vat" | "cashless_vat";
 type PriceMarket = "unknown" | "spb" | "moscow";
+type PreviewPriceDraft = {
+  priceAmount: string;
+  priceBasis: PriceBasis;
+  priceMode: PricePaymentMode;
+  market: PriceMarket;
+};
+type PreviewAddedPriceDraft = PreviewPriceDraft & { id: string };
 type ManualOfferDraft = {
   enabled: boolean;
   supplierId: string;
@@ -348,6 +356,8 @@ async function postPriceFile(
   commitOptions?: {
     categorySelections: Array<{ rowIndex: number; categoryId: number }>;
     priceEdits: Array<{ rowIndex: number; optionIndex: number; priceAmount: number; priceBasis: PriceBasis; priceMode: PricePaymentMode; market: PriceMarket }>;
+    priceAdditions: Array<{ rowIndex: number; priceAmount: number; priceBasis: PriceBasis; priceMode: PricePaymentMode; market: PriceMarket }>;
+    priceRemovals: Array<{ rowIndex: number; optionIndex: number }>;
     rowEdits: Array<{ rowIndex: number; rawName: string }>;
     metadataEdits: Array<{ rowIndex: number; manufacturer: string | null; placeContents: string | null; manufacturedOn: string | null; shelfLifeMonths: number | null; expiresOn: string | null }>;
     productLinks: Array<{ rowIndex: number; productId: number }>;
@@ -379,6 +389,8 @@ async function packPriceImportCommitBody(
   options: {
     categorySelections: Array<{ rowIndex: number; categoryId: number }>;
     priceEdits: Array<{ rowIndex: number; optionIndex: number; priceAmount: number; priceBasis: PriceBasis; priceMode: PricePaymentMode; market: PriceMarket }>;
+    priceAdditions: Array<{ rowIndex: number; priceAmount: number; priceBasis: PriceBasis; priceMode: PricePaymentMode; market: PriceMarket }>;
+    priceRemovals: Array<{ rowIndex: number; optionIndex: number }>;
     rowEdits: Array<{ rowIndex: number; rawName: string }>;
     metadataEdits: Array<{ rowIndex: number; manufacturer: string | null; placeContents: string | null; manufacturedOn: string | null; shelfLifeMonths: number | null; expiresOn: string | null }>;
     productLinks: Array<{ rowIndex: number; productId: number }>;
@@ -595,10 +607,13 @@ export default function PriceControl({
     number[]
   >([]);
   const [previewBulkCategoryId, setPreviewBulkCategoryId] = useState("");
+  const [previewBulkMarket, setPreviewBulkMarket] = useState<"" | PriceMarket>("");
   const [previewNewCategoryName, setPreviewNewCategoryName] = useState("");
   const [previewPriceEdits, setPreviewPriceEdits] = useState<
-    Record<string, { priceAmount: string; priceBasis: PriceBasis; priceMode: PricePaymentMode; market: PriceMarket }>
+    Record<string, PreviewPriceDraft>
   >({});
+  const [previewAddedPriceOptions, setPreviewAddedPriceOptions] = useState<Record<number, PreviewAddedPriceDraft[]>>({});
+  const [previewRemovedPriceOptions, setPreviewRemovedPriceOptions] = useState<Record<string, true>>({});
   const [previewNameEdits, setPreviewNameEdits] = useState<Record<number, string>>({});
   const [expandedPreviewNameRows, setExpandedPreviewNameRows] = useState<Record<number, boolean>>({});
   const [previewMetadataEdits, setPreviewMetadataEdits] = useState<
@@ -930,6 +945,7 @@ export default function PriceControl({
         (count, { row, index }) =>
           count +
           row.priceOptions.filter((option, optionIndex) => {
+            if (previewRemovedPriceOptions[previewPriceKey(index, optionIndex)]) return false;
             if (option.priceAmount !== null) return false;
             const manualAmount = previewPriceEdits[
               `${index}:${optionIndex}`
@@ -938,7 +954,7 @@ export default function PriceControl({
           }).length,
         0
       ),
-    [previewActiveRows, previewPriceEdits]
+    [previewActiveRows, previewPriceEdits, previewRemovedPriceOptions]
   );
   const previewStaticWarnings = (preview?.warnings ?? []).filter(
     warning => !/цен[аы].*(?:не указ|уточн|заполн)/i.test(warning)
@@ -952,8 +968,11 @@ export default function PriceControl({
     setPreviewCategoryTargets({});
     setSelectedPreviewRowIndexes([]);
     setPreviewBulkCategoryId("");
+    setPreviewBulkMarket("");
     setPreviewNewCategoryName("");
     setPreviewPriceEdits({});
+    setPreviewAddedPriceOptions({});
+    setPreviewRemovedPriceOptions({});
     setPreviewNameEdits({});
     setExpandedPreviewNameRows({});
     setPreviewMetadataEdits({});
@@ -1011,7 +1030,7 @@ export default function PriceControl({
     if (!file || !preview || !supplierName.trim()) return;
     const missingManualPrice = preview.rows.some((row, rowIndex) =>
       !excludedPreviewRowIndexes.includes(rowIndex) && row.priceOptions.some((option, optionIndex) =>
-        option.priceAmount === null && !previewPriceEdits[previewPriceKey(rowIndex, optionIndex)]?.priceAmount.trim()
+        option.priceAmount === null && !previewRemovedPriceOptions[previewPriceKey(rowIndex, optionIndex)] && !previewPriceEdits[previewPriceKey(rowIndex, optionIndex)]?.priceAmount.trim()
       )
     );
     if (missingManualPrice) {
@@ -1025,6 +1044,17 @@ export default function PriceControl({
     });
     if (priceEdits.some(edit => !Number.isFinite(edit.priceAmount) || edit.priceAmount <= 0 || edit.priceAmount >= 10_000_000)) {
       toast.error("Проверьте измененные цены: допустимо значение от 0 до 10 000 000 ₽.");
+      return;
+    }
+    const priceAdditions = Object.entries(previewAddedPriceOptions).flatMap(([rowIndex, additions]) => additions.map(addition => ({
+      rowIndex: Number(rowIndex),
+      priceAmount: Number(addition.priceAmount.replace(/\s/g, "").replace(",", ".")),
+      priceBasis: addition.priceBasis,
+      priceMode: addition.priceMode,
+      market: addition.market,
+    })));
+    if (priceAdditions.some(addition => !Number.isFinite(addition.priceAmount) || addition.priceAmount <= 0 || addition.priceAmount >= 10_000_000)) {
+      toast.error("Заполните каждую добавленную цену значением от 0 до 10 000 000 ₽.");
       return;
     }
     const rowEdits = Object.entries(previewNameEdits)
@@ -1048,6 +1078,11 @@ export default function PriceControl({
           .filter(([rowIndex, categoryId]) => !excludedPreviewRowIndexes.includes(Number(rowIndex)) && Number(categoryId) > 0)
           .map(([rowIndex, categoryId]) => ({ rowIndex: Number(rowIndex), categoryId: Number(categoryId) })),
         priceEdits,
+        priceAdditions,
+        priceRemovals: Object.keys(previewRemovedPriceOptions).map(key => {
+          const [rowIndex, optionIndex] = key.split(":");
+          return { rowIndex: Number(rowIndex), optionIndex: Number(optionIndex) };
+        }),
         rowEdits,
         metadataEdits,
         productLinks: Object.entries(previewProductLinks)
@@ -1268,6 +1303,8 @@ export default function PriceControl({
     setSelectedPreviewRowIndexes(current => current.filter(index => !removing.has(index)));
     setPreviewCategoryTargets(current => Object.fromEntries(Object.entries(current).filter(([rowIndex]) => !removing.has(Number(rowIndex)))));
     setPreviewPriceEdits(current => Object.fromEntries(Object.entries(current).filter(([key]) => !removing.has(Number(key.split(":" )[0])))));
+    setPreviewAddedPriceOptions(current => Object.fromEntries(Object.entries(current).filter(([rowIndex]) => !removing.has(Number(rowIndex)))));
+    setPreviewRemovedPriceOptions(current => Object.fromEntries(Object.entries(current).filter(([key]) => !removing.has(Number(key.split(":" )[0])))));
     setPreviewNameEdits(current => Object.fromEntries(Object.entries(current).filter(([rowIndex]) => !removing.has(Number(rowIndex)))));
     setExpandedPreviewNameRows(current => Object.fromEntries(Object.entries(current).filter(([rowIndex]) => !removing.has(Number(rowIndex)))));
     setPreviewMetadataEdits(current => Object.fromEntries(Object.entries(current).filter(([rowIndex]) => !removing.has(Number(rowIndex)))));
@@ -1296,6 +1333,34 @@ export default function PriceControl({
       ),
     }));
   };
+  const assignPreviewMarketToSelected = () => {
+    if (!preview || !previewBulkMarket || !selectedPreviewRowIndexes.length) return;
+    const selectedRows = new Set(selectedPreviewRowIndexes);
+    setPreviewPriceEdits(current => {
+      const next = { ...current };
+      selectedRows.forEach(rowIndex => {
+        preview.rows[rowIndex]?.priceOptions.forEach((option, optionIndex) => {
+          const key = previewPriceKey(rowIndex, optionIndex);
+          if (previewRemovedPriceOptions[key]) return;
+          next[key] = {
+            priceAmount: current[key]?.priceAmount ?? (option.priceAmount === null ? "" : String(option.priceAmount)),
+            priceBasis: current[key]?.priceBasis ?? option.priceBasis,
+            priceMode: current[key]?.priceMode ?? canonicalPriceMode(option.priceMode),
+            market: previewBulkMarket,
+          };
+        });
+      });
+      return next;
+    });
+    setPreviewAddedPriceOptions(current => Object.fromEntries(
+      Object.entries(current).map(([rowIndex, additions]) => [
+        rowIndex,
+        selectedRows.has(Number(rowIndex))
+          ? additions.map(addition => ({ ...addition, market: previewBulkMarket }))
+          : additions,
+      ])
+    ));
+  };
   const createPreviewCategory = async () => {
     const name = previewNewCategoryName.trim();
     if (name.length < 2) {
@@ -1320,6 +1385,52 @@ export default function PriceControl({
     }
   };
   const previewPriceKey = (rowIndex: number, optionIndex: number) => `${rowIndex}:${optionIndex}`;
+  const previewAddedPriceKey = (rowIndex: number, id: string) => `${rowIndex}:${id}`;
+  const addPreviewPriceOption = (rowIndex: number, row: Preview["rows"][number]) => {
+    const fallback = row.priceOptions.find(option => option.priceAmount !== null) ?? row.priceOptions[0];
+    if (!fallback) return;
+    const id = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+    setPreviewAddedPriceOptions(current => ({
+      ...current,
+      [rowIndex]: [
+        ...(current[rowIndex] ?? []),
+        {
+          id,
+          priceAmount: "",
+          priceBasis: fallback.priceBasis,
+          priceMode: canonicalPriceMode(fallback.priceMode),
+          market: marketFromPriceMode(fallback.market, fallback.priceMode),
+        },
+      ],
+    }));
+  };
+  const updatePreviewAddedPriceOption = (rowIndex: number, id: string, patch: Partial<PreviewPriceDraft>) => {
+    setPreviewAddedPriceOptions(current => ({
+      ...current,
+      [rowIndex]: (current[rowIndex] ?? []).map(option => option.id === id ? { ...option, ...patch } : option),
+    }));
+  };
+  const removePreviewAddedPriceOption = (rowIndex: number, id: string) => {
+    setPreviewAddedPriceOptions(current => ({
+      ...current,
+      [rowIndex]: (current[rowIndex] ?? []).filter(option => option.id !== id),
+    }));
+  };
+  const removePreviewPriceOption = (rowIndex: number, optionIndex: number, row: Preview["rows"][number]) => {
+    const key = previewPriceKey(rowIndex, optionIndex);
+    const remainingOriginal = row.priceOptions.filter((_option, index) => !previewRemovedPriceOptions[previewPriceKey(rowIndex, index)]).length;
+    const remaining = remainingOriginal + (previewAddedPriceOptions[rowIndex]?.length ?? 0);
+    if (remaining <= 1) {
+      toast.error("В позиции должна остаться хотя бы одна цена. Чтобы убрать ее целиком, исключите позицию.");
+      return;
+    }
+    setPreviewRemovedPriceOptions(current => ({ ...current, [key]: true }));
+    setPreviewPriceEdits(current => {
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+  };
   const updatePreviewPriceDraft = (rowIndex: number, optionIndex: number, fallback: Preview["rows"][number]["priceOptions"][number], patch: Partial<{ priceAmount: string; priceBasis: PriceBasis; priceMode: PricePaymentMode; market: PriceMarket }>) => {
     const key = previewPriceKey(rowIndex, optionIndex);
     const nextBasis = patch.priceBasis ?? previewPriceEdits[key]?.priceBasis ?? fallback.priceBasis;
@@ -2125,6 +2236,21 @@ export default function PriceControl({
                             <Tags size={14} />
                             Назначить отмеченным
                           </button>
+                          <PriceSelect
+                            value={previewBulkMarket}
+                            onValueChange={value => setPreviewBulkMarket(value as PriceMarket)}
+                            placeholder="Город для отмеченных"
+                            options={priceMarketOptions}
+                          />
+                          <button
+                            type="button"
+                            className="packet-link compact"
+                            disabled={!previewBulkMarket}
+                            onClick={assignPreviewMarketToSelected}
+                          >
+                            <MapPin size={14} />
+                            Назначить город
+                          </button>
                           <div className="price-preview-create-category">
                             <input
                               value={previewNewCategoryName}
@@ -2322,9 +2448,11 @@ export default function PriceControl({
                         </div>
                         <div className="price-preview-prices" aria-label={`Цены позиции ${row.rawName}`}>
                           {row.priceOptions.map((option, optionIndex) => {
+                            const priceKey = previewPriceKey(index, optionIndex);
+                            if (previewRemovedPriceOptions[priceKey]) return null;
                             const draft = previewPriceEdits[previewPriceKey(index, optionIndex)];
                             return (
-                              <div key={previewPriceKey(index, optionIndex)}>
+                              <div key={priceKey}>
                                 <small>{option.priceAmount === null ? "цена не указана поставщиком" : modeLabel[canonicalPriceMode(option.priceMode)]}</small>
                                 {canUpload ? (
                                   <div className="price-preview-price-edit">
@@ -2355,6 +2483,15 @@ export default function PriceControl({
                                       className="price-preview-market-select"
                                       options={priceMarketOptions}
                                     />
+                                    <button
+                                      type="button"
+                                      className="price-preview-price-remove"
+                                      onClick={() => removePreviewPriceOption(index, optionIndex, row)}
+                                      aria-label={`Удалить вариант цены «${row.rawName}»`}
+                                      title="Удалить вариант цены"
+                                    >
+                                      <X size={15} />
+                                    </button>
                                   </div>
                                 ) : (
                                   option.priceAmount === null
@@ -2364,6 +2501,59 @@ export default function PriceControl({
                               </div>
                             );
                           })}
+                          {(previewAddedPriceOptions[index] ?? []).map(option => (
+                            <div key={previewAddedPriceKey(index, option.id)} className="price-preview-added-price">
+                              <small>цена добавлена вручную</small>
+                              <div className="price-preview-price-edit">
+                                <input
+                                  inputMode="decimal"
+                                  value={option.priceAmount}
+                                  onChange={event => updatePreviewAddedPriceOption(index, option.id, { priceAmount: event.target.value })}
+                                  aria-label={`Добавленная цена «${row.rawName}»`}
+                                />
+                                <PriceSelect
+                                  value={option.priceBasis}
+                                  onValueChange={value => updatePreviewAddedPriceOption(index, option.id, { priceBasis: value as PriceBasis })}
+                                  placeholder="База цены"
+                                  className="price-preview-basis-select"
+                                  options={priceBasisOptions(row.packaging || row.rawName)}
+                                />
+                                <PriceSelect
+                                  value={option.priceMode}
+                                  onValueChange={value => updatePreviewAddedPriceOption(index, option.id, { priceMode: value as PricePaymentMode })}
+                                  placeholder="Условие цены"
+                                  className="price-preview-mode-select"
+                                  options={editablePriceModes}
+                                />
+                                <PriceSelect
+                                  value={option.market}
+                                  onValueChange={value => updatePreviewAddedPriceOption(index, option.id, { market: value as PriceMarket })}
+                                  placeholder="Город"
+                                  className="price-preview-market-select"
+                                  options={priceMarketOptions}
+                                />
+                                <button
+                                  type="button"
+                                  className="price-preview-price-remove"
+                                  onClick={() => removePreviewAddedPriceOption(index, option.id)}
+                                  aria-label={`Удалить добавленную цену «${row.rawName}»`}
+                                  title="Удалить вариант цены"
+                                >
+                                  <X size={15} />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                          {canUpload && (
+                            <button
+                              type="button"
+                              className="packet-link compact subtle price-preview-price-add"
+                              onClick={() => addPreviewPriceOption(index, row)}
+                            >
+                              <Plus size={14} />
+                              Добавить цену
+                            </button>
+                          )}
                         </div>
                         {canEdit && (
                           <PriceSelect

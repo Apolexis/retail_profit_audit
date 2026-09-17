@@ -194,6 +194,28 @@ describe("прайс‑контроль: нормализация товарны
     expect(result[0]?.priceOptions).toHaveLength(2);
   });
 
+  it("не склеивает Sup и Ord одинакового весового диапазона в два варианта цены одной позиции", () => {
+    const template = { sourceSheet: "PDF", sourceSku: null, category: null, packaging: null, packagingSignature: "", manufacturer: null, placeContents: null, manufacturedOn: null, shelfLifeMonths: null, expiresOn: null, availability: null, sizeText: "1-2", rawPayload: {}, priceOptions: [{ priceAmount: 980, priceBasis: "kg", normalizedPrice: 980, normalizedUnit: "kg", priceMode: "cashless_vat", market: "unknown", minimumQuantityKg: null, includesVat: true, sourcePriceText: "980" }] } as any;
+    const sup = { ...template, sourceRowNumber: 1, rawName: "Форель морская Мурманск ПСГ 1-2 Sup с/м", normalizedName: "форель морская мурманск псг 1-2 sup с м", canonicalHint: "Форель морская Мурманск ПСГ 1-2 Sup с/м", normalizedSignature: productSignature("Форель морская Мурманск ПСГ 1-2 Sup с/м"), variant: "Sup" };
+    const ord = { ...template, sourceRowNumber: 2, rawName: "Форель морская Мурманск ПСГ 1-2 Ord с/м", normalizedName: "форель морская мурманск псг 1-2 ord с м", canonicalHint: "Форель морская Мурманск ПСГ 1-2 Ord с/м", normalizedSignature: productSignature("Форель морская Мурманск ПСГ 1-2 Ord с/м"), variant: "Ord", priceOptions: [{ ...template.priceOptions[0], priceAmount: 880, normalizedPrice: 880, sourcePriceText: "880" }] };
+    const result = deduplicatePdfRows([sup, ord]);
+    expect(result).toHaveLength(2);
+    expect(result.map(row => row.priceOptions[0]?.priceAmount)).toEqual([980, 880]);
+  });
+
+  it("добавляет и удаляет вариант цены только в подготовленном предпросмотре", () => {
+    const row = { rawName: "Форель", priceOptions: [
+      { priceAmount: 980, priceBasis: "kg", normalizedPrice: 980, normalizedUnit: "kg", priceMode: "cashless_vat", market: "unknown", minimumQuantityKg: null, includesVat: true, sourcePriceText: "980" },
+      { priceAmount: 880, priceBasis: "kg", normalizedPrice: 880, normalizedUnit: "kg", priceMode: "cashless_vat", market: "unknown", minimumQuantityKg: null, includesVat: true, sourcePriceText: "880" },
+    ] } as any;
+    const prepared = preparePriceImportRows([row], [], [], [], [], [{ rowIndex: 0, priceAmount: 960, priceBasis: "kg", priceMode: "cash", market: "moscow" }], [{ rowIndex: 0, optionIndex: 1 }]);
+    expect(prepared.rows[0]?.row.priceOptions).toEqual([
+      expect.objectContaining({ priceAmount: 980, priceMode: "cashless_vat" }),
+      expect.objectContaining({ priceAmount: 960, priceMode: "cash", market: "moscow", sourcePriceText: "Введено вручную" }),
+    ]);
+    expect(prepared).toMatchObject({ addedPriceOptions: 1, removedPriceOptions: 1 });
+  });
+
   it("рассчитывает дату годности по дате изготовления и выбранному сроку, включая конец месяца", () => {
     expect(calculatePriceOfferExpiry("2026-01-31", 1)).toBe("2026-02-28");
     expect(calculatePriceOfferExpiry("2026-08-15", 18)).toBe("2028-02-15");
