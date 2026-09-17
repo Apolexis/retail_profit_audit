@@ -169,11 +169,11 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain('html[data-audit-theme="light"] .packet .inline-error { border-color: #b9d5eb; background: #edf7ff; color: #075dbb; }');
   });
 
-  it("на широкой версии отдает свободное место названию и не накладывает цену с метаданными", () => {
-    expect(styles).toContain("grid-template-columns: 36px minmax(0, 1.62fr) minmax(0, .88fr)");
+  it("на широкой версии отдает свободное место названию и держит исключение отдельным верхним действием", () => {
+    expect(styles).toContain("grid-template-columns: 28px minmax(0, 1.62fr) minmax(0, .88fr) 36px");
     expect(styles).toContain(".price-preview-table { inline-size: 100%; max-inline-size: 100%; box-sizing: border-box; }");
     expect(styles).toContain(".price-preview-new-row .price-preview-prices { grid-column: 3; grid-row: 1; min-width: 0; }");
-    expect(styles).toContain(".price-preview-new-row .price-preview-remove { position: static; grid-column: 1; grid-row: 2; align-self: start; justify-self: start; }");
+    expect(styles).toContain(".price-preview-new-row .price-preview-remove { position: static; grid-column: 4; grid-row: 1; align-self: start; justify-self: end; }");
     expect(styles).toContain(".packet .price-preview-offer-metadata { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));");
     expect(styles).toContain(".packet .price-preview-prices > div > small { position: static;");
     expect(styles).toContain(".packet .price-preview-price-edit { grid-template-columns: minmax(0, .9fr) minmax(0, 1fr); }");
@@ -213,18 +213,24 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).not.toContain("manufacturerCharacteristicId");
   });
 
-  it("на телефоне показывает одну позицию preview с навигацией и использует компактную отмеченную галочку", () => {
+  it("на телефоне показывает одну позицию preview с подсказкой и анимацией живого свайпа", () => {
     expect(page).toContain("price-preview-mobile-pager");
     expect(page).toContain("Позиция {currentMobilePreviewPosition + 1}");
     expect(page).toContain("is-mobile-current");
     expect(page).toContain("const moveMobilePreview = (direction: -1 | 1)");
     expect(page).toContain("(current + direction + total) % total");
     expect(page).toContain("onPointerDown={startPreviewSwipe}");
+    expect(page).toContain("onPointerMove={updatePreviewSwipe}");
     expect(page).toContain("onPointerUp={finishPreviewSwipe}");
     expect(page).toContain("Math.abs(horizontalDistance) < 44");
+    expect(page).toContain("mobilePreviewSwipeOffset");
+    expect(page).toContain("price-preview-swipe-hint");
+    expect(page).toContain("price-preview-swipe-hint\", \"seen\"");
     expect(page).toContain("<Check size={12} />");
     expect(styles).toContain(".packet .price-preview-mobile-pager { display: none; }");
     expect(styles).toContain(".packet .price-preview-table > div.is-mobile-current { display: grid; }");
+    expect(styles).toContain(".packet .price-preview-table > div.is-mobile-current.is-mobile-swipe-dragging");
+    expect(styles).toContain("@keyframes price-preview-enter-from-right");
     expect(styles).toContain(".packet .price-preview-check:has(input:checked)");
   });
 
@@ -248,6 +254,14 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain("grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr) !important;");
     expect(styles).toContain(".packet .price-preview-price-edit .price-preview-market-select { font-size: clamp(9px, 3.3cqi, 11px); letter-spacing: -.03em; }");
     expect(styles).toContain('[data-slot="select-value"] { min-width: 0; overflow: hidden; text-overflow: clip; white-space: nowrap; }');
+  });
+
+  it("на малой средней ширине выводит цену отдельной строкой и не возвращает кнопку исключения вниз", () => {
+    expect(styles).toContain("@media (min-width: 761px) and (max-width: 1120px)");
+    expect(styles).toContain("grid-template-columns: 28px minmax(0, 1fr) 36px; grid-template-rows: auto auto auto auto;");
+    expect(styles).toContain(".price-preview-new-row .price-preview-remove { position: static; grid-column: 3; grid-row: 1; align-self: start; justify-self: end; }");
+    expect(styles).toContain(".price-preview-new-row .price-preview-prices { grid-column: 2; grid-row: 2; min-width: 0; }");
+    expect(styles).toContain(".price-import-workbench.is-preview-ready .price-preview-price-edit { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }");
   });
 
   it("использует тематичный выбор даты прайса вместо системного поля даты", () => {

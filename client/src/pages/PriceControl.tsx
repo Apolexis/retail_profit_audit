@@ -618,6 +618,12 @@ export default function PriceControl({
   const [previewProductLinks, setPreviewProductLinks] = useState<Record<number, string>>({});
   const [excludedPreviewRowIndexes, setExcludedPreviewRowIndexes] = useState<number[]>([]);
   const [mobilePreviewPosition, setMobilePreviewPosition] = useState(0);
+  const [mobilePreviewSwipeOffset, setMobilePreviewSwipeOffset] = useState(0);
+  const [mobilePreviewSlideDirection, setMobilePreviewSlideDirection] = useState<-1 | 0 | 1>(0);
+  const [mobilePreviewHintVisible, setMobilePreviewHintVisible] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.sessionStorage.getItem("price-preview-swipe-hint") !== "seen";
+  });
   const [productDraft, setProductDraft] = useState<ProductDraft | null>(null);
   const [characteristicDraft, setCharacteristicDraft] = useState<CharacteristicDraft | null>(null);
   const [categoryDraft, setCategoryDraft] = useState<CategoryDraft | null>(
@@ -880,15 +886,45 @@ export default function PriceControl({
   const startPreviewSwipe = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerType !== "touch" || (event.target as HTMLElement).closest("input, textarea, button, [data-slot='select-trigger']")) return;
     previewSwipeStart.current = { x: event.clientX, y: event.clientY };
+    setMobilePreviewSlideDirection(0);
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+  const updatePreviewSwipe = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const start = previewSwipeStart.current;
+    if (!start || event.pointerType !== "touch") return;
+    const horizontalDistance = event.clientX - start.x;
+    const verticalDistance = event.clientY - start.y;
+    if (Math.abs(horizontalDistance) <= Math.abs(verticalDistance)) return;
+    setMobilePreviewSwipeOffset(Math.max(-112, Math.min(112, horizontalDistance)));
+  };
+  const cancelPreviewSwipe = (event: ReactPointerEvent<HTMLDivElement>) => {
+    previewSwipeStart.current = null;
+    setMobilePreviewSwipeOffset(0);
+    setMobilePreviewSlideDirection(0);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   };
   const finishPreviewSwipe = (event: ReactPointerEvent<HTMLDivElement>) => {
     const start = previewSwipeStart.current;
     previewSwipeStart.current = null;
-    if (!start || event.pointerType !== "touch") return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    if (!start || event.pointerType !== "touch") {
+      setMobilePreviewSwipeOffset(0);
+      return;
+    }
     const horizontalDistance = event.clientX - start.x;
     const verticalDistance = event.clientY - start.y;
-    if (Math.abs(horizontalDistance) < 44 || Math.abs(horizontalDistance) <= Math.abs(verticalDistance)) return;
-    moveMobilePreview(horizontalDistance < 0 ? 1 : -1);
+    if (Math.abs(horizontalDistance) < 44 || Math.abs(horizontalDistance) <= Math.abs(verticalDistance)) {
+      setMobilePreviewSwipeOffset(0);
+      return;
+    }
+    const direction = horizontalDistance < 0 ? 1 : -1;
+    setMobilePreviewSwipeOffset(0);
+    setMobilePreviewSlideDirection(direction);
+    moveMobilePreview(direction);
+    if (mobilePreviewHintVisible) {
+      setMobilePreviewHintVisible(false);
+      window.sessionStorage.setItem("price-preview-swipe-hint", "seen");
+    }
   };
   const unresolvedPreviewPriceCount = useMemo(
     () =>
@@ -2153,16 +2189,32 @@ export default function PriceControl({
                       >
                         <ChevronRight size={17} />
                       </button>
+                      {mobilePreviewHintVisible && (
+                        <small className="price-preview-swipe-hint" aria-live="polite">
+                          <ChevronLeft size={13} />
+                          Свайпните карточку
+                          <ChevronRight size={13} />
+                        </small>
+                      )}
                     </div>
                   )}
-                  <div className="price-preview-table" onPointerDown={startPreviewSwipe} onPointerUp={finishPreviewSwipe} onPointerCancel={() => { previewSwipeStart.current = null; }}>
-                    {previewActiveRows.map(({ row, index }) => (
-                      <div
-                        key={`${row.rawName}-${index}`}
-                        className={
-                          `${canEdit && previewNewRowIndexes.has(index) ? "price-preview-new-row" : "price-preview-row"}${selectedPreviewRowIndexes.includes(index) ? " is-selected" : ""}${currentMobilePreviewRowIndex === index ? " is-mobile-current" : ""}`
-                        }
-                      >
+                  <div className="price-preview-table" onPointerDown={startPreviewSwipe} onPointerMove={updatePreviewSwipe} onPointerUp={finishPreviewSwipe} onPointerCancel={cancelPreviewSwipe}>
+                    {previewActiveRows.map(({ row, index }) => {
+                      const isMobileCurrent = currentMobilePreviewRowIndex === index;
+                      const slideClass = isMobileCurrent && mobilePreviewSlideDirection !== 0
+                        ? mobilePreviewSlideDirection === 1 ? " is-mobile-swipe-enter-from-right" : " is-mobile-swipe-enter-from-left"
+                        : "";
+                      return (
+                        <div
+                          key={`${row.rawName}-${index}`}
+                          className={
+                            `${canEdit && previewNewRowIndexes.has(index) ? "price-preview-new-row" : "price-preview-row"}${selectedPreviewRowIndexes.includes(index) ? " is-selected" : ""}${isMobileCurrent ? " is-mobile-current" : ""}${isMobileCurrent && mobilePreviewSwipeOffset !== 0 ? " is-mobile-swipe-dragging" : ""}${slideClass}`
+                          }
+                          style={isMobileCurrent && mobilePreviewSwipeOffset !== 0 ? { transform: `translateX(${mobilePreviewSwipeOffset}px)` } : undefined}
+                          onAnimationEnd={event => {
+                            if (event.currentTarget === event.target) setMobilePreviewSlideDirection(0);
+                          }}
+                        >
                         {canEdit && previewNewRowIndexes.has(index) && (
                           <label className="price-preview-check">
                             <input
@@ -2325,8 +2377,9 @@ export default function PriceControl({
                             <Trash2 size={15} />
                           </button>
                         )}
-                      </div>
-                    ))}
+                        </div>
+                      );
+                    })}
                   </div>
                   {excludedPreviewRowIndexes.length > 0 && (
                     <details className="price-preview-excluded">
