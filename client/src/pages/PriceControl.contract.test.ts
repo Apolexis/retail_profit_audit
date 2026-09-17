@@ -33,23 +33,33 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).not.toContain('type="date"');
   });
 
-  it("сохраняет приоритет точной связи поставщика с внутренним товаром", () => {
-    expect(page).toContain("Точная связь «поставщик → наш товар» имеет приоритет");
-    expect(page).toContain("Следующие прайсы этого поставщика будут сопоставляться автоматически.");
-    expect(page).toContain("Внутренний товар создан");
+  it("показывает весь сохраненный импорт с номерами и явным изменением связи строки", () => {
+    expect(page).toContain("price-saved-import-row");
+    expect(page).toContain("price-saved-import-number");
+    expect(page).toContain("Показано позиций:");
+    expect(page).toContain("Связь с товаром");
+    expect(page).toContain("Сохранить связь");
+    expect(page).toContain("editingSavedImportRowId");
+    expect(styles).toContain(".packet .price-saved-import-row");
+  });
+
+  it("объясняет точную связь названия поставщика с именем для сравнения", () => {
+    expect(page).toContain("Выберите имя, под которым позиция будет показываться в");
+    expect(page).toContain("Имя связи для сравнения");
+    expect(page).toContain("Создать и связать");
     expect(page).toContain("internalCode");
   });
 
-  it("позволяет переназначить или отменить подтвержденную автосвязь без удаления прайс‑листа", () => {
-    expect(page).toContain("ПОДТВЕРЖДЕННЫЕ АВТОСВЯЗИ");
-    expect(page).toContain("Переназначить");
-    expect(page).toContain("Отменить автосвязь");
+  it("позволяет изменить или убрать связь названия поставщика без удаления прайс‑листа", () => {
+    expect(page).toContain("СВЯЗИ НАЗВАНИЙ ПОСТАВЩИКА");
+    expect(page).toContain("Изменить связь");
+    expect(page).toContain("Убрать");
     expect(page).toContain("reassignAlias");
     expect(page).toContain("unlinkAlias");
   });
 
   it("показывает нормализованную цену, исходную фасовку и обоснованного победителя", () => {
-    expect(page).toContain("ГДЕ ВЫГОДНЕЕ КУПИТЬ");
+    expect(page).toContain("СРАВНЕНИЕ ПО ИМЕНИ СВЯЗИ");
     expect(page).toContain("Нормализация");
     expect(page).toContain("ВЫГОДНЕЕ КУПИТЬ");
     expect(page).toContain("экономия");
@@ -117,12 +127,50 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("Обновлено товаров:");
   });
 
-  it("показывает полный контекст конкретного предложения в tooltip графиков", () => {
-    expect(page).toContain("function PriceOfferTooltip");
+  it("дает добавить составы мест из сохраненных прайсов в повторно используемый справочник", () => {
+    expect(page).toContain("refreshPlaceContents");
+    expect(page).toContain("repairablePlaceContents");
+    expect(page).toContain("Добавить состав мест");
+  });
+
+  it("не выводит весь справочник сразу и сохраняет единый выбор с preview", () => {
+    expect(page).toContain("directoryProductLimit");
+    expect(page).toContain("visibleDirectoryProducts");
+    expect(page).toContain("Показать еще");
+    expect(page).toContain("price-directory-selection-marker");
+    expect(page).toContain('className="price-preview-check"');
+    expect(page).toContain("bulkSetProductActive");
+    expect(page).toContain("bulkSetOfferMarket");
+    expect(styles).toContain(".packet .price-directory-selection-marker");
+  });
+
+  it("фильтрует сравнение по выбранному варианту, фасовке или составу места", () => {
+    expect(page).toContain("characteristicFilter");
+    expect(page).toContain("Все характеристики");
+    expect(page).toContain("matchesCharacteristic");
+  });
+
+  it("собирает названия поставщиков под одним именем связи и раскрывает их по действию", () => {
+    expect(page).toContain("const aliasGroups = useMemo");
+    expect(page).toContain("Одна связь — одно общее имя товара");
+    expect(page).toContain("price-alias-group-members");
+    expect(page).toContain("Имя связи · {group.aliases.length}");
+    expect(styles).toContain(".packet .price-alias-group-members > summary");
+  });
+
+  it("дает добавить ручную цену прямо у выбранного имени связи", () => {
+    expect(page).toContain("comparisonManualOffer");
+    expect(page).toContain("Добавить цену в историю");
+    expect(page).toContain("ДОБАВИТЬ ЦЕНУ В ИСТОРИЮ");
+    expect(page).toContain("createManualOffer.mutate");
+    expect(styles).toContain(".packet .price-comparison-manual-offer");
+  });
+
+  it("показывает полный контекст конкретного предложения в tooltip истории", () => {
+    expect(page).toContain("function PriceOfferTooltipDetails");
     expect(page).toContain("function PriceHistoryTooltip");
     expect(page).toContain("Исходная строка");
     expect(page).toContain("Состав места");
-    expect(page).toContain('content={<PriceOfferTooltip />}');
     expect(page).toContain('content={<PriceHistoryTooltip />}');
     expect(styles).toContain(".packet .price-offer-tooltip");
   });
@@ -235,11 +283,11 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain(".packet .price-preview-price-edit { grid-template-columns: minmax(0, .9fr) minmax(0, 1fr); }");
   });
 
-  it("дает до сохранения исправить имя и явно выбрать внутренний товар для связи поставщика", () => {
+  it("дает до сохранения исправить имя и явно выбрать имя связи поставщика", () => {
     expect(page).toContain("previewNameEdits");
     expect(page).toContain("previewProductLinks");
     expect(page).toContain("Название в этом прайсе");
-    expect(page).toContain("Связать с внутренним товаром");
+    expect(page).toContain("Имя связи для сравнения");
     expect(page).toContain("Укажите существующий товар, только если это та же позиция.");
     expect(page).toContain("Связано:");
     expect(page).toContain("productLinks:");

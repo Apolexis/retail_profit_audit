@@ -4484,7 +4484,7 @@ html[data-audit-theme="dark"] .password-input-toggle { color: #c7bdcc; }
 /* Прайс‑контроль: фильтры образуют цельный первый шаг, а не разрывают карточку на узкие колонки. */
 .packet .price-toolbar {
   display: grid;
-  grid-template-columns: minmax(230px, 1.45fr) repeat(4, minmax(132px, .8fr));
+  grid-template-columns: minmax(230px, 1.45fr) repeat(5, minmax(132px, .8fr));
   align-items: end;
   gap: 10px;
   margin: 15px 0 16px;
@@ -4595,4 +4595,115 @@ html[data-audit-theme="dark"] .password-input-toggle { color: #c7bdcc; }
   .packet .price-offer-edit-panel > .price-expiry-date { grid-column: auto; }
   .packet .price-offer-edit-panel > .packet-link { width: 100%; justify-content: center; }
   .packet .price-preview-product-link > small { font-size: 10px; }
+}
+
+/* Прайс‑контроль: сохраненный импорт и справочник не превращают экран в бесконечный список. */
+.packet .price-import-preview .price-preview-table { display: grid; gap: 0; overflow: hidden; border: 1px solid var(--price-border); border-radius: 12px; background: var(--price-surface); }
+.packet .price-import-preview .price-preview-table > .price-saved-import-row { display: grid; grid-template-columns: 38px minmax(210px, 1.4fr) minmax(90px, .5fr) minmax(180px, .9fr) auto; gap: 8px 12px; align-items: center; min-width: 0; padding: 9px 10px; border-top: 1px solid var(--price-border); }
+.packet .price-saved-import-row:first-child { border-top: 0; }
+.packet .price-saved-import-row:nth-child(even) { background: color-mix(in srgb, var(--price-accent) 3%, var(--price-surface)); }
+.packet .price-saved-import-row.is-editing { background: color-mix(in srgb, var(--price-accent) 8%, var(--price-surface)); }
+.packet .price-saved-import-number,
+.packet .price-directory-row-number { display: inline-flex; align-items: center; justify-content: center; color: var(--price-muted); font: 800 10px/1 "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.packet .price-saved-import-main { display: grid; min-width: 0; gap: 3px; }
+.packet .price-saved-import-main strong { overflow: hidden; color: var(--price-ink); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.packet .price-saved-import-main span,
+.packet .price-saved-import-row > small { min-width: 0; overflow: hidden; color: var(--price-muted); font-size: 10px; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }
+.packet .price-saved-import-row > b { color: var(--price-ink); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.packet .price-saved-import-unlinked { color: var(--price-accent) !important; }
+.packet .price-saved-import-actions { display: flex; align-items: center; justify-content: flex-end; gap: 5px; }
+.packet .price-saved-import-actions .packet-link { min-height: 29px; padding-inline: 8px; }
+.packet .price-saved-import-actions .price-preview-remove { position: static; width: 29px; min-width: 29px; height: 29px; min-height: 29px; }
+.packet .price-saved-import-editor { grid-column: 2 / -1; display: grid; grid-template-columns: minmax(230px, .8fr) minmax(0, 1.2fr) auto; gap: 8px 12px; align-items: end; padding: 9px 0 2px; border-top: 1px dashed var(--price-border); }
+.packet .price-saved-import-editor > label { display: grid; gap: 4px; color: var(--price-muted); font-size: 10px; }
+.packet .price-saved-import-editor > small { align-self: center; color: var(--price-muted); font-size: 10px; line-height: 1.35; }
+.packet .price-saved-import-editor > div { display: flex; flex-wrap: wrap; gap: 5px; }
+.packet .price-saved-import-editor .packet-link { min-height: 30px; padding-inline: 8px; }
+.packet .price-saved-import-limit { margin: 10px 0 0; }
+
+.packet .price-directory-selection-marker { display: grid; grid-template-rows: 20px auto; align-content: start; justify-items: center; gap: 5px; width: 24px; min-width: 24px; }
+.packet .price-directory-selection-marker .price-preview-check { margin: 0; }
+.packet .price-directory-list > article:has(.price-directory-selection-marker) { grid-template-columns: 24px minmax(0, 1fr) auto !important; gap: 9px; }
+.packet .price-directory-show-more { display: flex; width: 100%; justify-content: center; margin-top: 9px; }
+.packet .price-directory-all-shown { display: block; padding: 10px 2px 0; color: var(--price-muted); font-size: 10px; text-align: center; }
+
+@media (max-width: 720px) {
+  .packet .price-import-preview .price-preview-table > .price-saved-import-row { grid-template-columns: 30px minmax(0, 1fr) auto; gap: 6px 8px; }
+  .packet .price-saved-import-main { grid-column: 2; }
+  .packet .price-saved-import-row > b { grid-column: 2; }
+  .packet .price-saved-import-row > small { grid-column: 2; white-space: normal; }
+  .packet .price-saved-import-actions { grid-column: 3; grid-row: 1 / span 3; align-self: start; flex-direction: column; }
+  .packet .price-saved-import-editor { grid-column: 1 / -1; grid-template-columns: 1fr; }
+  .packet .price-saved-import-editor > div { justify-content: flex-start; }
+}
+@media (max-width: 420px) {
+  .packet .price-preview-price-edit { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; }
+  .packet .price-preview-price-edit > .price-preview-price-remove { grid-column: 2; grid-row: 3; justify-self: end; }
+}
+
+/* Связи прайсов: один основной товар с раскрываемыми названиями поставщиков. */
+.packet .price-alias-list { display: grid; gap: 8px; }
+.packet .price-alias-list > .price-alias-group { display: grid; gap: 8px; padding: 11px; border: 1px solid var(--price-border); border-radius: 11px; background: var(--price-surface); }
+.packet .price-alias-group-heading { display: grid; min-width: 0; gap: 3px; }
+.packet .price-alias-group-heading > span { color: var(--price-accent); font: 800 9px/1.2 "IBM Plex Mono", monospace; letter-spacing: .05em; text-transform: uppercase; }
+.packet .price-alias-group-heading > strong { color: var(--price-ink); font-size: 13px; }
+.packet .price-alias-group-heading > small { color: var(--price-muted); font-size: 10px; line-height: 1.35; }
+.packet .price-alias-group-members > summary { display: inline-flex; min-height: 29px; align-items: center; cursor: pointer; color: var(--price-muted); font: 750 10px/1.2 Manrope, Arial, sans-serif; list-style: none; }
+.packet .price-alias-group-members > summary::-webkit-details-marker { display: none; }
+.packet .price-alias-group-members > summary::before { content: "+"; display: inline-grid; width: 16px; height: 16px; place-items: center; margin-right: 5px; border: 1px solid var(--price-border); border-radius: 5px; color: var(--price-accent); font-size: 13px; }
+.packet .price-alias-group-members[open] > summary::before { content: "–"; }
+.packet .price-alias-group-members > div { display: grid; gap: 6px; margin-top: 7px; }
+.packet .price-alias-member { display: grid; grid-template-columns: minmax(180px, .8fr) minmax(350px, 1.2fr); gap: 10px; align-items: center; padding-top: 7px; border-top: 1px dashed var(--price-border); }
+.packet .price-alias-member > div:first-child { display: grid; min-width: 0; gap: 2px; }
+.packet .price-alias-member > div:first-child > span { color: var(--price-muted); font-size: 10px; }
+.packet .price-alias-member > div:first-child > strong { overflow: hidden; color: var(--price-ink); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.packet .price-alias-member > div:first-child > small { color: var(--price-muted); font-size: 9px; }
+.packet .price-alias-member .price-alias-actions { display: grid; grid-template-columns: minmax(170px, 1fr) auto auto; gap: 6px; align-items: center; }
+.packet .price-alias-member .price-alias-actions .packet-link { min-height: 31px; padding-inline: 8px; }
+@media (max-width: 720px) {
+  .packet .price-alias-member { grid-template-columns: minmax(0, 1fr); }
+  .packet .price-alias-member .price-alias-actions { grid-template-columns: minmax(0, 1fr) auto auto; }
+}
+@media (max-width: 460px) {
+  .packet .price-alias-member .price-alias-actions { grid-template-columns: minmax(0, 1fr); }
+  .packet .price-alias-member .price-alias-actions .packet-link { justify-content: center; }
+}
+
+/* Сравнение: сначала читаемая таблица вариантов, затем динамика; столбцы-дубликаты не отвлекают. */
+.packet .price-detail { display: flex; flex-direction: column; gap: 13px; }
+.packet .price-detail > .price-detail-heading { order: 1; }
+.packet .price-detail > .price-offer-table { order: 2; margin: 0; }
+.packet .price-detail > .price-history-chart { order: 3; margin: 0; }
+.packet .price-detail > .price-chart-card { display: none; }
+.packet .price-history-chart { padding: 13px; border: 1px solid var(--price-border); border-radius: 14px; background: color-mix(in srgb, var(--price-surface) 96%, var(--price-accent) 4%); }
+.packet .price-history-chart > div:first-child { display: flex; align-items: end; justify-content: space-between; gap: 10px; }
+.packet .price-history-chart > div:first-child::after { content: "История выбранного имени связи"; color: var(--price-muted); font-size: 10px; line-height: 1.3; text-align: right; }
+.packet .price-offer-table::before { content: "Варианты поставщиков"; display: block; padding: 0 0 8px; color: var(--price-ink); font: 800 14px/1.2 Manrope, Arial, sans-serif; }
+@media (max-width: 560px) {
+  .packet .price-history-chart > div:first-child { display: grid; align-items: start; }
+  .packet .price-history-chart > div:first-child::after { text-align: left; }
+}
+
+/* Ручная цена открывается прямо у выбранного имени связи, а не уводит в справочник. */
+.packet .price-detail > .price-comparison-manual-offer { order: 3; }
+.packet .price-detail > .price-history-chart { order: 4; }
+.packet .price-comparison-manual-offer { display: grid; gap: 11px; padding: 13px; border: 1px solid var(--price-border); border-radius: 14px; background: color-mix(in srgb, var(--price-accent) 5%, var(--price-surface)); }
+.packet .price-comparison-manual-offer > div:first-child { display: grid; gap: 3px; }
+.packet .price-comparison-manual-offer > div:first-child > span { color: var(--price-muted); font: 750 9px/1.2 "IBM Plex Mono", monospace; letter-spacing: .07em; }
+.packet .price-comparison-manual-offer h5 { margin: 0; color: var(--price-ink); font: 800 14px/1.25 Manrope, Arial, sans-serif; }
+.packet .price-comparison-manual-offer p { margin: 0; color: var(--price-muted); font-size: 10px; line-height: 1.4; }
+.packet .price-comparison-manual-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.packet .price-comparison-manual-fields > label,
+.packet .price-comparison-manual-fields .date-range-control { min-width: 0; }
+.packet .price-comparison-manual-fields > label { display: grid; gap: 4px; color: var(--price-muted); font-size: 10px; font-weight: 750; }
+.packet .price-comparison-manual-fields input { width: 100%; min-height: 37px; border-color: var(--price-border); background: var(--price-surface); color: var(--price-ink); }
+.packet .price-comparison-manual-actions { display: flex; justify-content: flex-end; gap: 6px; }
+.packet .price-add-history-action { margin-top: 8px; }
+@media (max-width: 760px) {
+  .packet .price-comparison-manual-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 460px) {
+  .packet .price-comparison-manual-fields { grid-template-columns: minmax(0, 1fr); }
+  .packet .price-comparison-manual-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .packet .price-comparison-manual-actions .packet-link { justify-content: center; }
 }

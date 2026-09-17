@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getCurrentLocalAccount, hasPriceAccess } from "../accessControl";
 import { protectedProcedure, router } from "../_core/trpc";
-import { bulkAssignPriceCategory, createManualPriceOffer, createPriceCategory, createPriceProduct, createPriceProductCharacteristic, createPriceSupplier, deletePriceImport, deletePriceImportRow, deletePriceSupplier, getPriceCategoryAuditState, getPriceImportAuditState, getPriceImportDownload, getPriceImportRowAuditState, getPriceOfferAuditState, getPriceProductAuditState, getPriceProductCharacteristicAuditState, getPriceProductsAuditStates, getPriceSupplierAuditState, linkPriceImportRow, listPriceControlData, reassignPriceSupplierAlias, repairRecognizedPriceProductVariants, setPriceSupplierActive, unlinkPriceSupplierAlias, updatePriceCategory, updatePriceImportDate, updatePriceOffer, updatePriceProduct, updatePriceProductCharacteristic, updatePriceSupplier } from "../priceControl";
+import { bulkAssignPriceCategory, bulkSetPriceOfferMarketByProducts, bulkSetPriceProductsActive, createManualPriceOffer, createPriceCategory, createPriceProduct, createPriceProductCharacteristic, createPriceSupplier, deletePriceImport, deletePriceImportRow, deletePriceSupplier, getPriceCategoryAuditState, getPriceImportAuditState, getPriceImportDownload, getPriceImportRowAuditState, getPriceOfferAuditState, getPriceOfferMarketAuditState, getPriceProductAuditState, getPriceProductCharacteristicAuditState, getPriceProductsAuditStates, getPriceSupplierAuditState, linkPriceImportRow, listPriceControlData, reassignPriceSupplierAlias, repairRecognizedPriceProductVariants, seedPriceOfferPlaceContentsCharacteristics, setPriceSupplierActive, unlinkPriceSupplierAlias, updatePriceCategory, updatePriceImportDate, updatePriceOffer, updatePriceProduct, updatePriceProductCharacteristic, updatePriceSupplier } from "../priceControl";
 import { recordChange } from "../localAuth";
 
 async function requirePricePermission(openId: string | null | undefined, required: "view" | "upload" | "edit") {
@@ -44,6 +44,24 @@ export const priceControlRouter = router({
     await recordChange({ actorId: actor.id, action: "price_product.category_bulk_assign", entityType: "price_product", entityId: input.productIds.join(","), beforeState: { products: before }, afterState: { products: after, categoryName: result.category.name } });
     return result;
   }),
+  bulkSetProductActive: protectedProcedure.input(z.object({ productIds: z.array(z.number().int().positive()).min(1).max(300), isActive: z.boolean() })).mutation(async ({ ctx, input }) => {
+    await requirePricePermission(ctx.user.openId, "edit");
+    const actor = await localActor(ctx.user.openId);
+    const before = await getPriceProductsAuditStates(input.productIds);
+    const result = await bulkSetPriceProductsActive(input);
+    const after = await getPriceProductsAuditStates(input.productIds);
+    await recordChange({ actorId: actor.id, action: "price_product.visibility_bulk_update", entityType: "price_product", entityId: input.productIds.join(","), beforeState: { products: before }, afterState: { products: after, isActive: result.isActive } });
+    return result;
+  }),
+  bulkSetOfferMarket: protectedProcedure.input(z.object({ productIds: z.array(z.number().int().positive()).min(1).max(300), market: z.enum(["unknown", "spb", "moscow"]) })).mutation(async ({ ctx, input }) => {
+    await requirePricePermission(ctx.user.openId, "edit");
+    const actor = await localActor(ctx.user.openId);
+    const before = await getPriceOfferMarketAuditState(input.productIds);
+    const result = await bulkSetPriceOfferMarketByProducts(input);
+    const after = await getPriceOfferMarketAuditState(input.productIds);
+    await recordChange({ actorId: actor.id, action: "price_offer.market_bulk_update", entityType: "price_offer", entityId: input.productIds.join(","), beforeState: before, afterState: { ...after, selectedMarket: result.market, updatedOffers: result.updatedOffers } });
+    return result;
+  }),
   createCharacteristic: protectedProcedure.input(z.object({ kind: z.enum(["variant", "size", "place_contents", "manufacturer"]), value: z.string().trim().min(1).max(160) })).mutation(async ({ ctx, input }) => {
     await requirePricePermission(ctx.user.openId, "edit");
     const actor = await localActor(ctx.user.openId); const characteristic = await createPriceProductCharacteristic(input);
@@ -72,6 +90,19 @@ export const priceControlRouter = router({
         },
       });
     }
+    return result;
+  }),
+  refreshPlaceContents: protectedProcedure.mutation(async ({ ctx }) => {
+    await requirePricePermission(ctx.user.openId, "edit");
+    const actor = await localActor(ctx.user.openId);
+    const result = await seedPriceOfferPlaceContentsCharacteristics();
+    await recordChange({
+      actorId: actor.id,
+      action: "price_product_characteristic.place_contents_refresh",
+      entityType: "price_product_characteristic",
+      entityId: `place-contents:${result.created.length}`,
+      afterState: { scannedOfferValues: result.scanned, createdValues: result.created },
+    });
     return result;
   }),
   updateCharacteristic: protectedProcedure.input(z.object({ id: z.number().int().positive(), value: z.string().trim().min(1).max(160), isActive: z.boolean().optional() })).mutation(async ({ ctx, input }) => {

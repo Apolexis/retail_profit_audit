@@ -1286,7 +1286,11 @@ export async function commitPriceImport(input: { buffer: Buffer; fileName: strin
       explicitlyLinked += 1;
     }
     if (mapping.productId === null && category) {
-      const product = await createPriceProduct({ canonicalName: row.canonicalHint, categoryId: category.id });
+      const product = await createPriceProduct({
+        canonicalName: row.canonicalHint,
+        categoryId: category.id,
+        placeContents: row.placeContents,
+      });
       products.push({ id: product.id, normalizedSignature: product.normalizedSignature });
       aliases.push({ supplierId: supplier.id, productId: product.id, normalizedName: row.normalizedName, packagingSignature: row.packagingSignature });
       await db.insert(priceSupplierAliases).values({ supplierId: supplier.id, productId: product.id, normalizedName: row.normalizedName, sourceSku: row.sourceSku, packagingSignature: row.packagingSignature, isConfirmed: true, createdByAccountId: input.actorId }).onDuplicateKeyUpdate({ set: { productId: product.id, sourceSku: row.sourceSku, isConfirmed: true, createdByAccountId: input.actorId } });
@@ -1320,6 +1324,18 @@ export async function listPriceControlData() {
   const repairableVariants = catalogProducts
     .map(product => ({ id: product.id, canonicalName: product.canonicalName, variant: extractVariant(product.canonicalName) }))
     .filter((product): product is { id: number; canonicalName: string; variant: string } => Boolean(product.variant) && !catalogProducts.find(item => item.id === product.id)?.variant);
+  const knownPlaceContents = new Set(
+    characteristics
+      .filter(item => item.kind === "place_contents")
+      .map(item => item.normalizedValue)
+  );
+  const repairablePlaceContents = Array.from(
+    new Set(
+      rows
+        .map(row => normalizeCharacteristicDisplay("place_contents", row.placeContents ?? ""))
+        .filter(Boolean)
+    )
+  ).filter(value => !knownPlaceContents.has(normalizeCharacteristicValue(value))).sort();
   const productMap = new Map(catalogProducts.map(product => [product.id, product]));
   const priceChangeSources = rows.flatMap(row => row.priceId !== null && row.productId !== null && row.normalizedPrice !== null && row.normalizedUnit !== null ? [{ priceId: row.priceId, importId: row.importId, productId: row.productId, supplierId: row.supplierId, priceMode: row.priceMode, market: row.market, normalizedUnit: row.normalizedUnit, normalizedPrice: row.normalizedPrice, sourceDate: row.sourceDate, importedAt: row.importedAt }] : []);
   const priceChanges = calculatePriceChanges(priceChangeSources);
@@ -1345,11 +1361,11 @@ export async function listPriceControlData() {
     if (previewSeen.has(row.rowId)) return;
     previewSeen.add(row.rowId);
     const preview = previewMap.get(row.importId);
-    if (preview && preview.rows.length < 24) preview.rows.push({ rowId: row.rowId, rawName: row.rawName, rawCategory: row.rawCategory, rawPackaging: row.rawPackaging, manufacturer: row.manufacturer, placeContents: row.placeContents, productName: row.productName, priceAmount: row.priceAmount === null ? null : Number(row.priceAmount) });
+    if (preview) preview.rows.push({ rowId: row.rowId, rawName: row.rawName, rawCategory: row.rawCategory, rawPackaging: row.rawPackaging, manufacturer: row.manufacturer, placeContents: row.placeContents, productName: row.productName, priceAmount: row.priceAmount === null ? null : Number(row.priceAmount) });
   });
-  return { suppliers, categories, characteristics, products: catalogProducts, imports, comparisons, unmappedRows, aliases, history, importPreviews: Array.from(previewMap.values()), repairableVariants: { count: repairableVariants.length, values: Array.from(new Set(repairableVariants.map(product => product.variant))).sort() } };
+  return { suppliers, categories, characteristics, products: catalogProducts, imports, comparisons, unmappedRows, aliases, history, importPreviews: Array.from(previewMap.values()), repairableVariants: { count: repairableVariants.length, values: Array.from(new Set(repairableVariants.map(product => product.variant))).sort() }, repairablePlaceContents: { count: repairablePlaceContents.length, values: repairablePlaceContents } };
 }
-function emptyPriceData() { return { suppliers: [], categories: [], characteristics: [], products: [], imports: [], comparisons: [], unmappedRows: [], aliases: [], history: [], importPreviews: [], repairableVariants: { count: 0, values: [] as string[] } }; }
+function emptyPriceData() { return { suppliers: [], categories: [], characteristics: [], products: [], imports: [], comparisons: [], unmappedRows: [], aliases: [], history: [], importPreviews: [], repairableVariants: { count: 0, values: [] as string[] }, repairablePlaceContents: { count: 0, values: [] as string[] } }; }
 
 export async function listSignificantPriceIncreases(importId: number) {
   const db = await getDb();
@@ -1432,6 +1448,33 @@ export async function repairRecognizedPriceProductVariants() {
     variants.push(variant.value);
   }
   return { updated: variants.length, variants: Array.from(new Set(variants)).sort(), recognizedVariants };
+}
+
+/** Adds only missing reusable place contents found in saved supplier offers. It never changes a product or its links. */
+export async function seedPriceOfferPlaceContentsCharacteristics() {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const [rows, characteristics] = await Promise.all([
+    db.select({ placeContents: priceImportRows.placeContents }).from(priceImportRows),
+    db.select({ normalizedValue: priceProductCharacteristics.normalizedValue })
+      .from(priceProductCharacteristics)
+      .where(eq(priceProductCharacteristics.kind, "place_contents")),
+  ]);
+  const values = Array.from(
+    new Set(
+      rows
+        .map(row => normalizeCharacteristicDisplay("place_contents", row.placeContents ?? ""))
+        .filter(Boolean)
+    )
+  ).sort();
+  const existing = new Set(characteristics.map(item => item.normalizedValue));
+  const missing = values.filter(value => !existing.has(normalizeCharacteristicValue(value)));
+  const created: string[] = [];
+  for (const value of missing) {
+    const characteristic = await ensurePriceProductCharacteristic("place_contents", value);
+    if (characteristic) created.push(characteristic.value);
+  }
+  return { scanned: values.length, created: Array.from(new Set(created)).sort() };
 }
 
 export async function updatePriceProductCharacteristic(input: { id: number; value: string; isActive?: boolean }) {
@@ -1601,6 +1644,68 @@ export async function bulkAssignPriceCategory(input: {
     .set({ categoryId: category.id, category: category.name })
     .where(inArray(priceProducts.id, productIds));
   return { updated: productIds.length, category: { id: category.id, name: category.name } };
+}
+
+export async function bulkSetPriceProductsActive(input: {
+  productIds: number[];
+  isActive: boolean;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const productIds = Array.from(
+    new Set(input.productIds.filter(id => Number.isInteger(id) && id > 0))
+  );
+  if (!productIds.length) throw new Error("Выберите хотя бы один товар.");
+  await db
+    .update(priceProducts)
+    .set({ isActive: input.isActive })
+    .where(inArray(priceProducts.id, productIds));
+  return { updated: productIds.length, isActive: input.isActive };
+}
+
+function cleanProductIds(productIds: number[]) {
+  return Array.from(new Set(productIds.filter(id => Number.isInteger(id) && id > 0)));
+}
+
+export async function getPriceOfferMarketAuditState(productIds: number[]) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const ids = cleanProductIds(productIds);
+  if (!ids.length) return { offerCount: 0, markets: {} as Record<string, number> };
+  const rows = await db
+    .select({ market: priceOfferPrices.market, priceMode: priceOfferPrices.priceMode })
+    .from(priceOfferPrices)
+    .innerJoin(priceImportRows, eq(priceOfferPrices.importRowId, priceImportRows.id))
+    .where(inArray(priceImportRows.productId, ids));
+  const markets = rows.reduce<Record<string, number>>((summary, row) => {
+    const market = resolvePriceMarket(row.market, row.priceMode);
+    summary[market] = (summary[market] ?? 0) + 1;
+    return summary;
+  }, {});
+  return { offerCount: rows.length, markets };
+}
+
+export async function bulkSetPriceOfferMarketByProducts(input: {
+  productIds: number[];
+  market: PriceMarket;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const productIds = cleanProductIds(input.productIds);
+  if (!productIds.length) throw new Error("Выберите хотя бы один товар.");
+  const prices = await db
+    .select({ id: priceOfferPrices.id })
+    .from(priceOfferPrices)
+    .innerJoin(priceImportRows, eq(priceOfferPrices.importRowId, priceImportRows.id))
+    .where(inArray(priceImportRows.productId, productIds));
+  const priceIds = prices.map(price => price.id);
+  if (priceIds.length) {
+    await db
+      .update(priceOfferPrices)
+      .set({ market: input.market })
+      .where(inArray(priceOfferPrices.id, priceIds));
+  }
+  return { updatedProducts: productIds.length, updatedOffers: priceIds.length, market: input.market };
 }
 
 export async function updatePriceSupplier(input: { id: number; name: string; contactNote?: string | null; isActive?: boolean }) {

@@ -1,9 +1,6 @@
 import { type CSSProperties, type PointerEvent as ReactPointerEvent, useMemo, useRef, useState } from "react";
 import {
-  Bar,
-  BarChart,
   CartesianGrid,
-  Cell,
   Legend,
   Line,
   LineChart,
@@ -324,11 +321,6 @@ type PriceOfferTooltipDatum = {
   sourcePriceText: string | null;
   priceChange: PriceChangeView;
 };
-type PriceChartPoint = PriceOfferTooltipDatum & {
-  name: string;
-  price: number;
-  winner: boolean;
-};
 type PriceHistoryPoint = {
   date: string;
   offerDetails: Record<string, PriceOfferTooltipDatum>;
@@ -352,10 +344,6 @@ function PriceOfferTooltipDetails({ offer }: { offer: PriceOfferTooltipDatum }) 
     </dl>
     <PriceChangeBadge change={offer.priceChange} unit={offer.normalizedUnit} />
   </>;
-}
-function PriceOfferTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload?: PriceChartPoint }> }) {
-  const offer = active ? payload?.[0]?.payload : null;
-  return offer ? <div className="price-offer-tooltip" role="status"><PriceOfferTooltipDetails offer={offer} /></div> : null;
 }
 function PriceHistoryTooltip({ active, label, payload }: { active?: boolean; label?: string | number; payload?: Array<{ payload?: PriceHistoryPoint; dataKey?: string | number; name?: string | number }> }) {
   if (!active || !payload?.length) return null;
@@ -525,6 +513,17 @@ export default function PriceControl({
     },
     onError: error => toast.error(error.message),
   });
+  const refreshPlaceContents = trpc.priceControl.refreshPlaceContents.useMutation({
+    onSuccess: result => {
+      invalidate();
+      toast.success("Составы мест добавлены в справочник", {
+        description: result.created.length
+          ? `Добавлено значений: ${result.created.length}.`
+          : "Все составы мест из сохраненных прайсов уже доступны.",
+      });
+    },
+    onError: error => toast.error(error.message),
+  });
   const bulkAssignCategory = trpc.priceControl.bulkAssignCategory.useMutation({
     onSuccess: result => {
       invalidate();
@@ -532,6 +531,25 @@ export default function PriceControl({
       setBulkCategoryId("");
       toast.success("Категория назначена", {
         description: `Обновлено товаров: ${result.updated}.`,
+      });
+    },
+    onError: error => toast.error(error.message),
+  });
+  const bulkSetProductActive = trpc.priceControl.bulkSetProductActive.useMutation({
+    onSuccess: result => {
+      invalidate();
+      setSelectedDirectoryProductIds([]);
+      toast.success(result.isActive ? "Товары показаны" : "Товары скрыты", {
+        description: `Обновлено товаров: ${result.updated}.`,
+      });
+    },
+    onError: error => toast.error(error.message),
+  });
+  const bulkSetOfferMarket = trpc.priceControl.bulkSetOfferMarket.useMutation({
+    onSuccess: result => {
+      invalidate();
+      toast.success("Город назначен предложениям", {
+        description: `Обновлено ценовых предложений: ${result.updatedOffers}.`,
       });
     },
     onError: error => toast.error(error.message),
@@ -585,6 +603,7 @@ export default function PriceControl({
   const createManualOffer = trpc.priceControl.createManualOffer.useMutation({
     onSuccess: () => {
       invalidate();
+      setComparisonManualOffer(null);
       toast.success("Ручное предложение сохранено");
     },
     onError: error => toast.error(error.message),
@@ -654,6 +673,7 @@ export default function PriceControl({
   const [committing, setCommitting] = useState(false);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
+  const [characteristicFilter, setCharacteristicFilter] = useState("");
   const [supplierFilter, setSupplierFilter] = useState("");
   const [offerMarketFilter, setOfferMarketFilter] = useState<"" | "moscow" | "spb">("");
   const [visibilityFilter, setVisibilityFilter] =
@@ -710,11 +730,13 @@ export default function PriceControl({
   );
   const [directoryTab, setDirectoryTab] = useState<DirectoryTab>("products");
   const [directoryProductSearch, setDirectoryProductSearch] = useState("");
+  const [directoryProductLimit, setDirectoryProductLimit] = useState(60);
   const [directoryCategorySearch, setDirectoryCategorySearch] = useState("");
   const [selectedDirectoryProductIds, setSelectedDirectoryProductIds] = useState<
     number[]
   >([]);
   const [bulkCategoryId, setBulkCategoryId] = useState("");
+  const [bulkOfferMarket, setBulkOfferMarket] = useState<"" | PriceMarket>("");
   const [supplierDraft, setSupplierDraft] = useState<SupplierDraft | null>(
     null
   );
@@ -727,11 +749,17 @@ export default function PriceControl({
     Record<number, { priceAmount: string; priceBasis: PriceBasis; priceMode: PricePaymentMode; market: PriceMarket; manufacturer: string; placeContents: string; manufacturedOn: string; shelfLifeMonths: number | null; expiresOn: string }>
   >({});
   const [editingOfferId, setEditingOfferId] = useState<number | null>(null);
+  const [comparisonManualOffer, setComparisonManualOffer] = useState<{
+    productId: number;
+    draft: ManualOfferDraft;
+  } | null>(null);
   const [dateDrafts, setDateDrafts] = useState<Record<number, string>>({});
   const [deleteSavedRowCandidate, setDeleteSavedRowCandidate] = useState<{
     rowId: number;
     name: string;
   } | null>(null);
+  const [editingSavedImportRowId, setEditingSavedImportRowId] = useState<number | null>(null);
+  const [savedImportLinkTargets, setSavedImportLinkTargets] = useState<Record<number, string>>({});
   const categoryEditorRef = useRef<HTMLDivElement>(null);
   const supplierEditorRef = useRef<HTMLDivElement>(null);
   const previewPriceKey = (rowIndex: number, optionIndex: number) => `${rowIndex}:${optionIndex}`;
@@ -782,6 +810,10 @@ export default function PriceControl({
       return matchesSearch && matchesVisibility(product);
     });
   }, [catalogProducts, directoryProductSearch, visibilityFilter]);
+  const visibleDirectoryProducts = directoryProducts.slice(0, directoryProductLimit);
+  const selectedDirectoryProducts = catalogProducts.filter(product => selectedDirectoryProductIds.includes(product.id));
+  const selectedDirectoryProductsHaveActive = selectedDirectoryProducts.some(product => product.isActive);
+  const selectedDirectoryProductsHaveHidden = selectedDirectoryProducts.some(product => !product.isActive);
   const categoryMembers = useMemo(() => {
     const members = new Map<number, typeof catalogProducts>();
     catalogProducts.forEach(product => {
@@ -793,6 +825,27 @@ export default function PriceControl({
     });
     return members;
   }, [catalogProducts]);
+  const aliasGroups = useMemo(() => {
+    const groups = new Map<number, {
+      productId: number;
+      internalCode: string;
+      canonicalName: string;
+      aliases: NonNullable<typeof overview.data>["aliases"];
+    }>();
+    (overview.data?.aliases ?? []).forEach(alias => {
+      const group = groups.get(alias.productId) ?? {
+        productId: alias.productId,
+        internalCode: alias.internalCode,
+        canonicalName: alias.canonicalName,
+        aliases: [],
+      };
+      group.aliases.push(alias);
+      groups.set(alias.productId, group);
+    });
+    return Array.from(groups.values()).sort((left, right) =>
+      left.canonicalName.localeCompare(right.canonicalName, "ru")
+    );
+  }, [overview.data?.aliases]);
   const directoryCategories = useMemo(() => {
     const query = directoryCategorySearch.trim().toLocaleLowerCase("ru");
     return categories.filter(category => {
@@ -806,6 +859,7 @@ export default function PriceControl({
   }, [categories, directoryCategorySearch, visibilityFilter]);
   const filteredComparisons = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("ru");
+    const [characteristicKind, characteristicId] = characteristicFilter.split(":");
     return (overview.data?.comparisons ?? [])
       .filter(item => {
         const matchQuery =
@@ -813,10 +867,18 @@ export default function PriceControl({
           `${item.product.canonicalName} ${item.product.internalCode} ${item.product.variant ?? ""} ${item.product.sizeText ?? ""}`
             .toLocaleLowerCase("ru")
             .includes(query);
+        const matchesCharacteristic = !characteristicFilter || (
+          characteristicKind === "variant" && String(item.product.variantCharacteristicId ?? "") === characteristicId
+        ) || (
+          characteristicKind === "size" && String(item.product.sizeCharacteristicId ?? "") === characteristicId
+        ) || (
+          characteristicKind === "place_contents" && String(item.product.placeContentsCharacteristicId ?? "") === characteristicId
+        );
         return (
           matchQuery &&
           matchesVisibility(item.product) &&
-          (!categoryFilter || String(item.product.categoryId ?? "") === categoryFilter)
+          (!categoryFilter || String(item.product.categoryId ?? "") === categoryFilter) &&
+          matchesCharacteristic
         );
       })
       .map(item => {
@@ -884,34 +946,15 @@ export default function PriceControl({
         };
       })
       .filter(item => item.offers.length);
-  }, [overview.data?.comparisons, search, categoryFilter, supplierFilter, offerMarketFilter, visibilityFilter]);
+  }, [overview.data?.comparisons, search, categoryFilter, characteristicFilter, supplierFilter, offerMarketFilter, visibilityFilter]);
   const selected =
     filteredComparisons.find(item => item.product.id === selectedProductId) ??
     filteredComparisons[0] ??
     null;
-  const chartData: PriceChartPoint[] = (selected?.offers ?? []).map(offer => ({
-    supplierName: offer.supplierName,
-    rawName: offer.rawName,
-    packaging: offer.packaging,
-    manufacturer: offer.manufacturer,
-    placeContents: offer.placeContents,
-    priceMode: canonicalPriceMode(offer.priceMode),
-    market: marketFromPriceMode(offer.market, offer.priceMode),
-    priceAmount: offer.priceAmount,
-    priceBasis: offer.priceBasis,
-    normalizedPrice: offer.normalizedPrice,
-    normalizedUnit: offer.normalizedUnit ?? "unknown",
-    sourceDate: offer.sourceDate,
-    sourcePriceText: offer.sourcePriceText,
-    priceChange: offer.priceChange,
-    name: [
-      offer.supplierName,
-      modeLabel[canonicalPriceMode(offer.priceMode)],
-      offer.market !== "unknown" ? marketLabel[offer.market] : null,
-    ].filter(Boolean).join(" · "),
-    price: offer.normalizedPrice,
-    winner: selected?.recommendation?.supplierId === offer.supplierId,
-  }));
+  const comparisonManualDraft =
+    comparisonManualOffer && selected && comparisonManualOffer.productId === selected.product.id
+      ? comparisonManualOffer.draft
+      : null;
   const historyRows = useMemo(
     () =>
       (overview.data?.history ?? [])
@@ -995,8 +1038,12 @@ export default function PriceControl({
     () =>
       (preview?.rows ?? [])
         .map((row, index) => ({ row, index }))
-        .filter(({ index }) => !excludedPreviewRowIndexes.includes(index)),
-    [preview?.rows, excludedPreviewRowIndexes]
+        .filter(({ index }) => !excludedPreviewRowIndexes.includes(index))
+        .sort((left, right) => {
+          const newRowDifference = Number(previewNewRowIndexes.has(right.index)) - Number(previewNewRowIndexes.has(left.index));
+          return newRowDifference || left.index - right.index;
+        }),
+    [preview?.rows, excludedPreviewRowIndexes, previewNewRowIndexes]
   );
   const currentMobilePreviewPosition = Math.min(
     mobilePreviewPosition,
@@ -1233,8 +1280,8 @@ export default function PriceControl({
       target?.close();
     }
   };
-  const linkExisting = (rowId: number) => {
-    const productId = Number(linkTargets[rowId]);
+  const linkExisting = (rowId: number, target?: string) => {
+    const productId = Number(target ?? linkTargets[rowId]);
     if (productId) linkRow.mutate({ rowId, productId, saveAlias: true });
   };
   const reassignExistingAlias = (aliasId: number, currentProductId: number) => {
@@ -1744,8 +1791,8 @@ export default function PriceControl({
           <section className="packet-card price-comparison">
               <div className="card-title">
                 <div>
-                  <span>ГДЕ ВЫГОДНЕЕ КУПИТЬ</span>
-                  <h3>Выберите товар и сравните предложения</h3>
+                  <span>СРАВНЕНИЕ ПО ИМЕНИ СВЯЗИ</span>
+                  <h3>Выберите товар — увидите все варианты поставщиков</h3>
               </div>
               <GitCompareArrows size={21} />
             </div>
@@ -1776,6 +1823,26 @@ export default function PriceControl({
                       value: String(category.id),
                       label: category.name,
                     })),
+                  ]}
+                />
+              </label>
+              <label>
+                Характеристика
+                <PriceSelect
+                  value={characteristicFilter}
+                  onValueChange={value => {
+                    setCharacteristicFilter(value === "__all_characteristics" ? "" : value);
+                    setSelectedProductId(null);
+                  }}
+                  placeholder="Все характеристики"
+                  options={[
+                    { value: "__all_characteristics", label: "Все характеристики" },
+                    ...characteristicGroups
+                      .filter(group => group.kind !== "manufacturer")
+                      .flatMap(group => group.items.filter(item => item.isActive).map(item => ({
+                        value: `${group.kind}:${item.id}`,
+                        label: `${group.label} · ${item.value}`,
+                      }))),
                   ]}
                 />
               </label>
@@ -1858,14 +1925,14 @@ export default function PriceControl({
               <div className="price-comparison-body">
                 <aside className="price-product-panel">
                   <div className="price-product-panel-heading">
-                    <span>СОПОСТАВЛЕННЫЕ ПОЗИЦИИ</span>
+                    <span>ИМЕНА СВЯЗЕЙ</span>
                     <strong>{filteredComparisons.length}</strong>
-                    <small>найдите товар или выберите его из списка</small>
+                    <small>найдите нужный товар и откройте его предложения</small>
                   </div>
                   <div
                     className="price-product-list"
                     role="list"
-                    aria-label="Сопоставленные товары"
+                    aria-label="Товары по именам связей"
                   >
                   {filteredComparisons.map(item => (
                     <button
@@ -1916,6 +1983,20 @@ export default function PriceControl({
                               .join(" · ")}
                           </small>
                         )}
+                        {canEdit && (
+                          <button
+                            type="button"
+                            className="packet-link compact price-add-history-action"
+                            onClick={() =>
+                              setComparisonManualOffer({
+                                productId: selected.product.id,
+                                draft: createManualOfferDraft(selected.product.baseUnit),
+                              })
+                            }
+                          >
+                            <Plus size={14} /> Добавить цену в историю
+                          </button>
+                        )}
                       </div>
                       {selected.recommendation ? (
                         <aside className="price-winner">
@@ -1940,52 +2021,88 @@ export default function PriceControl({
                         </aside>
                       )}
                     </div>
-                    <section className="price-chart-card" aria-label="Текущие предложения поставщиков">
-                      <div className="price-chart-heading">
+                    {comparisonManualDraft && (
+                      <section className="price-comparison-manual-offer" aria-label="Добавить цену в историю">
                         <div>
-                          <span>ТЕКУЩИЕ ПРЕДЛОЖЕНИЯ</span>
-                          <h5>Цена по текущим предложениям</h5>
+                          <span>ДОБАВИТЬ ЦЕНУ В ИСТОРИЮ</span>
+                          <h5>{selected.product.canonicalName}</h5>
+                          <p>Цена появится в таблице и на графике только у выбранного имени связи.</p>
                         </div>
-                        <small>Ниже столбец — выгоднее. Наведите, чтобы увидеть полные данные предложения.</small>
-                      </div>
-                    <div className="price-chart">
-                      <ResponsiveContainer width="100%" height={250}>
-                        <BarChart
-                          data={chartData}
-                          margin={{ top: 8, right: 10, left: -14, bottom: 0 }}
-                        >
-                          <CartesianGrid
-                            vertical={false}
-                            strokeDasharray="3 5"
+                        <div className="price-comparison-manual-fields">
+                          <label>
+                            Поставщик
+                            <PriceSelect
+                              value={comparisonManualDraft.supplierId}
+                              onValueChange={supplierId => setComparisonManualOffer(current => current ? { ...current, draft: { ...current.draft, supplierId } } : current)}
+                              placeholder="Выберите поставщика"
+                              options={selectableSuppliers.map(supplier => ({ value: String(supplier.id), label: supplier.name }))}
+                            />
+                          </label>
+                          <ExactDateControl
+                            value={comparisonManualDraft.sourceDate}
+                            onChange={sourceDate => setComparisonManualOffer(current => current ? { ...current, draft: { ...current.draft, sourceDate } } : current)}
+                            title="ДАТА ПРЕДЛОЖЕНИЯ"
+                            ariaLabel="Указать дату ручной цены"
                           />
-                          <XAxis
-                            dataKey="name"
-                            tickLine={false}
-                            axisLine={false}
-                            tick={{ fontSize: 12 }}
-                          />
-                          <YAxis
-                            tickLine={false}
-                            axisLine={false}
-                            tickFormatter={value => `${formatMoney(value)} ₽`}
-                          />
-                          <Tooltip
-                            content={<PriceOfferTooltip />}
-                            allowEscapeViewBox={{ x: false, y: false }}
-                            wrapperStyle={{ outline: "none" }}
-                          />
-                          <Bar dataKey="price" radius={[7, 7, 2, 2]}>
-                            {chartData.map(item => (
-                              <Cell
-                                key={item.name}
-                                fill={item.priceChange?.direction === "up" ? "var(--price-change-up)" : item.priceChange?.direction === "down" ? "var(--price-change-down)" : item.winner ? "var(--price-accent)" : "var(--price-bar)"}
-                              />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                    </section>
+                          <label>
+                            Цена
+                            <input
+                              data-decimal-input
+                              inputMode="decimal"
+                              value={comparisonManualDraft.priceAmount}
+                              onChange={event => setComparisonManualOffer(current => current ? { ...current, draft: { ...current.draft, priceAmount: normalizeDecimalInputText(event.target.value).replace(/[^0-9.]/g, "") } } : current)}
+                              placeholder="Например, 925"
+                            />
+                          </label>
+                          <label>
+                            База цены
+                            <PriceSelect
+                              value={comparisonManualDraft.priceBasis}
+                              onValueChange={priceBasis => setComparisonManualOffer(current => current ? { ...current, draft: { ...current.draft, priceBasis: priceBasis as PriceBasis } } : current)}
+                              placeholder="База цены"
+                              options={priceBasisOptions(null)}
+                            />
+                          </label>
+                          <label>
+                            Условие оплаты
+                            <PriceSelect
+                              value={comparisonManualDraft.priceMode}
+                              onValueChange={priceMode => setComparisonManualOffer(current => current ? { ...current, draft: { ...current.draft, priceMode: priceMode as PricePaymentMode } } : current)}
+                              placeholder="Условие оплаты"
+                              options={editablePriceModes}
+                            />
+                          </label>
+                          <label>
+                            Город
+                            <PriceSelect
+                              value={comparisonManualDraft.market}
+                              onValueChange={market => setComparisonManualOffer(current => current ? { ...current, draft: { ...current.draft, market: market as PriceMarket } } : current)}
+                              placeholder="Город"
+                              options={priceMarketOptions}
+                            />
+                          </label>
+                        </div>
+                        <div className="price-comparison-manual-actions">
+                          <button
+                            type="button"
+                            className="packet-link compact"
+                            disabled={createManualOffer.isPending || !Number(comparisonManualDraft.supplierId) || !Number(comparisonManualDraft.priceAmount)}
+                            onClick={() => createManualOffer.mutate({
+                              productId: selected.product.id,
+                              supplierId: Number(comparisonManualDraft.supplierId),
+                              sourceDate: comparisonManualDraft.sourceDate,
+                              priceAmount: Number(comparisonManualDraft.priceAmount),
+                              priceBasis: comparisonManualDraft.priceBasis,
+                              priceMode: comparisonManualDraft.priceMode,
+                              market: comparisonManualDraft.market,
+                            })}
+                          >
+                            <Save size={14} /> Сохранить цену
+                          </button>
+                          <button type="button" className="packet-link compact subtle" onClick={() => setComparisonManualOffer(null)}>Отмена</button>
+                        </div>
+                      </section>
+                    )}
                     <section className="price-history-chart">
                       <div>
                         <span>ИСТОРИЯ ЦЕН</span>
@@ -2651,7 +2768,7 @@ export default function PriceControl({
                             <PriceSelect
                               value={previewProductLinks[index] ?? "__unlinked"}
                               onValueChange={value => setPreviewProductLink(index, value)}
-                              placeholder="Связать с внутренним товаром"
+                              placeholder="Имя связи для сравнения"
                               options={[
                                 { value: "__unlinked", label: "Не связывать сейчас" },
                                 ...catalogProducts.filter(product => product.isActive).map(product => ({
@@ -2726,7 +2843,7 @@ export default function PriceControl({
                   <li><b>1</b><span>Определяет поставщика и дату из шапки, если они указаны; иначе их можно выбрать или указать перед сохранением.</span></li>
                   <li><b>2</b><span>Находит товарные строки, цену, фасовку и единицу измерения.</span></li>
                   <li><b>3</b><span>Приводит фасовку к сопоставимой цене за кг или за литр.</span></li>
-                  <li><b>4</b><span>Сначала применяет подтвержденные связи «поставщик → наш товар».</span></li>
+                  <li><b>4</b><span>Сначала применяет подтвержденные связи: название поставщика → имя связи для сравнения.</span></li>
                   <li><b>5</b><span>Показывает предпросмотр: до подтверждения ничего не сохраняется.</span></li>
                 </ol>
                 <p>Проверка запускается сразу после выбора файла. До явного сохранения можно исправить цену, исключить позицию и назначить категорию; исходный файл при этом не меняется.</p>
@@ -2853,33 +2970,80 @@ export default function PriceControl({
                 )}
               </div>
               <div className="price-preview-table">
-                {selectedImportPreview?.rows.map(row => (
-                  <div key={row.rowId}>
-                    <strong>{row.rawName}</strong>
-                    <span>
-                      {row.rawCategory || "Без категории"} ·{" "}
-                      {row.rawPackaging || "фасовка не указана"}
-                    </span>
-                    <b>
-                      {row.priceAmount === null
-                        ? "цена не указана"
-                        : `${formatMoney(row.priceAmount)} ₽`}
-                    </b>
-                    <small>{row.productName || "ожидает связи"}</small>
-                    {canEdit && (
-                      <button
-                        type="button"
-                        className="price-preview-remove"
-                        onClick={() => setDeleteSavedRowCandidate({ rowId: row.rowId, name: row.rawName })}
-                        aria-label={`Удалить сохраненную позицию «${row.rawName}»`}
-                        title="Удалить позицию из сохраненного прайса"
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    )}
-                  </div>
-                ))}
+                {selectedImportPreview?.rows.map((row, position) => {
+                  const isEditing = editingSavedImportRowId === row.rowId;
+                  const currentTarget = savedImportLinkTargets[row.rowId] ?? "";
+                  return (
+                    <div key={row.rowId} className={isEditing ? "price-saved-import-row is-editing" : "price-saved-import-row"}>
+                      <span className="price-saved-import-number" aria-label={`Позиция ${position + 1}`}>№ {position + 1}</span>
+                      <div className="price-saved-import-main">
+                        <strong>{row.rawName}</strong>
+                        <span>
+                          {row.rawCategory || "Без категории"} · {row.rawPackaging || "фасовка не указана"}
+                        </span>
+                      </div>
+                      <b>
+                        {row.priceAmount === null ? "цена не указана" : `${formatMoney(row.priceAmount)} ₽`}
+                      </b>
+                      <small className={row.productName ? "price-saved-import-linked" : "price-saved-import-unlinked"}>
+                        {row.productName ? `Связь: ${row.productName}` : "Связь с товаром не задана"}
+                      </small>
+                      {canEdit && (
+                        <div className="price-saved-import-actions">
+                          <button
+                            type="button"
+                            className="packet-link compact"
+                            onClick={() => setEditingSavedImportRowId(current => current === row.rowId ? null : row.rowId)}
+                          >
+                            <Pencil size={14} />
+                            Изменить
+                          </button>
+                          <button
+                            type="button"
+                            className="price-preview-remove"
+                            onClick={() => setDeleteSavedRowCandidate({ rowId: row.rowId, name: row.rawName })}
+                            aria-label={`Удалить сохраненную позицию «${row.rawName}»`}
+                            title="Удалить позицию из сохраненного прайса"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      )}
+                      {canEdit && isEditing && (
+                        <div className="price-saved-import-editor">
+                          <label>
+                            Связь с товаром
+                            <PriceSelect
+                              value={currentTarget}
+                              onValueChange={value => setSavedImportLinkTargets(current => ({ ...current, [row.rowId]: value }))}
+                              placeholder={row.productName ? `Оставить: ${row.productName}` : "Выберите товар"}
+                              options={catalogProducts.filter(product => product.isActive).map(product => ({
+                                value: String(product.id),
+                                label: `${product.internalCode} · ${product.canonicalName}`,
+                              }))}
+                            />
+                          </label>
+                          <small>Связь объединяет это название поставщика с выбранным товаром. Следующие прайсы того же поставщика будут распознаваться автоматически.</small>
+                          <div>
+                            <button
+                              type="button"
+                              className="packet-link compact"
+                              disabled={!Number(currentTarget) || linkRow.isPending}
+                              onClick={() => linkExisting(row.rowId, currentTarget)}
+                            >
+                              <Save size={14} /> Сохранить связь
+                            </button>
+                            <button type="button" className="packet-link compact subtle" onClick={() => setEditingSavedImportRowId(null)}>Готово</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
+              <p className="packet-note price-saved-import-limit">
+                Показано позиций: {selectedImportPreview?.rows.length ?? 0} из {selectedImport.rowCount}. Для каждой строки доступны порядковый номер, связь с товаром и изменение.
+              </p>
             </section>
           )}
         </>
@@ -2971,6 +3135,20 @@ export default function PriceControl({
                       {repairRecognizedVariants.isPending
                         ? "Проверяем…"
                         : `Добавить варианты · ${overview.data.repairableVariants.count}`}
+                    </button>
+                  ) : null}
+                  {overview.data?.repairablePlaceContents.count ? (
+                    <button
+                      type="button"
+                      className="packet-link compact price-repair-place-contents"
+                      onClick={() => refreshPlaceContents.mutate()}
+                      disabled={refreshPlaceContents.isPending}
+                      title={`Добавить ${overview.data.repairablePlaceContents.count} значений состава места из сохраненных прайсов`}
+                    >
+                      <WandSparkles size={13} />
+                      {refreshPlaceContents.isPending
+                        ? "Добавляем…"
+                        : `Добавить состав мест · ${overview.data.repairablePlaceContents.count}`}
                     </button>
                   ) : null}
                   <button type="button" className="packet-link compact" onClick={() => setCharacteristicDraft({ id: null, kind: "variant", value: "", isActive: true })}>
@@ -3313,13 +3491,16 @@ export default function PriceControl({
                 <Search size={15} aria-hidden="true" />
                 <input
                   value={directoryProductSearch}
-                  onChange={event => setDirectoryProductSearch(event.target.value)}
+                  onChange={event => {
+                    setDirectoryProductSearch(event.target.value);
+                    setDirectoryProductLimit(60);
+                  }}
                   placeholder="Поиск по товару, коду или категории"
                   aria-label="Поиск товаров справочника"
                 />
               </label>
               <small>
-                Товаров: {directoryProducts.length} · скрыто: {hiddenProductsCount}
+                По текущему фильтру: {directoryProducts.length} · скрыто: {hiddenProductsCount}
               </small>
             </div>
             {canEdit && selectedDirectoryProductIds.length > 0 && (
@@ -3348,6 +3529,43 @@ export default function PriceControl({
                   <Tags size={14} />
                   Назначить категорию
                 </button>
+                <PriceSelect
+                  value={bulkOfferMarket}
+                  onValueChange={value => setBulkOfferMarket(value as PriceMarket)}
+                  placeholder="Город предложений"
+                  options={priceMarketOptions.filter(option => option.value !== "unknown")}
+                />
+                <button
+                  type="button"
+                  className="packet-link compact"
+                  disabled={!bulkOfferMarket || bulkSetOfferMarket.isPending}
+                  onClick={() => bulkSetOfferMarket.mutate({ productIds: selectedDirectoryProductIds, market: bulkOfferMarket as PriceMarket })}
+                >
+                  <MapPin size={14} />
+                  Назначить город
+                </button>
+                {selectedDirectoryProductsHaveActive && (
+                  <button
+                    type="button"
+                    className="packet-link compact subtle"
+                    disabled={bulkSetProductActive.isPending}
+                    onClick={() => bulkSetProductActive.mutate({ productIds: selectedDirectoryProductIds, isActive: false })}
+                  >
+                    <EyeOff size={14} />
+                    Скрыть выбранные
+                  </button>
+                )}
+                {selectedDirectoryProductsHaveHidden && (
+                  <button
+                    type="button"
+                    className="packet-link compact subtle"
+                    disabled={bulkSetProductActive.isPending}
+                    onClick={() => bulkSetProductActive.mutate({ productIds: selectedDirectoryProductIds, isActive: true })}
+                  >
+                    <Eye size={14} />
+                    Показать выбранные
+                  </button>
+                )}
                 <button
                   type="button"
                   className="packet-link compact subtle"
@@ -3358,17 +3576,21 @@ export default function PriceControl({
               </div>
             )}
             <div className="price-directory-list">
-              {directoryProducts.map(product => (
+              {visibleDirectoryProducts.map((product, position) => (
                 <article key={product.id}>
                   {canEdit && (
-                    <label className="price-directory-check">
-                      <input
-                        type="checkbox"
-                        checked={selectedDirectoryProductIds.includes(product.id)}
-                        onChange={() => toggleDirectoryProduct(product.id)}
-                        aria-label={`Выбрать товар «${product.canonicalName}»`}
-                      />
-                    </label>
+                    <div className="price-directory-selection-marker">
+                      <label className="price-preview-check">
+                        <input
+                          type="checkbox"
+                          checked={selectedDirectoryProductIds.includes(product.id)}
+                          onChange={() => toggleDirectoryProduct(product.id)}
+                          aria-label={`Выбрать товар «${product.canonicalName}»`}
+                        />
+                        <span aria-hidden="true"><Check size={12} /></span>
+                      </label>
+                      <span className="price-directory-row-number" aria-label={`Позиция ${position + 1}`}>№ {position + 1}</span>
+                    </div>
                   )}
                   <div>
                     <span>
@@ -3414,6 +3636,18 @@ export default function PriceControl({
                   )}
                 </article>
               ))}
+              {directoryProducts.length > visibleDirectoryProducts.length && (
+                <button
+                  type="button"
+                  className="packet-link price-directory-show-more"
+                  onClick={() => setDirectoryProductLimit(current => Math.min(current + 60, directoryProducts.length))}
+                >
+                  Показать еще · {Math.min(60, directoryProducts.length - visibleDirectoryProducts.length)}
+                </button>
+              )}
+              {directoryProducts.length > 60 && visibleDirectoryProducts.length === directoryProducts.length && (
+                <small className="price-directory-all-shown">Показаны все {directoryProducts.length} товаров по текущему фильтру.</small>
+              )}
               {!directoryProducts.length && (
                 <div className="empty-state compact">
                   <Search size={22} />
@@ -3749,17 +3983,17 @@ export default function PriceControl({
             <section className="packet-card price-mapping">
               <div className="card-title">
                 <div>
-                  <span>СВЯЗАТЬ НАЗВАНИЯ ПОСТАВЩИКА</span>
+                  <span>СВЯЗАТЬ НАЗВАНИЕ ПОСТАВЩИКА</span>
                   <h3>
-                    Один раз подтвердить — затем сопоставляется автоматически
+                    Одно имя связи — все варианты названий
                   </h3>
                 </div>
                 <Link2 size={21} />
               </div>
               <p className="packet-note">
-                Точная связь «поставщик → наш товар» имеет приоритет над
-                автоматической нормализацией. Исходное название и фасовка
-                сохраняются для контроля.
+                Выберите имя, под которым позиция будет показываться в
+                сравнении. Это объединяет разные названия одного товара у
+                поставщиков; исходное название и фасовка сохраняются рядом для контроля.
               </p>
               {!overview.data?.unmappedRows.length ? (
                 <div className="empty-state compact">
@@ -3796,7 +4030,7 @@ export default function PriceControl({
                               [row.rowId]: value,
                             }))
                           }
-                          placeholder="Выберите наш товар"
+                          placeholder="Выберите имя связи"
                           options={(overview.data?.products ?? []).map(product => ({
                             value: String(product.id),
                             label: `${product.internalCode} · ${product.canonicalName}`,
@@ -3813,7 +4047,7 @@ export default function PriceControl({
                             )
                           }
                         >
-                          Связать
+                          Подтвердить связь
                         </button>
                         <details>
                           <summary>Создать новый товар</summary>
@@ -3873,68 +4107,66 @@ export default function PriceControl({
             <section className="packet-card price-aliases">
               <div className="card-title">
                 <div>
-                  <span>ПОДТВЕРЖДЕННЫЕ АВТОСВЯЗИ</span>
-                  <h3>Названия поставщиков и наши товары</h3>
+                  <span>СВЯЗИ НАЗВАНИЙ ПОСТАВЩИКА</span>
+                  <h3>Одна связь — одно общее имя товара</h3>
                 </div>
                 <Link2 size={21} />
               </div>
               <p className="packet-note">
-                Эти связи применяются к новым прайс‑листам в первую очередь.
-                Переназначение и отмена не меняют сохраненные строки прошлых
-                импортов.
+                Здесь не создается второй товар. У одного общего имени собраны
+                все варианты названия из прайсов поставщиков; именно это имя
+                будет видно в сравнении. Изменение действует только на новые
+                импорты, сохраненная история остается неизменной.
               </p>
               <div className="price-alias-list">
-                {overview.data?.aliases.map(alias => (
-                  <article key={alias.aliasId}>
-                    <div>
-                      <span>{alias.supplierName}</span>
-                      <strong>{alias.normalizedName}</strong>
-                      <small>
-                        {alias.packagingSignature || "Фасовка не уточнена"} ·
-                        сейчас: {alias.internalCode} · {alias.canonicalName}
-                      </small>
+                {aliasGroups.map(group => (
+                  <article key={group.productId} className="price-alias-group">
+                    <div className="price-alias-group-heading">
+                      <span>Имя связи · {group.aliases.length}</span>
+                      <strong>{group.canonicalName}</strong>
+                      <small>{group.internalCode} · в сравнении показывается одно имя, а не все варианты поставщиков</small>
                     </div>
-                    <div className="price-alias-actions">
-                      <PriceSelect
-                        value={aliasTargets[alias.aliasId] ?? alias.productId}
-                        onValueChange={value =>
-                          setAliasTargets(current => ({
-                            ...current,
-                            [alias.aliasId]: value,
-                          }))
-                        }
-                        placeholder="Выберите наш товар"
-                        options={(overview.data?.products ?? []).map(product => ({
-                          value: String(product.id),
-                          label: `${product.internalCode} · ${product.canonicalName}`,
-                        }))}
-                      />
-                      <button
-                        type="button"
-                        className="packet-link compact"
-                        onClick={() =>
-                          reassignExistingAlias(alias.aliasId, alias.productId)
-                        }
-                        disabled={
-                          reassignAlias.isPending ||
-                          Number(
-                            aliasTargets[alias.aliasId] ?? alias.productId
-                          ) === alias.productId
-                        }
-                      >
-                        Переназначить
-                      </button>
-                      <button
-                        type="button"
-                        className="packet-link compact subtle"
-                        onClick={() =>
-                          unlinkAlias.mutate({ aliasId: alias.aliasId })
-                        }
-                        disabled={unlinkAlias.isPending}
-                      >
-                        Отменить автосвязь
-                      </button>
-                    </div>
+                    <details className="price-alias-group-members">
+                      <summary>Названия поставщиков · {group.aliases.length}</summary>
+                      <div>
+                        {group.aliases.map(alias => (
+                          <div key={alias.aliasId} className="price-alias-member">
+                            <div>
+                              <span>{alias.supplierName}</span>
+                              <strong>{alias.normalizedName}</strong>
+                              <small>{alias.packagingSignature || "Фасовка не уточнена"}</small>
+                            </div>
+                            <div className="price-alias-actions">
+                              <PriceSelect
+                                value={aliasTargets[alias.aliasId] ?? String(alias.productId)}
+                                onValueChange={value => setAliasTargets(current => ({ ...current, [alias.aliasId]: value }))}
+                                placeholder="Имя связи"
+                                options={catalogProducts.filter(product => product.isActive).map(product => ({
+                                  value: String(product.id),
+                                  label: `${product.internalCode} · ${product.canonicalName}`,
+                                }))}
+                              />
+                              <button
+                                type="button"
+                                className="packet-link compact"
+                                onClick={() => reassignExistingAlias(alias.aliasId, alias.productId)}
+                                disabled={reassignAlias.isPending || Number(aliasTargets[alias.aliasId] ?? alias.productId) === alias.productId}
+                              >
+                                <Pencil size={13} /> Изменить связь
+                              </button>
+                              <button
+                                type="button"
+                                className="packet-link compact subtle"
+                                onClick={() => unlinkAlias.mutate({ aliasId: alias.aliasId })}
+                                disabled={unlinkAlias.isPending}
+                              >
+                                Убрать
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
                   </article>
                 ))}
               </div>
