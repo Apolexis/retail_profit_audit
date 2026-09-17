@@ -134,6 +134,59 @@ export function synchronizePlaceContentsBasis(value: string | null | undefined, 
 export function formatPlaceContents(value: string | null | undefined, context?: string | null) {
   return normalizePlaceContents(value, context) || null;
 }
+
+function hasExplicitPlaceUnit(value: string | null | undefined) {
+  return /\d+(?:[.,]\d+)?\s*(?:кг|kg|г|гр|gr|g|л|ml|мл|шт|pcs?|штук)(?![a-zа-я])/i.test(text(value));
+}
+
+/** Accepts a supplier case cell only when it really conveys a quantity, never merely «короб, эл. вес». */
+function placePartFromText(value: string | null | undefined, context?: string | null, fallbackUnit?: "кг" | "шт") {
+  const source = text(value);
+  if (!source || !/\d/.test(source)) return null;
+  const numericStart = source.search(/\d/);
+  const candidate = numericStart >= 0 ? source.slice(numericStart) : source;
+  const directPlace = /^\s*(\d+\s*\/\s*\d+(?:[.,]\d+)?(?:\s*(?:кг|kg|г|гр|gr|g|л|l|мл|ml|шт|pcs?|штук)(?![a-zа-я]))?)(?=\s|$)/i.exec(candidate);
+  if (directPlace) {
+    return normalizePlaceContents(directPlace[1], context || directPlace[1]) || null;
+  }
+  const withUnit = hasExplicitPlaceUnit(candidate)
+    ? candidate
+    : fallbackUnit && /^\s*\d+(?:[.,]\d+)?\s*$/.test(candidate) ? `${candidate}${fallbackUnit}` : "";
+  if (!withUnit) return null;
+  const range = /^(\d+(?:[.,]\d+)?)\s*(?:-|–|—)\s*(\d+(?:[.,]\d+)?)\s*(кг|kg|г|гр|gr|g|л|l|мл|ml|шт|pcs?|штук)(?![a-zа-я])/i.exec(withUnit);
+  if (range) return `1/${range[1].replace(",", ".")}-${range[2].replace(",", ".")}${normalizePlaceUnit(range[3], "кг")}`;
+  const sharedUnit = /^(\d+(?:[.,]\d+)?(?:\s*(?:и|\/)\s*\d+(?:[.,]\d+)?)+)\s*(кг|kg|г|гр|gr|g|л|l|мл|ml|шт|pcs?|штук)(?![a-zа-я])/i.exec(withUnit);
+  if (sharedUnit) {
+    const unit = normalizePlaceUnit(sharedUnit[2], "кг");
+    return `1/${sharedUnit[1].split(/\s*(?:и|\/)\s*/).map(amount => `${amount.replace(",", ".")}${unit}`).join("/")}`;
+  }
+  return normalizePlaceContents(withUnit, context || withUnit) || null;
+}
+
+/** Combines a carton/quant with consumer packing: 8кг + 250гр → 1/8кг/250гр. */
+function mergePlaceContents(parts: Array<string | null | undefined>) {
+  const unique = Array.from(new Set(parts.filter((part): part is string => Boolean(part))));
+  if (!unique.length) return null;
+  const [first, ...rest] = unique;
+  return `${first}${rest.map(part => `/${part.replace(/^1\//, "")}`).join("")}`;
+}
+
+/** Finds case quantities written inside a supplier product name, e.g. «тара 21кг» or «5 и 7кг». */
+function placeContentsFromProductName(rawName: string) {
+  const source = text(rawName);
+  const labeled = Array.from(source.matchAll(/(?:тара|короб(?:ка)?|ящик|мешок|упак(?:овка)?|место)\s*(\d+(?:[.,]\d+)?(?:\s*(?:и|\/)\s*\d+(?:[.,]\d+)?)?\s*(?:кг|kg|г|гр|gr|g|л|l|мл|ml|шт|pcs?|штук))(?![a-zа-я])/gi))
+    .map(match => match[1]);
+  const trailing = Array.from(source.matchAll(/(?:^|[,;(])\s*(\d+(?:[.,]\d+)?(?:\s*(?:и|\/)\s*\d+(?:[.,]\d+)?)?\s*(?:кг|kg|г|гр|gr|g|л|l|мл|ml|шт|pcs?|штук))(?![a-zа-я])/gi))
+    .map(match => match[1]);
+  return placePartFromText(labeled.at(-1) ?? trailing.at(-1) ?? null, rawName);
+}
+
+function isVariableWeightRange(value: string | null | undefined) {
+  const normalized = text(value);
+  return /\d+(?:[.,]\d+)?\s*(?:-|–|—)\s*\d+(?:[.,]\d+)?\s*(?:кг|kg|г|гр|gr|g|л|l|мл|ml)(?![a-zа-я])/i.test(normalized)
+    || /\d+\s*\+\s*(?:кг|kg|г|гр|gr|g|л|l|мл|ml)(?![a-zа-я])/i.test(normalized);
+}
+
 function normalizeCategoryName(value: string) { return fold(value).replace(/[^a-zа-я0-9]+/g, " ").trim(); }
 function sourceTimestamp(source: Pick<PriceChangeSource, "sourceDate" | "importedAt">) {
   const dated = source.sourceDate ? Date.parse(`${source.sourceDate}T12:00:00`) : Number.NaN;
@@ -165,7 +218,7 @@ export function calculatePriceChanges<T extends PriceChangeSource>(offers: T[]) 
 }
 function numberFromText(value: unknown) {
   const raw = text(value);
-  if (!raw || /дог|запрос|уточн|нет\s*цен|n\/a/i.test(raw)) return null;
+  if (!raw || /дог|запрос|уточн|нет\s*цен|n\/a|узнай\s*цен|тел(?:ефон)?|менеджер|\+7\s*\(|\b8\s*\(/i.test(raw)) return null;
   const match = raw.match(/-?(?:\d{1,3}(?:[\s.,]\d{3})+|\d+)(?:[.,]\d{1,2})?/);
   if (!match) return null;
   const numeric = match[0].replace(/\s/g, "");
@@ -210,7 +263,7 @@ export function parsePackaging(value: string) {
   return { grams: null, volumeMl: null, pieces: count ? Number(count[1]) : null };
 }
 export function normalizePackagingDisplay(value: string | null | undefined) {
-  return normalizeProductDisplayName(text(value));
+  return normalizeProductDisplayName(text(value)).replace(/(?:[.,]\s*)?\+\s*$/, "").trim();
 }
 export function packagingSignature(value: string | null | undefined) {
   const packaging = parsePackaging(value ?? "");
@@ -232,6 +285,7 @@ function priceBasisFromText(header: string, name: string, packaging: string | nu
   if (/\/\s*кг|за\s*кг|(?:^|\s)кг(?:\s|$)/.test(source)) return "kg";
   if (/\/\s*л|за\s*л|(?:^|\s)литр(?:а|ов|ы)?(?:\s|$)/.test(source)) return "l";
   if (/\/\s*шт|за\s*шт|(?:^|\s)(?:штук|уп\.?)\b/.test(source)) return "piece";
+  if (/(?:за\s*)?(?:бан(?:ка|ку)|бутыл(?:ка|ку)|пачк(?:а|у)|упаковк(?:а|у))/i.test(source)) return "package";
   const pack = parsePackaging(packaging ?? name);
   if (pack.grams || pack.volumeMl) return "package";
   return "kg";
@@ -393,7 +447,7 @@ function prioritizePriceOptions(options: ParsedPriceOption[]) {
 function isProductHeader(value: unknown) { return /^(наименовани\w*|товар\w*|номенклатур\w*|позици\w*|продукт\w*)/i.test(text(value)); }
 function isPriceSurchargeHeader(value: unknown) {
   const title = fold(text(value));
-  return /(?:плюс\s+к\s+цен|надбавк|доплат)|(?:мелк\w*\s+опт.*(?:\+|плюс|к\s+цен))/i.test(title);
+  return /(?:плюс\s+к\s+цен|надбавк|доплат)|(?:мелк\w*\s+опт.*(?:\+|плюс|к\s+цен))|спец(?:иальн\w*)?\s*(?:предлож|цен)|акци|цена\s+(?:на\s+)?об[ъеё]м/i.test(title);
 }
 function isPriceHeader(value: unknown) { return !isPriceSurchargeHeader(value) && /цен|стоим|прайс|опт|налич|безнал/i.test(text(value)); }
 function findHeaderIndex(rows: unknown[][]) {
@@ -412,19 +466,28 @@ export function parseExcel(buffer: Buffer) {
     const priceIndexes = headers.map((header, index) => ({ header, index })).filter(({ header }) => isPriceHeader(header));
     const skuIndex = columnIndex(headers, /артикул|код\s*(товара)?|^код$/);
     const categoryIndex = columnIndex(headers, /катег|раздел|групп/);
-    const packagingIndex = columnIndex(headers, /фас|упак|тара|вес|короб|нетто/);
+    const packagingIndex = columnIndex(headers, /фас|навес|упак|нетто/);
+    const caseContentsIndex = columnIndex(headers, /короб|тара|квант|(?:вес|состав|кол).*(?:мест|короб|упак)|(?:мест|короб|упак).*(?:вес|состав|кол)/);
     const manufacturerIndex = columnIndex(headers, /производител|изготовител|бренд/);
-    const placeContentsIndex = columnIndex(headers, /(?:вес|состав|кол).*(?:мест|короб|упак)|(?:мест|короб|упак).*(?:вес|состав|кол)/);
     const availabilityIndex = columnIndex(headers, /налич|остат|склад/);
     matrix.slice(headerRow + 1).forEach((cells, offset) => {
       const rawName = normalizeProductDisplayName(text(cells[nameIndex]));
       if (!rawName || rawName.length < 2 || isAdministrativeText(rawName)) return;
       const packaging = normalizePackagingDisplay(text(cells[packagingIndex])) || null;
-      const options = prioritizePriceOptions(priceIndexes.map(({ header, index }) => makeOption(cells[index], header, rawName, packaging || rawName)).filter((value): value is ParsedPriceOption => Boolean(value)));
+      const caseContents = placePartFromText(text(cells[caseContentsIndex]), rawName);
+      const namedContents = placeContentsFromProductName(rawName);
+      const consumerPacking = isVariableWeightRange(packaging) ? null : placePartFromText(packaging, rawName);
+      const placeContents = mergePlaceContents([caseContents, namedContents, consumerPacking]);
+      const options = prioritizePriceOptions(priceIndexes.map(({ header, index }) => {
+        const context = /(?:налич|безнал)/i.test(header) && !/(?:за\s*|\/\s*)(?:кг|л|шт)/i.test(header)
+          ? `${header} за кг`
+          : header;
+        return makeOption(cells[index], context, rawName, packaging || rawName);
+      }).filter((value): value is ParsedPriceOption => Boolean(value)));
       if (!options.length) return;
       const rowNumber = headerRow + offset + 2;
       const rawPayload = Object.fromEntries(headers.map((header, index) => [header || `Колонка ${index + 1}`, text(cells[index])]).filter(([, value]) => value));
-      rows.push({ sourceSheet: sheetName, sourceRowNumber: rowNumber, sourceSku: text(cells[skuIndex]) || null, rawName, normalizedName: normalizeProductName(rawName), canonicalHint: rawName, normalizedSignature: productSignature(rawName), category: text(cells[categoryIndex]) || null, packaging, packagingSignature: packagingSignature(packaging || rawName), manufacturer: text(cells[manufacturerIndex]) || null, placeContents: normalizePlaceContents(text(cells[placeContentsIndex])) || null, manufacturedOn: null, shelfLifeMonths: null, expiresOn: null, availability: text(cells[availabilityIndex]) || null, variant: extractVariant(rawName), sizeText: extractSizeText(rawName), priceOptions: options, rawPayload });
+      rows.push({ sourceSheet: sheetName, sourceRowNumber: rowNumber, sourceSku: text(cells[skuIndex]) || null, rawName, normalizedName: normalizeProductName(rawName), canonicalHint: rawName, normalizedSignature: productSignature(rawName), category: text(cells[categoryIndex]) || null, packaging, packagingSignature: packagingSignature(packaging || rawName), manufacturer: text(cells[manufacturerIndex]) || null, placeContents, manufacturedOn: null, shelfLifeMonths: null, expiresOn: null, availability: text(cells[availabilityIndex]) || null, variant: extractVariant(rawName), sizeText: extractSizeText(rawName), priceOptions: options, rawPayload });
     });
   });
   return rows;
@@ -544,6 +607,10 @@ export function parseDocxTableRows(tables: string[][][]) {
       if (!rawName || rawName.length < 2 || isAdministrativeText(rawName)) return;
 
       const packaging = wordPackagingFromRow(normalizedCells, nameCell!.index, lastCell.index, rawName);
+      const placeContents = mergePlaceContents([
+        placePartFromText(packaging, rawName),
+        placeContentsFromProductName(rawName),
+      ]);
       const option = hasAmount
         ? makeOption(lastCell.value, priceHeader, rawName, packaging || rawName)
         : manualPriceOption(priceHeader, rawName, packaging || rawName, lastCell.value);
@@ -562,7 +629,7 @@ export function parseDocxTableRows(tables: string[][][]) {
         packaging,
         packagingSignature: packagingSignature(packaging || rawName),
         manufacturer: null,
-        placeContents: null,
+        placeContents,
         manufacturedOn: null,
         shelfLifeMonths: null,
         expiresOn: null,
@@ -710,6 +777,7 @@ type PdfColumnSection = {
   manufacturerX: number | null;
   packagingX: number | null;
   priceX: number;
+  quantX: number | null;
   priceEnd: number;
   includesVat: boolean;
 };
@@ -775,17 +843,29 @@ function pdfPriceOptionsFromQuote(quote: string, priceContext: string, rawName: 
   if (/(?:спец(?:предлож|цен)|акци|от\s+(?:объем|\d+\s*(?:кг|шт))|при\s+заказе)/i.test(context)) return [];
   const matches = Array.from(cleanedQuote.matchAll(/(?:\d{1,3}(?:[\s.,]\d{3})+|\d{1,7})(?:[.,]\d{1,2})?(?:\s*\(в\s*(?:спб|мск)\))?(?:\s*с\s*ндс)?(?:\s*(?:(?:за\s*(?:1\s*)?|\/)\s*)?(?:кг|л|шт))?/gi));
   const options = matches
+    .filter(match => {
+      const value = match[0];
+      const offset = match.index ?? 0;
+      const nearbySuffix = cleanedQuote.slice(offset + value.length, offset + value.length + 16);
+      const market = /\(в\s*(?:спб|мск)\)/i.test(value);
+      const labeled = /(?:₽|руб|р\.?|(?:за\s*(?:1\s*)?|\/)\s*(?:кг|л|шт))/i.test(`${value}${nearbySuffix}`);
+      const singleBareQuote = /^\s*\d{1,3}(?:[\s.,]\d{3})*(?:[.,]\d{1,2})?\s*$/.test(cleanedQuote);
+      return market || labeled || singleBareQuote;
+    })
     .map(match => {
       const trailing = cleanedQuote.slice((match.index ?? 0) + match[0].length);
       const nextAmountAt = trailing.search(/\d{1,3}(?:[\s.,]\d{3})*(?:[.,]\d{1,2})?/);
       const localContext = nextAmountAt >= 0 ? trailing.slice(0, nextAmountAt) : trailing;
-      return makeOption(match[0], `${match[0]} ${localContext} ${includesVat ? "с НДС" : ""}`, rawName, packaging || rawName);
+      const optionContext = /за упаковку/i.test(priceContext)
+        ? `${match[0]} за упаковку ${includesVat ? "с НДС" : ""}`
+        : `${match[0]} ${localContext} ${includesVat ? "с НДС" : ""}`;
+      return makeOption(match[0], optionContext, rawName, packaging || rawName);
     })
     .filter((option): option is ParsedPriceOption => option !== null)
     .map(option => ({ ...option, includesVat: includesVat || option.includesVat }));
   if (options.length) {
     const explicitlyLabeled = /(?:за\s*(?:1\s*)?|\/)\s*(?:кг|л|шт)/i.test(cleanedQuote);
-    if (options.length === 1 && !explicitlyLabeled) {
+    if (options.length === 1 && !explicitlyLabeled && !/за упаковку/i.test(priceContext)) {
       const [option] = options;
       const priceBasis: PriceBasis = "kg";
       return [{ ...option, priceBasis, ...normalizePrice(option.priceAmount!, priceBasis, packaging || rawName) }];
@@ -832,6 +912,7 @@ export function parsePdfPositionedPages(pages: PdfTextFragment[][]) {
       const specificationItem = nearby.find(item => /специфик/i.test(item.value));
       const manufacturerItem = nearby.find(item => /производител/i.test(item.value));
       const packagingItem = nearby.find(item => /упаковк|нетто|фасовк|вес/i.test(item.value));
+      const quantItem = nearby.find(item => /квант|шт\s*\/\s*кор|кор\s*\/\s*шт/i.test(item.value));
       const priceEnd = nearby
         .filter(item => item.x > priceItem.x && /изменени|остат|медиа|налич|статус/i.test(item.value))
         .map(item => item.x)
@@ -847,6 +928,7 @@ export function parsePdfPositionedPages(pages: PdfTextFragment[][]) {
         manufacturerX: manufacturerItem?.x ?? null,
         packagingX: packagingItem?.x ?? null,
         priceX: priceItem.x,
+        quantX: quantItem?.x ?? null,
         priceEnd,
         includesVat: /с\s*ндс/i.test(text(nearby.map(item => item.value).join(" "))),
       });
@@ -870,7 +952,7 @@ export function parsePdfPositionedPages(pages: PdfTextFragment[][]) {
     }
 
     sections.forEach(section => {
-      const priceStart = section.priceX - 62;
+      const priceStart = section.packagingX !== null && section.quantX !== null ? section.priceX - 12 : section.priceX - 62;
       const quoteLines = lines
         .filter(line => line.y < section.headerY - 5 && line.y > section.bottomY + 5)
         .map(line => ({ line, quote: pdfColumnText(line.items, priceStart, section.priceEnd) }))
@@ -885,15 +967,23 @@ export function parsePdfPositionedPages(pages: PdfTextFragment[][]) {
         const manufacturerStart = section.manufacturerX === null ? Infinity : section.manufacturerX - 12;
         const specificationStart = section.specificationX === null ? manufacturerStart : section.specificationX - 52;
         const packagingStart = section.packagingX === null ? priceStart : section.packagingX - 14;
+        const quantStart = section.quantX === null ? Infinity : section.quantX - 14;
         const nameEnd = Math.min(specificationStart - 1, manufacturerStart, packagingStart, priceStart);
-        const rawName = stripPdfServiceTail(stripPdfSpecification(pdfColumnText(rowItems, section.nameX - 22, nameEnd)));
+        const nameRowItems = section.quantX === null
+          ? rowItems
+          : rowItems.filter(item => Math.abs(item.y - line.y) <= 3);
+        const rawName = stripPdfServiceTail(stripPdfSpecification(pdfColumnText(nameRowItems, section.nameX - 22, nameEnd)));
         const specification = section.specificationX === null ? "" : pdfColumnText(rowItems, specificationStart, manufacturerStart);
         const manufacturer = section.manufacturerX === null ? "" : cleanPdfManufacturer(pdfColumnText(rowItems, manufacturerStart, packagingStart));
         const quoteStartX = Math.min(...line.items.filter(item => item.x >= priceStart && item.x < section.priceEnd).map(item => item.x));
         const placeEnd = Number.isFinite(quoteStartX) ? Math.min(section.priceX - 16, quoteStartX - 10) : priceStart;
         const placeWeight = section.packagingX === null ? "" : pdfColumnText(rowItems, packagingStart, placeEnd);
+        const quant = section.quantX === null ? "" : pdfColumnText(rowItems, quantStart, section.priceEnd);
         const packaging = pdfPackagingFromText(`${rawName} ${placeWeight}`);
-        const options = pdfPriceOptionsFromQuote(quote, quote, rawName, packaging, section.includesVat || /с\s*ндс/i.test(quote));
+        const priceContext = section.quantX !== null && section.packagingX !== null
+          ? `${quote} за упаковку`
+          : quote;
+        const options = pdfPriceOptionsFromQuote(quote, priceContext, rawName, packaging, section.includesVat || /с\s*ндс/i.test(quote));
         if (!rawName || !options.length || isPdfSectionLine(rawName) || isPdfDeliveryOrContacts(rawName)) return;
         sourceRowNumber += 1;
         rows.push({
@@ -908,7 +998,9 @@ export function parsePdfPositionedPages(pages: PdfTextFragment[][]) {
           packaging,
           packagingSignature: packagingSignature(packaging || rawName),
           manufacturer: manufacturer || null,
-          placeContents: normalizePlaceContents(placeWeight, `${rawName} ${packaging || ""}`) || null,
+          placeContents: section.quantX === null
+            ? placePartFromText(placeWeight, `${rawName} ${packaging || ""}`)
+            : placePartFromText(quant, `${rawName} ${packaging || ""}`),
           manufacturedOn: null,
           shelfLifeMonths: null,
           expiresOn: null,
@@ -916,7 +1008,7 @@ export function parsePdfPositionedPages(pages: PdfTextFragment[][]) {
           variant: extractVariant(rawName),
           sizeText: extractSizeText(rawName),
           priceOptions: options,
-          rawPayload: { specification, manufacturer, placeWeight, priceText: quote },
+          rawPayload: { specification, manufacturer, placeWeight, quant, priceText: quote },
         });
       });
     });

@@ -59,6 +59,54 @@ describe("прайс‑контроль: нормализация товарны
     expect(rows[0]?.priceOptions).toHaveLength(3);
   });
 
+  it("сохраняет цену из наличной и безналичных колонок за кг, а коробку и фасовку — в составе места", () => {
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.aoa_to_sheet([
+      ["Наименование", "Коробка", "Наличные", "Безнал без НДС", "Безнал с НДС 22%", "Фасовка/навеска кг/шт", "Мелкий ОПТ до 100 кг плюс к цене"],
+      ["Конечности краба Стригуна", "8 кг", "1350", "1500", "-", "250г", "100"],
+    ]);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Прайс");
+    const rows = parseExcel(Buffer.from(XLSX.write(workbook, { type: "buffer", bookType: "xlsx" })));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ packaging: "250гр", placeContents: "1/8кг/250гр" });
+    expect(rows[0]?.priceOptions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ priceAmount: 1350, priceBasis: "kg", priceMode: "cash" }),
+      expect.objectContaining({ priceAmount: 1500, priceBasis: "kg", priceMode: "cashless_no_vat" }),
+    ]));
+    expect(rows[0]?.priceOptions).toHaveLength(2);
+  });
+
+  it("выводит состав места из тары в названии, когда отдельной колонки коробки нет", () => {
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.aoa_to_sheet([
+      ["Наименование товара", "размер и вес", "Цена, руб/кг с НДС"],
+      ["Палтус тушка, тара 21 кг", "XL", "1070"],
+      ["Филе тресковых пород, 5 и 7 кг", "90-110", "510"],
+    ]);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Прайс");
+    const rows = parseExcel(Buffer.from(XLSX.write(workbook, { type: "buffer", bookType: "xlsx" })));
+    expect(rows.map(row => row.placeContents)).toEqual(["1/21кг", "1/5кг/7кг"]);
+    expect(rows.every(row => row.priceOptions[0]?.priceBasis === "kg")).toBe(true);
+  });
+
+  it("читает Word-колонку коробки как состав места, не меняя килограммовую цену", () => {
+    const rows = parseDocxTableRows([[
+      ["Тунец филе", "Короб, 1/25кг", "Таиланд", "Склад", "770"],
+    ]]);
+    expect(rows[0]).toMatchObject({ packaging: "Короб, 1/25кг", placeContents: "1/25кг" });
+    expect(rows[0]?.priceOptions[0]).toMatchObject({ priceAmount: 770, priceBasis: "kg" });
+  });
+
+  it("не принимает фасовку и квант PDF за цену и записывает квант как состав места", () => {
+    const pages = [[
+      { x: 35, y: 700, value: "Наименование", width: 59 }, { x: 297, y: 700, value: "Фасовка", width: 33 }, { x: 362, y: 700, value: "Цена, руб. (с НДС 5%)", width: 84 }, { x: 485, y: 700, value: "Квант (шт/кор.)", width: 61 },
+      { x: 35, y: 670, value: "Варенье из морошки", width: 88 }, { x: 306, y: 670, value: "95 г", width: 15 }, { x: 387, y: 670, value: "258,00 ₽", width: 34 }, { x: 503, y: 670, value: "20 шт.", width: 25 },
+    ]];
+    const row = parsePdfPositionedPages(pages as any)[0];
+    expect(row).toMatchObject({ rawName: "Варенье из морошки", packaging: "95гр", placeContents: "1/20шт" });
+    expect(row?.priceOptions).toEqual([expect.objectContaining({ priceAmount: 258, priceBasis: "package", priceMode: "cashless_vat" })]);
+  });
+
   it("компактно нормализует единицы, дроби и лишние пробелы в названии без склейки слов", () => {
     expect(normalizeProductDisplayName("Икра нерки соленая мороженая , б ез консерванта 500 гр.")).toBe("Икра нерки соленая мороженая, без консерванта 500гр");
     expect(normalizeProductDisplayName("Креветка 0,5 л; 13 шт")).toBe("Креветка 0.5л; 13шт");
