@@ -3019,20 +3019,30 @@ html.pwa-fixed-reflow .scroll-top { position: fixed !important; transform: trans
   min-width: min(360px, calc(100vw - 24px)) !important;
   max-width: min(420px, calc(100vw - 24px)) !important;
 }
-:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip.tiny-tooltip-dense .tiny-tooltip-values-3 > span,
-:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip.tiny-tooltip-dense .tiny-tooltip-values-2 > span {
-  grid-template-columns: 8px minmax(6ch, 1fr) max-content;
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.tiny-tooltip.tiny-tooltip-dense, .tiny-tooltip.tiny-tooltip-monetary-dense) .tiny-tooltip-values-3 > span,
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.tiny-tooltip.tiny-tooltip-dense, .tiny-tooltip.tiny-tooltip-monetary-dense) .tiny-tooltip-values-2 > span {
+  grid-template-columns: 8px minmax(0, 1fr) max-content;
 }
-:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) .tiny-tooltip.tiny-tooltip-dense .tiny-tooltip-name {
-  min-width: 6ch;
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.tiny-tooltip.tiny-tooltip-dense, .tiny-tooltip.tiny-tooltip-monetary-dense) .tiny-tooltip-name.tiny-tooltip-short-label {
+  min-width: 5ch;
   overflow: visible;
   text-overflow: clip;
 }
-@media (min-width: 421px) {
-  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) .tiny-tooltip.tiny-tooltip-dense:not(.tiny-tooltip-single) {
-    width: min(450px, calc(100vw - 16px)) !important;
-    min-width: min(420px, calc(100vw - 16px)) !important;
-    max-width: min(450px, calc(100vw - 16px)) !important;
+:is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) :is(.tiny-tooltip.tiny-tooltip-dense, .tiny-tooltip.tiny-tooltip-monetary-dense):not(.tiny-tooltip-single) {
+  width: min(520px, calc(100vw - 16px)) !important;
+  min-width: min(360px, calc(100vw - 16px)) !important;
+  max-width: min(520px, calc(100vw - 16px)) !important;
+}
+@media (max-width: 420px) {
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) :is(.tiny-tooltip.tiny-tooltip-dense, .tiny-tooltip.tiny-tooltip-monetary-dense):not(.tiny-tooltip-single) {
+    width: calc(100vw - 8px) !important;
+    min-width: 0 !important;
+    max-width: calc(100vw - 8px) !important;
+    padding-inline: 6px !important;
+    font-size: 9px;
+  }
+  :is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.tiny-tooltip.tiny-tooltip-dense, .tiny-tooltip.tiny-tooltip-monetary-dense) .tiny-tooltip-values-3 > span {
+    column-gap: 3px;
   }
 }
 

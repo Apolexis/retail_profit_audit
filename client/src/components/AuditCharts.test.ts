@@ -164,8 +164,9 @@ describe("форматирование денежных показателей",
     expect(source).toContain("function StableTinyTooltip");
     expect(source).not.toContain("window.setTimeout(()=>setStable(props),72)");
     expect(source).toContain("function StableTinyTooltip(props:TinyTooltipProps)");
-    expect(source).toContain("function useNarrowTooltipViewport()");
-    expect(source).toContain("const denseColumns=narrowTooltip?1:compactTooltip?2:3");
+    expect(source).not.toContain("function useNarrowTooltipViewport()");
+    expect(source).toContain("const denseColumns=3");
+    expect(source).toContain("const shortLabel=item.name.length<=5");
     expect(source).toContain('singleTooltip?" tiny-tooltip-single":""');
     expect(source).toContain("isAnimationActive={false} animationDuration={0}");
     expect(source).toContain('const touchStart=(event:TouchEvent)=>{if(isControl(event.target)||!event.touches.length)return;');
