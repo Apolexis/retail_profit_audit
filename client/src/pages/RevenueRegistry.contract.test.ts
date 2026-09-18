@@ -79,10 +79,10 @@ describe("контракт страницы Выручка", () => {
     expect(styles).toContain('html, body { background: #fff !important; color: #000 !important; }');
     expect(styles).toContain('background: #fff !important; color: #000; box-shadow: none;');
     expect(styles).toContain('thead th:nth-child(3) { white-space: nowrap; }');
-    expect(styles).toContain(':is(thead, tbody, tfoot) :is(th, td):last-child { background: #d8d8d8 !important;');
+	    expect(styles).toContain(':is(thead, tbody, tfoot) :is(th, td):last-child { background: #fff !important;');
     expect(styles).toContain('font-family: Arial, sans-serif; font-size: 9pt;');
     expect(styles).toContain('font-family: "Arial Black", Arial, sans-serif;');
-    expect(styles).toContain(':is(thead, tbody, tfoot) :is(th, td):nth-child(even) { background: #f0f0f0 !important; }');
+	    expect(styles).not.toContain(':is(thead, tbody, tfoot) :is(th, td):nth-child(even) { background: #f0f0f0 !important; }');
     expect(styles).toContain('thead th { background: #fff !important;');
     expect(styles).not.toContain('tfoot :is(th, td) { background: #d8d8d8 !important; }');
   });

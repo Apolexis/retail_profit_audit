@@ -44,23 +44,30 @@ async function nextCatalogNumber() {
   const [last] = await db.select({ catalogNumber: operationalCatalogProducts.catalogNumber }).from(operationalCatalogProducts).orderBy(desc(operationalCatalogProducts.catalogNumber)).limit(1);
   return (last?.catalogNumber ?? 0) + 1;
 }
-const markingFromEvotorCategory = (product: { name: string; categoryName: string | null; type?: string | null }): InventoryMarkingCategory => {
+export const markingFromEvotorCategory = (product: { name: string; categoryName: string | null; type?: string | null }): InventoryMarkingCategory => {
   /**
    * Cloud V2 exposes the marking class as the product `type`; it is more reliable
-   * than a category name. The textual fallback keeps manually created and legacy
-   * catalog entries readable without fabricating a marking class.
+   * than a category name. A declared `NORMAL` class remains unmarked; textual
+   * fallback is only for manual or legacy records with no source type at all.
    */
   switch (product.type?.toUpperCase()) {
     case "DIETARY_SUPPLEMENTS_MARKED": return "supplement";
     case "CAVIAR_MARKED": return "seafood_caviar";
+    case "GROCERIES_MARKED":
     case "CANNED_FISH_MARKED": return "seafood_canned";
-    case "BEER_MARKED": return "beer_marked";
+    case "BEER_MARKED":
+    case "BEER_MARKED_KEG": return "beer_marked";
     case "NOT_ALCOHOL_BEER_MARKED": return "beer_non_alcoholic";
     case "JUICE_MARKED": return "soft_drinks";
     case "WATER_MARKED": return "water";
+    case "DAIRY_MARKED":
     case "MILK_MARKED": return "dairy";
+    case "ALCOHOL_MARKED":
+    case "ALCOHOL_NOT_MARKED":
     case "ALCOHOL": return "alcohol";
+    case "NORMAL": return "none";
   }
+  if (product.type) return "none";
   const source = `${product.categoryName ?? ""} ${product.name}`.toLocaleLowerCase("ru-RU");
   if (/\b(бад|витамин)/.test(source)) return "supplement";
   if (/икр/.test(source)) return "seafood_caviar";
@@ -517,7 +524,7 @@ export async function confirmOperationalCatalogFromEvotor(input: { storeId: numb
     if (link) {
       const [existing] = await db.select({ markingCategory: operationalCatalogProducts.markingCategory }).from(operationalCatalogProducts).where(eq(operationalCatalogProducts.id, link.productId)).limit(1);
       const markingFromSource = markingFromEvotorCategory(product);
-      const hasExplicitMarking = product.type !== null && markingFromSource !== "none";
+      const hasDocumentedType = ["NORMAL", "DIETARY_SUPPLEMENTS_MARKED", "CAVIAR_MARKED", "GROCERIES_MARKED", "CANNED_FISH_MARKED", "BEER_MARKED", "BEER_MARKED_KEG", "NOT_ALCOHOL_BEER_MARKED", "JUICE_MARKED", "WATER_MARKED", "DAIRY_MARKED", "MILK_MARKED", "ALCOHOL_MARKED", "ALCOHOL_NOT_MARKED", "ALCOHOL"].includes(product.type?.toUpperCase() ?? "");
       const isAlcoholProduct = markingFromSource === "alcohol" || markingFromSource === "beer_marked";
       await db.update(operationalCatalogProducts).set({
         evotorCode: product.code,
@@ -526,7 +533,7 @@ export async function confirmOperationalCatalogFromEvotor(input: { storeId: numb
         barcodes: product.barcodes,
         baseUnit,
         vatRate: product.vatRate,
-        markingCategory: hasExplicitMarking ? markingFromSource : (existing?.markingCategory === "none" ? markingFromSource : existing?.markingCategory ?? "none"),
+        markingCategory: hasDocumentedType ? markingFromSource : (existing?.markingCategory === "none" ? markingFromSource : existing?.markingCategory ?? "none"),
         alcoholCode: isAlcoholProduct ? product.alcoholCode : null,
         alcoholTypeCode: isAlcoholProduct ? product.alcoholTypeCode : null,
         alcoholStrengthPercent: isAlcoholProduct && product.alcoholStrengthPercent !== null ? product.alcoholStrengthPercent.toFixed(2) : null,
@@ -1017,7 +1024,7 @@ export async function upsertInventoryLine(input: { inventoryId: number; productI
   if (!after) throw new Error("Не удалось сохранить строку пересчета");
   return {
     inventory,
-    product: { id: product.id, internalCode: product.evotorCode || `Эвотор #${product.id}`, canonicalName: product.canonicalName, unit },
+    product: { id: product.id, internalCode: String(product.catalogNumber), canonicalName: product.canonicalName, unit },
     before: before ? { productId: before.productId, countedQuantity: Number(before.countedQuantity), unit: before.unit } : null,
     after: { productId: after.productId, countedQuantity: Number(after.countedQuantity), unit: after.unit },
   };
@@ -1069,7 +1076,7 @@ export async function getInventoryDetail(inventoryId: number, options?: { includ
       productId: operationalInventoryLines.productId,
       countedQuantity: operationalInventoryLines.countedQuantity,
       unit: operationalInventoryLines.unit,
-      internalCode: operationalCatalogProducts.evotorCode,
+      internalCode: operationalCatalogProducts.catalogNumber,
       canonicalName: operationalCatalogProducts.canonicalName,
       category: operationalCatalogProducts.evotorCategoryName,
     })
@@ -1085,7 +1092,7 @@ export async function getInventoryDetail(inventoryId: number, options?: { includ
     storeName: store?.name ?? `Магазин #${inventory.storeId}`,
     createdByName: creator?.displayName ?? `Пользователь #${inventory.createdByAccountId}`,
     closedByName: closer?.displayName ?? null,
-    lines: lines.map(line => ({ ...line, internalCode: line.internalCode || `Эвотор #${line.productId}`, variant: null, countedQuantity: Number(line.countedQuantity), ...(accountingAtClose ? { accountingQuantity: accountingAtClose.get(line.productId) ?? null } : {}) })),
+    lines: lines.map(line => ({ ...line, internalCode: String(line.internalCode), variant: null, countedQuantity: Number(line.countedQuantity), ...(accountingAtClose ? { accountingQuantity: accountingAtClose.get(line.productId) ?? null } : {}) })),
   };
 }
 

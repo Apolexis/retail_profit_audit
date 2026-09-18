@@ -91,7 +91,7 @@ html[data-audit-theme="light"] .packet .stock-table.data-table tbody td { border
 .packet .stock-row-actions { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
 @media (max-width: 760px) { .packet .stock-row-actions { justify-content: flex-start; } }
 
-@media (max-width: 760px) {
+@media (max-width: 1200px) {
   .packet .stock-table-wrap { overflow: visible; cursor: default; touch-action: pan-y; border: 0; border-radius: 0; background: transparent; }
   .packet .stock-table { display: block; min-width: 0; }
   .packet .stock-table thead { display: none; }

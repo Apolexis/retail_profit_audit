@@ -62,13 +62,20 @@ describe("общий операционный справочник", () => {
     expect(editor).not.toContain("Штрихкоды Эвотор");
     expect(editor).toContain('marking === "alcohol" || marking === "beer_marked"');
     expect(editor).toContain("Алкокод");
-    expect(editor).toContain("Код вида АП (ФСРАР)");
-    expect(editor).toContain("Крепость, %");
-    expect(editor).toContain("Объем тары, л");
-	  expect(editor).toContain("Код типа товара Эвотор");
-	  expect(editor).toContain('beer_marked: "ALCOHOL_MARKED"');
-	  expect(editor).toContain("сейчас read-only");
-  });
+	    expect(editor).toContain("Код вида АП (ФСРАР)");
+	    expect(editor).toContain("Крепость, %");
+	    expect(editor).toContain("Объем тары, л");
+		  expect(editor).toContain("Тип товара Эвотор");
+		  expect(editor).toContain('supplement: "DIETARY_SUPPLEMENTS_MARKED"');
+		  expect(editor).toContain('seafood_caviar: "CAVIAR_MARKED"');
+		  expect(editor).toContain('seafood_canned: "GROCERIES_MARKED"');
+		  expect(editor).toContain('beer_marked: "BEER_MARKED"');
+		  expect(editor).toContain('beer_non_alcoholic: "NOT_ALCOHOL_BEER_MARKED"');
+		  expect(editor).toContain('const alcoholTypeOptions = ["500", "510"] as const;');
+		  expect(editor).toContain('className="catalog-alcohol-code"');
+		  expect(editor).toContain('placeholder="Например: 0,5"');
+		  expect(editor).toContain("Справочное соответствие V2 · без выгрузки");
+	});
 
 	it("использует обычные ссылки для самостоятельных маршрутов номенклатуры", () => {
 	  expect(page).toContain('href="/catalog-control/new"');
@@ -86,6 +93,10 @@ describe("общий операционный справочник", () => {
 	it("превращает широкую таблицу справочника в подписанные карточки на телефоне", () => {
 		expect(css).toContain(".catalog-table tbody tr:nth-child(even) { display: grid");
 		expect(css).toContain("content: attr(data-label)");
+	});
+
+	it("перестраивает широкий справочник в карточки до планшетной ширины", () => {
+		expect(css).toContain("@media (max-width: 1200px) {\n  .packet .catalog-table-wrap");
 	});
 
 	it("оставляет действия списка компактными и доступными", () => {

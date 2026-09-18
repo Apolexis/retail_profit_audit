@@ -15,7 +15,7 @@ describe("интерфейс операционной инвентаризаци
 
   it("берет товар только из рабочего справочника и не создает вымышленные строки", () => {
     expect(page).toContain("Выберите товар из внутреннего справочника");
-    expect(page).toContain("Поиск не подставляет товары сам");
+    expect(page).toContain("добавьте товар, которого нет в черновике");
     expect(page).toContain("ноль означает реально пустую позицию");
   });
 
@@ -110,4 +110,29 @@ describe("интерфейс операционной инвентаризаци
     expect(page).not.toContain("confirmEvotorCatalog.mutate");
     expect(page).not.toContain("updateInternalCost");
   });
+
+  it("дает редактировать факт прямо в каждой строке и сохранять изменения сверху", () => {
+    expect(page).toContain('className="packet-link inventory-save-lines"');
+    expect(page).toContain("saveLineChanges");
+    expect(page).toContain("lineQuantityDraft");
+    expect(page).toContain('className="inventory-inline-quantity"');
+    expect(page).toContain('aria-label={`Фактический остаток: ${line.canonicalName}`}');
+    expect(page).toContain("inventory-revision-totals");
+    expect(page).toContain("Разница:");
+    expect(page).toContain("Сохранено строк:");
+    expect(css).toContain(".packet .inventory-inline-quantity input");
+  });
+
+  it("дает перейти в общий справочник, если товара нет в пересчете", () => {
+    expect(page).toContain("Нет товара");
+    expect(page).toContain('href={`/catalog-control/new?return=${encodeURIComponent(`/inventory-control?store=${active.storeId}`)}`}');
+    expect(page).toContain("Добавить в ревизию");
+  });
+
+  it("не выводит квадратный контур истории за пределы строки", () => {
+    expect(css).toContain("overflow: hidden; padding: 0 10px 0 0;");
+    expect(css).toContain("box-shadow: inset 0 0 0 1px var(--inventory-accent-faint);");
+    expect(css).toContain("background: transparent; color: var(--inventory-accent);");
+  });
+
 });

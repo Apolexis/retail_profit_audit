@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateInventoryAdjustment, validateCountedQuantity, validateInventoryDate } from "./inventoryRegistry";
+import { calculateInventoryAdjustment, markingFromEvotorCategory, validateCountedQuantity, validateInventoryDate } from "./inventoryRegistry";
 
 describe("операционная инвентаризация: контроль количества", () => {
   it("принимает вес с точностью до грамма и нулевой фактический остаток", () => {
@@ -37,5 +37,22 @@ describe("операционная инвентаризация: закрыти�
   it("определяет расхождение только как факт минус учет", () => {
     expect(calculateInventoryAdjustment(0, 6.5)).toBe(6.5);
     expect(calculateInventoryAdjustment(6.5, 0)).toBe(-6.5);
+  });
+});
+
+describe("Эвотор V2: типы маркировки", () => {
+  it("сопоставляет документированные типы В2 без эвристики", () => {
+    expect(markingFromEvotorCategory({ name: "БАД", categoryName: null, type: "DIETARY_SUPPLEMENTS_MARKED" })).toBe("supplement");
+    expect(markingFromEvotorCategory({ name: "Икра", categoryName: null, type: "CAVIAR_MARKED" })).toBe("seafood_caviar");
+    expect(markingFromEvotorCategory({ name: "Консервы", categoryName: null, type: "GROCERIES_MARKED" })).toBe("seafood_canned");
+    expect(markingFromEvotorCategory({ name: "Пиво", categoryName: null, type: "BEER_MARKED" })).toBe("beer_marked");
+    expect(markingFromEvotorCategory({ name: "Пиво в кеге", categoryName: null, type: "BEER_MARKED_KEG" })).toBe("beer_marked");
+    expect(markingFromEvotorCategory({ name: "Безалкогольное", categoryName: null, type: "NOT_ALCOHOL_BEER_MARKED" })).toBe("beer_non_alcoholic");
+    expect(markingFromEvotorCategory({ name: "Вода", categoryName: null, type: "WATER_MARKED" })).toBe("water");
+    expect(markingFromEvotorCategory({ name: "Молоко", categoryName: null, type: "DAIRY_MARKED" })).toBe("dairy");
+    expect(markingFromEvotorCategory({ name: "Вино", categoryName: null, type: "ALCOHOL_MARKED" })).toBe("alcohol");
+    expect(markingFromEvotorCategory({ name: "Вино", categoryName: null, type: "ALCOHOL_NOT_MARKED" })).toBe("alcohol");
+    expect(markingFromEvotorCategory({ name: "Пиво", categoryName: null, type: "NORMAL" })).toBe("none");
+    expect(markingFromEvotorCategory({ name: "Пиво", categoryName: null, type: "UNRECOGNIZED_SOURCE_TYPE" })).toBe("none");
   });
 });

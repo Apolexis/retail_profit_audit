@@ -231,11 +231,10 @@ html[data-audit-theme="dark"] .packet .packet-card.revenue-own-history:hover { b
   #revenue-print-root .revenue-print-table thead th { background: #fff !important; font-family: "Arial Black", Arial, sans-serif; font-weight: 900; text-align: center; white-space: normal; }
   #revenue-print-root .revenue-print-table thead th:nth-child(3) { white-space: nowrap; }
   #revenue-print-root .revenue-print-table :is(thead, tbody, tfoot) :is(th, td) { background: #fff !important; }
-  #revenue-print-root .revenue-print-table :is(thead, tbody, tfoot) :is(th, td):nth-child(even) { background: #f0f0f0 !important; }
   #revenue-print-root .revenue-print-table tbody td:first-child,
   #revenue-print-root .revenue-print-table tfoot :is(th, td) { font-family: "Arial Black", Arial, sans-serif; font-weight: 900; }
   #revenue-print-root .revenue-print-table tfoot th { text-align: left; }
-  #revenue-print-root .revenue-print-table :is(thead, tbody, tfoot) :is(th, td):last-child { background: #d8d8d8 !important; font-family: "Arial Black", Arial, sans-serif; font-weight: 900; }
+  #revenue-print-root .revenue-print-table :is(thead, tbody, tfoot) :is(th, td):last-child { background: #fff !important; font-family: "Arial Black", Arial, sans-serif; font-weight: 900; }
   #revenue-print-root .revenue-print-comments { display: grid; gap: 3pt; margin-top: 6pt; break-inside: avoid; }
   #revenue-print-root .revenue-print-comments p { margin: 0; color: #000; font: 9pt/1.25 Arial, sans-serif; }
   #revenue-print-root .revenue-print-comments strong { font-family: "Arial Black", Arial, sans-serif; font-weight: 900; }

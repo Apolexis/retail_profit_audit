@@ -1,4 +1,4 @@
-import { Boxes, ClipboardCheck, FilePlus2, Plus, Save, Search, ShieldCheck, Trash2, X } from "lucide-react";
+import { Boxes, ClipboardCheck, FilePlus2, PackagePlus, Plus, Save, Search, ShieldCheck, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AuditShell } from "@/components/AuditShell";
@@ -35,6 +35,8 @@ export default function InventoryRegistry() {
   const [productSearch, setProductSearch] = useState("");
   const [productId, setProductId] = useState("");
   const [quantity, setQuantity] = useState("");
+  const [lineQuantityDraft, setLineQuantityDraft] = useState<Record<number, string>>({});
+  const [isSavingLineChanges, setIsSavingLineChanges] = useState(false);
   const [sortLinesByCategory, setSortLinesByCategory] = useState(true);
   const openedFromStock = useRef(false);
   const isSeller = me.data?.role === "seller";
@@ -80,6 +82,32 @@ export default function InventoryRegistry() {
       ? `${left.category ?? ""}\u0000${left.canonicalName}`.localeCompare(`${right.category ?? ""}\u0000${right.canonicalName}`, "ru")
       : left.canonicalName.localeCompare(right.canonicalName, "ru"));
   }, [active?.lines, sortLinesByCategory]);
+  const countedDraftValue = (line: InventoryDetail["lines"][number]) => lineQuantityDraft[line.productId] ?? quantityText(line.countedQuantity);
+  const parsedCountedDraft = (line: InventoryDetail["lines"][number]) => {
+    const text = countedDraftValue(line).trim();
+    if (!text) return null;
+    const parsed = Number(normalizeDecimalInputText(text));
+    return Number.isFinite(parsed) && parsed >= 0 ? Math.round(parsed * 1_000) / 1_000 : null;
+  };
+  const changedLines = useMemo(() => (active?.status === "draft" ? active.lines : []).filter(line => {
+    if (!(line.productId in lineQuantityDraft)) return false;
+    const value = parsedCountedDraft(line);
+    return value === null || value !== line.countedQuantity;
+  }), [active?.lines, active?.status, lineQuantityDraft]);
+  const hasInvalidLineQuantity = changedLines.some(line => parsedCountedDraft(line) === null);
+  const revisionTotals = useMemo(() => {
+    const totals = new Map<InventoryUnit, { accounting: number; counted: number; difference: number; positions: number; hasAccounting: boolean }>();
+    for (const line of active?.lines ?? []) {
+      const row = totals.get(line.unit) ?? { accounting: 0, counted: 0, difference: 0, positions: 0, hasAccounting: false };
+      const accounting = active?.status === "closed" ? line.accountingQuantity ?? null : accountingByProduct.get(line.productId) ?? null;
+      const counted = parsedCountedDraft(line);
+      row.positions += 1;
+      if (counted !== null) row.counted += counted;
+      if (!isSeller && accounting !== null) { row.accounting += accounting; row.hasAccounting = true; if (counted !== null) row.difference += counted - accounting; }
+      totals.set(line.unit, row);
+    }
+    return Array.from(totals.entries()).map(([unit, total]) => ({ ...total, unit }));
+  }, [active?.lines, active?.status, accountingByProduct, isSeller, lineQuantityDraft]);
   const refresh = async () => {
     await Promise.all([utils.inventoryRegistry.list.invalidate(), utils.inventoryRegistry.detail.invalidate(), utils.audit.changes.invalidate()]);
   };
@@ -110,6 +138,9 @@ export default function InventoryRegistry() {
   });
   const upsertLine = trpc.inventoryRegistry.upsertLine.useMutation({
     onSuccess: async () => { setProductId(""); setQuantity(""); setProductSearch(""); await refresh(); toast.success("Фактический остаток сохранен в черновике"); },
+    onError: error => toast.error("Строка не сохранена", { description: error.message }),
+  });
+  const updateDraftLine = trpc.inventoryRegistry.upsertLine.useMutation({
     onError: error => toast.error("Строка не сохранена", { description: error.message }),
   });
   const removeLine = trpc.inventoryRegistry.removeLine.useMutation({
@@ -147,6 +178,21 @@ export default function InventoryRegistry() {
     setProductId("");
     setProductSearch("");
     setQuantity("");
+    setLineQuantityDraft({});
+  };
+  const saveLineChanges = async () => {
+    if (!active || !changedLines.length || hasInvalidLineQuantity) return;
+    setIsSavingLineChanges(true);
+    try {
+      for (let offset = 0; offset < changedLines.length; offset += 6) {
+        await Promise.all(changedLines.slice(offset, offset + 6).map(line => updateDraftLine.mutateAsync({ inventoryId: active.id, productId: line.productId, countedQuantity: parsedCountedDraft(line)! })));
+      }
+      setLineQuantityDraft({});
+      await refresh();
+      toast.success(changedLines.length === 1 ? "Фактический остаток сохранен" : `Сохранено строк: ${changedLines.length}`);
+    } finally {
+      setIsSavingLineChanges(false);
+    }
   };
 
   if (!me.isLoading && !isSeller && !isManager && !isAdmin) return <AuditShell kicker="25 / ИНВЕНТАРИЗАЦИИ" title="Инвентаризации"><section className="empty-state"><ClipboardCheck size={28}/><h2>Нет операционного доступа</h2><p>Пересчет доступен назначенному продавцу, руководителю или администратору.</p></section></AuditShell>;
@@ -163,10 +209,11 @@ export default function InventoryRegistry() {
       </form>
 
       {active && <section className="packet-card inventory-draft-card">
-        <div className="card-title"><div><span>{active.status === "closed" ? "ЗАКРЫТАЯ ИНВЕНТАРИЗАЦИЯ" : "ЧЕРНОВИК ПЕРЕСЧЕТА"}</span><h3>{active.lines.length} {active.lines.length === 1 ? "позиция" : active.lines.length < 5 ? "позиции" : "позиций"}</h3></div>{active.status === "draft" && <div className="inventory-table-actions">{!isSeller && <button type="button" className="subtle-button" onClick={() => fillFromAccounting.mutate({ inventoryId: active.id })} disabled={fillFromAccounting.isPending}><Boxes size={14}/>{fillFromAccounting.isPending ? "Заполняем…" : "Заполнить учетными остатками"}</button>}<button type="button" className="subtle-button" onClick={() => setSortLinesByCategory(current => !current)}><ClipboardCheck size={14}/>{sortLinesByCategory ? "По категориям" : "По товару"}</button></div>}{active.status === "closed" ? <ShieldCheck size={20}/> : <Boxes size={20}/>}</div>
+        <div className="card-title"><div><span>{active.status === "closed" ? "ЗАКРЫТАЯ ИНВЕНТАРИЗАЦИЯ" : "ЧЕРНОВИК ПЕРЕСЧЕТА"}</span><h3>{active.lines.length} {active.lines.length === 1 ? "позиция" : active.lines.length < 5 ? "позиции" : "позиций"}</h3></div>{active.status === "draft" && <div className="inventory-table-actions"><button type="button" className="packet-link inventory-save-lines" onClick={() => void saveLineChanges()} disabled={!changedLines.length || hasInvalidLineQuantity || isSavingLineChanges}><Save size={14}/>{isSavingLineChanges ? "Сохраняем…" : "Сохранить"}</button>{!isSeller && <button type="button" className="subtle-button" onClick={() => fillFromAccounting.mutate({ inventoryId: active.id })} disabled={fillFromAccounting.isPending}><Boxes size={14}/>{fillFromAccounting.isPending ? "Заполняем…" : "Заполнить учетными остатками"}</button>}<button type="button" className="subtle-button" onClick={() => setSortLinesByCategory(current => !current)}><ClipboardCheck size={14}/>{sortLinesByCategory ? "По категориям" : "По товару"}</button></div>}{active.status === "closed" ? <ShieldCheck size={20}/> : <Boxes size={20}/>}</div>
+        {active.lines.length > 0 && <aside className="inventory-revision-totals" aria-label="Итоги ревизии">{revisionTotals.map(total => <div key={total.unit}><strong>{total.positions} {total.positions === 1 ? "позиция" : total.positions < 5 ? "позиции" : "позиций"} · {unitLabel[total.unit]}</strong><span>Факт: {quantityText(total.counted)} {unitLabel[total.unit]}</span>{!isSeller && total.hasAccounting && <><span>Учетный: {quantityText(total.accounting)} {unitLabel[total.unit]}</span><b className={total.difference === 0 ? "positive" : "negative"}>Разница: {total.difference > 0 ? "+" : ""}{quantityText(total.difference)} {unitLabel[total.unit]}</b></>}</div>)}</aside>}
         {active.status === "draft" && <form className="inventory-note-form" onSubmit={event => { event.preventDefault(); updateNote.mutate({ inventoryId: active.id, note }); }}><label>Комментарий к пересчету <small>необязательно</small><textarea value={note} onChange={event => setNote(event.target.value)} maxLength={1000} placeholder="Контекст пересчета"/></label><button className="subtle-button" disabled={updateNote.isPending}><Save size={14}/>{updateNote.isPending ? "Сохраняем…" : "Сохранить комментарий"}</button></form>}
-        {active.status === "draft" && <form className="inventory-line-create" onSubmit={addLine}><label>Поиск товара<div className="inventory-search"><input value={productSearch} onChange={event => { setProductSearch(event.target.value); setProductId(""); }} placeholder="Название или внутренний код"/><Search size={15}/></div></label><label>Товар<ThemedSelect value={productId} onChange={event => setProductId(event.target.value)} disabled={!visibleProducts.length}><option value="">{products.isLoading ? "Загружаем справочник…" : visibleProducts.length ? "Выберите товар" : "Нет доступных товаров"}</option>{visibleProducts.map(product => <option key={product.id} value={product.id}>{product.canonicalName}{product.variant ? ` · ${product.variant}` : ""} · {unitLabel[product.baseUnit]}</option>)}</ThemedSelect></label>{!isSeller && <div className="inventory-accounting-readout"><span>Учетный остаток</span><strong>{selectedProduct?.accountingQuantity === null || !selectedProduct ? "Нет данных" : `${quantityText(selectedProduct.accountingQuantity)} ${unitLabel[selectedProduct.baseUnit]}`}</strong></div>}<label className="inventory-quantity-field"><span>Фактический остаток</span><div className="inventory-quantity-input"><input data-decimal-input type="text" inputMode="decimal" pattern="[0-9]*[.]?[0-9]*" value={quantity} onChange={event => setQuantity(normalizeDecimalInputText(event.target.value).replace(/[^0-9.]/g, ""))} placeholder="0" disabled={!selectedProduct}/><small>{selectedProduct ? unitLabel[selectedProduct.baseUnit] : "Ед."}</small></div></label><button className="packet-link" disabled={!selectedProduct || !quantity || upsertLine.isPending}><Plus size={16}/>{upsertLine.isPending ? "Добавляем…" : "Добавить факт"}</button></form>}
-	        {active.lines.length ? <div className="data-table-wrap inventory-lines-wrap"><table className="data-table inventory-lines"><thead><tr><th>Товар</th><th>Категория</th>{!isSeller && <th>Учетный</th>}<th>Фактически</th>{!isSeller && <th>Расхождение</th>}{active.status === "draft" && <th>Действие</th>}</tr></thead><tbody>{sortedLines.map(line => { const accountingQuantity = active.status === "closed" ? line.accountingQuantity ?? null : accountingByProduct.get(line.productId) ?? null; const difference = accountingQuantity === null ? null : Math.round((line.countedQuantity - accountingQuantity) * 1000) / 1000; return <tr key={line.id}><td data-label="Товар"><strong>{line.canonicalName}</strong><small>{line.internalCode}{line.variant ? ` · ${line.variant}` : ""}</small></td><td data-label="Категория">{line.category ?? "—"}</td>{!isSeller && <td data-label="Учетный">{accountingQuantity === null ? "Нет данных" : `${quantityText(accountingQuantity)} ${unitLabel[line.unit]}`}</td>}<td data-label="Фактически"><strong>{quantityText(line.countedQuantity)} {unitLabel[line.unit]}</strong></td>{!isSeller && <td data-label="Расхождение" className={difference === null ? "" : difference === 0 ? "positive" : "negative"}>{difference === null ? "—" : `${difference > 0 ? "+" : ""}${quantityText(difference)} ${unitLabel[line.unit]}`}</td>}{active.status === "draft" && <td data-label="Действие"><button type="button" className="subtle-button subtle-danger" onClick={() => removeLine.mutate({ inventoryId: active.id, productId: line.productId })} disabled={removeLine.isPending}><Trash2 size={14}/>Убрать</button></td>}</tr>; })}</tbody></table></div> : <div className="inventory-empty-lines"><Boxes size={24}/><div><strong>Позиции еще не добавлены</strong><p>Поиск не подставляет товары сам: добавьте только реально посчитанные позиции.</p></div></div>}
+        {active.status === "draft" && <form className="inventory-line-create" onSubmit={addLine}><label>Поиск товара<div className="inventory-search"><input value={productSearch} onChange={event => { setProductSearch(event.target.value); setProductId(""); }} placeholder="Название или внутренний код"/><Search size={15}/></div></label><label>Товар<ThemedSelect value={productId} onChange={event => setProductId(event.target.value)} disabled={!visibleProducts.length}><option value="">{products.isLoading ? "Загружаем справочник…" : visibleProducts.length ? "Выберите товар" : "Нет доступных товаров"}</option>{visibleProducts.map(product => <option key={product.id} value={product.id}>{product.canonicalName}{product.variant ? ` · ${product.variant}` : ""} · {unitLabel[product.baseUnit]}</option>)}</ThemedSelect></label>{!isSeller && <div className="inventory-accounting-readout"><span>Учетный остаток</span><strong>{selectedProduct?.accountingQuantity === null || !selectedProduct ? "Нет данных" : `${quantityText(selectedProduct.accountingQuantity)} ${unitLabel[selectedProduct.baseUnit]}`}</strong></div>}<label className="inventory-quantity-field"><span>Фактический остаток</span><div className="inventory-quantity-input"><input data-decimal-input type="text" inputMode="decimal" pattern="[0-9]*[.]?[0-9]*" value={quantity} onChange={event => setQuantity(normalizeDecimalInputText(event.target.value).replace(/[^0-9.]/g, ""))} placeholder="0" disabled={!selectedProduct}/><small>{selectedProduct ? unitLabel[selectedProduct.baseUnit] : "Ед."}</small></div></label><button className="packet-link" disabled={!selectedProduct || !quantity || upsertLine.isPending}><Plus size={16}/>{upsertLine.isPending ? "Добавляем…" : "Добавить в ревизию"}</button><a className="subtle-button inventory-add-product-link" href={`/catalog-control/new?return=${encodeURIComponent(`/inventory-control?store=${active.storeId}`)}`}><PackagePlus size={14}/>Нет товара</a></form>}
+	        {active.lines.length ? <div className="data-table-wrap inventory-lines-wrap"><table className="data-table inventory-lines"><thead><tr><th>Товар</th><th>Категория</th>{!isSeller && <th>Учетный</th>}<th>Фактически</th>{!isSeller && <th>Расхождение</th>}{active.status === "draft" && <th>Действие</th>}</tr></thead><tbody>{sortedLines.map(line => { const accountingQuantity = active.status === "closed" ? line.accountingQuantity ?? null : accountingByProduct.get(line.productId) ?? null; const countedQuantity = parsedCountedDraft(line); const difference = accountingQuantity === null || countedQuantity === null ? null : Math.round((countedQuantity - accountingQuantity) * 1000) / 1000; return <tr key={line.id}><td data-label="Товар"><strong>{line.canonicalName}</strong><small>{line.internalCode}{line.variant ? ` · ${line.variant}` : ""}</small></td><td data-label="Категория">{line.category ?? "—"}</td>{!isSeller && <td data-label="Учетный">{accountingQuantity === null ? "Нет данных" : `${quantityText(accountingQuantity)} ${unitLabel[line.unit]}`}</td>}<td data-label="Фактически">{active.status === "draft" ? <label className="inventory-inline-quantity"><input aria-label={`Фактический остаток: ${line.canonicalName}`} data-decimal-input type="text" inputMode="decimal" pattern="[0-9]*[.]?[0-9]*" value={countedDraftValue(line)} onChange={event => setLineQuantityDraft(current => ({ ...current, [line.productId]: normalizeDecimalInputText(event.target.value).replace(/[^0-9.]/g, "") }))}/><small>{unitLabel[line.unit]}</small></label> : <strong>{quantityText(line.countedQuantity)} {unitLabel[line.unit]}</strong>}</td>{!isSeller && <td data-label="Расхождение" className={difference === null ? "" : difference === 0 ? "positive" : "negative"}>{difference === null ? "—" : `${difference > 0 ? "+" : ""}${quantityText(difference)} ${unitLabel[line.unit]}`}</td>}{active.status === "draft" && <td data-label="Действие"><button type="button" className="subtle-button subtle-danger" onClick={() => removeLine.mutate({ inventoryId: active.id, productId: line.productId })} disabled={removeLine.isPending}><Trash2 size={14}/>Убрать</button></td>}</tr>; })}</tbody></table></div> : <div className="inventory-empty-lines"><Boxes size={24}/><div><strong>Позиции еще не добавлены</strong><p>Нажмите «Заполнить учетными остатками» или добавьте товар, которого нет в черновике.</p></div></div>}
         {active.status === "draft" && <div className="inventory-close-actions">{isSeller ? <p className="packet-note">Вы можете подготовить пересчет. Закрыть и создать корректировки может назначенный руководитель или администратор.</p> : <ConfirmDangerDialog trigger={<button className="packet-link" type="button" disabled={!active.lines.length || close.isPending}><ShieldCheck size={16}/>{close.isPending ? "Закрываем…" : "Проверить и закрыть"}</button>} title="Закрыть инвентаризацию?" description="После закрытия строки пересчета нельзя изменить. Система создаст отдельные корректирующие движения фактического остатка и запишет действие в общий журнал." confirmLabel="Закрыть инвентаризацию" disabled={!active.lines.length || close.isPending} onConfirm={() => close.mutate({ inventoryId: active.id })}/>}</div>}
         {active.status === "closed" && <p className="inventory-closed-note"><ShieldCheck size={15}/>Закрыта {displayMoscowTimestamp(active.closedAt)} МСК{active.closedByName ? ` · ${active.closedByName}` : ""}. Данные пересчета неизменяемы.</p>}
       </section>}

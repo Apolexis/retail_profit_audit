@@ -5090,8 +5090,8 @@ html[data-audit-theme="light"] .packet :is(.revenue-registry, .inventory-layout,
 html[data-audit-theme="dark"] .packet :is(.revenue-registry, .inventory-layout, .inventory-history, .stock-table-card, .catalog-working-card, .catalog-editor-card, .warehouse-table-card) .subtle-button:not(:disabled):hover {
   transform: none !important;
   border-color: #ff765f !important;
-  background: #26131d !important;
-  color: #ffe8ef !important;
+  background: #1b141c !important;
+  color: var(--ink) !important;
   box-shadow: 0 0 0 1px rgba(255, 118, 95, .18) !important;
   filter: none !important;
 }
@@ -5163,17 +5163,17 @@ html[data-audit-theme="light"] .packet :is(.inventory-layout, .inventory-history
   color: #075dbb !important;
 }
 html[data-audit-theme="dark"] .packet :is(.inventory-layout, .inventory-history, .stock-table-card, .catalog-working-card, .catalog-editor-card, .warehouse-table-card) .packet-link {
-  border-color: #a85b72 !important;
-  background: #26131d !important;
-  color: #ffe8ef !important;
+  border-color: #ff765f !important;
+  background: #1b141c !important;
+  color: var(--ink) !important;
   box-shadow: 0 7px 18px rgba(0, 0, 0, .22) !important;
 }
 html[data-audit-theme="dark"] .packet :is(.inventory-layout, .inventory-history, .stock-table-card, .catalog-working-card, .catalog-editor-card, .warehouse-table-card) .packet-link:hover,
 html[data-audit-theme="dark"] .packet :is(.inventory-layout, .inventory-history, .stock-table-card, .catalog-working-card, .catalog-editor-card, .warehouse-table-card) .packet-link:focus-visible {
   transform: none !important;
   border-color: #ff765f !important;
-  background: #26131d !important;
-  color: #fff7f9 !important;
+  background: #1b141c !important;
+  color: var(--ink) !important;
   box-shadow: 0 0 0 2px rgba(255, 118, 95, .18) !important;
 }
 @media (max-width: 640px) {
