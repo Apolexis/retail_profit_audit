@@ -18,6 +18,8 @@ describe("warehouse control contract", () => {
     expect(page).toContain("READ‑ONLY ЭВОТОР");
     expect(page).toContain("Адреса и технические идентификаторы Эвотор здесь не выводятся");
     expect(page).toContain("Запись в Эвотор, изменение кассы и показ адреса исключены");
+    expect(page).toContain("syncEvotorDocumentPage.useMutation");
+    expect(page).toContain("Документы");
     expect(page).not.toContain("evotorStoreName");
   });
 

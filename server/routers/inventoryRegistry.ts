@@ -22,6 +22,7 @@ import {
   restoreOperationalCatalogProduct,
   setOperationalProductSalePrice,
   setOperationalStorePriceType,
+  syncOperationalEvotorDocumentPage,
   updateInventoryNote,
   updateOperationalCatalogProduct,
   updateOperationalCatalogCost,
@@ -68,6 +69,13 @@ export const inventoryRegistryRouter = router({
     if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Подтвердить номенклатуру Эвотор может только администратор." });
     const result = await confirmOperationalCatalogFromEvotor({ ...input, actorId: actor.id });
     await recordChange({ actorId: actor.id, action: "operational_catalog.evotor_confirm", entityType: "operational_catalog", entityId: String(input.storeId), afterState: { storeId: input.storeId, evotorStoreName: result.evotorStoreName, savedPositions: result.imported, costPricePolicy: "evotor=0/read-only; internal=manual" } });
+    return result;
+  }),
+  syncEvotorDocumentPage: protectedProcedure.input(z.object({ storeId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Загружать документы Эвотор может только администратор." });
+    const result = await syncOperationalEvotorDocumentPage({ ...input, actorId: actor.id });
+    await recordChange({ actorId: actor.id, action: "operational_evotor.documents.sync_page", entityType: "operational_evotor_document_sync", entityId: String(result.syncId), afterState: { storeId: input.storeId, readDocuments: result.readDocuments, readPositions: result.readPositions, insertedDocuments: result.insertedDocuments, insertedPositions: result.insertedPositions, completed: result.completed, policy: "read-only; normalized; no fiscal/payment/device fields" } });
     return result;
   }),
   updateInternalCost: protectedProcedure.input(z.object({ id: z.number().int().positive(), internalCostPrice: z.number().finite().min(0).max(10_000_000).nullable() })).mutation(async ({ ctx, input }) => {

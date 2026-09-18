@@ -138,7 +138,7 @@ export function FreeScrollSelect({
         collisionPadding={12}
         className={cn("free-scroll-select-content", contentClassName)}
       >
-        {searchable && <label className="free-scroll-select-search"><span className="sr-only">{searchPlaceholder}</span><input ref={searchInputRef} value={search} onChange={event => setSearch(event.target.value)} onPointerDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()} onKeyDown={event => event.stopPropagation()} placeholder={searchPlaceholder}/></label>}
+        {searchable && <label className="free-scroll-select-search"><span className="sr-only">{searchPlaceholder}</span><input ref={searchInputRef} value={search} onChange={event => setSearch(event.target.value)} onPointerDownCapture={event => event.stopPropagation()} onClickCapture={event => event.stopPropagation()} onKeyDownCapture={event => event.stopPropagation()} onFocusCapture={event => event.stopPropagation()} placeholder={searchPlaceholder}/></label>}
         <button
           type="button"
           tabIndex={canScroll.up ? 0 : -1}

@@ -392,6 +392,46 @@ export const operationalEvotorProductLinks = mysqlTable("operational_evotor_prod
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => [unique("operational_evotor_product_link_uq").on(table.storeId, table.evotorProductId)]);
 
+/** One administrative, read-only cursor import. It retains neither credentials nor raw fiscal payloads. */
+export const operationalEvotorDocumentSyncs = mysqlTable("operational_evotor_document_syncs", {
+  id: int("id").autoincrement().primaryKey(),
+  storeId: int("storeId").notNull(),
+  status: mysqlEnum("status", ["running", "completed", "failed"]).default("running").notNull(),
+  cursor: varchar("cursor", { length: 512 }),
+  documentsRead: int("documentsRead").default(0).notNull(),
+  positionsRead: int("positionsRead").default(0).notNull(),
+  startedByAccountId: int("startedByAccountId").notNull(),
+  startedAt: timestamp("startedAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+  failureMessage: varchar("failureMessage", { length: 512 }),
+});
+
+/** Normalized, non-fiscal document facts read from a fixed Evotor store mapping. */
+export const operationalEvotorDocuments = mysqlTable("operational_evotor_documents", {
+  id: int("id").autoincrement().primaryKey(),
+  storeId: int("storeId").notNull(),
+  syncId: int("syncId").notNull(),
+  evotorDocumentId: varchar("evotorDocumentId", { length: 128 }).notNull(),
+  documentType: varchar("documentType", { length: 64 }).notNull(),
+  occurredAt: varchar("occurredAt", { length: 64 }),
+  total: decimal("total", { precision: 18, scale: 2 }),
+  importedAt: timestamp("importedAt").defaultNow().notNull(),
+}, table => [unique("operational_evotor_document_uq").on(table.storeId, table.evotorDocumentId)]);
+
+/** Normalized document position. Fiscal identifiers, device data, payment requisites and raw payloads are excluded. */
+export const operationalEvotorDocumentPositions = mysqlTable("operational_evotor_document_positions", {
+  id: int("id").autoincrement().primaryKey(),
+  documentId: int("documentId").notNull(),
+  evotorProductId: varchar("evotorProductId", { length: 128 }),
+  productName: varchar("productName", { length: 512 }),
+  quantity: decimal("quantity", { precision: 16, scale: 3 }),
+  initialQuantity: decimal("initialQuantity", { precision: 16, scale: 3 }),
+  unit: varchar("unit", { length: 64 }),
+  settlementMethod: varchar("settlementMethod", { length: 64 }),
+  resultSum: decimal("resultSum", { precision: 18, scale: 2 }),
+  importedAt: timestamp("importedAt").defaultNow().notNull(),
+}, table => [unique("operational_evotor_document_position_uq").on(table.documentId, table.evotorProductId, table.productName)]);
+
 /** A zero is valid: absence must never be represented by silently omitting a counted product. */
 export const operationalInventoryLines = mysqlTable("operational_inventory_lines", {
   id: int("id").autoincrement().primaryKey(),
@@ -424,6 +464,9 @@ export type OperationalPriceType = typeof operationalPriceTypes.$inferSelect;
 export type OperationalStorePriceType = typeof operationalStorePriceTypes.$inferSelect;
 export type OperationalProductSalePrice = typeof operationalProductSalePrices.$inferSelect;
 export type OperationalEvotorProductLink = typeof operationalEvotorProductLinks.$inferSelect;
+export type OperationalEvotorDocumentSync = typeof operationalEvotorDocumentSyncs.$inferSelect;
+export type OperationalEvotorDocument = typeof operationalEvotorDocuments.$inferSelect;
+export type OperationalEvotorDocumentPosition = typeof operationalEvotorDocumentPositions.$inferSelect;
 export type OperationalInventoryLine = typeof operationalInventoryLines.$inferSelect;
 export type OperationalStockMovement = typeof operationalStockMovements.$inferSelect;
 

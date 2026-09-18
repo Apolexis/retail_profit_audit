@@ -3,6 +3,9 @@ import { randomUUID } from "node:crypto";
 import {
   localAccounts,
   operationalCatalogProducts,
+  operationalEvotorDocumentPositions,
+  operationalEvotorDocuments,
+  operationalEvotorDocumentSyncs,
   operationalEvotorProductLinks,
   operationalInventories,
   operationalInventoryLines,
@@ -14,7 +17,7 @@ import {
   stores,
 } from "../drizzle/schema";
 import { getDb } from "./db";
-import { listEvotorCatalogPreviewForOperationalStore } from "./evotorCatalog";
+import { listEvotorCatalogPreviewForOperationalStore, listEvotorDocumentsPreviewForOperationalStore } from "./evotorCatalog";
 
 export type InventoryUnit = "kg" | "l" | "piece";
 export type InventoryStatus = "draft" | "closed";
@@ -184,6 +187,66 @@ export async function listOperationalStock(input: { storeIds?: number[] | null; 
       };
     }),
   };
+}
+
+/**
+ * Imports exactly one cursor page on each call. This keeps the external request bounded,
+ * retains no raw or fiscal payload and never writes back to Evotor.
+ */
+export async function syncOperationalEvotorDocumentPage(input: { storeId: number; actorId: number }) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const [activeSync] = await db
+    .select()
+    .from(operationalEvotorDocumentSyncs)
+    .where(and(eq(operationalEvotorDocumentSyncs.storeId, input.storeId), eq(operationalEvotorDocumentSyncs.status, "running")))
+    .orderBy(desc(operationalEvotorDocumentSyncs.id))
+    .limit(1);
+  const sync = activeSync ?? (await db.insert(operationalEvotorDocumentSyncs).values({ storeId: input.storeId, startedByAccountId: input.actorId }).$returningId()).map(({ id }) => ({ id, documentsRead: 0, positionsRead: 0, cursor: null }))[0];
+  const page = await listEvotorDocumentsPreviewForOperationalStore({ storeId: input.storeId, cursor: sync.cursor ?? undefined });
+  let insertedDocuments = 0;
+  let insertedPositions = 0;
+  for (const document of page.documents) {
+    const [existing] = await db
+      .select({ id: operationalEvotorDocuments.id })
+      .from(operationalEvotorDocuments)
+      .where(and(eq(operationalEvotorDocuments.storeId, input.storeId), eq(operationalEvotorDocuments.evotorDocumentId, document.id)))
+      .limit(1);
+    if (existing) continue;
+    const [inserted] = await db.insert(operationalEvotorDocuments).values({
+      storeId: input.storeId,
+      syncId: sync.id,
+      evotorDocumentId: document.id,
+      documentType: document.type,
+      occurredAt: document.closedAt ?? document.createdAt,
+      total: document.total === null ? null : document.total.toFixed(2),
+    }).$returningId();
+    insertedDocuments += 1;
+    const positions = document.positions.filter(position => position.productId || position.productName).map(position => ({
+      documentId: inserted.id,
+      evotorProductId: position.productId,
+      productName: position.productName,
+      quantity: position.quantity === null ? null : position.quantity.toFixed(3),
+      initialQuantity: position.initialQuantity === null ? null : position.initialQuantity.toFixed(3),
+      unit: position.unit,
+      settlementMethod: position.settlementMethod,
+      resultSum: position.resultSum === null ? null : position.resultSum.toFixed(2),
+    }));
+    if (positions.length) {
+      await db.insert(operationalEvotorDocumentPositions).values(positions);
+      insertedPositions += positions.length;
+    }
+  }
+  const completed = !page.nextCursor;
+  await db.update(operationalEvotorDocumentSyncs).set({
+    cursor: page.nextCursor,
+    documentsRead: Number(sync.documentsRead) + page.documents.length,
+    positionsRead: Number(sync.positionsRead) + page.documents.reduce((total, document) => total + document.positions.length, 0),
+    status: completed ? "completed" : "running",
+    completedAt: completed ? new Date() : null,
+    failureMessage: null,
+  }).where(eq(operationalEvotorDocumentSyncs.id, sync.id));
+  return { syncId: sync.id, storeId: input.storeId, readDocuments: page.documents.length, readPositions: page.documents.reduce((total, document) => total + document.positions.length, 0), insertedDocuments, insertedPositions, completed };
 }
 
 /** Saves the confirmed Evotor catalog as read-only links to global products; similarity never merges real products. */

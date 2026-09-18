@@ -38,6 +38,8 @@
 .packet .warehouse-status.is-linked { color: var(--ink); font-weight: 800; }
 .packet .warehouse-status.is-linked svg { color: var(--warehouse-accent); }
 .packet .warehouse-save { display: inline-flex; min-height: 34px; margin: 0; padding: 6px 9px; white-space: nowrap; }
+.packet .warehouse-actions { display: flex; flex-wrap: wrap; gap: 6px; min-width: 184px; }
+.packet .warehouse-actions .subtle-button { display: inline-flex; min-height: 34px; margin: 0; padding: 6px 9px; white-space: nowrap; }
 .packet .warehouse-guidance { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
 .packet .warehouse-guidance article { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 11px; padding: 16px; border: 1px solid var(--warehouse-line); border-radius: 12px; background: var(--warehouse-card); transition: border-color .18s ease, box-shadow .18s ease; }
 .packet .warehouse-guidance svg { color: var(--warehouse-accent); margin-top: 2px; }

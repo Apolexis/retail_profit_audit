@@ -32,6 +32,24 @@ export type EvotorCatalogPreviewItem = {
   categoryName: string | null;
 };
 
+/** Minimal read-only document projection: no fiscal IDs, customer details or payment requisites leave the server. */
+export type EvotorDocumentPreview = {
+  id: string;
+  type: string;
+  createdAt: string | null;
+  closedAt: string | null;
+  total: number | null;
+  positions: Array<{
+    productId: string | null;
+    productName: string | null;
+    quantity: number | null;
+    initialQuantity: number | null;
+    unit: string | null;
+    settlementMethod: string | null;
+    resultSum: number | null;
+  }>;
+};
+
 function vatRateFromEvotorTax(value: unknown): "VAT_10" | "VAT_22" {
   const normalized = text(value)?.toUpperCase() ?? "";
   return normalized.includes("22") ? "VAT_22" : "VAT_10";
@@ -43,6 +61,10 @@ function asRecord(value: unknown): EvotorRecord | null {
 
 function text(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function finiteNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
 function barcodeList(value: unknown): string[] {
@@ -95,6 +117,37 @@ async function fetchEvotorPage(path: string, cursor?: string): Promise<EvotorPag
   const response = await fetch(url, { headers: evotorHeaders() });
   if (!response.ok) throw new Error(`Эвотор не отдал preview каталога (HTTP ${response.status}).`);
   return response.json() as Promise<EvotorPage>;
+}
+
+export function normalizeEvotorDocumentPreview(value: unknown): EvotorDocumentPreview | null {
+  const record = asRecord(value);
+  if (!record) return null;
+  const id = text(record.id);
+  const type = text(record.type);
+  if (!id || !type) return null;
+  const body = asRecord(record.body);
+  const positions = Array.isArray(body?.positions) ? body.positions.flatMap(position => {
+    const line = asRecord(position);
+    if (!line) return [];
+    const settlement = asRecord(line.settlement_method);
+    return [{
+      productId: text(line.uuid) ?? text(line.id),
+      productName: text(line.product_name),
+      quantity: finiteNumber(line.quantity),
+      initialQuantity: finiteNumber(line.initial_quantity),
+      unit: text(line.measure_name),
+      settlementMethod: text(settlement?.type),
+      resultSum: finiteNumber(line.result_sum),
+    }];
+  }) : [];
+  return {
+    id,
+    type,
+    createdAt: text(record.created_at),
+    closedAt: text(record.close_date),
+    total: finiteNumber(body?.result_sum) ?? finiteNumber(body?.sum),
+    positions,
+  };
 }
 
 async function readEvotorPages(path: string): Promise<unknown[]> {
@@ -159,5 +212,21 @@ export async function listEvotorCatalogPreviewForOperationalStore(storeId: numbe
   return {
     mapping: { storeId, internalStoreName: mapping.internalStoreName, evotorStoreName: evotorStore.name },
     products: await listEvotorCatalogPreview(evotorStore.id),
+  };
+}
+
+/** Reads one cursor page only, so a human-triggered preview cannot fan out or mutate external data. */
+export async function listEvotorDocumentsPreviewForOperationalStore(input: { storeId: number; cursor?: string }) {
+  const mapping = await getOperationalEvotorMapping(input.storeId);
+  const evotorStores = await listEvotorCatalogStoresPreview();
+  const matched = mapping.terminalUuid
+    ? evotorStores.filter(store => store.id === mapping.terminalUuid)
+    : evotorStores.filter(store => normalizedStoreName(store.name) === normalizedStoreName(mapping.evotorStoreName));
+  if (matched.length !== 1) throw new Error(matched.length ? "Соответствие магазина Эвотор неоднозначно: требуется его ID." : "Магазин Эвотор из сохраненного соответствия не найден.");
+  const page = await fetchEvotorPage(`/stores/${encodeURIComponent(matched[0].id)}/documents`, input.cursor);
+  return {
+    storeId: input.storeId,
+    documents: (page.items ?? []).map(normalizeEvotorDocumentPreview).filter((item): item is EvotorDocumentPreview => Boolean(item)),
+    nextCursor: text(page.paging?.next_cursor),
   };
 }
