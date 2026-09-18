@@ -351,7 +351,8 @@ export const operationalCatalogProducts = mysqlTable("operational_catalog_produc
   /** Administrative future flag only: the present Evotor integration stays strictly read-only. */
   isEvotorExportEnabled: boolean("isEvotorExportEnabled").default(false).notNull(),
   isActive: boolean("isActive").default(true).notNull(),
-  importedByAccountId: int("importedByAccountId").notNull(),
+  /** Null means a platform schedule performed a read-only source refresh. */
+  importedByAccountId: int("importedByAccountId"),
   importedAt: timestamp("importedAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => [unique("operational_catalog_store_evotor_product_uq").on(table.storeId, table.evotorProductId)]);
@@ -441,7 +442,8 @@ export const operationalEvotorProductLinks = mysqlTable("operational_evotor_prod
   /** Current quantity from the read-only Evotor catalog; later manual/inventory movements are applied above it. */
   evotorQuantitySnapshot: decimal("evotorQuantitySnapshot", { precision: 16, scale: 3 }),
   evotorQuantityUpdatedAt: timestamp("evotorQuantityUpdatedAt"),
-  linkedByAccountId: int("linkedByAccountId").notNull(),
+  /** Null means a platform schedule established an existing source linkage. */
+  linkedByAccountId: int("linkedByAccountId"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => [unique("operational_evotor_product_link_uq").on(table.storeId, table.evotorProductId)]);
@@ -454,11 +456,29 @@ export const operationalEvotorDocumentSyncs = mysqlTable("operational_evotor_doc
   cursor: varchar("cursor", { length: 512 }),
   documentsRead: int("documentsRead").default(0).notNull(),
   positionsRead: int("positionsRead").default(0).notNull(),
-  startedByAccountId: int("startedByAccountId").notNull(),
+  /** Null means a scheduled system read; interactive imports retain their actor. */
+  startedByAccountId: int("startedByAccountId"),
   startedAt: timestamp("startedAt").defaultNow().notNull(),
   completedAt: timestamp("completedAt"),
   failureMessage: varchar("failureMessage", { length: 512 }),
 });
+
+/**
+ * Platform heartbeat callbacks are dereferenced by the opaque task UID rather
+ * than by a request body.  This keeps recurring read-only Evotor work
+ * idempotent, pausable and isolated from user-session actions.
+ */
+export const operationalScheduledSyncJobs = mysqlTable("operational_scheduled_sync_jobs", {
+  id: int("id").autoincrement().primaryKey(),
+  kind: mysqlEnum("kind", ["evotor_catalog", "evotor_documents"]).notNull(),
+  scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }).unique(),
+  isActive: boolean("isActive").default(true).notNull(),
+  lastStartedAt: timestamp("lastStartedAt"),
+  lastCompletedAt: timestamp("lastCompletedAt"),
+  lastError: varchar("lastError", { length: 512 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [unique("operational_scheduled_sync_kind_uq").on(table.kind)]);
 
 /** Normalized, non-fiscal document facts read from a fixed Evotor store mapping. */
 export const operationalEvotorDocuments = mysqlTable("operational_evotor_documents", {

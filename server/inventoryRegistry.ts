@@ -295,7 +295,7 @@ export async function listOperationalStock(input: { storeIds?: number[] | null; 
  * Imports exactly one cursor page on each call. This keeps the external request bounded,
  * retains no raw or fiscal payload and never writes back to Evotor.
  */
-export async function syncOperationalEvotorDocumentPage(input: { storeId: number; actorId: number }) {
+export async function syncOperationalEvotorDocumentPage(input: { storeId: number; actorId: number | null }) {
   const db = await getDb();
   if (!db) throw new Error("База данных недоступна");
   const [activeSync] = await db
@@ -352,7 +352,7 @@ export async function syncOperationalEvotorDocumentPage(input: { storeId: number
 }
 
 /** Saves the confirmed Evotor catalog as read-only links to global products; similarity never merges real products. */
-export async function confirmOperationalCatalogFromEvotor(input: { storeId: number; actorId: number }) {
+export async function confirmOperationalCatalogFromEvotor(input: { storeId: number; actorId: number | null }) {
   const db = await getDb();
   if (!db) throw new Error("База данных недоступна");
   const preview = await listEvotorCatalogPreviewForOperationalStore(input.storeId);

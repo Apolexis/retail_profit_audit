@@ -12,6 +12,11 @@ import { serveStatic, setupVite } from "./vite";
 import { createScheduledExecutiveReport, findWeeklyScheduleByTaskUid, isWeeklyReportDue } from "../weeklyReports";
 import { registerImportBinaryRoutes } from "../importBinaryRoutes";
 import { registerPriceImportBinaryRoutes } from "../priceImportBinaryRoutes";
+import {
+  ensureOperationalEvotorSchedules,
+  runScheduledEvotorCatalog,
+  runScheduledEvotorDocuments,
+} from "../operationalEvotorSchedule";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -64,6 +69,24 @@ async function startServer() {
       return res.status(500).json({ error: "weekly-report-failed", detail, context: { path: req.path }, timestamp: new Date().toISOString() });
     }
   });
+  app.post("/api/scheduled/operational-evotor-catalog", async (req, res) => {
+    try {
+      const user = await sdk.authenticateRequest(req);
+      if (!user.isCron || !user.taskUid) return res.status(403).json({ error: "cron-only" });
+      return res.json({ ok: true, ...(await runScheduledEvotorCatalog(user.taskUid)) });
+    } catch (error) {
+      return res.status(500).json({ error: "operational-evotor-catalog-sync-failed", message: error instanceof Error ? error.message : String(error) });
+    }
+  });
+  app.post("/api/scheduled/operational-evotor-documents", async (req, res) => {
+    try {
+      const user = await sdk.authenticateRequest(req);
+      if (!user.isCron || !user.taskUid) return res.status(403).json({ error: "cron-only" });
+      return res.json({ ok: true, ...(await runScheduledEvotorDocuments(user.taskUid)) });
+    } catch (error) {
+      return res.status(500).json({ error: "operational-evotor-document-sync-failed", message: error instanceof Error ? error.message : String(error) });
+    }
+  });
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
@@ -80,6 +103,9 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
+    void ensureOperationalEvotorSchedules().catch(error =>
+      console.error("[operational-evotor-schedule]", error instanceof Error ? error.message : error)
+    );
   });
 }
 
