@@ -45,13 +45,22 @@ describe("интерфейс операционной инвентаризаци
     expect(css).toContain(".packet .inventory-line-create { grid-template-columns: 1fr; }");
   });
 
-  it("дает администратору только read-only preview номенклатуры Эвотор", () => {
+  it("показывает каталог только по назначенному соответствию и подтверждает его во внутренний справочник", () => {
     expect(page).toContain("ЭВОТОР · READ-ONLY PREVIEW");
     expect(page).toContain("Номенклатура кассы без сохранения");
-    expect(page).toContain("trpc.evotorCatalog.stores");
-    expect(page).toContain("trpc.evotorCatalog.preview");
-    expect(page).toContain("Внутренний справочник не изменен");
+    expect(page).toContain("trpc.evotorCatalog.mappingForStore");
+    expect(page).toContain("trpc.evotorCatalog.previewForStore");
+    expect(page).toContain("Произвольно выбрать другой магазин нельзя");
+    expect(page).toContain("confirmEvotorCatalog.mutate");
+    expect(page).toContain("НДС 10%");
     expect(page).toContain("Показать еще");
     expect(css).toContain(".packet .evotor-catalog-list > article");
+  });
+
+  it("дает администратору отдельную внутреннюю себестоимость без записи обратно в Эвотор", () => {
+    expect(page).toContain("ВНУТРЕННЯЯ СЕБЕСТОИМОСТЬ");
+    expect(page).toContain("trpc.inventoryRegistry.updateInternalCost");
+    expect(page).toContain("Себестоимость Эвотор» остается нулевой и скрытой");
+    expect(css).toContain(".packet .inventory-cost-list");
   });
 });

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import mammoth from "mammoth";
 import { PDFParse } from "pdf-parse";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
@@ -1315,10 +1315,10 @@ export async function listPriceControlData() {
     db.select().from(priceSuppliers).orderBy(priceSuppliers.name),
     db.select().from(priceCategories).orderBy(priceCategories.name),
     db.select().from(priceProductCharacteristics).orderBy(priceProductCharacteristics.kind, priceProductCharacteristics.value),
-    db.select({ id: priceProducts.id, internalCode: priceProducts.internalCode, canonicalName: priceProducts.canonicalName, normalizedSignature: priceProducts.normalizedSignature, categoryId: priceProducts.categoryId, legacyCategory: priceProducts.category, categoryName: priceCategories.name, categoryIsActive: priceCategories.isActive, variantCharacteristicId: priceProducts.variantCharacteristicId, sizeCharacteristicId: priceProducts.sizeCharacteristicId, placeContentsCharacteristicId: priceProducts.placeContentsCharacteristicId, variant: priceProducts.variant, sizeText: priceProducts.sizeText, placeContents: priceProducts.placeContents, baseUnit: priceProducts.baseUnit, isActive: priceProducts.isActive }).from(priceProducts).leftJoin(priceCategories, eq(priceProducts.categoryId, priceCategories.id)).orderBy(priceProducts.canonicalName),
+    db.select({ id: priceProducts.id, internalCode: priceProducts.internalCode, linkCode: priceProducts.linkCode, canonicalName: priceProducts.canonicalName, normalizedSignature: priceProducts.normalizedSignature, categoryId: priceProducts.categoryId, legacyCategory: priceProducts.category, categoryName: priceCategories.name, categoryIsActive: priceCategories.isActive, variantCharacteristicId: priceProducts.variantCharacteristicId, sizeCharacteristicId: priceProducts.sizeCharacteristicId, placeContentsCharacteristicId: priceProducts.placeContentsCharacteristicId, variant: priceProducts.variant, sizeText: priceProducts.sizeText, placeContents: priceProducts.placeContents, baseUnit: priceProducts.baseUnit, isActive: priceProducts.isActive }).from(priceProducts).leftJoin(priceCategories, eq(priceProducts.categoryId, priceCategories.id)).orderBy(priceProducts.canonicalName),
     db.select({ id: priceImports.id, supplierId: priceImports.supplierId, supplierName: priceSuppliers.name, fileName: priceImports.fileName, fileKey: priceImports.fileKey, sourceDate: priceImports.sourceDate, sourceType: priceImports.sourceType, rowCount: priceImports.rowCount, createdAt: priceImports.createdAt }).from(priceImports).innerJoin(priceSuppliers, eq(priceImports.supplierId, priceSuppliers.id)).orderBy(desc(priceImports.createdAt)).limit(50),
     db.select({ rowId: priceImportRows.id, importId: priceImportRows.importId, productId: priceImportRows.productId, rawName: priceImportRows.rawName, rawCategory: priceImportRows.rawCategory, rawPackaging: priceImportRows.rawPackaging, manufacturer: priceImportRows.manufacturer, placeContents: priceImportRows.placeContents, manufacturedOn: priceImportRows.manufacturedOn, shelfLifeMonths: priceImportRows.shelfLifeMonths, expiresOn: priceImportRows.expiresOn, mappingStatus: priceImportRows.mappingStatus, matchedBy: priceImportRows.matchedBy, matchConfidence: priceImportRows.matchConfidence, supplierId: priceImports.supplierId, supplierName: priceSuppliers.name, sourceDate: priceImports.sourceDate, importedAt: priceImports.createdAt, productName: priceProducts.canonicalName, internalCode: priceProducts.internalCode, priceId: priceOfferPrices.id, priceMode: priceOfferPrices.priceMode, market: priceOfferPrices.market, priceAmount: priceOfferPrices.priceAmount, priceBasis: priceOfferPrices.priceBasis, normalizedPrice: priceOfferPrices.normalizedPrice, normalizedUnit: priceOfferPrices.normalizedUnit, minimumQuantityKg: priceOfferPrices.minimumQuantityKg, sourcePriceText: priceOfferPrices.sourcePriceText }).from(priceImportRows).innerJoin(priceImports, eq(priceImportRows.importId, priceImports.id)).innerJoin(priceSuppliers, eq(priceImports.supplierId, priceSuppliers.id)).leftJoin(priceProducts, eq(priceImportRows.productId, priceProducts.id)).leftJoin(priceOfferPrices, eq(priceOfferPrices.importRowId, priceImportRows.id)).orderBy(desc(priceImports.createdAt)).limit(10000),
-    db.select({ aliasId: priceSupplierAliases.id, supplierId: priceSupplierAliases.supplierId, supplierName: priceSuppliers.name, productId: priceSupplierAliases.productId, internalCode: priceProducts.internalCode, canonicalName: priceProducts.canonicalName, normalizedName: priceSupplierAliases.normalizedName, packagingSignature: priceSupplierAliases.packagingSignature, updatedAt: priceSupplierAliases.updatedAt }).from(priceSupplierAliases).innerJoin(priceSuppliers, eq(priceSupplierAliases.supplierId, priceSuppliers.id)).innerJoin(priceProducts, eq(priceSupplierAliases.productId, priceProducts.id)).orderBy(priceSuppliers.name, priceSupplierAliases.normalizedName).limit(500),
+    db.select({ aliasId: priceSupplierAliases.id, supplierId: priceSupplierAliases.supplierId, supplierName: priceSuppliers.name, productId: priceSupplierAliases.productId, internalCode: priceProducts.internalCode, linkCode: priceProducts.linkCode, canonicalName: priceProducts.canonicalName, normalizedName: priceSupplierAliases.normalizedName, packagingSignature: priceSupplierAliases.packagingSignature, updatedAt: priceSupplierAliases.updatedAt }).from(priceSupplierAliases).innerJoin(priceSuppliers, eq(priceSupplierAliases.supplierId, priceSuppliers.id)).innerJoin(priceProducts, eq(priceSupplierAliases.productId, priceProducts.id)).orderBy(priceSuppliers.name, priceSupplierAliases.normalizedName).limit(500),
   ]);
   const catalogProducts = products.map(product => ({ ...product, category: product.categoryName ?? product.legacyCategory, categoryIsActive: product.categoryIsActive ?? true }));
   const repairableVariants = catalogProducts
@@ -1351,7 +1351,7 @@ export async function listPriceControlData() {
     const comparable = offers.filter(offer => offer.normalizedPrice !== null && offer.normalizedUnit !== "unknown").sort((a, b) => Number(a.normalizedPrice) - Number(b.normalizedPrice));
     const best = comparable[0]; const next = comparable.find(offer => offer.supplierId !== best?.supplierId && offer.normalizedUnit === best?.normalizedUnit && resolvePriceMarket(offer.market, offer.priceMode) === resolvePriceMarket(best?.market, best?.priceMode) && canonicalPriceMode(offer.priceMode) === canonicalPriceMode(best?.priceMode));
     const savings = best && next ? Number(next.normalizedPrice) - Number(best.normalizedPrice) : null;
-    return { product: { id: product.id, internalCode: product.internalCode, canonicalName: product.canonicalName, categoryId: product.categoryId, category: product.category, categoryIsActive: product.categoryIsActive, variantCharacteristicId: product.variantCharacteristicId, sizeCharacteristicId: product.sizeCharacteristicId, placeContentsCharacteristicId: product.placeContentsCharacteristicId, variant: product.variant, sizeText: product.sizeText, placeContents: product.placeContents, baseUnit: product.baseUnit, isActive: product.isActive }, offers: comparable.map(offer => ({ importId: offer.importId, rowId: offer.rowId, priceId: offer.priceId, supplierId: offer.supplierId, supplierName: offer.supplierName, rawName: offer.rawName, packaging: offer.rawPackaging, manufacturer: offer.manufacturer, placeContents: offer.placeContents, manufacturedOn: offer.manufacturedOn, shelfLifeMonths: offer.shelfLifeMonths, expiresOn: offer.expiresOn, sourceDate: offer.sourceDate, priceMode: canonicalPriceMode(offer.priceMode), market: resolvePriceMarket(offer.market, offer.priceMode), priceAmount: Number(offer.priceAmount), priceBasis: offer.priceBasis, normalizedPrice: Number(offer.normalizedPrice), normalizedUnit: offer.normalizedUnit, minimumQuantityKg: offer.minimumQuantityKg === null ? null : Number(offer.minimumQuantityKg), sourcePriceText: offer.sourcePriceText, priceChange: offer.priceId === null ? null : priceChanges.get(offer.priceId) ?? null })), recommendation: best && next && savings !== null ? { supplierId: best.supplierId, supplierName: best.supplierName, normalizedPrice: Number(best.normalizedPrice), normalizedUnit: best.normalizedUnit as "kg" | "l" | "piece", savings, savingsPercent: Number(((savings / Number(next.normalizedPrice)) * 100).toFixed(1)) } : null };
+    return { product: { id: product.id, internalCode: product.internalCode, linkCode: product.linkCode, canonicalName: product.canonicalName, categoryId: product.categoryId, category: product.category, categoryIsActive: product.categoryIsActive, variantCharacteristicId: product.variantCharacteristicId, sizeCharacteristicId: product.sizeCharacteristicId, placeContentsCharacteristicId: product.placeContentsCharacteristicId, variant: product.variant, sizeText: product.sizeText, placeContents: product.placeContents, baseUnit: product.baseUnit, isActive: product.isActive }, offers: comparable.map(offer => ({ importId: offer.importId, rowId: offer.rowId, priceId: offer.priceId, supplierId: offer.supplierId, supplierName: offer.supplierName, rawName: offer.rawName, packaging: offer.rawPackaging, manufacturer: offer.manufacturer, placeContents: offer.placeContents, manufacturedOn: offer.manufacturedOn, shelfLifeMonths: offer.shelfLifeMonths, expiresOn: offer.expiresOn, sourceDate: offer.sourceDate, priceMode: canonicalPriceMode(offer.priceMode), market: resolvePriceMarket(offer.market, offer.priceMode), priceAmount: Number(offer.priceAmount), priceBasis: offer.priceBasis, normalizedPrice: Number(offer.normalizedPrice), normalizedUnit: offer.normalizedUnit, minimumQuantityKg: offer.minimumQuantityKg === null ? null : Number(offer.minimumQuantityKg), sourcePriceText: offer.sourcePriceText, priceChange: offer.priceId === null ? null : priceChanges.get(offer.priceId) ?? null })), recommendation: best && next && savings !== null ? { supplierId: best.supplierId, supplierName: best.supplierName, normalizedPrice: Number(best.normalizedPrice), normalizedUnit: best.normalizedUnit as "kg" | "l" | "piece", savings, savingsPercent: Number(((savings / Number(next.normalizedPrice)) * 100).toFixed(1)) } : null };
   }).sort((a, b) => (b.recommendation?.savings ?? 0) - (a.recommendation?.savings ?? 0));
   const unmappedRows = rows.filter(row => row.mappingStatus !== "linked").slice(0, 100).map(row => ({ rowId: row.rowId, importId: row.importId, supplierId: row.supplierId, supplierName: row.supplierName, rawName: row.rawName, rawCategory: row.rawCategory, rawPackaging: row.rawPackaging, manufacturer: row.manufacturer, placeContents: row.placeContents, mappingStatus: row.mappingStatus, matchedBy: row.matchedBy, matchConfidence: row.matchConfidence === null ? null : Number(row.matchConfidence), suggestedProduct: row.productId ? { id: row.productId, name: row.productName, internalCode: row.internalCode } : null }));
   const history = rows.filter(row => row.productId && row.priceId && row.normalizedPrice !== null && row.normalizedUnit !== "unknown").map(row => ({ priceId: row.priceId!, productId: row.productId!, supplierId: row.supplierId, supplierName: row.supplierName, date: row.sourceDate || row.importedAt.toISOString().slice(0, 10), rawName: row.rawName, packaging: row.rawPackaging, manufacturer: row.manufacturer, placeContents: row.placeContents, priceAmount: Number(row.priceAmount), priceBasis: row.priceBasis, sourceDate: row.sourceDate, sourcePriceText: row.sourcePriceText, normalizedPrice: Number(row.normalizedPrice), normalizedUnit: row.normalizedUnit, priceMode: canonicalPriceMode(row.priceMode), market: resolvePriceMarket(row.market, row.priceMode), priceChange: priceChanges.get(row.priceId!) ?? null }));
@@ -1391,6 +1391,24 @@ export async function getPriceImportDownload(importId: number) {
   return { fileName: record.fileName, url: stored.url };
 }
 function productCodeFromSignature(signature: string) { return `PRC-${createHash("sha1").update(signature).digest("hex").slice(0, 8).toUpperCase()}`; }
+
+/** A short visual key for a link, e.g. A001 … A999, B001. The technical PRC code remains unchanged. */
+function formatPriceLinkCode(sequence: number) {
+  const safeSequence = Math.max(1, Math.floor(sequence));
+  const letterIndex = Math.floor((safeSequence - 1) / 999);
+  if (letterIndex > 25) throw new Error("Исчерпан диапазон коротких кодов связей.");
+  return `${String.fromCharCode(65 + letterIndex)}${String(((safeSequence - 1) % 999) + 1).padStart(3, "0")}`;
+}
+
+async function nextPriceLinkCode(db: NonNullable<Awaited<ReturnType<typeof getDb>>>) {
+  const rows = await db.select({ linkCode: priceProducts.linkCode }).from(priceProducts).where(sql`${priceProducts.linkCode} is not null`);
+  const maximum = rows.reduce((max, row) => {
+    const match = row.linkCode?.match(/^([A-Z])(\d{3})$/);
+    if (!match) return max;
+    return Math.max(max, (match[1]!.charCodeAt(0) - 65) * 999 + Number(match[2]));
+  }, 0);
+  return formatPriceLinkCode(maximum + 1);
+}
 async function getPriceCategory(categoryId: number | null | undefined) {
   if (!categoryId) return null;
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
@@ -1500,13 +1518,13 @@ export async function getPriceProductCharacteristicAuditState(id: number) {
 export async function getPriceProductAuditState(productId: number) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
   const [product] = await db.select({
-    productName: priceProducts.canonicalName, internalCode: priceProducts.internalCode,
+    productName: priceProducts.canonicalName, internalCode: priceProducts.internalCode, linkCode: priceProducts.linkCode,
     categoryName: priceCategories.name, legacyCategory: priceProducts.category,
     variant: priceProducts.variant, packaging: priceProducts.sizeText, placeContents: priceProducts.placeContents,
     baseUnit: priceProducts.baseUnit, isActive: priceProducts.isActive,
   }).from(priceProducts).leftJoin(priceCategories, eq(priceProducts.categoryId, priceCategories.id)).where(eq(priceProducts.id, productId)).limit(1);
   if (!product) return null;
-  return { productName: product.productName, internalCode: product.internalCode, categoryName: product.categoryName ?? product.legacyCategory ?? null, variant: product.variant, packaging: product.packaging, placeContents: product.placeContents, baseUnit: product.baseUnit, isActive: product.isActive };
+  return { productName: product.productName, internalCode: product.internalCode, linkCode: product.linkCode, categoryName: product.categoryName ?? product.legacyCategory ?? null, variant: product.variant, packaging: product.packaging, placeContents: product.placeContents, baseUnit: product.baseUnit, isActive: product.isActive };
 }
 
 export async function getPriceCategoryAuditState(categoryId: number) {
@@ -1590,10 +1608,11 @@ export async function createPriceProduct(input: { canonicalName: string; interna
   const [existing] = await db.select().from(priceProducts).where(eq(priceProducts.normalizedSignature, signature)).limit(1);
   if (existing) return existing;
   const internalCode = text(input.internalCode || productCodeFromSignature(signature)).toUpperCase();
+  const linkCode = await nextPriceLinkCode(db);
   const variant = input.variantCharacteristicId === undefined ? await ensurePriceProductCharacteristic("variant", input.variant || extractVariant(canonicalName)) : await findPriceProductCharacteristic("variant", input.variantCharacteristicId);
   const size = input.sizeCharacteristicId === undefined ? await ensurePriceProductCharacteristic("size", input.sizeText || extractSizeText(canonicalName)) : await findPriceProductCharacteristic("size", input.sizeCharacteristicId);
   const placeContents = input.placeContentsCharacteristicId === undefined ? await ensurePriceProductCharacteristic("place_contents", input.placeContents) : await findPriceProductCharacteristic("place_contents", input.placeContentsCharacteristicId);
-  const [inserted] = await db.insert(priceProducts).values({ internalCode, canonicalName, normalizedSignature: signature, categoryId: category?.id ?? null, category: category?.name ?? (input.category || null), variantCharacteristicId: variant?.id ?? null, sizeCharacteristicId: size?.id ?? null, placeContentsCharacteristicId: placeContents?.id ?? null, variant: variant?.value ?? null, sizeText: size?.value ?? null, placeContents: placeContents?.value ?? null, baseUnit: input.baseUnit || "unknown", defaultWeightGrams: input.defaultWeightGrams === null || input.defaultWeightGrams === undefined ? null : input.defaultWeightGrams.toFixed(2), defaultVolumeMl: input.defaultVolumeMl === null || input.defaultVolumeMl === undefined ? null : input.defaultVolumeMl.toFixed(2), isActive: input.isActive ?? true }).$returningId();
+  const [inserted] = await db.insert(priceProducts).values({ internalCode, linkCode, canonicalName, normalizedSignature: signature, categoryId: category?.id ?? null, category: category?.name ?? (input.category || null), variantCharacteristicId: variant?.id ?? null, sizeCharacteristicId: size?.id ?? null, placeContentsCharacteristicId: placeContents?.id ?? null, variant: variant?.value ?? null, sizeText: size?.value ?? null, placeContents: placeContents?.value ?? null, baseUnit: input.baseUnit || "unknown", defaultWeightGrams: input.defaultWeightGrams === null || input.defaultWeightGrams === undefined ? null : input.defaultWeightGrams.toFixed(2), defaultVolumeMl: input.defaultVolumeMl === null || input.defaultVolumeMl === undefined ? null : input.defaultVolumeMl.toFixed(2), isActive: input.isActive ?? true }).$returningId();
   const [created] = await db.select().from(priceProducts).where(eq(priceProducts.id, inserted.id)).limit(1);
   return created!;
 }
@@ -1891,7 +1910,41 @@ export async function unlinkPriceSupplierAlias(aliasId: number) {
   const result = await db.delete(priceSupplierAliases).where(eq(priceSupplierAliases.id, aliasId));
   if (!result[0]?.affectedRows) throw new Error("Подтвержденная связь поставщика не найдена.");
   const auditBase = { supplierName: alias.supplierName, supplierProductName: alias.normalizedName, packaging: alias.packagingSignature, savedForFuture: true };
-  return { success: true, audit: { before: { ...auditBase, productLabel: `${alias.productName} · ${alias.internalCode}` }, after: { ...auditBase, productLabel: null } } };
+  return {
+    success: true,
+    audit: {
+      before: { ...auditBase, productLabel: `${alias.productName} · ${alias.internalCode}` },
+      after: { ...auditBase, productLabel: null },
+    },
+  };
+}
+
+/** Deliberately adds one spelling from a supplier to an existing shared name. */
+export async function createPriceSupplierAlias(input: { productId: number; supplierId: number; aliasName: string; packaging?: string | null; actorId: number }) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const aliasName = text(input.aliasName);
+  if (aliasName.length < 2 || aliasName.length > 512) throw new Error("Укажите название товара поставщика: от 2 до 512 символов.");
+  const [product] = await db.select({ id: priceProducts.id, canonicalName: priceProducts.canonicalName, internalCode: priceProducts.internalCode }).from(priceProducts).where(and(eq(priceProducts.id, input.productId), eq(priceProducts.isActive, true))).limit(1);
+  const [supplier] = await db.select({ id: priceSuppliers.id, name: priceSuppliers.name }).from(priceSuppliers).where(and(eq(priceSuppliers.id, input.supplierId), eq(priceSuppliers.isActive, true))).limit(1);
+  if (!product) throw new Error("Выберите активное имя связи.");
+  if (!supplier) throw new Error("Выберите активного поставщика.");
+  const normalizedName = normalizeProductName(aliasName);
+  const packagingSignatureValue = packagingSignature(input.packaging ?? null);
+  await db.insert(priceSupplierAliases).values({ supplierId: supplier.id, productId: product.id, normalizedName, packagingSignature: packagingSignatureValue || null, isConfirmed: true, createdByAccountId: input.actorId }).onDuplicateKeyUpdate({ set: { productId: product.id, isConfirmed: true, createdByAccountId: input.actorId } });
+  return { product, supplier, aliasName, packaging: packagingSignatureValue || null };
+}
+
+/** Backfills visual A001… codes without altering names, offers, aliases, or history. */
+export async function repairPriceProductLinkCodes() {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const missing = await db.select({ id: priceProducts.id }).from(priceProducts).where(sql`${priceProducts.linkCode} is null`).orderBy(priceProducts.id);
+  const codes: string[] = [];
+  for (const row of missing) {
+    const linkCode = await nextPriceLinkCode(db);
+    await db.update(priceProducts).set({ linkCode }).where(eq(priceProducts.id, row.id));
+    codes.push(linkCode);
+  }
+  return { updated: missing.length, codes };
 }
 export async function deletePriceImport(importId: number) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");

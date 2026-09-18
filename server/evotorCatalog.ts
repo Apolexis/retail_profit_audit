@@ -1,3 +1,7 @@
+import { eq } from "drizzle-orm";
+import { operationalStoreMappings, stores } from "../drizzle/schema";
+import { getDb } from "./db";
+
 const EVOTOR_API_BASE_URL = "https://api.evotor.ru";
 const EVOTOR_MEDIA_TYPE = "application/vnd.evotor.v2+json";
 const MAX_PAGES_PER_PREVIEW = 5;
@@ -22,9 +26,15 @@ export type EvotorCatalogPreviewItem = {
   barcodes: string[];
   unit: string | null;
   tax: string | null;
+  vatRate: "VAT_10" | "VAT_22";
   type: string | null;
   parentId: string | null;
 };
+
+function vatRateFromEvotorTax(value: unknown): "VAT_10" | "VAT_22" {
+  const normalized = text(value)?.toUpperCase() ?? "";
+  return normalized.includes("22") ? "VAT_22" : "VAT_10";
+}
 
 function asRecord(value: unknown): EvotorRecord | null {
   return value && typeof value === "object" && !Array.isArray(value) ? value as EvotorRecord : null;
@@ -61,6 +71,7 @@ export function normalizeEvotorCatalogPreviewItem(value: unknown): EvotorCatalog
     barcodes: barcodeList(record.barcodes),
     unit: text(record.measure_name),
     tax: text(record.tax),
+    vatRate: vatRateFromEvotorTax(record.tax),
     type: text(record.type),
     parentId: text(record.parent_id),
   };
@@ -101,7 +112,8 @@ export async function listEvotorCatalogStoresPreview(): Promise<EvotorCatalogSto
   const stores = (await readEvotorPages("/stores"))
     .map(normalizeEvotorStore)
     .filter((store): store is EvotorCatalogStore => Boolean(store));
-  return stores.sort((left, right) => left.name.localeCompare(right.name, "ru"));
+  return Array.from(new Map(stores.map(store => [store.id, store])).values())
+    .sort((left, right) => left.name.localeCompare(right.name, "ru"));
 }
 
 export async function listEvotorCatalogPreview(storeId: string): Promise<EvotorCatalogPreviewItem[]> {
@@ -109,5 +121,38 @@ export async function listEvotorCatalogPreview(storeId: string): Promise<EvotorC
   const products = (await readEvotorPages(`/stores/${encodedStoreId}/products`))
     .map(normalizeEvotorCatalogPreviewItem)
     .filter((product): product is EvotorCatalogPreviewItem => Boolean(product));
-  return products.sort((left, right) => left.name.localeCompare(right.name, "ru"));
+  return Array.from(new Map(products.map(product => [product.id, product])).values())
+    .sort((left, right) => left.name.localeCompare(right.name, "ru"));
+}
+
+function normalizedStoreName(value: string) {
+  return value.toLocaleLowerCase("ru-RU").replace(/[\W_]+/g, "").trim();
+}
+
+/** Resolves only the human-confirmed store mapping; no arbitrary Evotor store ID reaches the UI. */
+export async function getOperationalEvotorMapping(storeId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const [mapping] = await db
+    .select({ internalStoreName: stores.name, evotorStoreName: operationalStoreMappings.evotorStoreName, terminalUuid: operationalStoreMappings.evotorTerminalUuid })
+    .from(operationalStoreMappings)
+    .innerJoin(stores, eq(operationalStoreMappings.storeId, stores.id))
+    .where(eq(operationalStoreMappings.storeId, storeId))
+    .limit(1);
+  if (!mapping) throw new Error("Для выбранной точки еще не задано соответствие с магазином Эвотор.");
+  return { storeId, internalStoreName: mapping.internalStoreName, evotorStoreName: mapping.evotorStoreName, terminalUuid: mapping.terminalUuid };
+}
+
+export async function listEvotorCatalogPreviewForOperationalStore(storeId: number) {
+  const mapping = await getOperationalEvotorMapping(storeId);
+  const evotorStores = await listEvotorCatalogStoresPreview();
+  const matched = mapping.terminalUuid
+    ? evotorStores.filter(store => store.id === mapping.terminalUuid)
+    : evotorStores.filter(store => normalizedStoreName(store.name) === normalizedStoreName(mapping.evotorStoreName));
+  if (matched.length !== 1) throw new Error(matched.length ? "Соответствие магазина Эвотор неоднозначно: требуется его ID." : "Магазин Эвотор из сохраненного соответствия не найден.");
+  const evotorStore = matched[0];
+  return {
+    mapping: { storeId, internalStoreName: mapping.internalStoreName, evotorStoreName: evotorStore.name },
+    products: await listEvotorCatalogPreview(evotorStore.id),
+  };
 }

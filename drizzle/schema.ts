@@ -314,6 +314,30 @@ export const operationalInventories = mysqlTable("operational_inventories", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => [unique("operational_inventory_store_date_uq").on(table.storeId, table.businessDate)]);
 
+/**
+ * Working store nomenclature. It is intentionally separate from price-control products,
+ * financial imports and Evotor itself. Every mutable value is audited at the router level.
+ */
+export const operationalCatalogProducts = mysqlTable("operational_catalog_products", {
+  id: int("id").autoincrement().primaryKey(),
+  storeId: int("storeId").notNull(),
+  evotorProductId: varchar("evotorProductId", { length: 128 }).notNull(),
+  evotorCode: varchar("evotorCode", { length: 128 }),
+  canonicalName: varchar("canonicalName", { length: 512 }).notNull(),
+  barcodes: json("barcodes"),
+  baseUnit: mysqlEnum("baseUnit", ["kg", "l", "piece", "unknown"]).default("unknown").notNull(),
+  /** Network works only with VAT. The default for a manually added item is 10%. */
+  vatRate: mysqlEnum("vatRate", ["VAT_10", "VAT_22"]).default("VAT_10").notNull(),
+  /** Read-only Evotor cost; 0 means not supplied and can remain visually hidden. */
+  evotorCostPrice: decimal("evotorCostPrice", { precision: 18, scale: 2 }).default("0.00").notNull(),
+  /** Internal management cost; never sent back to Evotor. */
+  internalCostPrice: decimal("internalCostPrice", { precision: 18, scale: 2 }),
+  isActive: boolean("isActive").default(true).notNull(),
+  importedByAccountId: int("importedByAccountId").notNull(),
+  importedAt: timestamp("importedAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [unique("operational_catalog_store_evotor_product_uq").on(table.storeId, table.evotorProductId)]);
+
 /** A zero is valid: absence must never be represented by silently omitting a counted product. */
 export const operationalInventoryLines = mysqlTable("operational_inventory_lines", {
   id: int("id").autoincrement().primaryKey(),
@@ -341,6 +365,7 @@ export const operationalStockMovements = mysqlTable("operational_stock_movements
 }, table => [unique("operational_stock_movement_inventory_product_uq").on(table.inventoryId, table.productId)]);
 
 export type OperationalInventory = typeof operationalInventories.$inferSelect;
+export type OperationalCatalogProduct = typeof operationalCatalogProducts.$inferSelect;
 export type OperationalInventoryLine = typeof operationalInventoryLines.$inferSelect;
 export type OperationalStockMovement = typeof operationalStockMovements.$inferSelect;
 
@@ -380,6 +405,8 @@ export const priceProductCharacteristics = mysqlTable("price_product_characteris
 export const priceProducts = mysqlTable("price_products", {
   id: int("id").autoincrement().primaryKey(),
   internalCode: varchar("internalCode", { length: 64 }).notNull().unique(),
+  /** Human-facing link identifier: a letter plus 001–999; it never replaces the durable internal code. */
+  linkCode: varchar("linkCode", { length: 4 }).unique(),
   canonicalName: varchar("canonicalName", { length: 255 }).notNull(),
   normalizedSignature: varchar("normalizedSignature", { length: 512 }).notNull().unique(),
   categoryId: int("categoryId"),

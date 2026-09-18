@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getAccessibleStoreIds, getCurrentLocalAccount, hasStoreAccess } from "../accessControl";
 import {
   closeInventory,
+  confirmOperationalCatalogFromEvotor,
   createInventoryDraft,
   getInventoryAuditState,
   getInventoryDetail,
@@ -10,6 +11,7 @@ import {
   listStoreInventories,
   removeInventoryLine,
   updateInventoryNote,
+  updateOperationalCatalogCost,
   upsertInventoryLine,
 } from "../inventoryRegistry";
 import { recordChange } from "../localAuth";
@@ -46,10 +48,27 @@ async function detailWithPermission(openId: string | null | undefined, inventory
 }
 
 export const inventoryRegistryRouter = router({
+  confirmEvotorCatalog: protectedProcedure.input(z.object({ storeId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Подтвердить номенклатуру Эвотор может только администратор." });
+    const result = await confirmOperationalCatalogFromEvotor({ ...input, actorId: actor.id });
+    await recordChange({ actorId: actor.id, action: "operational_catalog.evotor_confirm", entityType: "operational_catalog", entityId: String(input.storeId), afterState: { storeId: input.storeId, evotorStoreName: result.evotorStoreName, savedPositions: result.imported, costPricePolicy: "evotor=0/read-only; internal=manual" } });
+    return result;
+  }),
+  updateInternalCost: protectedProcedure.input(z.object({ id: z.number().int().positive(), internalCostPrice: z.number().finite().min(0).max(10_000_000).nullable() })).mutation(async ({ ctx, input }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Менять внутреннюю себестоимость может только администратор." });
+    const result = await updateOperationalCatalogCost(input);
+    await recordChange({ actorId: actor.id, action: "operational_catalog.internal_cost.update", entityType: "operational_catalog_product", entityId: String(input.id), beforeState: { product: result.before.canonicalName, evotorCostPrice: result.before.evotorCostPrice, internalCostPrice: result.before.internalCostPrice }, afterState: { product: result.after.canonicalName, evotorCostPrice: result.after.evotorCostPrice, internalCostPrice: result.after.internalCostPrice } });
+    return result;
+  }),
   products: protectedProcedure.input(z.object({ storeId: z.number().int().positive().optional() }).optional()).query(async ({ ctx, input }) => {
     const actor = await localActor(ctx.user.openId);
     if (input?.storeId) await requireInventoryStoreAccess(ctx.user.openId, input.storeId, "view");
-    return listInventoryProducts({ storeId: input?.storeId, includeAccounting: actor.role !== "seller" && Boolean(input?.storeId) });
+    const products = await listInventoryProducts({ storeId: input?.storeId, includeAccounting: actor.role !== "seller" && Boolean(input?.storeId) });
+    return actor.role === "admin"
+      ? products
+      : products.map(({ evotorCostPrice: _evotorCostPrice, internalCostPrice: _internalCostPrice, ...product }) => product);
   }),
   list: protectedProcedure.input(z.object({ storeId: z.number().int().positive().optional(), limit: z.number().int().min(1).max(30).optional() }).optional()).query(async ({ ctx, input }) => {
     const actor = await localActor(ctx.user.openId);

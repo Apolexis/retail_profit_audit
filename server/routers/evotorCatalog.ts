@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { adminProcedure, router } from "../_core/trpc";
-import { listEvotorCatalogPreview, listEvotorCatalogStoresPreview } from "../evotorCatalog";
+import { getOperationalEvotorMapping, listEvotorCatalogPreviewForOperationalStore } from "../evotorCatalog";
 
 export const evotorCatalogRouter = router({
-  stores: adminProcedure.query(async () => listEvotorCatalogStoresPreview()),
-  preview: adminProcedure.input(z.object({ storeId: z.string().trim().min(1).max(128) })).query(async ({ input }) => listEvotorCatalogPreview(input.storeId)),
+  mappingForStore: adminProcedure.input(z.object({ storeId: z.number().int().positive() })).query(async ({ input }) => getOperationalEvotorMapping(input.storeId)),
+  previewForStore: adminProcedure.input(z.object({ storeId: z.number().int().positive() })).query(async ({ input }) => listEvotorCatalogPreviewForOperationalStore(input.storeId)),
 });

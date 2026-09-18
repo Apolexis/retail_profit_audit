@@ -4875,3 +4875,36 @@ html[data-audit-theme="dark"] .password-input-toggle { color: #c7bdcc; }
   .packet .account-role-change { grid-template-columns: 1fr; }
   .packet .account-role-change .subtle-button { width: 100%; justify-content: center; }
 }
+
+/* Связи прайсов: выбор и поиск остаются строкой, а имя поставщика можно добавить прямо в общую связь. */
+.packet .price-link-new-alias { display: grid; grid-template-columns: minmax(150px, .7fr) minmax(220px, 1.3fr) minmax(150px, .7fr) auto auto; gap: 7px; align-items: end; margin-top: 9px; }
+.packet .price-link-new-alias > input,
+.packet .price-alias-search > input { min-width: 0; min-height: 34px; }
+.packet .price-alias-search { display: flex; min-width: 0; align-items: center; gap: 5px; padding: 0 8px; border: 1px solid var(--price-border); border-radius: 9px; background: var(--price-surface); color: var(--price-muted); }
+.packet .price-alias-search svg { flex: 0 0 auto; }
+.packet .price-alias-search input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--price-ink); }
+.packet .price-alias-member .price-alias-actions { grid-template-columns: minmax(170px, .7fr) minmax(200px, 1.3fr) auto auto; }
+@media (max-width: 900px) { .packet .price-link-new-alias { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .packet .price-link-new-alias > :nth-last-child(-n+2) { width: fit-content; } }
+@media (max-width: 620px) { .packet .price-link-new-alias, .packet .price-alias-member .price-alias-actions { grid-template-columns: minmax(0, 1fr); } .packet .price-link-new-alias > :nth-last-child(-n+2), .packet .price-alias-member .price-alias-actions .packet-link { width: 100%; justify-content: center; } }
+
+/* Узкий телефон: название, цена и связь идут последовательными строками; выбор связи получает всю ширину. */
+@media (max-width: 560px) {
+  .packet .price-import-workbench.is-preview-ready .price-preview-table > div.price-preview-row,
+  .packet .price-import-workbench.is-preview-ready .price-preview-table > div.price-preview-new-row { grid-template-columns: 32px minmax(0, 1fr) !important; grid-template-rows: auto auto auto auto !important; gap: 10px !important; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-row .price-preview-product,
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-product { grid-column: 2 !important; grid-row: 1 !important; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-row .price-preview-prices,
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-prices,
+  .packet .price-import-workbench.is-preview-ready .price-preview-row .price-preview-product-link,
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-product-link,
+  .packet .price-import-workbench.is-preview-ready .price-preview-row .price-preview-category-select,
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-category-select { grid-column: 1 / -1 !important; min-width: 0; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-row .price-preview-prices,
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-prices { grid-row: 2 !important; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-row .price-preview-product-link,
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-product-link { grid-row: 3 !important; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-row .price-preview-category-select,
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-category-select { grid-row: 4 !important; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-row .price-preview-remove,
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-remove { position: static !important; grid-column: 1 !important; grid-row: 1 !important; align-self: start; justify-self: start; }
+}

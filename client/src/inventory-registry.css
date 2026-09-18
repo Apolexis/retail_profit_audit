@@ -115,3 +115,19 @@ html[data-audit-theme="dark"] .packet .evotor-catalog-list > article { border-co
   .packet .evotor-catalog-list > article { grid-template-columns: 38px minmax(0, 1fr); gap: 6px 9px; }
   .packet .evotor-catalog-list > article > small { grid-column: 2; text-align: left; }
 }
+
+/* Internal cost is an admin-only management field, separate from the physical count. */
+.packet .inventory-cost-register { display: grid; gap: 13px; margin-top: 18px; }
+.packet .inventory-cost-list { display: grid; gap: 0; border: 1px solid var(--line); border-radius: 13px; overflow: hidden; }
+.packet .inventory-cost-list article { display: grid; grid-template-columns: minmax(0, 1fr) minmax(150px, .38fr) auto; gap: 12px; align-items: end; padding: 11px 13px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.packet .inventory-cost-list article:nth-child(even) { background: color-mix(in srgb, var(--surface-2) 68%, var(--surface)); }
+.packet .inventory-cost-list article:last-child { border-bottom: 0; }
+.packet .inventory-cost-list article > div { display: grid; gap: 3px; min-width: 0; }
+.packet .inventory-cost-list strong { overflow: hidden; color: var(--ink); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.packet .inventory-cost-list small { color: var(--muted); font-size: 11px; }
+.packet .inventory-cost-list label { position: relative; display: grid; gap: 5px; color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .07em; text-transform: uppercase; }
+.packet .inventory-cost-list label input { width: 100%; min-width: 0; height: 34px; padding: 0 25px 0 9px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); color: var(--ink); font: 700 12px Manrope, Arial, sans-serif; outline: none; }
+.packet .inventory-cost-list label input:focus-visible { border-color: var(--packet-accent); }
+.packet .inventory-cost-list label span { position: absolute; right: 9px; bottom: 9px; color: var(--muted); font-size: 12px; letter-spacing: 0; text-transform: none; }
+.packet .inventory-cost-list .subtle-button { min-height: 34px; margin: 0; }
+@media (max-width: 680px) { .packet .inventory-cost-list article { grid-template-columns: 1fr; gap: 9px; } .packet .inventory-cost-list .subtle-button { width: 100%; justify-content: center; } }

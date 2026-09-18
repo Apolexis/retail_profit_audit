@@ -1,16 +1,18 @@
 import { and, desc, eq, gt, inArray } from "drizzle-orm";
 import {
   localAccounts,
+  operationalCatalogProducts,
   operationalInventories,
   operationalInventoryLines,
   operationalStockMovements,
-  priceProducts,
   stores,
 } from "../drizzle/schema";
 import { getDb } from "./db";
+import { listEvotorCatalogPreviewForOperationalStore } from "./evotorCatalog";
 
 export type InventoryUnit = "kg" | "l" | "piece";
 export type InventoryStatus = "draft" | "closed";
+export type InventoryVatRate = "VAT_10" | "VAT_22";
 
 const isoDate = /^20\d{2}-\d{2}-\d{2}$/;
 const finiteThreeDecimals = (value: number) => Number.isFinite(value) && value >= 0 && Math.round(value * 1000) === value * 1000;
@@ -36,6 +38,14 @@ export function calculateInventoryAdjustment(previousQuantity: number, countedQu
 function unitFromProduct(unit: string): InventoryUnit {
   if (unit === "kg" || unit === "l" || unit === "piece") return unit;
   throw new Error("Для товара не задана рабочая единица. Сначала уточните карточку товара.");
+}
+
+function unitFromEvotor(value: string | null): InventoryUnit | "unknown" {
+  const unit = String(value ?? "").toLocaleLowerCase("ru-RU");
+  if (/кг|кил|дроб|вес/.test(unit)) return "kg";
+  if (/\bл\b|лит/.test(unit)) return "l";
+  if (/шт|штук|упак|бутыл|бан/.test(unit)) return "piece";
+  return "unknown";
 }
 
 function inventoryState(row: typeof operationalInventories.$inferSelect) {
@@ -74,20 +84,64 @@ export async function listInventoryProducts(input?: { storeId?: number; includeA
   if (!db) return [];
   const rows = await db
     .select({
-      id: priceProducts.id,
-      internalCode: priceProducts.internalCode,
-      canonicalName: priceProducts.canonicalName,
-      category: priceProducts.category,
-      variant: priceProducts.variant,
-      baseUnit: priceProducts.baseUnit,
+      id: operationalCatalogProducts.id,
+      internalCode: operationalCatalogProducts.evotorCode,
+      canonicalName: operationalCatalogProducts.canonicalName,
+      baseUnit: operationalCatalogProducts.baseUnit,
+      vatRate: operationalCatalogProducts.vatRate,
+      evotorCostPrice: operationalCatalogProducts.evotorCostPrice,
+      internalCostPrice: operationalCatalogProducts.internalCostPrice,
     })
-    .from(priceProducts)
-    .where(eq(priceProducts.isActive, true))
-    .orderBy(priceProducts.category, priceProducts.canonicalName)
+    .from(operationalCatalogProducts)
+    .where(and(eq(operationalCatalogProducts.storeId, input?.storeId ?? 0), eq(operationalCatalogProducts.isActive, true)))
+    .orderBy(operationalCatalogProducts.canonicalName)
     .limit(2_000);
-  const products = rows.filter(row => row.baseUnit !== "unknown");
+  const products = rows.filter((row): row is typeof row & { baseUnit: InventoryUnit } => row.baseUnit !== "unknown").map(row => ({ ...row, internalCode: row.internalCode || `Эвотор #${row.id}`, category: null, variant: null }));
   const quantities = input?.includeAccounting && input.storeId ? await getInventoryAccountingQuantities(input.storeId, products.map(product => product.id)) : null;
   return products.map(product => ({ ...product, accountingQuantity: quantities?.get(product.id) ?? null }));
+}
+
+/** Saves the confirmed Evotor catalog into this application's isolated operational nomenclature. */
+export async function confirmOperationalCatalogFromEvotor(input: { storeId: number; actorId: number }) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const preview = await listEvotorCatalogPreviewForOperationalStore(input.storeId);
+  if (!preview.products.length) throw new Error("В каталоге выбранной точки Эвотор нет товарных позиций для сохранения.");
+  for (const product of preview.products) {
+    const baseUnit = unitFromEvotor(product.unit);
+    await db.insert(operationalCatalogProducts).values({
+      storeId: input.storeId,
+      evotorProductId: product.id,
+      evotorCode: product.code,
+      canonicalName: product.name,
+      barcodes: product.barcodes,
+      baseUnit,
+      vatRate: product.vatRate,
+      evotorCostPrice: "0.00",
+      importedByAccountId: input.actorId,
+    }).onDuplicateKeyUpdate({ set: {
+      evotorCode: product.code,
+      canonicalName: product.name,
+      barcodes: product.barcodes,
+      baseUnit,
+      vatRate: product.vatRate,
+      isActive: true,
+      importedByAccountId: input.actorId,
+      importedAt: new Date(),
+    } });
+  }
+  return { storeId: input.storeId, evotorStoreName: preview.mapping.evotorStoreName, imported: preview.products.length };
+}
+
+export async function updateOperationalCatalogCost(input: { id: number; internalCostPrice: number | null }) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  if (input.internalCostPrice !== null && (!Number.isFinite(input.internalCostPrice) || input.internalCostPrice < 0)) throw new Error("Внутренняя себестоимость должна быть неотрицательным числом.");
+  const [before] = await db.select().from(operationalCatalogProducts).where(eq(operationalCatalogProducts.id, input.id)).limit(1);
+  if (!before) throw new Error("Позиция рабочего справочника не найдена.");
+  await db.update(operationalCatalogProducts).set({ internalCostPrice: input.internalCostPrice === null ? null : input.internalCostPrice.toFixed(2) }).where(eq(operationalCatalogProducts.id, input.id));
+  const [after] = await db.select().from(operationalCatalogProducts).where(eq(operationalCatalogProducts.id, input.id)).limit(1);
+  return { before, after: after! };
 }
 
 export async function createInventoryDraft(input: { storeId: number; businessDate: string; createdByAccountId: number; note?: string }) {
@@ -127,7 +181,7 @@ export async function upsertInventoryLine(input: { inventoryId: number; productI
   if (!db) throw new Error("База данных недоступна");
   const inventory = await requireInventory(input.inventoryId);
   if (inventory.status !== "draft") throw new Error("Закрытую инвентаризацию нельзя изменять");
-  const [product] = await db.select().from(priceProducts).where(and(eq(priceProducts.id, input.productId), eq(priceProducts.isActive, true))).limit(1);
+  const [product] = await db.select().from(operationalCatalogProducts).where(and(eq(operationalCatalogProducts.id, input.productId), eq(operationalCatalogProducts.storeId, inventory.storeId), eq(operationalCatalogProducts.isActive, true))).limit(1);
   if (!product) throw new Error("Товар не найден или скрыт из рабочего справочника");
   const unit = unitFromProduct(product.baseUnit);
   const countedQuantity = validateCountedQuantity(input.countedQuantity);
@@ -149,7 +203,7 @@ export async function upsertInventoryLine(input: { inventoryId: number; productI
   if (!after) throw new Error("Не удалось сохранить строку пересчета");
   return {
     inventory,
-    product: { id: product.id, internalCode: product.internalCode, canonicalName: product.canonicalName, unit },
+    product: { id: product.id, internalCode: product.evotorCode || `Эвотор #${product.id}`, canonicalName: product.canonicalName, unit },
     before: before ? { productId: before.productId, countedQuantity: Number(before.countedQuantity), unit: before.unit } : null,
     after: { productId: after.productId, countedQuantity: Number(after.countedQuantity), unit: after.unit },
   };
@@ -183,15 +237,13 @@ export async function getInventoryDetail(inventoryId: number, options?: { includ
       productId: operationalInventoryLines.productId,
       countedQuantity: operationalInventoryLines.countedQuantity,
       unit: operationalInventoryLines.unit,
-      internalCode: priceProducts.internalCode,
-      canonicalName: priceProducts.canonicalName,
-      category: priceProducts.category,
-      variant: priceProducts.variant,
+      internalCode: operationalCatalogProducts.evotorCode,
+      canonicalName: operationalCatalogProducts.canonicalName,
     })
     .from(operationalInventoryLines)
-    .innerJoin(priceProducts, eq(operationalInventoryLines.productId, priceProducts.id))
+    .innerJoin(operationalCatalogProducts, eq(operationalInventoryLines.productId, operationalCatalogProducts.id))
     .where(eq(operationalInventoryLines.inventoryId, inventoryId))
-    .orderBy(priceProducts.category, priceProducts.canonicalName);
+    .orderBy(operationalCatalogProducts.canonicalName);
   const accountingAtClose = options?.includeAccounting && inventory.status === "closed"
     ? new Map((await db.select({ productId: operationalStockMovements.productId, previousQuantity: operationalStockMovements.previousQuantity }).from(operationalStockMovements).where(eq(operationalStockMovements.inventoryId, inventoryId))).map(movement => [movement.productId, Number(movement.previousQuantity)]))
     : null;
@@ -200,7 +252,7 @@ export async function getInventoryDetail(inventoryId: number, options?: { includ
     storeName: store?.name ?? `Магазин #${inventory.storeId}`,
     createdByName: creator?.displayName ?? `Пользователь #${inventory.createdByAccountId}`,
     closedByName: closer?.displayName ?? null,
-    lines: lines.map(line => ({ ...line, countedQuantity: Number(line.countedQuantity), ...(accountingAtClose ? { accountingQuantity: accountingAtClose.get(line.productId) ?? null } : {}) })),
+    lines: lines.map(line => ({ ...line, internalCode: line.internalCode || `Эвотор #${line.productId}`, category: null, variant: null, countedQuantity: Number(line.countedQuantity), ...(accountingAtClose ? { accountingQuantity: accountingAtClose.get(line.productId) ?? null } : {}) })),
   };
 }
 

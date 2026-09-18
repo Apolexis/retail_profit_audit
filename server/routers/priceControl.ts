@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getCurrentLocalAccount, hasPriceAccess } from "../accessControl";
 import { protectedProcedure, router } from "../_core/trpc";
-import { bulkAssignPriceCategory, bulkSetPriceOfferMarketByProducts, bulkSetPriceProductsActive, createManualPriceOffer, createPriceCategory, createPriceProduct, createPriceProductCharacteristic, createPriceSupplier, deletePriceImport, deletePriceImportRow, deletePriceSupplier, getPriceCategoryAuditState, getPriceImportAuditState, getPriceImportDownload, getPriceImportRowAuditState, getPriceOfferAuditState, getPriceOfferMarketAuditState, getPriceProductAuditState, getPriceProductCharacteristicAuditState, getPriceProductsAuditStates, getPriceSupplierAuditState, linkPriceImportRow, listPriceControlData, reassignPriceSupplierAlias, repairRecognizedPriceProductVariants, seedPriceOfferPlaceContentsCharacteristics, setPriceSupplierActive, unlinkPriceSupplierAlias, updatePriceCategory, updatePriceImportDate, updatePriceOffer, updatePriceProduct, updatePriceProductCharacteristic, updatePriceSupplier } from "../priceControl";
+import { bulkAssignPriceCategory, bulkSetPriceOfferMarketByProducts, bulkSetPriceProductsActive, createManualPriceOffer, createPriceCategory, createPriceProduct, createPriceProductCharacteristic, createPriceSupplier, createPriceSupplierAlias, deletePriceImport, deletePriceImportRow, deletePriceSupplier, getPriceCategoryAuditState, getPriceImportAuditState, getPriceImportDownload, getPriceImportRowAuditState, getPriceOfferAuditState, getPriceOfferMarketAuditState, getPriceProductAuditState, getPriceProductCharacteristicAuditState, getPriceProductsAuditStates, getPriceSupplierAuditState, linkPriceImportRow, listPriceControlData, reassignPriceSupplierAlias, repairPriceProductLinkCodes, repairRecognizedPriceProductVariants, seedPriceOfferPlaceContentsCharacteristics, setPriceSupplierActive, unlinkPriceSupplierAlias, updatePriceCategory, updatePriceImportDate, updatePriceOffer, updatePriceProduct, updatePriceProductCharacteristic, updatePriceSupplier } from "../priceControl";
 import { recordChange } from "../localAuth";
 
 async function requirePricePermission(openId: string | null | undefined, required: "view" | "upload" | "edit") {
@@ -185,6 +185,20 @@ export const priceControlRouter = router({
     const actor = await localActor(ctx.user.openId);
     const result = await unlinkPriceSupplierAlias(input.aliasId);
     await recordChange({ actorId: actor.id, action: "price_alias.unlink", entityType: "price_supplier_alias", entityId: String(input.aliasId), beforeState: result.audit.before, afterState: result.audit.after });
+    return result;
+  }),
+  createAlias: protectedProcedure.input(z.object({ productId: z.number().int().positive(), supplierId: z.number().int().positive(), aliasName: z.string().trim().min(2).max(512), packaging: z.string().trim().max(255).nullable().optional() })).mutation(async ({ ctx, input }) => {
+    await requirePricePermission(ctx.user.openId, "edit");
+    const actor = await localActor(ctx.user.openId);
+    const result = await createPriceSupplierAlias({ ...input, actorId: actor.id });
+    await recordChange({ actorId: actor.id, action: "price_alias.create", entityType: "price_supplier_alias", entityId: `${input.supplierId}:${input.productId}:${input.aliasName}`, afterState: { supplierName: result.supplier.name, productLabel: `${result.product.canonicalName} · ${result.product.internalCode}`, supplierProductName: result.aliasName, packaging: result.packaging, savedForFuture: true } });
+    return result;
+  }),
+  repairLinkCodes: protectedProcedure.mutation(async ({ ctx }) => {
+    await requirePricePermission(ctx.user.openId, "edit");
+    const actor = await localActor(ctx.user.openId);
+    const result = await repairPriceProductLinkCodes();
+    if (result.updated) await recordChange({ actorId: actor.id, action: "price_product.link_code_repair", entityType: "price_product", entityId: `link-codes:${result.updated}`, afterState: { updated: result.updated, codes: result.codes } });
     return result;
   }),
   deleteImport: protectedProcedure.input(z.object({ importId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
