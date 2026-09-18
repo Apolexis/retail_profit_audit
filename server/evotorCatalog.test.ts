@@ -26,8 +26,8 @@ describe("Эвотор V2: preview номенклатуры", () => {
     expect(preview).not.toHaveProperty("costPrice");
   });
 
-  it("не выдает служебный миллион Эвотор за физический остаток", () => {
-    expect(normalizeEvotorCatalogPreviewItem({ id: "product-2", name: "Товар", quantity: 1_000_000 })?.quantity).toBeNull();
+  it("показывает прочитанное количество Эвотор без скрытого преобразования", () => {
+    expect(normalizeEvotorCatalogPreviewItem({ id: "product-2", name: "Товар", quantity: 1_000_000 })?.quantity).toBe(1_000_000);
   });
 
   it("нормализует только необходимые поля документа и строки без фискальных реквизитов", () => {

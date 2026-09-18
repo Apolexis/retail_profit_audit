@@ -94,8 +94,8 @@ export function normalizeEvotorCatalogPreviewItem(value: unknown): EvotorCatalog
     name,
     code: text(record.code),
     barcodes: barcodeList(record.barcodes),
-    // Cloud API marks an untracked/unlimited balance with one million. It is not a physical stock fact.
-    quantity: (() => { const value = finiteNumber(record.quantity); return value !== null && value >= 999_999 ? null : value; })(),
+    // Display the quantity exactly as the fixed Evotor store reports it, including an unlimited-balance sentinel.
+    quantity: finiteNumber(record.quantity),
     unit: text(record.measure_name),
     tax: text(record.tax),
     vatRate: vatRateFromEvotorTax(record.tax),

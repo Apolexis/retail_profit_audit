@@ -361,6 +361,11 @@ export async function confirmOperationalCatalogFromEvotor(input: { storeId: numb
       await db.update(operationalEvotorProductLinks).set({ evotorQuantitySnapshot, evotorQuantityUpdatedAt: new Date() }).where(eq(operationalEvotorProductLinks.id, link.id));
       continue;
     }
+    const [sameCommonProduct] = await db.select({ id: operationalCatalogProducts.id }).from(operationalCatalogProducts).where(eq(operationalCatalogProducts.canonicalName, product.name)).orderBy(operationalCatalogProducts.catalogNumber).limit(1);
+    if (sameCommonProduct) {
+      await db.insert(operationalEvotorProductLinks).values({ storeId: input.storeId, evotorProductId: product.id, productId: sameCommonProduct.id, evotorQuantitySnapshot, evotorQuantityUpdatedAt: new Date(), linkedByAccountId: input.actorId });
+      continue;
+    }
     const [inserted] = await db.insert(operationalCatalogProducts).values({
       catalogNumber: nextNumber++,
       storeId: input.storeId,
