@@ -29,6 +29,22 @@ html[data-audit-theme="dark"] .packet :is(.stock-rule-disclosure, .stock-table-c
   --stock-accent: #ff765f;
   --stock-accent-faint: rgba(255, 118, 95, .075);
 }
+/* Keep blue in the surface hierarchy, not in every light table row. */
+html[data-audit-theme="light"] .packet .packet-card.stock-table-card {
+  background: #f7fbff !important;
+  border-color: #c7e2ff !important;
+}
+html[data-audit-theme="light"] .packet .stock-table-wrap.data-table-wrap {
+  background: #fff !important;
+  border-color: #d8ebff !important;
+}
+html[data-audit-theme="light"] .packet .stock-table.data-table thead th {
+  background: #f2f8ff !important;
+  border-color: #d8ebff !important;
+}
+html[data-audit-theme="light"] .packet .stock-table.data-table tbody tr:nth-child(odd) { background: #fff !important; }
+html[data-audit-theme="light"] .packet .stock-table.data-table tbody tr:nth-child(even) { background: #fafcff !important; }
+html[data-audit-theme="light"] .packet .stock-table.data-table tbody td { border-color: #e1efff !important; }
 .packet .stock-rule-disclosure > summary { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: baseline; cursor: pointer; list-style: none; }
 .packet .stock-rule-disclosure > summary::-webkit-details-marker { display: none; }
 .packet .stock-rule-disclosure > summary > span { color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .08em; }

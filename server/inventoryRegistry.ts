@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, inArray, isNotNull, ne, or } from "drizzle-orm";
+import { and, desc, eq, gt, gte, inArray, isNotNull, lte, ne, or } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import {
   localAccounts,
@@ -357,6 +357,138 @@ async function forEachBoundedBatch<T>(items: readonly T[], size: number, work: (
   for (let start = 0; start < items.length; start += size) {
     await Promise.all(items.slice(start, start + size).map(work));
   }
+}
+
+export type EvotorSalesGranularity = "month" | "week" | "day" | "hour";
+
+type EvotorSalesInterval = {
+  key: string;
+  label: string;
+};
+
+/** Builds Moscow-calendar labels only from the already normalized, read-only check timestamp. */
+function evotorSalesInterval(value: string, granularity: EvotorSalesGranularity): EvotorSalesInterval | null {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return null;
+  const parts = new Map(new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Moscow",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date).map(part => [part.type, part.value]));
+  const year = Number(parts.get("year"));
+  const month = Number(parts.get("month"));
+  const day = Number(parts.get("day"));
+  const hour = Number(parts.get("hour"));
+  if (![year, month, day, hour].every(Number.isFinite)) return null;
+  const dateKey = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  const dateLabel = `${String(day).padStart(2, "0")}.${String(month).padStart(2, "0")}.${year}`;
+  if (granularity === "hour") return { key: `${dateKey}T${String(hour).padStart(2, "0")}`, label: `${dateLabel} · ${String(hour).padStart(2, "0")}:00` };
+  if (granularity === "day") return { key: dateKey, label: dateLabel };
+  if (granularity === "month") return { key: dateKey.slice(0, 7), label: new Intl.DateTimeFormat("ru-RU", { month: "short", year: "numeric", timeZone: "Europe/Moscow" }).format(date) };
+  const weekStart = new Date(Date.UTC(year, month - 1, day));
+  const weekday = (weekStart.getUTCDay() + 6) % 7;
+  weekStart.setUTCDate(weekStart.getUTCDate() - weekday);
+  const weekKey = `${weekStart.getUTCFullYear()}-${String(weekStart.getUTCMonth() + 1).padStart(2, "0")}-${String(weekStart.getUTCDate()).padStart(2, "0")}`;
+  return { key: weekKey, label: `Неделя с ${String(weekStart.getUTCDate()).padStart(2, "0")}.${String(weekStart.getUTCMonth() + 1).padStart(2, "0")}.${weekStart.getUTCFullYear()}` };
+}
+
+export const __evotorSalesTestUtils = { evotorSalesInterval };
+
+/**
+ * Read-only sales view over normalized Evotor receipts and positions. This does
+ * not query Evotor, does not retain a new payload, and deliberately omits fiscal,
+ * payment, terminal and credential fields.
+ */
+export async function listOperationalEvotorSalesAnalytics(input: {
+  from: string;
+  to: string;
+  granularity: EvotorSalesGranularity;
+  storeIds?: number[];
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const allVisibleStores = await db
+    .select({ id: stores.id, name: stores.name })
+    .from(stores)
+    .where(eq(stores.isHidden, false))
+    .orderBy(stores.name);
+  const requestedStoreIds = input.storeIds?.length ? new Set(input.storeIds) : null;
+  const scopedStores = requestedStoreIds ? allVisibleStores.filter(store => requestedStoreIds.has(store.id)) : allVisibleStores;
+  if (!scopedStores.length) return { stores: [], timeline: [], products: [], summary: { checks: 0, amount: 0, positions: 0, positionAmount: 0, quantity: 0 } };
+  const storeIds = scopedStores.map(store => store.id);
+  const storeNameById = new Map(scopedStores.map(store => [store.id, store.name]));
+  const documents = await db
+    .select({
+      id: operationalEvotorDocuments.id,
+      storeId: operationalEvotorDocuments.storeId,
+      occurredAt: operationalEvotorDocuments.occurredAt,
+      total: operationalEvotorDocuments.total,
+    })
+    .from(operationalEvotorDocuments)
+    .where(and(
+      inArray(operationalEvotorDocuments.storeId, storeIds),
+      isNotNull(operationalEvotorDocuments.occurredAt),
+      gte(operationalEvotorDocuments.occurredAt, `${input.from}T00:00:00`),
+      lte(operationalEvotorDocuments.occurredAt, `${input.to}T23:59:59.999`),
+    ));
+  const timelineMap = new Map<string, { key: string; label: string; storeId: number; storeName: string; checks: number; amount: number; positions: number; positionAmount: number; quantity: number }>();
+  const documentById = new Map<number, { storeId: number; storeName: string; timelineKey: string }>();
+  let checks = 0;
+  let amount = 0;
+  for (const document of documents) {
+    const interval = document.occurredAt ? evotorSalesInterval(document.occurredAt, input.granularity) : null;
+    const storeName = storeNameById.get(document.storeId);
+    if (!interval || !storeName) continue;
+    const aggregateKey = `${interval.key}:${document.storeId}`;
+    const aggregate = timelineMap.get(aggregateKey) ?? { key: interval.key, label: interval.label, storeId: document.storeId, storeName, checks: 0, amount: 0, positions: 0, positionAmount: 0, quantity: 0 };
+    aggregate.checks += 1;
+    aggregate.amount += Number(document.total ?? 0);
+    timelineMap.set(aggregateKey, aggregate);
+    documentById.set(document.id, { storeId: document.storeId, storeName, timelineKey: aggregateKey });
+    checks += 1;
+    amount += Number(document.total ?? 0);
+  }
+  const documentIds = documents.map(document => document.id);
+  const positions = [] as Array<{ documentId: number; productName: string | null; unit: string | null; quantity: string | null; resultSum: string | null }>;
+  for (let start = 0; start < documentIds.length; start += 500) {
+    positions.push(...await db
+      .select({ documentId: operationalEvotorDocumentPositions.documentId, productName: operationalEvotorDocumentPositions.productName, unit: operationalEvotorDocumentPositions.unit, quantity: operationalEvotorDocumentPositions.quantity, resultSum: operationalEvotorDocumentPositions.resultSum })
+      .from(operationalEvotorDocumentPositions)
+      .where(inArray(operationalEvotorDocumentPositions.documentId, documentIds.slice(start, start + 500))));
+  }
+  const productMap = new Map<string, { productName: string; unit: string | null; amount: number; quantity: number; positions: number; stores: Set<number> }>();
+  let quantity = 0;
+  let positionAmount = 0;
+  for (const position of positions) {
+    const document = documentById.get(position.documentId);
+    if (!document) continue;
+    const productName = normalizedText(position.productName ?? "") || "Товар без названия";
+    const key = `${productName}\u0000${position.unit ?? ""}`;
+    const product = productMap.get(key) ?? { productName, unit: position.unit, amount: 0, quantity: 0, positions: 0, stores: new Set<number>() };
+    const lineQuantity = Number(position.quantity ?? 0);
+    product.amount += Number(position.resultSum ?? 0);
+    product.quantity += lineQuantity;
+    product.positions += 1;
+    if (document) product.stores.add(document.storeId);
+    productMap.set(key, product);
+    quantity += lineQuantity;
+    positionAmount += Number(position.resultSum ?? 0);
+    const timeline = document ? timelineMap.get(document.timelineKey) : undefined;
+    if (timeline) {
+      timeline.positions += 1;
+      timeline.positionAmount += Number(position.resultSum ?? 0);
+      timeline.quantity += lineQuantity;
+    }
+  }
+  return {
+    stores: scopedStores,
+    timeline: Array.from(timelineMap.values()).map(row => ({ ...row, amount: Math.round(row.amount * 100) / 100, positionAmount: Math.round(row.positionAmount * 100) / 100, quantity: Math.round(row.quantity * 1_000) / 1_000 })).sort((left, right) => left.key.localeCompare(right.key) || left.storeName.localeCompare(right.storeName, "ru")),
+    products: Array.from(productMap.values()).map(product => ({ productName: product.productName, unit: product.unit, amount: Math.round(product.amount * 100) / 100, quantity: Math.round(product.quantity * 1_000) / 1_000, positions: product.positions, stores: product.stores.size })).sort((left, right) => right.amount - left.amount || left.productName.localeCompare(right.productName, "ru")),
+    summary: { checks, amount: Math.round(amount * 100) / 100, positions: positions.length, positionAmount: Math.round(positionAmount * 100) / 100, quantity: Math.round(quantity * 1_000) / 1_000 },
+  };
 }
 
 /** Saves the confirmed Evotor catalog as read-only links to global products; similarity never merges real products. */

@@ -50,3 +50,24 @@ CSSOM trace for the affected inventory primary action found several competing la
 
 
 Изолированный mobile-capture 375×812 открывает неавторизованный экран входа для всех запрошенных маршрутов, что подтвердило фактический iOS-подобный переключатель входа для магазинов в dark-теме: pill 38×22, круглый thumb, без видимой browser-checkbox. Иконка темы в dark имеет желтый цвет. Проверка light-значения остается контрактной (`#20202a`), так как screenshot-service начинает новую неавторизованную dark-сессию для каждого маршрута.
+
+
+Live desktop inspection of `/stock-control` exposed the remaining light-table issue: although the outer working card was white, the stock table used `#f7fbff` for odd rows and `#edf6ff` for even rows, so a large table looked solid blue. The next correction will retain iOS-blue as a card/contour accent but make the tabular body a near-white zebra, consistent with «Ритм». At this inspection, page-level horizontal overflow was zero.
+
+
+After the table correction, live light `/stock-control` styles are: outer card `#f7fbff`, table frame white, odd row white, even row `#fafcff`, header `#f2f8ff`, and page overflow 0 px. This retains the requested iOS-blue hierarchy outside the data body while restoring the near-white zebra rhythm.
+
+
+Live dark `/stock-control` inspection confirms the shared neutral/coral hierarchy: outer card and odd rows `#16101a`, header and even rows `#1c1420`, with no peach fill or moving-row hover. Page overflow remains 0 px.
+
+
+Live dark `/inventory-control` inspection confirms zero page overflow and the requested neutral/coral hierarchy: new-counting card `#16101a`, history row `#17111b`, and the main action `#26131d` with coral contour/text, without a peach fill or secondary square hover tile.
+
+
+Live light `/inventory-control` inspection confirms zero page overflow: create card `#f7fbff`, history row white, and primary action iOS-blue `#0a84ff` with white text. The visual system therefore has the same blue/near-white hierarchy as the corrected stock screen.
+
+
+Live light `/catalog-control` inspection exposed the same overly-blue striped data body and then confirmed the correction: outer card `#f7fbff`, white table frame and odd rows, `#fafcff` even rows, `#f2f8ff` header, and 0 px page overflow. The business catalog count remained 816; visible identifiers are sequential business numbers rather than database primary keys.
+
+
+The two new admin-only Evotor sales routes were opened in the authenticated preview. Their navigation appears under «Управление магазинами»; the store chooser is collapsed by default, has 0 px horizontal overflow, and the empty state explicitly states that it waits only for automatic read-only document loading. The dark product page uses the existing neutral/coral contour pattern, with no added palette. At this moment there are no normalized receipts in the selected 2026 range, so the graph/table’s populated state cannot honestly be visually accepted until the production scheduler executes successfully.

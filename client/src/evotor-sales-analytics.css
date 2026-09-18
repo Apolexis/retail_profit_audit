@@ -1,0 +1,84 @@
+/* Evotor sales pages reuse the established Rhythm card, chip and data-table system. */
+.packet .evotor-sales-lede { margin-bottom: 18px; }
+.packet .evotor-sales-store-picker { margin-bottom: 18px; }
+.packet .evotor-sales-kpis { margin: 0 0 18px; }
+.packet .evotor-sales-chart-card,
+.packet .evotor-sales-table-card { margin-bottom: 18px; }
+.packet .evotor-metrics-picker { margin: 0 0 16px; }
+.packet .evotor-sales-table-wrap { overflow-x: auto; cursor: grab; }
+.packet .evotor-sales-table-wrap:active { cursor: grabbing; }
+.packet .evotor-sales-table .numeric-column { text-align: right; font-variant-numeric: tabular-nums; }
+.packet .evotor-sales-table tbody td:first-child strong { display: block; max-width: 520px; }
+
+html[data-audit-theme="light"] .packet .packet-card.evotor-sales-chart-card,
+html[data-audit-theme="light"] .packet .packet-card.evotor-sales-table-card {
+  background: #f7fbff;
+  border-color: #c7e2ff;
+}
+html[data-audit-theme="light"] .packet .evotor-sales-table-wrap.data-table-wrap { background: #fff; border-color: #d8ebff; }
+html[data-audit-theme="light"] .packet .evotor-sales-table thead th { background: #f2f8ff; border-color: #d8ebff; }
+html[data-audit-theme="light"] .packet .evotor-sales-table tbody tr:nth-child(odd) { background: #fff; }
+html[data-audit-theme="light"] .packet .evotor-sales-table tbody tr:nth-child(even) { background: #fafcff; }
+html[data-audit-theme="light"] .packet .evotor-sales-table tbody td { border-color: #e1efff; }
+
+html[data-audit-theme="dark"] .packet .packet-card.evotor-sales-chart-card,
+html[data-audit-theme="dark"] .packet .packet-card.evotor-sales-table-card {
+  background: #16101a;
+  border-color: #3a2031;
+}
+html[data-audit-theme="dark"] .packet .evotor-sales-table-wrap.data-table-wrap { background: #110d14; border-color: #3a2031; }
+html[data-audit-theme="dark"] .packet .evotor-sales-table thead th { background: #1c1420; border-color: #3a2031; }
+html[data-audit-theme="dark"] .packet .evotor-sales-table tbody tr:nth-child(odd) { background: #16101a; }
+html[data-audit-theme="dark"] .packet .evotor-sales-table tbody tr:nth-child(even) { background: #19111b; }
+html[data-audit-theme="dark"] .packet .evotor-sales-table tbody td { border-color: #2b1b29; }
+
+@media (max-width: 760px) {
+  .packet .evotor-sales-store-picker summary { align-items: flex-start; }
+  .packet .evotor-sales-chart-card .card-title,
+  .packet .evotor-sales-table-card .card-title { gap: 12px; align-items: flex-start; }
+  .packet .evotor-sales-chart-card .chart-controls { width: 100%; align-items: stretch; }
+  .packet .evotor-sales-chart-card .chart-view-control { width: 100%; flex-wrap: wrap; }
+  .packet .evotor-sales-chart-card .chart-view-button { flex: 1 1 calc(50% - 4px); }
+  .packet .evotor-sales-table-wrap { overflow: visible; cursor: default; border: 0; background: transparent; }
+  .packet .evotor-sales-table.data-table,
+  .packet .evotor-sales-table.data-table thead,
+  .packet .evotor-sales-table.data-table tbody,
+  .packet .evotor-sales-table.data-table tr,
+  .packet .evotor-sales-table.data-table th,
+  .packet .evotor-sales-table.data-table td { display: block; width: 100%; min-width: 0; }
+  .packet .evotor-sales-table.data-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .packet .evotor-sales-table.data-table tbody { display: grid; gap: 10px; }
+  .packet .evotor-sales-table.data-table tbody tr,
+  html[data-audit-theme="light"] .packet .evotor-sales-table.data-table tbody tr:nth-child(even),
+  html[data-audit-theme="dark"] .packet .evotor-sales-table.data-table tbody tr:nth-child(even) {
+    display: grid;
+    gap: 0;
+    padding: 4px 12px;
+    border: 1px solid var(--packet-line);
+    border-radius: 14px;
+    background: var(--packet-panel);
+  }
+  .packet .evotor-sales-table.data-table tbody td {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 12px;
+    min-height: 34px;
+    padding: 7px 0;
+    border: 0;
+    text-align: right;
+  }
+  .packet .evotor-sales-table.data-table tbody td::before {
+    content: attr(data-label);
+    grid-column: 1;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .06em;
+    text-align: left;
+    text-transform: uppercase;
+  }
+  .packet .evotor-sales-table.data-table tbody td:first-child { padding-top: 10px; }
+  .packet .evotor-sales-table.data-table tbody td:first-child strong { max-width: none; text-align: right; }
+  .packet .evotor-sales-table.data-table tbody td:last-child { padding-bottom: 10px; }
+}
