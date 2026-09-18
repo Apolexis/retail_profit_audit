@@ -40,4 +40,10 @@ describe("общий операционный справочник", () => {
     expect(css).toContain("--catalog-accent: #ff765f;");
     expect(css).toContain(".packet .catalog-table tbody tr:nth-child(even)");
   });
+
+  it("показывает цену выбранного вида в таблице общего справочника", () => {
+    expect(page).toContain("trpc.inventoryRegistry.salePrices.useQuery");
+    expect(page).toContain("Продажная цена");
+    expect(page).toContain("catalog-table-money");
+  });
 });

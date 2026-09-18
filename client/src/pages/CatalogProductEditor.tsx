@@ -29,6 +29,7 @@ export default function CatalogProductEditor({ productId }: { productId?: number
   const [unit, setUnit] = useState<CatalogUnit>("kg");
   const [vatRate, setVatRate] = useState<"VAT_10" | "VAT_22">("VAT_10");
   const [marking, setMarking] = useState<MarkingCategory>("none");
+  const [categoryName, setCategoryName] = useState("__none__");
   const [barcodes, setBarcodes] = useState("");
   const [visibleInRequests, setVisibleInRequests] = useState(true);
   const [evotorExportEnabled, setEvotorExportEnabled] = useState(false);
@@ -40,10 +41,11 @@ export default function CatalogProductEditor({ productId }: { productId?: number
   const activePriceTypes = ((priceTypes.data ?? []) as PriceType[]).filter(item => item.isActive);
   const selectedPriceType = activePriceTypes.find(item => item.id === Number(priceTypeId));
   const evotorBarcodes = useMemo(() => Array.isArray(product?.barcodes) ? product.barcodes.filter((item): item is string => typeof item === "string" && Boolean(item.trim())).join("; ") : "", [product]);
+  const categoryOptions = useMemo(() => Array.from(new Set(((products.data ?? []) as CatalogProduct[]).map(item => item.evotorCategoryName?.trim()).filter((item): item is string => Boolean(item)))).sort((left, right) => left.localeCompare(right, "ru")), [products.data]);
 
   useEffect(() => {
     if (!product) return;
-    setName(product.canonicalName); setUnit(product.baseUnit); setVatRate(product.vatRate); setMarking(product.markingCategory); setBarcodes(product.manualBarcodes ?? ""); setVisibleInRequests(product.isVisibleInRequests); setEvotorExportEnabled(product.isEvotorExportEnabled); setInternalCostPrice(product.internalCostPrice ?? "");
+    setName(product.canonicalName); setUnit(product.baseUnit); setVatRate(product.vatRate); setMarking(product.markingCategory); setCategoryName(product.evotorCategoryName?.trim() || "__none__"); setBarcodes(product.manualBarcodes ?? ""); setVisibleInRequests(product.isVisibleInRequests); setEvotorExportEnabled(product.isEvotorExportEnabled); setInternalCostPrice(product.internalCostPrice ?? "");
   }, [product]);
   useEffect(() => {
     if (!priceTypeId && activePriceTypes.length) setPriceTypeId(String(activePriceTypes.find(item => item.isDefault)?.id ?? activePriceTypes[0].id));
@@ -65,8 +67,9 @@ export default function CatalogProductEditor({ productId }: { productId?: number
 
   const saveCard = (event: React.FormEvent) => {
     event.preventDefault();
-    if (productId) update.mutate({ id: productId, canonicalName: name, baseUnit: unit, vatRate, markingCategory: marking, manualBarcodes: barcodes, isVisibleInRequests: visibleInRequests, isEvotorExportEnabled: evotorExportEnabled });
-    else create.mutate({ canonicalName: name, baseUnit: unit, vatRate, markingCategory: marking, manualBarcodes: barcodes, isVisibleInRequests: visibleInRequests, isEvotorExportEnabled: evotorExportEnabled });
+    const evotorCategoryName = categoryName === "__none__" ? null : categoryName;
+    if (productId) update.mutate({ id: productId, canonicalName: name, baseUnit: unit, vatRate, evotorCategoryName, markingCategory: marking, manualBarcodes: barcodes, isVisibleInRequests: visibleInRequests, isEvotorExportEnabled: evotorExportEnabled });
+    else create.mutate({ canonicalName: name, baseUnit: unit, vatRate, evotorCategoryName, markingCategory: marking, manualBarcodes: barcodes, isVisibleInRequests: visibleInRequests, isEvotorExportEnabled: evotorExportEnabled });
   };
   const saveCost = () => {
     if (!productId) return;
@@ -88,7 +91,7 @@ export default function CatalogProductEditor({ productId }: { productId?: number
     <section className="page-lede catalog-lede"><div><span>УПРАВЛЕНИЕ МАГАЗИНАМИ</span><h2>{productId ? "Редактирование товара" : "Добавление товара"}</h2><p>Карточка товара отделена от списка. Общая номенклатура не зависит от магазина; продажная цена задается по выбранному виду цены.</p></div><button type="button" className="subtle-button" onClick={() => setLocation("/catalog-control")}><ArrowLeft size={15}/>К списку</button></section>
     <form className="packet-card catalog-editor-card" onSubmit={saveCard}>
       <div className="card-title"><div><span>ОСНОВНЫЕ ДАННЫЕ</span><h3>{productId ? product?.canonicalName : "Новая позиция"}</h3></div><div className="catalog-editor-title-actions"><button type="button" className={visibleInRequests ? "subtle-button catalog-visibility-button is-on" : "subtle-button catalog-visibility-button"} aria-pressed={visibleInRequests} onClick={() => setVisibleInRequests(value => !value)}>{visibleInRequests ? <Eye size={15}/> : <EyeOff size={15}/>}В заявках</button><button type="button" className={evotorExportEnabled ? "subtle-button catalog-visibility-button is-on" : "subtle-button catalog-visibility-button"} aria-pressed={evotorExportEnabled} onClick={() => setEvotorExportEnabled(value => !value)}>{evotorExportEnabled ? <Eye size={15}/> : <EyeOff size={15}/>}Выгрузка Эвотор</button><button className="packet-link" disabled={create.isPending || update.isPending}><Save size={16}/>{create.isPending || update.isPending ? "Сохраняем…" : "Сохранить"}</button></div></div>
-      <div className="catalog-editor-grid"><label>Название товара<input value={name} onChange={event => setName(event.target.value)} required maxLength={512}/></label>{productId && <div className="catalog-editor-readonly"><span>Категория Эвотор</span><strong>{product?.evotorCategoryName ?? "Не передана кассой"}</strong></div>}<label>Единица<ThemedSelect value={unit} onChange={event => setUnit(event.target.value as CatalogUnit)}><option value="kg">кг</option><option value="l">л</option><option value="piece">шт</option></ThemedSelect></label><label>НДС<ThemedSelect value={vatRate} onChange={event => setVatRate(event.target.value as "VAT_10" | "VAT_22")}><option value="VAT_10">НДС 10%</option><option value="VAT_22">НДС 22%</option></ThemedSelect></label><label>Маркировка<ThemedSelect value={marking} onChange={event => setMarking(event.target.value as MarkingCategory)}>{markingOptions.map(option => <option value={option.value} key={option.value}>{option.label}</option>)}</ThemedSelect></label>{productId && <div className="catalog-editor-readonly"><span>Штрихкоды Эвотор</span><strong>{evotorBarcodes || "Не переданы кассой"}</strong></div>}<label>Ручные штрихкоды <small>строго через ;</small><input value={barcodes} onChange={event => setBarcodes(event.target.value)} placeholder="1234567890123; 9876543210987"/></label></div>
+      <div className="catalog-editor-grid"><label>Название товара<input value={name} onChange={event => setName(event.target.value)} required maxLength={512}/></label><label>Категория<ThemedSelect value={categoryName} onChange={event => setCategoryName(event.target.value)}><option value="__none__">Без категории</option>{categoryOptions.map(item => <option value={item} key={item}>{item}</option>)}</ThemedSelect></label><label>Единица<ThemedSelect value={unit} onChange={event => setUnit(event.target.value as CatalogUnit)}><option value="kg">кг</option><option value="l">л</option><option value="piece">шт</option></ThemedSelect></label><label>НДС<ThemedSelect value={vatRate} onChange={event => setVatRate(event.target.value as "VAT_10" | "VAT_22")}><option value="VAT_10">НДС 10%</option><option value="VAT_22">НДС 22%</option></ThemedSelect></label><label>Маркировка<ThemedSelect value={marking} onChange={event => setMarking(event.target.value as MarkingCategory)}>{markingOptions.map(option => <option value={option.value} key={option.value}>{option.label}</option>)}</ThemedSelect></label>{productId && <div className="catalog-editor-readonly"><span>Штрихкоды Эвотор</span><strong>{evotorBarcodes || "Не переданы кассой"}</strong></div>}<label>Ручные штрихкоды <small>строго через ;</small><input value={barcodes} onChange={event => setBarcodes(event.target.value)} placeholder="1234567890123; 9876543210987"/></label></div>
     </form>
     {productId && <section className="packet-card catalog-editor-card">
       <div className="card-title"><div><span>ЦЕНЫ ТОВАРА</span><h3>Внутренняя и продажная</h3></div></div>

@@ -184,3 +184,5 @@ html[data-audit-theme="dark"] .packet .catalog-working-card:hover { border-color
   .packet .catalog-editor-title-actions { width: 100%; justify-content: flex-start; }
   .packet .catalog-editor-title-actions .packet-link { margin-left: auto; }
 }
+
+.packet .catalog-table-money { min-width: 126px; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }

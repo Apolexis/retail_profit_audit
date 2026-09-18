@@ -305,7 +305,7 @@ export async function updateOperationalCatalogCost(input: { id: number; internal
   return { before, after: after! };
 }
 
-export async function createOperationalCatalogProduct(input: { canonicalName: string; baseUnit: InventoryUnit; vatRate?: InventoryVatRate; internalCostPrice?: number | null; markingCategory?: InventoryMarkingCategory; manualBarcodes?: string | null; isVisibleInRequests?: boolean; isEvotorExportEnabled?: boolean; actorId: number }) {
+export async function createOperationalCatalogProduct(input: { canonicalName: string; evotorCategoryName?: string | null; baseUnit: InventoryUnit; vatRate?: InventoryVatRate; internalCostPrice?: number | null; markingCategory?: InventoryMarkingCategory; manualBarcodes?: string | null; isVisibleInRequests?: boolean; isEvotorExportEnabled?: boolean; actorId: number }) {
   const db = await getDb();
   if (!db) throw new Error("База данных недоступна");
   const canonicalName = normalizedText(input.canonicalName);
@@ -316,6 +316,7 @@ export async function createOperationalCatalogProduct(input: { canonicalName: st
     storeId: null,
     evotorProductId: `manual:${randomUUID()}`,
     canonicalName,
+    evotorCategoryName: normalizedText(input.evotorCategoryName ?? "").slice(0, 512) || null,
     barcodes: [],
     baseUnit: input.baseUnit,
     vatRate: input.vatRate ?? "VAT_10",
@@ -331,7 +332,7 @@ export async function createOperationalCatalogProduct(input: { canonicalName: st
   return after!;
 }
 
-export async function updateOperationalCatalogProduct(input: { id: number; canonicalName: string; baseUnit: InventoryUnit; vatRate: InventoryVatRate; markingCategory: InventoryMarkingCategory; manualBarcodes?: string | null; isVisibleInRequests: boolean; isEvotorExportEnabled: boolean }) {
+export async function updateOperationalCatalogProduct(input: { id: number; canonicalName: string; evotorCategoryName?: string | null; baseUnit: InventoryUnit; vatRate: InventoryVatRate; markingCategory: InventoryMarkingCategory; manualBarcodes?: string | null; isVisibleInRequests: boolean; isEvotorExportEnabled: boolean }) {
   const db = await getDb();
   if (!db) throw new Error("База данных недоступна");
   const [before] = await db.select().from(operationalCatalogProducts).where(eq(operationalCatalogProducts.id, input.id)).limit(1);
@@ -339,7 +340,7 @@ export async function updateOperationalCatalogProduct(input: { id: number; canon
   const canonicalName = normalizedText(input.canonicalName);
   if (!canonicalName) throw new Error("Введите название товара.");
   if (canonicalName.length > 512) throw new Error("Название товара слишком длинное.");
-  await db.update(operationalCatalogProducts).set({ canonicalName, baseUnit: input.baseUnit, vatRate: input.vatRate, markingCategory: input.markingCategory, manualBarcodes: normalizedManualBarcodes(input.manualBarcodes), isVisibleInRequests: input.isVisibleInRequests, isEvotorExportEnabled: input.isEvotorExportEnabled }).where(eq(operationalCatalogProducts.id, input.id));
+  await db.update(operationalCatalogProducts).set({ canonicalName, evotorCategoryName: normalizedText(input.evotorCategoryName ?? "").slice(0, 512) || null, baseUnit: input.baseUnit, vatRate: input.vatRate, markingCategory: input.markingCategory, manualBarcodes: normalizedManualBarcodes(input.manualBarcodes), isVisibleInRequests: input.isVisibleInRequests, isEvotorExportEnabled: input.isEvotorExportEnabled }).where(eq(operationalCatalogProducts.id, input.id));
   const [after] = await db.select().from(operationalCatalogProducts).where(eq(operationalCatalogProducts.id, input.id)).limit(1);
   return { before, after: after! };
 }
