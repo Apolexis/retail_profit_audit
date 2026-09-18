@@ -53,9 +53,18 @@ describe("warehouse control contract", () => {
 	});
 
 	it("stacks warehouse data into labelled cards on narrow screens", () => {
-	  expect(page).toContain('data-label="Склад / магазин"');
-	  expect(page).toContain('data-label="Действие"');
-	  expect(styles).toContain(".warehouse-table tbody > tr:not(.warehouse-settings-row)");
-	  expect(styles).toContain("content: attr(data-label)");
+		expect(page).toContain('data-label="Склад / магазин"');
+		expect(page).toContain('data-label="Действие"');
+		expect(styles).toContain(".warehouse-table tbody > tr:not(.warehouse-settings-row)");
+		expect(styles).toContain("content: attr(data-label)");
+	});
+
+	it("keeps summary, open settings and print categories within the approved blue/coral hierarchy", () => {
+		expect(styles).toContain(".warehouse-category-print-card {");
+		expect(styles).toContain("background: var(--warehouse-panel);");
+		expect(styles).toContain("border-top: 1px solid var(--warehouse-line);");
+		expect(styles).toContain("--warehouse-card: #f7fbff;");
+		expect(styles).toContain("--warehouse-card: #16101a;");
+		expect(styles).not.toContain("background: var(--surface-2);");
 	});
 });

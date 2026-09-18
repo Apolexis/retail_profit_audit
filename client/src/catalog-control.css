@@ -148,6 +148,7 @@ html[data-audit-theme="dark"] .packet .catalog-working-card:hover { border-color
 .packet .catalog-table td small { margin-top: 3px; color: var(--muted); font-size: 11px; }
 .packet .catalog-table-flag { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-weight: 750; white-space: nowrap; }
 .packet .catalog-table-flag.is-on { color: var(--catalog-accent); }
+.packet .catalog-table-action { width: 32px; min-width: 32px; height: 32px; min-height: 32px; padding: 0; }
 .packet .catalog-editor-card { display: grid; gap: 16px; margin-bottom: 18px; border-color: var(--catalog-line); background: var(--catalog-card); }
 .packet .catalog-editor-grid { display: grid; grid-template-columns: minmax(260px, 1.4fr) 105px 120px minmax(190px, 1fr); gap: 12px; align-items: end; }
 .packet .catalog-editor-grid > label:first-child, .packet .catalog-editor-grid > label:nth-child(5) { grid-column: span 2; }

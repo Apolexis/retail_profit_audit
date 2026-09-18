@@ -71,3 +71,9 @@ Live light `/catalog-control` inspection exposed the same overly-blue striped da
 
 
 The two new admin-only Evotor sales routes were opened in the authenticated preview. Their navigation appears under «Управление магазинами»; the store chooser is collapsed by default, has 0 px horizontal overflow, and the empty state explicitly states that it waits only for automatic read-only document loading. The dark product page uses the existing neutral/coral contour pattern, with no added palette. At this moment there are no normalized receipts in the selected 2026 range, so the graph/table’s populated state cannot honestly be visually accepted until the production scheduler executes successfully.
+
+
+Live desktop acceptance of `/catalog-control` confirmed the general catalog still contains 816 items, the visible business number begins from 1, and the technical primary key is not printed. The table’s edit control is now a 32px icon-only semantic link: it has no visual text, retains the full accessible label and tooltip, and the page has 0 px horizontal overflow outside of its dedicated table wrapper.
+
+
+Live acceptance of the warehouse list after the surface correction confirmed 32 visible warehouses. In the dark theme the list card is `#16101a` and table heading `#1c1420`; after the standard theme toggle, the light page has the blue operational hierarchy while table rows remain near-white. The page has 0 px horizontal overflow outside its dedicated table structure. Open settings and request-print category cards now use the same warehouse surface tokens instead of generic grey panels.

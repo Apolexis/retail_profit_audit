@@ -1,6 +1,7 @@
 /* Warehouses reuse the operating surface tokens: blue in light, calm graphite and coral contour in dark. */
 .packet .warehouse-rule,
-.packet .warehouse-table-card {
+.packet .warehouse-table-card,
+.packet .warehouse-category-print-card {
   --warehouse-card: var(--surface);
   --warehouse-panel: var(--surface-2);
   --warehouse-line: var(--line);
@@ -46,8 +47,8 @@
 .packet .warehouse-guidance strong { display: block; margin-top: 4px; color: var(--ink); font-size: 14px; }
 .packet .warehouse-guidance p { margin: 5px 0 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
 /* Inherit the approved Analysis pages palette: only the shared theme tokens decide surfaces and contours. */
-@media (hover: hover) and (pointer: fine) { .packet :is(.warehouse-rule, .warehouse-table-card, .warehouse-guidance article):hover { border-color: color-mix(in srgb, var(--warehouse-accent) 56%, var(--warehouse-line)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--warehouse-accent) 18%, transparent); } }
-.packet :is(.warehouse-rule, .warehouse-table-card, .warehouse-guidance article):focus-within { border-color: color-mix(in srgb, var(--warehouse-accent) 62%, var(--warehouse-line)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--warehouse-accent) 18%, transparent); }
+@media (hover: hover) and (pointer: fine) { .packet :is(.warehouse-rule, .warehouse-table-card, .warehouse-category-print-card, .warehouse-guidance article):hover { border-color: color-mix(in srgb, var(--warehouse-accent) 56%, var(--warehouse-line)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--warehouse-accent) 18%, transparent); } }
+.packet :is(.warehouse-rule, .warehouse-table-card, .warehouse-category-print-card, .warehouse-guidance article):focus-within { border-color: color-mix(in srgb, var(--warehouse-accent) 62%, var(--warehouse-line)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--warehouse-accent) 18%, transparent); }
 @media (max-width: 760px) { .packet .warehouse-guidance { grid-template-columns: 1fr; } .packet .warehouse-table-card .card-title { gap: 12px; } .packet .warehouse-table-card .card-title small { white-space: normal; text-align: right; } }
 
 .packet .warehouse-filters { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(220px, .6fr); gap: 12px; align-items: end; }
@@ -78,7 +79,7 @@
 @media (max-width: 640px) { .packet .warehouse-print-group-editor > .subtle-button { flex: 1 1 100%; justify-content: center; } }
 
 /* The warehouse list uses exactly the calm Analysis surfaces: no gradient or detached gray table. */
-html[data-audit-theme="light"] .packet :is(.warehouse-rule, .warehouse-table-card, .warehouse-guidance article) {
+html[data-audit-theme="light"] .packet :is(.warehouse-rule, .warehouse-table-card, .warehouse-category-print-card, .warehouse-guidance article) {
   --warehouse-card: #f7fbff;
   --warehouse-panel: #edf6ff;
   --warehouse-line: #c7e2ff;
@@ -92,7 +93,7 @@ html[data-audit-theme="light"] .packet .warehouse-table.data-table thead th { ba
 html[data-audit-theme="light"] .packet .warehouse-table.data-table tbody tr:nth-child(odd) { background: #fff !important; }
 html[data-audit-theme="light"] .packet .warehouse-table.data-table tbody tr:nth-child(even) { background: #f6faff !important; }
 html[data-audit-theme="light"] .packet .warehouse-table.data-table tbody td { border-color: #d8ebff !important; }
-html[data-audit-theme="dark"] .packet :is(.warehouse-rule, .warehouse-table-card, .warehouse-guidance article) {
+html[data-audit-theme="dark"] .packet :is(.warehouse-rule, .warehouse-table-card, .warehouse-category-print-card, .warehouse-guidance article) {
   --warehouse-card: #16101a;
   --warehouse-panel: #1c1420;
   --warehouse-line: #3b2435;
@@ -108,8 +109,8 @@ html[data-audit-theme="dark"] .packet .warehouse-table.data-table tbody tr:nth-c
 html[data-audit-theme="dark"] .packet .warehouse-table.data-table tbody td { border-color: #2a1c29 !important; }
 
 .packet .warehouse-edit { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 34px; margin: 0; white-space: nowrap; }
-.packet .warehouse-settings-row > td { padding: 0 !important; background: var(--surface-2); }
-.packet .warehouse-settings-grid { display: grid; grid-template-columns: repeat(3, minmax(150px, 1fr)); gap: 12px 14px; padding: 14px; border-top: 1px solid var(--line); }
+.packet .warehouse-settings-row > td { padding: 0 !important; background: var(--warehouse-panel); }
+.packet .warehouse-settings-grid { display: grid; grid-template-columns: repeat(3, minmax(150px, 1fr)); gap: 12px 14px; padding: 14px; border-top: 1px solid var(--warehouse-line); }
 .packet .warehouse-settings-grid > label { display: grid; gap: 6px; min-width: 0; color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
 .packet .warehouse-settings-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 7px; }
 .packet .warehouse-settings-actions .subtle-button { display: inline-flex; align-items: center; gap: 7px; min-height: 34px; margin: 0; }
@@ -118,9 +119,9 @@ html[data-audit-theme="dark"] .packet .warehouse-table.data-table tbody td { bor
 
 .packet .warehouse-category-print-card { display: grid; gap: 14px; }
 .packet .warehouse-category-print-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
-.packet .warehouse-category-print-groups > article { display: grid; gap: 10px; min-width: 0; padding: 13px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
+.packet .warehouse-category-print-groups > article { display: grid; gap: 10px; min-width: 0; padding: 13px; border: 1px solid var(--warehouse-line); border-radius: 12px; background: var(--warehouse-panel); }
 .packet .warehouse-category-member-list { display: flex; flex-wrap: wrap; gap: 6px; }
-.packet .warehouse-category-member { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; padding: 4px 6px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); font-size: 11px; }
+.packet .warehouse-category-member { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; padding: 4px 6px; border: 1px solid var(--warehouse-line); border-radius: 7px; color: var(--ink); font-size: 11px; }
 .packet .warehouse-category-member button { display: inline-grid; place-items: center; flex: 0 0 auto; width: 18px; height: 18px; padding: 0; border: 0; border-radius: 5px; background: transparent; color: var(--muted); }
 .packet .warehouse-category-member button:hover { color: var(--packet-accent); background: var(--packet-accent-faint); }
 .packet .warehouse-category-add { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px; }

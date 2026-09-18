@@ -84,7 +84,14 @@ describe("общий операционный справочник", () => {
 	});
 
 	it("превращает широкую таблицу справочника в подписанные карточки на телефоне", () => {
-	  expect(css).toContain(".catalog-table tbody tr:nth-child(even) { display: grid");
-	  expect(css).toContain("content: attr(data-label)");
+		expect(css).toContain(".catalog-table tbody tr:nth-child(even) { display: grid");
+		expect(css).toContain("content: attr(data-label)");
+	});
+
+	it("оставляет действия списка компактными и доступными", () => {
+		expect(page).toContain('className="subtle-button catalog-table-action"');
+		expect(page).toContain('aria-label={`Изменить товар: ${product.canonicalName}`}');
+		expect(page).toContain('<ArrowDown size={14}/>Показать еще');
+		expect(css).toContain(".packet .catalog-table-action { width: 32px;");
 	});
 });
