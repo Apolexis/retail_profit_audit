@@ -14,6 +14,21 @@
   box-shadow: none;
 }
 .packet .stock-table-card { gap: 14px; }
+/* The stock table shares the same explicit operating hierarchy as Inventory and Warehouses. */
+html[data-audit-theme="light"] .packet :is(.stock-rule-disclosure, .stock-table-card) {
+  --stock-card: #f7fbff;
+  --stock-panel: #edf6ff;
+  --stock-line: #c7e2ff;
+  --stock-accent: #0a84ff;
+  --stock-accent-faint: #eaf5ff;
+}
+html[data-audit-theme="dark"] .packet :is(.stock-rule-disclosure, .stock-table-card) {
+  --stock-card: #16101a;
+  --stock-panel: #1c1420;
+  --stock-line: #3b2435;
+  --stock-accent: #ff765f;
+  --stock-accent-faint: rgba(255, 118, 95, .075);
+}
 .packet .stock-rule-disclosure > summary { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: baseline; cursor: pointer; list-style: none; }
 .packet .stock-rule-disclosure > summary::-webkit-details-marker { display: none; }
 .packet .stock-rule-disclosure > summary > span { color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .08em; }

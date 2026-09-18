@@ -310,13 +310,13 @@ export async function syncOperationalEvotorDocumentPage(input: { storeId: number
   const page = await listEvotorDocumentsPreviewForOperationalStore({ storeId: input.storeId, cursor: sync.cursor ?? undefined });
   let insertedDocuments = 0;
   let insertedPositions = 0;
-  for (const document of page.documents) {
+  await forEachBoundedBatch(page.documents, 4, async document => {
     const [existing] = await db
       .select({ id: operationalEvotorDocuments.id })
       .from(operationalEvotorDocuments)
       .where(and(eq(operationalEvotorDocuments.storeId, input.storeId), eq(operationalEvotorDocuments.evotorDocumentId, document.id)))
       .limit(1);
-    if (existing) continue;
+    if (existing) return;
     const [inserted] = await db.insert(operationalEvotorDocuments).values({
       storeId: input.storeId,
       syncId: sync.id,
@@ -340,7 +340,7 @@ export async function syncOperationalEvotorDocumentPage(input: { storeId: number
       await db.insert(operationalEvotorDocumentPositions).values(positions);
       insertedPositions += positions.length;
     }
-  }
+  });
   const completed = !page.nextCursor;
   await db.update(operationalEvotorDocumentSyncs).set({
     cursor: page.nextCursor,
@@ -353,6 +353,12 @@ export async function syncOperationalEvotorDocumentPage(input: { storeId: number
   return { syncId: sync.id, storeId: input.storeId, readDocuments: page.documents.length, readPositions: page.documents.reduce((total, document) => total + document.positions.length, 0), insertedDocuments, insertedPositions, completed };
 }
 
+async function forEachBoundedBatch<T>(items: readonly T[], size: number, work: (item: T) => Promise<void>) {
+  for (let start = 0; start < items.length; start += size) {
+    await Promise.all(items.slice(start, start + size).map(work));
+  }
+}
+
 /** Saves the confirmed Evotor catalog as read-only links to global products; similarity never merges real products. */
 export async function confirmOperationalCatalogFromEvotor(input: { storeId: number; actorId: number | null }) {
   const db = await getDb();
@@ -360,7 +366,7 @@ export async function confirmOperationalCatalogFromEvotor(input: { storeId: numb
   const preview = await listEvotorCatalogPreviewForOperationalStore(input.storeId);
   if (!preview.products.length) throw new Error("В каталоге выбранной точки Эвотор нет товарных позиций для сохранения.");
   let nextNumber = await nextCatalogNumber();
-  for (const product of preview.products) {
+  await forEachBoundedBatch(preview.products, 12, async product => {
     const baseUnit = unitFromEvotor(product.unit);
     const evotorQuantitySnapshot = product.quantity !== null && finiteThreeDecimals(product.quantity) ? product.quantity.toFixed(3) : null;
     const [link] = await db.select().from(operationalEvotorProductLinks).where(and(eq(operationalEvotorProductLinks.storeId, input.storeId), eq(operationalEvotorProductLinks.evotorProductId, product.id))).limit(1);
@@ -385,12 +391,12 @@ export async function confirmOperationalCatalogFromEvotor(input: { storeId: numb
         importedAt: new Date(),
       }).where(eq(operationalCatalogProducts.id, link.productId));
       await db.update(operationalEvotorProductLinks).set({ evotorQuantitySnapshot, evotorQuantityUpdatedAt: new Date() }).where(eq(operationalEvotorProductLinks.id, link.id));
-      continue;
+      return;
     }
     const [sameCommonProduct] = await db.select({ id: operationalCatalogProducts.id }).from(operationalCatalogProducts).where(eq(operationalCatalogProducts.canonicalName, product.name)).orderBy(operationalCatalogProducts.catalogNumber).limit(1);
     if (sameCommonProduct) {
       await db.insert(operationalEvotorProductLinks).values({ storeId: input.storeId, evotorProductId: product.id, productId: sameCommonProduct.id, evotorQuantitySnapshot, evotorQuantityUpdatedAt: new Date(), linkedByAccountId: input.actorId });
-      continue;
+      return;
     }
     const [inserted] = await db.insert(operationalCatalogProducts).values({
       catalogNumber: nextNumber++,
@@ -411,7 +417,7 @@ export async function confirmOperationalCatalogFromEvotor(input: { storeId: numb
       alcoholVolumeLiters: product.alcoholVolumeLiters === null ? null : product.alcoholVolumeLiters.toFixed(3),
     }).$returningId();
     await db.insert(operationalEvotorProductLinks).values({ storeId: input.storeId, evotorProductId: product.id, productId: inserted.id, evotorQuantitySnapshot, evotorQuantityUpdatedAt: new Date(), linkedByAccountId: input.actorId });
-  }
+  });
   return { storeId: input.storeId, evotorStoreName: preview.mapping.evotorStoreName, imported: preview.products.length };
 }
 

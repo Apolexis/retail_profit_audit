@@ -30,8 +30,13 @@ describe("интерфейс операционных остатков", () => {
     expect(css).toContain(".packet .stock-search > svg { position: absolute; right: 10px;");
     expect(page).toContain('className="data-table-wrap stock-table-wrap"');
     expect(css).toContain('.packet .stock-table-wrap { overflow-x: auto; cursor: grab;');
-    expect(css).toContain('--stock-accent: var(--packet-accent);');
+	  expect(css).toContain('--stock-accent: var(--packet-accent);');
 	  expect(css).toContain('no page-local palette is introduced');
+	  expect(css).toContain('--stock-card: #f7fbff;');
+	  expect(css).toContain('--stock-panel: #edf6ff;');
+	  expect(css).toContain('--stock-card: #16101a;');
+	  expect(css).toContain('--stock-panel: #1c1420;');
+	  expect(css).toContain('--stock-accent: #ff765f;');
 	});
 
 	it("на узком экране заменяет широкую таблицу подписанными карточками", () => {

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const login = readFileSync(new URL("./Login.tsx", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../final-overrides.css", import.meta.url), "utf8");
+const accessStyles = readFileSync(new URL("../access.css", import.meta.url), "utf8");
 
 describe("универсальный вход с ключом доступа", () => {
   it("не называет вход только Face ID и перечисляет доступные способы устройства", () => {
@@ -33,5 +34,14 @@ describe("универсальный вход с ключом доступа", (
     expect(login).toContain('Логин магазина');
     expect(login).toContain('storeLoginMode ? identifier.trim() : normalizeRussianPhone(identifier)');
     expect(login).toContain('!storeLoginMode && passkeySupported');
+  });
+
+  it("оформляет вход для магазинов доступным iOS-переключателем и тематичной иконкой", () => {
+    expect(login).toContain('className="login-store-mode-switch" aria-hidden="true"');
+    expect(accessStyles).toContain('.login-panel .login-store-mode-switch { position: relative; display: inline-block;');
+    expect(accessStyles).toContain('border-radius: 999px;');
+    expect(accessStyles).toContain('input:checked + .login-store-mode-switch');
+    expect(accessStyles).toContain('.login-theme-toggle { color: #ffcf5c !important; }');
+    expect(accessStyles).toContain('html[data-audit-theme="light"] .login-theme-toggle { color: #20202a !important; }');
   });
 });

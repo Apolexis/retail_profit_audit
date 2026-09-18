@@ -82,7 +82,9 @@ describe("контракт страницы Выручка", () => {
     expect(styles).toContain(':is(thead, tbody, tfoot) :is(th, td):last-child { background: #d8d8d8 !important;');
     expect(styles).toContain('font-family: Arial, sans-serif; font-size: 9pt;');
     expect(styles).toContain('font-family: "Arial Black", Arial, sans-serif;');
-    expect(styles).toContain('tbody td:nth-child(even) { background: #f0f0f0 !important; }');
+    expect(styles).toContain(':is(thead, tbody, tfoot) :is(th, td):nth-child(even) { background: #f0f0f0 !important; }');
+    expect(styles).toContain('thead th { background: #fff !important;');
+    expect(styles).not.toContain('tfoot :is(th, td) { background: #d8d8d8 !important; }');
   });
 
   it("отделяет синий light-контур от сдержанной темной поверхности", () => {
