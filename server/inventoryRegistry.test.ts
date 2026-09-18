@@ -33,4 +33,9 @@ describe("операционная инвентаризация: закрыти�
   it("фиксирует точный нулевой остаток как списание, а не как отсутствие строки", () => {
     expect(calculateInventoryAdjustment(4.25, 0)).toBe(-4.25);
   });
+
+  it("определяет расхождение только как факт минус учет", () => {
+    expect(calculateInventoryAdjustment(0, 6.5)).toBe(6.5);
+    expect(calculateInventoryAdjustment(6.5, 0)).toBe(-6.5);
+  });
 });

@@ -59,7 +59,17 @@ async function requireInventory(id: number) {
   return inventory;
 }
 
-export async function listInventoryProducts() {
+export async function getInventoryAccountingQuantities(storeId: number, productIds?: number[]) {
+  const db = await getDb();
+  if (!db) return new Map<number, number>();
+  const conditions = [eq(operationalStockMovements.storeId, storeId), productIds?.length ? inArray(operationalStockMovements.productId, productIds) : undefined].filter(Boolean);
+  const rows = await db.select({ productId: operationalStockMovements.productId, quantityDelta: operationalStockMovements.quantityDelta }).from(operationalStockMovements).where(and(...conditions));
+  const quantities = new Map<number, number>();
+  for (const row of rows) quantities.set(row.productId, Math.round(((quantities.get(row.productId) ?? 0) + Number(row.quantityDelta)) * 1000) / 1000);
+  return quantities;
+}
+
+export async function listInventoryProducts(input?: { storeId?: number; includeAccounting?: boolean }) {
   const db = await getDb();
   if (!db) return [];
   const rows = await db
@@ -75,7 +85,9 @@ export async function listInventoryProducts() {
     .where(eq(priceProducts.isActive, true))
     .orderBy(priceProducts.category, priceProducts.canonicalName)
     .limit(2_000);
-  return rows.filter(row => row.baseUnit !== "unknown");
+  const products = rows.filter(row => row.baseUnit !== "unknown");
+  const quantities = input?.includeAccounting && input.storeId ? await getInventoryAccountingQuantities(input.storeId, products.map(product => product.id)) : null;
+  return products.map(product => ({ ...product, accountingQuantity: quantities?.get(product.id) ?? null }));
 }
 
 export async function createInventoryDraft(input: { storeId: number; businessDate: string; createdByAccountId: number; note?: string }) {
@@ -158,7 +170,7 @@ export async function removeInventoryLine(input: { inventoryId: number; productI
   return { inventory, before: { productId: before.productId, countedQuantity: Number(before.countedQuantity), unit: before.unit } };
 }
 
-export async function getInventoryDetail(inventoryId: number) {
+export async function getInventoryDetail(inventoryId: number, options?: { includeAccounting?: boolean }) {
   const db = await getDb();
   if (!db) return null;
   const inventory = await requireInventory(inventoryId);
@@ -180,12 +192,15 @@ export async function getInventoryDetail(inventoryId: number) {
     .innerJoin(priceProducts, eq(operationalInventoryLines.productId, priceProducts.id))
     .where(eq(operationalInventoryLines.inventoryId, inventoryId))
     .orderBy(priceProducts.category, priceProducts.canonicalName);
+  const accountingAtClose = options?.includeAccounting && inventory.status === "closed"
+    ? new Map((await db.select({ productId: operationalStockMovements.productId, previousQuantity: operationalStockMovements.previousQuantity }).from(operationalStockMovements).where(eq(operationalStockMovements.inventoryId, inventoryId))).map(movement => [movement.productId, Number(movement.previousQuantity)]))
+    : null;
   return {
     ...inventoryState(inventory),
     storeName: store?.name ?? `Магазин #${inventory.storeId}`,
     createdByName: creator?.displayName ?? `Пользователь #${inventory.createdByAccountId}`,
     closedByName: closer?.displayName ?? null,
-    lines: lines.map(line => ({ ...line, countedQuantity: Number(line.countedQuantity) })),
+    lines: lines.map(line => ({ ...line, countedQuantity: Number(line.countedQuantity), ...(accountingAtClose ? { accountingQuantity: accountingAtClose.get(line.productId) ?? null } : {}) })),
   };
 }
 

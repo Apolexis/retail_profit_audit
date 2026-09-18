@@ -1,7 +1,16 @@
 /* Isolated operational registry: common packet surfaces, the approved signal-form geometry and no financial status colors. */
 .packet .revenue-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
 .packet :is(.revenue-entry-card, .revenue-admin-register, .revenue-own-history, .revenue-rule-disclosure) { min-width: 0; }
-.packet .revenue-entry-card { display: grid; gap: 16px; }
+.packet .revenue-entry-card { display: grid; gap: 0; }
+.packet .revenue-entry-summary { display: flex; align-items: center; justify-content: space-between; gap: 14px; cursor: pointer; list-style: none; }
+.packet .revenue-entry-summary::-webkit-details-marker { display: none; }
+.packet .revenue-entry-summary > div { display: grid; min-width: 0; gap: 3px; }
+.packet .revenue-entry-summary span { color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .08em; }
+.packet .revenue-entry-summary h3 { margin: 0; color: var(--ink); font-size: 18px; }
+.packet .revenue-entry-summary small { color: var(--muted); font-size: 11px; }
+.packet .revenue-entry-summary > svg { flex: 0 0 auto; color: var(--packet-accent); transition: transform 160ms var(--audit-hover-ease); }
+.packet .revenue-entry-card:not([open]) .revenue-entry-summary > svg { transform: rotate(-90deg); }
+.packet .revenue-entry-form { display: grid; gap: 16px; padding-top: 16px; }
 .packet .revenue-meta-row { display: grid; grid-template-columns: minmax(190px, .75fr) minmax(190px, 1fr); gap: 12px; }
 .packet .revenue-meta-row > label,
 .packet .revenue-store-readonly,
@@ -17,20 +26,25 @@
 .packet .revenue-input-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
 .packet .revenue-amount { display: grid; align-content: start; gap: 8px; min-width: 0; min-height: 104px; padding: 15px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); box-shadow: none; transition: border-color 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease); }
 .packet .revenue-amount:hover,
-.packet .revenue-amount:focus-within { border-color: var(--packet-accent); background: color-mix(in srgb, var(--packet-accent) 5%, var(--surface)); box-shadow: 0 0 0 2px var(--packet-accent-faint); }
+.packet .revenue-amount:focus-within { border-color: var(--packet-accent); background: color-mix(in srgb, var(--packet-accent) 5%, var(--surface)); box-shadow: none; }
 .packet .revenue-amount > span { color: var(--muted); font: 800 10px "IBM Plex Mono", monospace; letter-spacing: .04em; }
 .packet .revenue-amount input,
 .packet .revenue-filter-row input { width: 100%; min-width: 0; height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); color: var(--ink); font: 700 13px Manrope, Arial, sans-serif; outline: none; }
 .packet .revenue-amount input:focus-visible,
 .packet .revenue-filter-row input:focus-visible,
 .packet .revenue-correction-reason textarea:focus-visible,
-.packet .revenue-amount textarea:focus-visible { border-color: var(--packet-accent); box-shadow: 0 0 0 2px var(--packet-accent-faint); }
+.packet .revenue-amount textarea:focus-visible { border-color: var(--packet-accent); box-shadow: none; }
 .packet .revenue-amount textarea,
 .packet .revenue-correction-reason textarea { min-height: 65px; width: 100%; resize: vertical; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); color: var(--ink); font: 650 12px Manrope, Arial, sans-serif; outline: none; }
 .packet .revenue-total { display: grid; grid-template-columns: auto 1fr; gap: 2px 14px; align-items: center; padding: 14px 16px; border: 1px solid var(--packet-accent-soft); border-radius: 12px; background: var(--packet-accent-faint); }
 .packet .revenue-total > span { color: var(--ink); font-size: 16px; font-weight: 850; }
 .packet .revenue-total > strong { justify-self: end; color: var(--packet-accent); font-size: 22px; line-height: 1.15; }
 .packet .revenue-total > small { grid-column: 1 / -1; color: var(--muted); font-size: 11px; }
+.packet .revenue-field-sections { display: grid; gap: 14px; }
+.packet .revenue-field-section { display: grid; gap: 10px; padding: 13px; border: 1px solid var(--line); border-radius: 13px; background: color-mix(in srgb, var(--surface-2) 72%, var(--surface)); }
+.packet .revenue-field-section-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.packet .revenue-field-section-title span { color: var(--ink); font: 850 11px Manrope, Arial, sans-serif; letter-spacing: .07em; }
+.packet .revenue-field-section-title small { color: var(--muted); font-size: 11px; text-align: right; }
 .packet .revenue-form-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap; }
 .packet .revenue-form-actions small { color: var(--muted); font-size: 11px; }
 
@@ -85,6 +99,8 @@
   .packet .revenue-input-grid,
   .packet .revenue-rule-content { grid-template-columns: 1fr; }
   .packet .revenue-amount { min-height: 0; }
+  .packet .revenue-field-section { padding: 11px; }
+  .packet .revenue-field-section-title { align-items: flex-start; flex-direction: column; gap: 2px; }
   .packet .revenue-total > strong { font-size: 20px; }
   .packet .revenue-form-actions,
   .packet .revenue-register-actions { display: grid; grid-template-columns: minmax(0, 1fr); }

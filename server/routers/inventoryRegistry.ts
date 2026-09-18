@@ -38,17 +38,18 @@ async function requireInventoryStoreAccess(openId: string | null | undefined, st
   return actor;
 }
 
-async function detailWithPermission(openId: string | null | undefined, inventoryId: number, action: "view" | "edit") {
+async function detailWithPermission(openId: string | null | undefined, inventoryId: number, action: "view" | "edit", includeAccounting = false) {
   const detail = await getInventoryDetail(inventoryId);
   if (!detail) throw new TRPCError({ code: "NOT_FOUND", message: "Инвентаризация не найдена." });
   const actor = await requireInventoryStoreAccess(openId, detail.storeId, action);
-  return { actor, detail };
+  return { actor, detail: includeAccounting && actor.role !== "seller" ? await getInventoryDetail(inventoryId, { includeAccounting: true }) ?? detail : detail };
 }
 
 export const inventoryRegistryRouter = router({
-  products: protectedProcedure.query(async ({ ctx }) => {
-    await localActor(ctx.user.openId);
-    return listInventoryProducts();
+  products: protectedProcedure.input(z.object({ storeId: z.number().int().positive().optional() }).optional()).query(async ({ ctx, input }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (input?.storeId) await requireInventoryStoreAccess(ctx.user.openId, input.storeId, "view");
+    return listInventoryProducts({ storeId: input?.storeId, includeAccounting: actor.role !== "seller" && Boolean(input?.storeId) });
   }),
   list: protectedProcedure.input(z.object({ storeId: z.number().int().positive().optional(), limit: z.number().int().min(1).max(30).optional() }).optional()).query(async ({ ctx, input }) => {
     const actor = await localActor(ctx.user.openId);
@@ -57,7 +58,7 @@ export const inventoryRegistryRouter = router({
     return listStoreInventories({ storeIds, storeId: input?.storeId, limit: actor.role === "seller" ? Math.min(input?.limit ?? 5, 5) : input?.limit });
   }),
   detail: protectedProcedure.input(z.object({ inventoryId: z.number().int().positive() })).query(async ({ ctx, input }) => {
-    const { detail } = await detailWithPermission(ctx.user.openId, input.inventoryId, "view");
+    const { detail } = await detailWithPermission(ctx.user.openId, input.inventoryId, "view", true);
     return detail;
   }),
   create: protectedProcedure.input(z.object({ storeId: z.number().int().positive(), businessDate: dateInput, note: z.string().max(1_000).optional() })).mutation(async ({ ctx, input }) => {

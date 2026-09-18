@@ -62,4 +62,13 @@ describe("контракт страницы Выручка", () => {
     expect(router).toContain('if (account.mustChangePassword) throw new TRPCError');
     expect(router).toContain('Сначала измените первичный пароль в профиле');
   });
+
+  it("собирает ежедневную передачу в раскрываемую форму с отдельными блоками оплат и расходов", () => {
+    expect(page).toContain('className="packet-card revenue-entry-card" open');
+    expect(page).toContain('className="revenue-entry-summary"');
+    expect(page).toContain('ОПЛАТЫ');
+    expect(page).toContain('НАЛИЧНЫЕ РАСХОДЫ');
+    expect(styles).toContain('.packet .revenue-entry-card:not([open]) .revenue-entry-summary');
+    expect(styles).toContain('.packet .revenue-field-section');
+  });
 });

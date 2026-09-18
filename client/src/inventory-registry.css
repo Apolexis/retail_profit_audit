@@ -32,11 +32,14 @@
 .packet .inventory-note-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: end; }
 .packet .inventory-note-form .subtle-button,
 .packet .inventory-line-create .packet-link { min-height: 38px; margin: 0; white-space: nowrap; }
-.packet .inventory-line-create { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(210px, 1.1fr) minmax(150px, .65fr) auto; gap: 12px; align-items: end; padding: 14px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface-2); }
+.packet .inventory-line-create { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(210px, 1.1fr) minmax(130px, .6fr) minmax(150px, .65fr) auto; gap: 12px; align-items: end; padding: 14px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface-2); }
 .packet .inventory-search { position: relative; display: grid; align-items: center; }
-.packet .inventory-search svg { position: absolute; left: 10px; color: var(--faint); pointer-events: none; }
+.packet .inventory-search svg { position: absolute; right: 10px; color: var(--faint); pointer-events: none; }
 .packet .inventory-line-create input { width: 100%; min-width: 0; height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--ink); font: 700 13px Manrope, Arial, sans-serif; outline: none; }
-.packet .inventory-search input { padding-left: 31px; }
+.packet .inventory-search input { padding-right: 31px; }
+.packet .inventory-accounting-readout { display: grid; align-content: center; min-height: 40px; gap: 3px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); }
+.packet .inventory-accounting-readout > span { color: var(--muted); font: 800 9px Manrope, Arial, sans-serif; letter-spacing: .07em; text-transform: uppercase; }
+.packet .inventory-accounting-readout > strong { overflow: hidden; color: var(--ink); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .packet .inventory-lines-wrap { overflow-x: auto; cursor: default; }
 .packet .inventory-lines { min-width: 660px; }
 .packet .inventory-lines tbody tr:nth-child(even) { background: color-mix(in srgb, var(--surface-2) 72%, transparent); }
@@ -82,3 +85,11 @@
   .packet .inventory-history-list > button { grid-template-columns: 1fr; }
   .packet .inventory-history-list > button b { grid-column: 1; grid-row: auto; justify-self: start; }
 }
+
+/* Операционный контур использует те же спокойные границы, что и «Сигналы»: в темной теме нет белого контура. */
+html[data-audit-theme="dark"] .packet :is(.inventory-create-card, .inventory-draft-card, .inventory-history, .inventory-rule-disclosure) { border-color: #533043; box-shadow: none; }
+html[data-audit-theme="dark"] .packet .inventory-history-list > button { border-color: #4a3745; background: #151019; }
+html[data-audit-theme="dark"] .packet .inventory-history-list > button.selected { border-color: #a85b72; background: #21151f; }
+html[data-audit-theme="dark"] .packet .inventory-line-create,
+html[data-audit-theme="dark"] .packet .inventory-accounting-readout { border-color: #473747; background: #121824; }
+html[data-audit-theme="dark"] .packet .inventory-lines tbody tr:nth-child(even) { background: rgba(255,255,255,.025); }

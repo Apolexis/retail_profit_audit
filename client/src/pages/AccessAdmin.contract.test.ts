@@ -91,4 +91,16 @@ describe("матрица доступа к импорту",()=>{
     expect(page).toContain('minLength={role === "seller" ? undefined : 10}');
     expect(page).toContain('ключ доступа для магазина отключен');
   });
+
+  it("объединяет аналитика в одну роль и дает администратору сменить роль выбранной записи",()=>{
+    const page=readFileSync(resolve(process.cwd(),"client/src/pages/AccessAdmin.tsx"),"utf8");
+    expect(page).toContain('<strong>Аналитик</strong>');
+    expect(page).toContain('выбирает «Просмотр» или «Изменение»');
+    expect(page).not.toContain('Аналитик · просмотр');
+    expect(page).not.toContain('Аналитик · изменение');
+    expect(page).toContain('СТАТУС И РОЛЬ УЧЕТНОЙ ЗАПИСИ');
+    expect(page).toContain('Сменить роль');
+    expect(page).toContain('role: selectedRole');
+    expect(overrides).toContain('.packet .account-role-change');
+  });
 });
