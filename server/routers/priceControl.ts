@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getCurrentLocalAccount, hasPriceAccess } from "../accessControl";
 import { protectedProcedure, router } from "../_core/trpc";
-import { assignPriceProductLinkGroup, backfillPriceImportLinkNames, bulkAssignPriceCategory, bulkSetPriceLinkGroupsActive, bulkSetPriceOfferMarketByProducts, bulkSetPriceProductsActive, createManualPriceOffer, createPriceCategory, createPriceProduct, createPriceProductCharacteristic, createPriceSupplier, createPriceSupplierAlias, deletePriceImport, deletePriceImportRow, deletePriceLinkGroup, deletePriceOffer, deletePriceSupplier, getPriceCategoryAuditState, getPriceImportAuditState, getPriceImportDownload, getPriceImportRowAuditState, getPriceLinkGroupAuditState, getPriceOfferAuditState, getPriceOfferMarketAuditState, getPriceProductAuditState, getPriceProductCharacteristicAuditState, getPriceProductsAuditStates, getPriceSupplierAuditState, linkPriceImportRow, listPriceControlData, reassignPriceSupplierAlias, repairPriceProductLinkCodes, repairRecognizedPriceProductVariants, seedPriceOfferPlaceContentsCharacteristics, setPriceSupplierActive, unlinkPriceSupplierAlias, updatePriceCategory, updatePriceImportDate, updatePriceImportRowCategory, updatePriceLinkGroup, updatePriceOffer, updatePriceProduct, updatePriceProductCharacteristic, updatePriceSupplier } from "../priceControl";
+import { assignPriceProductLinkGroup, backfillPriceImportLinkNames, bulkAssignPriceCategory, bulkSetPriceLinkGroupsActive, bulkSetPriceOfferMarketByProducts, bulkSetPriceProductsActive, createManualPriceOffer, createPriceCategory, createPriceProduct, createPriceProductCharacteristic, createPriceSupplier, createPriceSupplierAlias, deletePriceImport, deletePriceImportRow, deletePriceLinkGroup, deletePriceOffer, deletePriceSupplier, getPriceCategoryAuditState, getPriceImportAuditState, getPriceImportDownload, getPriceImportRowAuditState, getPriceLinkGroupAuditState, getPriceOfferAuditState, getPriceOfferMarketAuditState, getPriceProductAuditState, getPriceProductCharacteristicAuditState, getPriceProductsAuditStates, getPriceSupplierAuditState, linkPriceImportRow, listPriceControlData, reassignPriceSupplierAlias, repairPriceProductLinkCodes, repairRecognizedPriceProductVariants, seedPriceOfferPlaceContentsCharacteristics, setPriceSupplierActive, unassignPriceProductLinkGroup, unlinkPriceSupplierAlias, updatePriceCategory, updatePriceImportDate, updatePriceImportRowCategory, updatePriceLinkGroup, updatePriceOffer, updatePriceProduct, updatePriceProductCharacteristic, updatePriceSupplier } from "../priceControl";
 import { recordChange } from "../localAuth";
 
 async function requirePricePermission(openId: string | null | undefined, required: "view" | "upload" | "edit") {
@@ -52,6 +52,12 @@ export const priceControlRouter = router({
     await requirePricePermission(ctx.user.openId, "edit");
     const actor = await localActor(ctx.user.openId); const before = await getPriceProductAuditState(input.productId); const product = await assignPriceProductLinkGroup(input);
     await recordChange({ actorId: actor.id, action: "price_product.link_group_assign", entityType: "price_product", entityId: String(product.id), beforeState: before, afterState: await getPriceProductAuditState(product.id) });
+    return product;
+  }),
+  unassignProductLinkGroup: protectedProcedure.input(z.object({ productId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+    await requirePricePermission(ctx.user.openId, "edit");
+    const actor = await localActor(ctx.user.openId); const before = await getPriceProductAuditState(input.productId); const product = await unassignPriceProductLinkGroup(input.productId);
+    await recordChange({ actorId: actor.id, action: "price_product.link_group_remove", entityType: "price_product", entityId: String(product.id), beforeState: before, afterState: await getPriceProductAuditState(product.id) });
     return product;
   }),
   bulkSetLinkGroupActive: protectedProcedure.input(z.object({ linkGroupIds: z.array(z.number().int().positive()).min(1).max(300), isActive: z.boolean() })).mutation(async ({ ctx, input }) => {

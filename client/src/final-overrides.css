@@ -3252,7 +3252,8 @@ html[data-audit-theme="dark"] .packet .subtle-danger:hover { border-color: #ff85
   .packet .price-preview-table > div span { grid-column: 1 / -1; }
   .packet .price-preview-table > div small { grid-column: 1 / -1; }
   .packet .price-import-list article, .packet .price-directory-list article { grid-template-columns: minmax(0, 1fr); }
-  .packet .price-import-actions { justify-content: start; }
+  .packet .price-import-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; justify-content: stretch; }
+  .packet .price-import-actions .packet-link { width: 100%; min-width: 0; justify-content: center; padding-inline: 6px; font-size: 10px; }
   .packet .price-import-meta { display: grid; grid-template-columns: minmax(0, 1fr); }
   .packet .price-import-meta :is(label, .price-import-date-control) { min-width: 0; }
   .packet .price-directory-editor, .packet .price-directory-editor.supplier { grid-template-columns: minmax(0, 1fr); }
@@ -4522,9 +4523,10 @@ html[data-audit-theme] .packet .packet-card:is(.price-upload, .price-import-guid
 .packet .price-offer-tooltip-details dt { color: var(--price-muted); font: 750 8px/1.1 "IBM Plex Mono", monospace; letter-spacing: .05em; text-transform: uppercase; }
 .packet .price-offer-tooltip-details dd { margin: 2px 0 0; overflow-wrap: anywhere; color: var(--price-ink); font-size: 10px; }
 .packet .price-offer-tooltip .price-change { margin-top: 2px; }
-.packet .price-history-tooltip { max-height: 300px; }
+.packet .price-history-tooltip { width: min(346px, calc(100vw - 24px)); max-width: calc(100vw - 24px); max-height: 300px; }
 .packet .price-history-tooltip-date { display: block; margin-bottom: 8px; color: var(--price-muted); font: 750 9px/1.2 "IBM Plex Mono", monospace; }
 .packet .price-history-tooltip section + section { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--price-border); }
+@media (max-width: 560px) { .packet .price-history-tooltip { width: min(306px, calc(100vw - 24px)); padding: 9px; } }
 
 /* Справочник: компактные операции и раскрываемые списки вместо стены chips. */
 .packet .price-directory-actions { display: flex !important; flex: 0 0 auto !important; width: auto !important; align-items: center; justify-content: flex-end; gap: 6px; }
@@ -4694,6 +4696,9 @@ html[data-audit-theme] .packet .packet-card:is(.price-upload, .price-import-guid
 .packet .price-saved-import-editor > label { display: grid; gap: 4px; color: var(--price-muted); font-size: 10px; }
 .packet .price-saved-import-editor > small { align-self: center; color: var(--price-muted); font-size: 10px; line-height: 1.35; }
 .packet .price-saved-import-editor > div { display: flex; flex-wrap: wrap; gap: 5px; }
+.packet .price-saved-import-editor-actions { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px !important; }
+.packet .price-saved-import-editor-actions .packet-link { justify-content: center; min-width: 0; }
+.packet .price-saved-import-editor-actions .packet-link:last-child { grid-column: 1 / -1; width: 100%; }
 .packet .price-saved-import-editor .packet-link { min-height: 30px; padding-inline: 8px; }
 .packet .price-saved-import-limit { margin: 10px 0 0; }
 
@@ -4707,10 +4712,12 @@ html[data-audit-theme] .packet .packet-card:is(.price-upload, .price-import-guid
   .packet .price-import-preview .price-preview-table > .price-saved-import-row { grid-template-columns: 30px minmax(0, 1fr) auto; gap: 6px 8px; }
   .packet .price-saved-import-main { grid-column: 2; }
   .packet .price-saved-import-row > b { grid-column: 2; }
-  .packet .price-saved-import-row > small { grid-column: 2; white-space: normal; }
-  .packet .price-saved-import-actions { grid-column: 3; grid-row: 1 / span 3; align-self: start; flex-direction: column; }
+  .packet .price-saved-import-row > small { grid-column: 2 / -1; white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+  .packet .price-saved-import-actions { grid-column: 3; grid-row: 1; align-self: start; flex-direction: column; }
   .packet .price-saved-import-editor { grid-column: 1 / -1; grid-template-columns: 1fr; }
   .packet .price-saved-import-editor > div { justify-content: flex-start; }
+  .packet .price-saved-import-editor-actions { grid-template-columns: minmax(0, 1fr); }
+  .packet .price-saved-import-editor-actions .packet-link { grid-column: auto !important; width: 100%; }
 }
 @media (max-width: 420px) {
   .packet .price-preview-price-edit { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; }
@@ -4935,9 +4942,8 @@ html[data-audit-theme] .packet .packet-card:is(.price-upload, .price-import-guid
     gap: 6px 8px;
   }
   .packet .price-saved-import-main,
-  .packet .price-saved-import-row > b,
-  .packet .price-saved-import-row > small { grid-column: 2; }
-  .packet .price-saved-import-row > small { white-space: normal; overflow-wrap: anywhere; }
+  .packet .price-saved-import-row > b { grid-column: 2; }
+  .packet .price-saved-import-row > small { grid-column: 2 / -1; white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
 }
 @media (max-width: 380px) {
   .packet .price-link-name-actions .packet-link,
@@ -5041,11 +5047,12 @@ html[data-audit-theme] .packet .packet-card:is(.price-upload, .price-import-guid
 .packet .price-link-products > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; padding: 7px 8px; border: 1px solid color-mix(in srgb, var(--price-border) 88%, transparent); border-radius: 8px; background: color-mix(in srgb, var(--price-surface) 97%, var(--price-accent) 3%); }
 .packet .price-link-products strong { min-width: 0; overflow: hidden; color: var(--price-ink); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .packet .price-link-products small { min-width: 0; overflow: hidden; color: var(--price-muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
-.packet .price-link-products .packet-link { grid-column: 2; grid-row: 1 / span 2; min-height: 29px; white-space: nowrap; }
+.packet .price-link-product-actions { display: flex; grid-column: 2; grid-row: 1 / span 2; flex-wrap: wrap; justify-content: flex-end; gap: 5px; }
+.packet .price-link-product-actions .packet-link { min-height: 29px; white-space: nowrap; }
 @media (hover: hover) and (pointer: fine) { .packet .price-alias-group:hover { border-color: color-mix(in srgb, var(--price-accent) 55%, var(--price-border)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--price-accent) 16%, transparent); transform: none; } }
 .packet .price-alias-group:focus-within { border-color: color-mix(in srgb, var(--price-accent) 62%, var(--price-border)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--price-accent) 16%, transparent); }
 @media (max-width: 760px) { .packet .price-link-new-product { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .packet .price-link-new-product > input { grid-column: 1 / -1; } .packet .price-link-new-product .packet-link { justify-content: center; } }
-@media (max-width: 460px) { .packet .price-link-new-product { grid-template-columns: minmax(0, 1fr); } .packet .price-link-products > div { grid-template-columns: minmax(0, 1fr); } .packet .price-link-products .packet-link { grid-column: 1; grid-row: auto; justify-self: start; } }
+@media (max-width: 460px) { .packet .price-link-new-product { grid-template-columns: minmax(0, 1fr); } .packet .price-link-products > div { grid-template-columns: minmax(0, 1fr); } .packet .price-link-product-actions { grid-column: 1; grid-row: auto; justify-content: flex-start; } }
 
 /* Operational row triggers keep the parent card contour; inherited generic button hover must not paint a second blue rectangle. */
 html[data-audit-theme="dark"] .packet .inventory-history-select:hover,

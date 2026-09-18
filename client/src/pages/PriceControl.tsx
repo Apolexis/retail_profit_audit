@@ -514,6 +514,10 @@ export default function PriceControl({
     onSuccess: () => { invalidate(); toast.success("Товар добавлен в связь"); },
     onError: error => toast.error(error.message),
   });
+  const unassignProductLinkGroup = trpc.priceControl.unassignProductLinkGroup.useMutation({
+    onSuccess: () => { invalidate(); toast.success("Товар убран из связи; цены и история сохранены"); },
+    onError: error => toast.error(error.message),
+  });
   const bulkSetLinkGroupActive = trpc.priceControl.bulkSetLinkGroupActive.useMutation({
     onSuccess: result => {
       invalidate();
@@ -850,7 +854,6 @@ export default function PriceControl({
   } | null>(null);
   const [editingSavedImportRowId, setEditingSavedImportRowId] = useState<number | null>(null);
   const [savedImportLinkTargets, setSavedImportLinkTargets] = useState<Record<number, string>>({});
-  const [savedImportLinkSearches, setSavedImportLinkSearches] = useState<Record<number, string>>({});
   const [savedImportCategoryDrafts, setSavedImportCategoryDrafts] = useState<Record<number, string>>({});
   const [editingLinkNameProductId, setEditingLinkNameProductId] = useState<number | null>(null);
   const [linkNameDrafts, setLinkNameDrafts] = useState<Record<number, string>>({});
@@ -878,23 +881,23 @@ export default function PriceControl({
       (visibilityFilter === "active" ? visible : !visible);
   };
   const catalogProducts = overview.data?.products ?? [];
-  const productLinkOptions = (query: string, selectedValue = "") => {
+  const productLinkOptions = (query = "", selectedValue = "") => {
     const normalizedQuery = query.trim().toLocaleLowerCase("ru");
-    const active = catalogProducts.filter(product => product.isActive);
-    const matches = active.filter(product =>
-      !normalizedQuery ||
-      `${product.canonicalName} ${product.internalCode} ${product.category ?? ""}`
-        .toLocaleLowerCase("ru")
-        .includes(normalizedQuery)
-    );
-    const selected = active.find(product => String(product.id) === selectedValue);
-    const compact = normalizedQuery ? matches : matches.slice(0, 40);
-    const options = selected && !compact.some(product => product.id === selected.id)
-      ? [selected, ...compact]
-      : compact;
-    return options.map(product => ({
+    const options = linkGroups
+      .filter(group => group.isActive)
+      .flatMap(group => {
+        const product = group.products.find(item => item.isActive);
+        return product ? [{ group, product }] : [];
+      })
+      .filter(({ group }) => !normalizedQuery || `${group.linkCode} ${group.canonicalName}`.toLocaleLowerCase("ru").includes(normalizedQuery))
+      .sort((left, right) => left.group.canonicalName.localeCompare(right.group.canonicalName, "ru"));
+    const selected = options.find(({ product }) => String(product.id) === selectedValue);
+    const allOptions = selected && !options.some(({ product }) => product.id === selected.product.id)
+      ? [selected, ...options]
+      : options;
+    return allOptions.map(({ group, product }) => ({
       value: String(product.id),
-      label: `${product.canonicalName} · ${product.linkCode ?? product.internalCode}`,
+      label: `${group.linkCode} · ${group.canonicalName}`,
     }));
   };
   const savedImportSuppliers = useMemo(
@@ -3264,7 +3267,9 @@ export default function PriceControl({
                         {row.priceAmount === null ? "цена не указана" : `${formatMoney(row.priceAmount)} ₽`}
                       </b>
                       <small className={row.productName ? "price-saved-import-linked" : "price-saved-import-unlinked"}>
-                        {row.productName ? `Имя связи: ${row.productName}` : "Имя связи будет создано при изменении"}
+                        {row.productName
+                          ? `Имя связи: ${row.linkGroupCode ? `${row.linkGroupCode} · ` : ""}${row.linkGroupName ?? row.productName}`
+                          : "Имя связи будет создано при изменении"}
                       </small>
                       {canEdit && (
                         <div className="price-saved-import-actions">
@@ -3274,7 +3279,7 @@ export default function PriceControl({
                             onClick={() => setEditingSavedImportRowId(current => current === row.rowId ? null : row.rowId)}
                           >
                             <Pencil size={14} />
-                            Изменить
+                            {isEditing ? "Отменить" : "Изменить"}
                           </button>
                           <button
                             type="button"
@@ -3291,24 +3296,11 @@ export default function PriceControl({
                         <div className="price-saved-import-editor">
                           <label>
                             Выбрать имя связи
-                            <input
-                              className="price-product-link-search"
-                              value={savedImportLinkSearches[row.rowId] ?? ""}
-                              onChange={event => setSavedImportLinkSearches(current => ({
-                                ...current,
-                                [row.rowId]: event.target.value,
-                              }))}
-                              placeholder="Поиск имени связи или кода"
-                              aria-label={`Поиск имени связи для «${row.rawName}»`}
-                            />
                             <PriceSelect
                               value={currentTarget}
                               onValueChange={value => setSavedImportLinkTargets(current => ({ ...current, [row.rowId]: value }))}
                               placeholder={row.productName ? `Оставить: ${row.productName}` : "Выберите имя связи"}
-                              options={productLinkOptions(
-                                savedImportLinkSearches[row.rowId] ?? "",
-                                currentTarget
-                              )}
+                              options={productLinkOptions("", currentTarget)}
                             />
                           </label>
                           {!currentTarget && (
@@ -3332,7 +3324,7 @@ export default function PriceControl({
                             />
                           </label>
                           <small>Имя связи объединяет разные названия поставщиков. Следующие прайсы этого поставщика будут находить его автоматически.</small>
-                          <div>
+                          <div className="price-saved-import-editor-actions">
                             <button
                               type="button"
                               className="packet-link compact"
@@ -4581,7 +4573,7 @@ export default function PriceControl({
                       {editingLinkNameProductId === group.id ? <div className="price-link-name-editor"><input value={linkNameDrafts[group.id] ?? group.canonicalName} onChange={event => setLinkNameDrafts(current => ({ ...current, [group.id]: event.target.value }))} aria-label={`Изменить имя связи «${group.canonicalName}»`}/><button type="button" className="packet-link compact" disabled={updateLinkGroup.isPending} onClick={() => { const canonicalName = (linkNameDrafts[group.id] ?? group.canonicalName).trim(); if (canonicalName.length < 2) { toast.error("Имя связи должно содержать не менее двух символов."); return; } updateLinkGroup.mutate({ id: group.id, canonicalName }); setEditingLinkNameProductId(null); }}><Save size={13}/>Сохранить</button><button type="button" className="packet-link compact subtle" onClick={() => setEditingLinkNameProductId(null)}>Отменить</button></div> : <div className="price-link-name-actions"><button type="button" className="packet-link compact subtle" onClick={() => { setLinkNameDrafts(current => ({ ...current, [group.id]: group.canonicalName })); setEditingLinkNameProductId(group.id); }}><Pencil size={13}/>Изменить связь</button><button type="button" className="packet-link compact subtle" onClick={() => setNewGroupProductDrafts(current => ({ ...current, [group.id]: current[group.id] ?? { productIds: [] } }))}><Plus size={13}/>Добавить товары</button><button type="button" className="packet-link compact subtle" onClick={() => updateLinkGroup.mutate({ id: group.id, canonicalName: group.canonicalName, isActive: !group.isActive })}>{group.isActive ? <EyeOff size={13}/> : <Eye size={13}/>}{group.isActive ? "Скрыть" : "Показать"}</button>{group.products.length === 0 && <button type="button" className="packet-link compact subtle" disabled={deleteLinkGroup.isPending} onClick={() => { if (window.confirm(`Удалить имя связи «${group.canonicalName}»?`)) deleteLinkGroup.mutate({ id: group.id }); }}><Trash2 size={13}/>Удалить</button>}</div>}
                       {newGroupProductDrafts[group.id] && <form className="price-link-new-product" onSubmit={async event => { event.preventDefault(); if (!draft.productIds.length) return; await Promise.all(draft.productIds.map(productId => assignProductLinkGroup.mutateAsync({ productId: Number(productId), linkGroupId: group.id }))); setNewGroupProductDrafts(current => { const next = { ...current }; delete next[group.id]; return next; }); }}><PriceSelect value="" onValueChange={productId => setNewGroupProductDrafts(current => ({ ...current, [group.id]: { productIds: Array.from(new Set([...(current[group.id]?.productIds ?? []), productId])) } }))} placeholder="Найти и добавить товар" options={catalogProducts.filter(product => product.linkGroupId !== group.id && !draft.productIds.includes(String(product.id))).map(product => ({ value: String(product.id), label: `${product.canonicalName} · ${product.category ?? "Без категории"}` }))}/>{draft.productIds.length > 0 && <div className="price-link-picked-products">{draft.productIds.map(productId => { const product = catalogProducts.find(item => String(item.id) === productId); return <button type="button" key={productId} onClick={() => setNewGroupProductDrafts(current => ({ ...current, [group.id]: { productIds: (current[group.id]?.productIds ?? []).filter(item => item !== productId) } }))}>{product?.canonicalName ?? "Товар"}<X size={12}/></button>; })}</div>}<button className="packet-link compact" disabled={assignProductLinkGroup.isPending || !draft.productIds.length}><Plus size={13}/>Добавить выбранные</button><button type="button" className="packet-link compact subtle" onClick={() => setNewGroupProductDrafts(current => { const next = { ...current }; delete next[group.id]; return next; })}>Отменить</button></form>}
                     </div>
-                    <div className="price-link-products"><span>Товары в связи</span>{group.products.map(product => <div key={product.id}><strong>{product.canonicalName}</strong><small>{product.internalCode} · {product.category ?? "Без категории"}</small><button type="button" className="packet-link compact subtle" onClick={() => { setDirectoryTab("products"); setDirectoryProductSearch(product.canonicalName); }}>Открыть товар</button></div>)}</div>
+                    <div className="price-link-products"><span>Товары в связи</span>{group.products.map(product => <div key={product.id}><strong>{product.canonicalName}</strong><small>{product.internalCode} · {product.category ?? "Без категории"}</small><div className="price-link-product-actions"><button type="button" className="packet-link compact subtle" onClick={() => { setDirectoryTab("products"); setDirectoryProductSearch(product.canonicalName); }}>Открыть товар</button><button type="button" className="packet-link compact subtle" disabled={unassignProductLinkGroup.isPending} onClick={() => unassignProductLinkGroup.mutate({ productId: product.id })}><X size={13}/>Убрать из связи</button></div></div>)}</div>
                   </article>;
                 })}
               </div> : <div className="empty-state compact"><Search size={22}/><p>Связи по этому поиску не найдены.</p></div>}

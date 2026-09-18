@@ -3,6 +3,18 @@ import * as XLSX from "xlsx";
 import { calculatePriceChanges, calculatePriceOfferExpiry, deduplicatePdfRows, extractVariant, normalizePackagingDisplay, normalizePlaceContents, normalizePrice, normalizeProductDisplayName, normalizeProductName, packagingSignature, parseDocxTableRows, parseExcel, parsePdfExtractedText, parsePdfPositionedPages, preparePriceImportRows, productSignature, resolvePriceMapping, sourceDateFromText, synchronizePlaceContentsBasis } from "./priceControl";
 import { readFileSync } from "node:fs";
 
+const priceServiceSource = readFileSync(new URL("./priceControl.ts", import.meta.url), "utf8");
+const priceRouterSource = readFileSync(new URL("./routers/priceControl.ts", import.meta.url), "utf8");
+
+describe("прайс‑контроль: безопасное снятие со связи", () => {
+  it("отсоединяет только группу сравнения и оставляет товар с его ценовой историей", () => {
+    expect(priceServiceSource).toContain("export async function unassignPriceProductLinkGroup");
+    expect(priceServiceSource).toContain("set({ linkGroupId: null })");
+    expect(priceRouterSource).toContain("unassignProductLinkGroup:");
+    expect(priceRouterSource).toContain('action: "price_product.link_group_remove"');
+  });
+});
+
 describe("прайс‑контроль: нормализация товарных строк", () => {
   it("сводит сёмгу, скобки и размерный диапазон к одной товарной сигнатуре", () => {
     expect(normalizeProductName("Лосось 2-3")).toBe("лосось 2-3");

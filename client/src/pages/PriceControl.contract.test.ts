@@ -40,6 +40,9 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("Выбрать имя связи");
     expect(page).toContain("Сохранить связь");
     expect(page).toContain("editingSavedImportRowId");
+		expect(page).toContain('isEditing ? "Отменить" : "Изменить"');
+		expect(page).toContain("price-saved-import-editor-actions");
+		expect(page).not.toContain("savedImportLinkSearches");
 		expect(styles).toContain(".packet .price-saved-import-row");
 	});
 
@@ -78,13 +81,13 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain(".packet .price-import-controls");
   });
 
-  it("дает искать товар непосредственно перед установкой связи в новом и сохраненном импорте", () => {
-    expect(page).toContain("previewProductLinkSearches");
-    expect(page).toContain("savedImportLinkSearches");
-    expect(page).toContain("const productLinkOptions");
-    expect(page).toContain("Поиск имени связи или кода");
-    expect(styles).toContain(".packet .price-product-link-search");
-  });
+	it("дает искать имя связи внутри списка выбора без дублирующего поля в сохраненном импорте", () => {
+		expect(page).toContain("previewProductLinkSearches");
+		expect(page).toContain("const productLinkOptions");
+		expect(page).toContain("group.linkCode");
+		expect(page).toContain("group.canonicalName");
+		expect(styles).toContain(".packet .price-product-link-search");
+	});
 
   it("объясняет точную связь названия поставщика с именем для сравнения", () => {
     expect(page).toContain("Выберите имя, под которым позиция будет показываться в");
@@ -222,7 +225,10 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("price-directory-prices");
     expect(page).toContain("Сохранённых цен пока нет");
     expect(page).toContain("Без категории");
+    expect(page).toContain("unassignProductLinkGroup");
+    expect(page).toContain("Убрать из связи");
     expect(styles).toContain(".packet .price-link-products");
+    expect(styles).toContain(".packet .price-link-product-actions");
   });
 
   it("дает товару выбрать или создать имя связи, а группам — безопасное массовое скрытие", () => {
@@ -260,6 +266,7 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("Состав места");
     expect(page).toContain('content={<PriceHistoryTooltip />}');
     expect(styles).toContain(".packet .price-offer-tooltip");
+    expect(styles).toContain(".packet .price-history-tooltip { width: min(346px, calc(100vw - 24px))");
   });
 
   it("нормализует десятичную запятую во всех редактируемых ценах сразу при вводе", () => {
