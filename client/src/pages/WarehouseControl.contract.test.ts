@@ -30,4 +30,12 @@ describe("warehouse control contract", () => {
     expect(styles).toContain('only the shared theme tokens decide surfaces and contours');
     expect(styles).toContain('.warehouse-table.data-table');
   });
+
+  it("allows a warehouse to join an editable print group", () => {
+    expect(page).toContain("createPrintGroup.useMutation");
+    expect(page).toContain("setWarehousePrintGroup.useMutation");
+    expect(page).toContain("Новая группа печати");
+    expect(page).toContain("Сохранить группу");
+    expect(page).toContain("Скрыть группу");
+  });
 });

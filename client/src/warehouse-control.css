@@ -54,3 +54,25 @@
 .packet .warehouse-filters > label { display: grid; gap: 6px; color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .06em; text-transform: uppercase; }
 .packet .warehouse-filters > label select { min-height: 40px; border-color: var(--warehouse-line); background: var(--warehouse-panel); color: var(--ink); }
 @media (max-width: 760px) { .packet .warehouse-filters { grid-template-columns: 1fr; } }
+
+.packet .warehouse-print-group-create {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--warehouse-line);
+}
+.packet .warehouse-print-group-create label { display: grid; gap: 5px; flex: 1 1 260px; color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+.packet .warehouse-print-group-create input { box-sizing: border-box; width: 100%; min-height: 34px; border: 1px solid var(--warehouse-line); border-radius: 9px; background: var(--warehouse-panel); color: var(--ink); padding: 0 10px; }
+.packet .warehouse-print-group-create input:focus-visible { outline: none; border-color: var(--warehouse-accent); box-shadow: 0 0 0 2px var(--warehouse-accent-faint); }
+@media (max-width: 640px) { .packet .warehouse-print-group-create > * { width: 100%; } .packet .warehouse-print-group-create .subtle-button { justify-content: center; } }
+
+.packet .warehouse-print-group-list { display: flex; flex-wrap: wrap; gap: 7px; }
+.packet .warehouse-print-group-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 5px 9px; border: 1px solid var(--warehouse-line); border-radius: 8px; background: transparent; color: var(--ink); font: 700 12px Manrope, Arial, sans-serif; }
+.packet .warehouse-print-group-chip:hover, .packet .warehouse-print-group-chip:focus-visible { border-color: var(--warehouse-accent); color: var(--warehouse-accent); outline: none; box-shadow: 0 0 0 2px var(--warehouse-accent-faint); }
+.packet .warehouse-print-group-editor { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; padding: 10px; border: 1px solid var(--warehouse-line); border-radius: 10px; background: var(--warehouse-panel); }
+.packet .warehouse-print-group-editor label { display: grid; gap: 5px; flex: 1 1 220px; color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+.packet .warehouse-print-group-editor input { box-sizing: border-box; min-height: 34px; width: 100%; padding: 0 10px; border: 1px solid var(--warehouse-line); border-radius: 8px; background: var(--warehouse-card); color: var(--ink); }
+@media (max-width: 640px) { .packet .warehouse-print-group-editor > .subtle-button { flex: 1 1 100%; justify-content: center; } }

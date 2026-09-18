@@ -4675,11 +4675,11 @@ html[data-audit-theme="dark"] .password-input-toggle { color: #c7bdcc; }
   .packet .price-alias-member .price-alias-actions .packet-link { justify-content: center; }
 }
 
-/* Сравнение: сначала читаемая таблица вариантов, затем динамика; столбцы-дубликаты не отвлекают. */
+/* Сравнение по паттерну «Ритма»: показатели, график, затем таблица вариантов. */
 .packet .price-detail { display: flex; flex-direction: column; gap: 13px; }
 .packet .price-detail > .price-detail-heading { order: 1; }
-.packet .price-detail > .price-offer-table { order: 2; margin: 0; }
-.packet .price-detail > .price-history-chart { order: 3; margin: 0; }
+.packet .price-detail > .price-history-chart { order: 2; margin: 0; }
+.packet .price-detail > .price-offer-table { order: 3; margin: 0; }
 .packet .price-detail > .price-chart-card { display: none; }
 .packet .price-history-chart { padding: 13px; border: 1px solid var(--price-border); border-radius: 14px; background: color-mix(in srgb, var(--price-surface) 96%, var(--price-accent) 4%); }
 .packet .price-history-chart > div:first-child { display: flex; align-items: end; justify-content: space-between; gap: 10px; }
@@ -4690,9 +4690,8 @@ html[data-audit-theme="dark"] .password-input-toggle { color: #c7bdcc; }
   .packet .price-history-chart > div:first-child::after { text-align: left; }
 }
 
-/* Ручная цена открывается прямо у выбранного имени связи, а не уводит в справочник. */
-.packet .price-detail > .price-comparison-manual-offer { order: 3; }
-.packet .price-detail > .price-history-chart { order: 4; }
+/* Ручная цена открывается после графика и таблицы выбранного имени связи. */
+.packet .price-detail > .price-comparison-manual-offer { order: 4; }
 .packet .price-comparison-manual-offer { display: grid; gap: 11px; padding: 13px; border: 1px solid var(--price-border); border-radius: 14px; background: color-mix(in srgb, var(--price-accent) 5%, var(--price-surface)); }
 .packet .price-comparison-manual-offer > div:first-child { display: grid; gap: 3px; }
 .packet .price-comparison-manual-offer > div:first-child > span { color: var(--price-muted); font: 750 9px/1.2 "IBM Plex Mono", monospace; letter-spacing: .07em; }
@@ -5020,3 +5019,9 @@ html[data-audit-theme="dark"] .packet :is(.revenue-registry, .inventory-layout, 
   box-shadow: 0 0 0 1px rgba(255, 118, 95, .18) !important;
   filter: none !important;
 }
+
+/* Charts inherit the operating theme; no white grid or marker halo appears in dark mode. */
+.packet .price-history-chart .recharts-cartesian-grid line { stroke: var(--price-border); }
+.packet .price-history-chart :is(.recharts-xAxis, .recharts-yAxis) text { fill: var(--price-muted); }
+.packet .price-history-chart .recharts-legend-item-text { color: var(--price-muted) !important; }
+.packet .price-history-chart .recharts-tooltip-wrapper { outline: none; }

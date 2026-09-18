@@ -2288,7 +2288,8 @@ export default function PriceControl({
                                       : "var(--price-muted)"
                                 }
                                 strokeWidth={2.4}
-                                dot={{ r: 3 }}
+                                dot={{ r: 3, stroke: "var(--price-surface)", strokeWidth: 2 }}
+                                activeDot={{ r: 5, stroke: "var(--price-surface)", strokeWidth: 2 }}
                                 connectNulls
                               />
                             ))}

@@ -374,6 +374,26 @@ export const operationalStorePriceTypes = mysqlTable("operational_store_price_ty
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => [unique("operational_store_price_type_store_uq").on(table.storeId)]);
 
+/** Editable print groups are shared by warehouse settings and future store requests. */
+export const operationalPrintGroups = mysqlTable("operational_print_groups", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 128 }).notNull(),
+  normalizedName: varchar("normalizedName", { length: 160 }).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [unique("operational_print_group_name_uq").on(table.normalizedName)]);
+
+/** One optional warehouse setup per existing internal store; hiding a store remains governed by audit_stores.isHidden. */
+export const operationalWarehouseSettings = mysqlTable("operational_warehouse_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  storeId: int("storeId").notNull(),
+  printGroupId: int("printGroupId"),
+  createdByAccountId: int("createdByAccountId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [unique("operational_warehouse_store_uq").on(table.storeId)]);
+
 /** A missing row intentionally means that the product has no stated sale price for the selected price type. */
 export const operationalProductSalePrices = mysqlTable("operational_product_sale_prices", {
   id: int("id").autoincrement().primaryKey(),

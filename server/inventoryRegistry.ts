@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, inArray } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, ne } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import {
   localAccounts,
@@ -10,10 +10,12 @@ import {
   operationalInventories,
   operationalInventoryLines,
   operationalPriceTypes,
+  operationalPrintGroups,
   operationalProductSalePrices,
   operationalStockMovements,
   operationalStoreMappings,
   operationalStorePriceTypes,
+  operationalWarehouseSettings,
   stores,
 } from "../drizzle/schema";
 import { getDb } from "./db";
@@ -453,6 +455,56 @@ export async function listOperationalPriceTypes(includeInactive = false) {
   return db.select().from(operationalPriceTypes).where(includeInactive ? undefined : eq(operationalPriceTypes.isActive, true)).orderBy(desc(operationalPriceTypes.isDefault), operationalPriceTypes.name).limit(100);
 }
 
+export async function listOperationalPrintGroups(includeInactive = false) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(operationalPrintGroups).where(includeInactive ? undefined : eq(operationalPrintGroups.isActive, true)).orderBy(operationalPrintGroups.name).limit(100);
+}
+
+export async function createOperationalPrintGroup(input: { name: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const name = normalizedText(input.name);
+  if (!name) throw new Error("Укажите название группы печати.");
+  const normalizedName = normalizedKey(name);
+  const [existing] = await db.select().from(operationalPrintGroups).where(eq(operationalPrintGroups.normalizedName, normalizedName)).limit(1);
+  if (existing) throw new Error("Такая группа печати уже существует.");
+  await db.insert(operationalPrintGroups).values({ name, normalizedName, isActive: true });
+  const [after] = await db.select().from(operationalPrintGroups).where(eq(operationalPrintGroups.normalizedName, normalizedName)).limit(1);
+  return after!;
+}
+
+export async function updateOperationalPrintGroup(input: { id: number; name: string; isActive: boolean }) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const [before] = await db.select().from(operationalPrintGroups).where(eq(operationalPrintGroups.id, input.id)).limit(1);
+  if (!before) throw new Error("Группа печати не найдена.");
+  const name = normalizedText(input.name);
+  const normalizedName = normalizedKey(name);
+  if (!name) throw new Error("Укажите название группы печати.");
+  const [sameName] = await db.select().from(operationalPrintGroups).where(and(eq(operationalPrintGroups.normalizedName, normalizedName), ne(operationalPrintGroups.id, input.id))).limit(1);
+  if (sameName) throw new Error("Такая группа печати уже существует.");
+  await db.update(operationalPrintGroups).set({ name, normalizedName, isActive: input.isActive }).where(eq(operationalPrintGroups.id, input.id));
+  const [after] = await db.select().from(operationalPrintGroups).where(eq(operationalPrintGroups.id, input.id)).limit(1);
+  return { before, after: after! };
+}
+
+export async function setOperationalWarehousePrintGroup(input: { storeId: number; printGroupId: number | null; actorId: number }) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const [store] = await db.select({ id: stores.id, name: stores.name, isHidden: stores.isHidden }).from(stores).where(eq(stores.id, input.storeId)).limit(1);
+  if (!store || store.isHidden) throw new Error("Рабочий склад не найден.");
+  if (input.printGroupId) {
+    const [group] = await db.select({ id: operationalPrintGroups.id, isActive: operationalPrintGroups.isActive }).from(operationalPrintGroups).where(eq(operationalPrintGroups.id, input.printGroupId)).limit(1);
+    if (!group || !group.isActive) throw new Error("Активная группа печати не найдена.");
+  }
+  const [before] = await db.select().from(operationalWarehouseSettings).where(eq(operationalWarehouseSettings.storeId, input.storeId)).limit(1);
+  if (before) await db.update(operationalWarehouseSettings).set({ printGroupId: input.printGroupId }).where(eq(operationalWarehouseSettings.id, before.id));
+  else await db.insert(operationalWarehouseSettings).values({ storeId: input.storeId, printGroupId: input.printGroupId, createdByAccountId: input.actorId });
+  const [after] = await db.select().from(operationalWarehouseSettings).where(eq(operationalWarehouseSettings.storeId, input.storeId)).limit(1);
+  return { before: before ?? null, after: after!, store };
+}
+
 export async function listOperationalSalePrices(priceTypeId?: number) {
   const db = await getDb();
   if (!db) return [];
@@ -544,10 +596,12 @@ export async function listOperationalWarehouses() {
   const db = await getDb();
   if (!db) return [];
   const rows = await db
-    .select({ storeId: stores.id, storeName: stores.name, isHidden: stores.isHidden, priceTypeId: operationalStorePriceTypes.priceTypeId, priceTypeName: operationalPriceTypes.name, evotorStoreName: operationalStoreMappings.evotorStoreName })
+    .select({ storeId: stores.id, storeName: stores.name, isHidden: stores.isHidden, priceTypeId: operationalStorePriceTypes.priceTypeId, priceTypeName: operationalPriceTypes.name, printGroupId: operationalWarehouseSettings.printGroupId, printGroupName: operationalPrintGroups.name, evotorStoreName: operationalStoreMappings.evotorStoreName })
     .from(stores)
     .leftJoin(operationalStorePriceTypes, eq(operationalStorePriceTypes.storeId, stores.id))
     .leftJoin(operationalPriceTypes, eq(operationalStorePriceTypes.priceTypeId, operationalPriceTypes.id))
+    .leftJoin(operationalWarehouseSettings, eq(operationalWarehouseSettings.storeId, stores.id))
+    .leftJoin(operationalPrintGroups, eq(operationalWarehouseSettings.printGroupId, operationalPrintGroups.id))
     .leftJoin(operationalStoreMappings, eq(operationalStoreMappings.storeId, stores.id))
     .orderBy(stores.name)
     .limit(200);
