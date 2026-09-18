@@ -93,3 +93,25 @@ html[data-audit-theme="dark"] .packet .inventory-history-list > button.selected 
 html[data-audit-theme="dark"] .packet .inventory-line-create,
 html[data-audit-theme="dark"] .packet .inventory-accounting-readout { border-color: #473747; background: #121824; }
 html[data-audit-theme="dark"] .packet .inventory-lines tbody tr:nth-child(even) { background: rgba(255,255,255,.025); }
+
+.packet .evotor-catalog-preview { display: grid; gap: 14px; margin: 18px 0; }
+.packet .evotor-catalog-preview > .packet-note { margin: -4px 0 0; max-width: 840px; }
+.packet .evotor-catalog-controls { display: grid; grid-template-columns: minmax(250px, .9fr) minmax(250px, 1.1fr); gap: 12px; }
+.packet .evotor-catalog-controls > label { display: grid; gap: 6px; min-width: 0; color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.packet .evotor-catalog-results { display: grid; gap: 10px; }
+.packet .evotor-catalog-summary { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 14px; color: var(--muted); font-size: 12px; }
+.packet .evotor-catalog-summary strong { color: var(--ink); font-size: 13px; }
+.packet .evotor-catalog-list { display: grid; gap: 5px; }
+.packet .evotor-catalog-list > article { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 11px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.packet .evotor-catalog-list > article > span { color: var(--faint); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .05em; white-space: nowrap; }
+.packet .evotor-catalog-list > article > div { display: grid; min-width: 0; gap: 2px; }
+.packet .evotor-catalog-list strong { overflow: hidden; color: var(--ink); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.packet .evotor-catalog-list small { color: var(--muted); font-size: 11px; }
+.packet .evotor-catalog-list > article > small { text-align: right; white-space: nowrap; }
+html[data-audit-theme="dark"] .packet .evotor-catalog-preview { border-color: #533043; box-shadow: none; }
+html[data-audit-theme="dark"] .packet .evotor-catalog-list > article { border-color: #473747; background: #121824; }
+@media (max-width: 760px) {
+  .packet .evotor-catalog-controls { grid-template-columns: 1fr; }
+  .packet .evotor-catalog-list > article { grid-template-columns: 38px minmax(0, 1fr); gap: 6px 9px; }
+  .packet .evotor-catalog-list > article > small { grid-column: 2; text-align: left; }
+}

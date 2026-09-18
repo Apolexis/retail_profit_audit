@@ -44,4 +44,14 @@ describe("интерфейс операционной инвентаризаци
     expect(css).toContain("@media (max-width: 760px)");
     expect(css).toContain(".packet .inventory-line-create { grid-template-columns: 1fr; }");
   });
+
+  it("дает администратору только read-only preview номенклатуры Эвотор", () => {
+    expect(page).toContain("ЭВОТОР · READ-ONLY PREVIEW");
+    expect(page).toContain("Номенклатура кассы без сохранения");
+    expect(page).toContain("trpc.evotorCatalog.stores");
+    expect(page).toContain("trpc.evotorCatalog.preview");
+    expect(page).toContain("Внутренний справочник не изменен");
+    expect(page).toContain("Показать еще");
+    expect(css).toContain(".packet .evotor-catalog-list > article");
+  });
 });

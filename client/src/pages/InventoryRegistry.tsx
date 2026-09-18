@@ -13,6 +13,8 @@ type InventoryUnit = "kg" | "l" | "piece";
 type InventoryProduct = { id: number; internalCode: string; canonicalName: string; category: string | null; variant: string | null; baseUnit: InventoryUnit; accountingQuantity: number | null };
 type InventoryDetail = { id: number; storeId: number; storeName: string; businessDate: string; status: "draft" | "closed"; note: string | null; createdByName: string; closedByName: string | null; closedAt: Date | string | null; lines: Array<{ id: number; productId: number; countedQuantity: number; unit: InventoryUnit; internalCode: string; canonicalName: string; category: string | null; variant: string | null; accountingQuantity?: number | null }> };
 type InventoryListItem = Omit<InventoryDetail, "lines" | "closedByName">;
+type EvotorCatalogStore = { id: string; name: string; address: string | null };
+type EvotorCatalogPreviewItem = { id: string; code: string | null; name: string; barcodes: string[]; unit: string | null; tax: string | null; type: string | null; parentId: string | null };
 
 const unitLabel: Record<InventoryUnit, string> = { kg: "кг", l: "л", piece: "шт" };
 const toMoscowDate = () => {
@@ -35,10 +37,15 @@ export default function InventoryRegistry() {
   const [productSearch, setProductSearch] = useState("");
   const [productId, setProductId] = useState("");
   const [quantity, setQuantity] = useState("");
+  const [evotorStoreId, setEvotorStoreId] = useState("");
+  const [evotorSearch, setEvotorSearch] = useState("");
+  const [visibleEvotorProducts, setVisibleEvotorProducts] = useState(40);
   const isSeller = me.data?.role === "seller";
   const isManager = me.data?.role === "manager";
   const isAdmin = me.data?.role === "admin";
   const selectedStoreId = Number(storeId);
+  const evotorStores = trpc.evotorCatalog.stores.useQuery(undefined, { enabled: isAdmin, retry: false });
+  const evotorPreview = trpc.evotorCatalog.preview.useQuery({ storeId: evotorStoreId }, { enabled: isAdmin && Boolean(evotorStoreId), retry: false });
   const products = trpc.inventoryRegistry.products.useQuery({ storeId: selectedStoreId || undefined }, { retry: false, enabled: Boolean(selectedStoreId) });
   const history = trpc.inventoryRegistry.list.useQuery({ storeId: selectedStoreId || undefined, limit: isSeller ? 5 : 10 }, { enabled: Boolean(me.data && (isSeller || isManager || isAdmin)), retry: false });
   const detail = trpc.inventoryRegistry.detail.useQuery({ inventoryId: activeInventoryId ?? 0 }, { enabled: Boolean(activeInventoryId), retry: false });
@@ -58,6 +65,12 @@ export default function InventoryRegistry() {
   }, [productSearch, products.data]);
   const selectedProduct = (products.data as InventoryProduct[] | undefined)?.find(product => product.id === Number(productId));
   const accountingByProduct = useMemo(() => new Map(((products.data ?? []) as InventoryProduct[]).map(product => [product.id, product.accountingQuantity])), [products.data]);
+  const filteredEvotorCatalog = useMemo(() => {
+    const query = evotorSearch.trim().toLocaleLowerCase("ru-RU");
+    const rows = (evotorPreview.data ?? []) as EvotorCatalogPreviewItem[];
+    return query ? rows.filter(product => `${product.name} ${product.code ?? ""} ${product.barcodes.join(" ")} ${product.unit ?? ""}`.toLocaleLowerCase("ru-RU").includes(query)) : rows;
+  }, [evotorPreview.data, evotorSearch]);
+  const visibleEvotorCatalog = filteredEvotorCatalog.slice(0, visibleEvotorProducts);
   const refresh = async () => {
     await Promise.all([utils.inventoryRegistry.list.invalidate(), utils.inventoryRegistry.detail.invalidate(), utils.audit.changes.invalidate()]);
   };
@@ -113,6 +126,14 @@ export default function InventoryRegistry() {
   return <AuditShell kicker="24 / ИНВЕНТАРИЗАЦИИ" title="Инвентаризации">
     <section className="page-lede inventory-lede"><div><span>УПРАВЛЕНИЕ МАГАЗИНАМИ</span><h2>Учет остатков и инвентаризация</h2><p>Сначала формируется рабочая номенклатура и учетный остаток точки. В пересчете фиксируется физический факт и показывается расхождение; продажные цены магазинов и себестоимость в этот экран не подмешиваются.</p></div></section>
     <details className="packet-card inventory-rule-disclosure"><summary><span>КАК УСТРОЕН ОСТАТОК</span><strong>Учетный остаток и факт — разные значения</strong></summary><div><ol><li>Номенклатура приходит из подтвержденного каталога и дополняется только в рабочем справочнике.</li><li>Учетный остаток складывается из закрытых инвентаризаций и будущих подтвержденных движений.</li><li>В пересчете вводится только физически посчитанный факт; ноль означает реально пустую позицию.</li><li>Расхождение рассчитывается как факт минус учетный остаток и попадает в общий журнал при закрытии.</li></ol><p className="packet-note">До загрузки исходной номенклатуры и первого закрытого пересчета система честно показывает «нет учетного остатка», а не рисует нули. Продавцу точные учетные остатки не раскрываются.</p></div></details>
+    {isAdmin && <section className="packet-card evotor-catalog-preview">
+      <div className="card-title"><div><span>ЭВОТОР · READ-ONLY PREVIEW</span><h3>Номенклатура кассы без сохранения</h3></div></div>
+      <p className="packet-note">Выберите магазин Эвотор и проверьте каталог. Это чтение Cloud API V2: позиции, цены, себестоимость и остатки не создаются и не меняются ни в приложении, ни в Эвоторе. Сохранение станет отдельным подтверждаемым шагом после сверки.</p>
+      <div className="evotor-catalog-controls"><label>Магазин Эвотор<ThemedSelect value={evotorStoreId} onChange={event => { setEvotorStoreId(event.target.value); setEvotorSearch(""); setVisibleEvotorProducts(40); }}><option value="">{evotorStores.isLoading ? "Загружаем магазины…" : "Выберите магазин"}</option>{(evotorStores.data as EvotorCatalogStore[] | undefined)?.map(store => <option key={store.id} value={store.id}>{store.name}{store.address ? ` · ${store.address}` : ""}</option>)}</ThemedSelect></label>{evotorStoreId && <label>Поиск в preview<div className="inventory-search"><input value={evotorSearch} onChange={event => { setEvotorSearch(event.target.value); setVisibleEvotorProducts(40); }} placeholder="Название, код или штрихкод"/><Search size={15}/></div></label>}</div>
+      {evotorPreview.isLoading && <p className="packet-note">Читаем каталог выбранного магазина…</p>}
+      {evotorPreview.isError && <p className="packet-note">Preview каталога недоступен: {evotorPreview.error.message}</p>}
+      {evotorPreview.data && <div className="evotor-catalog-results"><div className="evotor-catalog-summary"><strong>{filteredEvotorCatalog.length} позиций в preview</strong><span>Внутренний справочник не изменен</span></div><div className="evotor-catalog-list">{visibleEvotorCatalog.map((product, index) => <article key={product.id}><span>№ {index + 1}</span><div><strong>{product.name}</strong><small>{[product.code, product.unit === "дроб" ? "кг" : product.unit, product.tax].filter(Boolean).join(" · ") || "Параметры не указаны"}</small></div><small>{product.barcodes.length ? `${product.barcodes.length} штрихкодов` : "Без штрихкода"}</small></article>)}</div>{visibleEvotorCatalog.length < filteredEvotorCatalog.length && <button type="button" className="subtle-button" onClick={() => setVisibleEvotorProducts(limit => limit + 40)}>Показать еще</button>}</div>}
+    </section>}
     <section className="inventory-layout">
       <form className="packet-card inventory-create-card" onSubmit={openInventory}>
         <div className="card-title"><div><span>{active ? "ОТКРЫТЫЙ ПЕРЕСЧЕТ" : "НОВЫЙ ПЕРЕСЧЕТ"}</span><h3>{active ? `${active.storeName} · ${displayDate(active.businessDate)}` : "Открыть черновик"}</h3></div>{active ? <button type="button" className="subtle-button" onClick={startNewInventory}>Новый пересчет</button> : <ClipboardCheck size={20}/>}</div>
