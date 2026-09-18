@@ -4756,3 +4756,109 @@ html[data-audit-theme="dark"] .password-input-toggle { color: #c7bdcc; }
   .packet .price-history-chart .recharts-legend-item { margin-right: 0 !important; }
   .packet .price-history-chart .recharts-legend-item-text { font-size: 10px; }
 }
+/* Импорт прайсов: выбранный файл и поиск связи остаются компактными и понятными. */
+.packet .price-import-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 2px;
+}
+.packet .price-import-controls [data-slot="select-trigger"] { width: min(300px, 100%); }
+.packet .price-import-controls > small { flex: 1 1 auto; color: var(--price-muted); font-size: 10px; }
+.packet .price-product-link-search {
+  width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  padding: 6px 8px;
+  border: 1px solid var(--price-border);
+  border-radius: 8px;
+  background: var(--price-surface);
+  color: var(--price-ink);
+  font: 650 11px/1.25 Manrope, Arial, sans-serif;
+}
+.packet .price-product-link-search::placeholder { color: var(--price-muted); }
+.packet .price-preview-product-link .price-product-link-search { margin: 1px 0 2px; }
+
+/* Имя связи редактируется прямо в группе; добавление нового имени ведет к списку нераспознанных строк. */
+.packet .price-link-name-actions,
+.packet .price-link-name-editor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  margin-top: 5px;
+}
+.packet .price-link-name-actions .packet-link,
+.packet .price-link-name-editor .packet-link { min-height: 29px; padding-inline: 8px; }
+.packet .price-link-name-editor input {
+  flex: 1 1 220px;
+  min-width: 0;
+  min-height: 30px;
+  padding: 5px 8px;
+  border: 1px solid var(--price-border);
+  border-radius: 8px;
+  background: var(--price-surface);
+  color: var(--price-ink);
+  font: 650 11px/1.25 Manrope, Arial, sans-serif;
+}
+
+/* Телефон: удаление варианта цены занимает собственную строку, поэтому не перекрывает выбор единицы. */
+@media (max-width: 560px) {
+  .packet .price-preview-price-edit {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 5px 7px;
+  }
+  .packet .price-preview-price-edit > .price-preview-price-remove {
+    position: static !important;
+    grid-column: 2 !important;
+    grid-row: 3 !important;
+    justify-self: end;
+    align-self: start;
+    width: 30px;
+    min-width: 30px;
+    height: 32px;
+    min-height: 32px;
+  }
+  .packet .price-preview-product-link { min-width: 0; }
+  .packet .price-preview-product-link [data-slot="select-trigger"] { min-height: 38px; }
+  .packet .price-import-controls { align-items: stretch; }
+  .packet .price-import-controls [data-slot="select-trigger"],
+  .packet .price-import-controls > small,
+  .packet .price-import-controls > .packet-link { width: 100%; }
+
+  /* Справочник: текст получает всю строку, действия переходят ниже и больше не сжимают название в столбец. */
+  .packet .price-directory-list > article:has(.price-directory-selection-marker) {
+    grid-template-columns: 24px minmax(0, 1fr) !important;
+    gap: 7px 9px;
+    align-items: start;
+  }
+  .packet .price-directory-list > article:has(.price-directory-selection-marker) > .price-directory-selection-marker {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+  .packet .price-directory-list > article:has(.price-directory-selection-marker) > div:not(.price-directory-selection-marker):not(.price-directory-actions) {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .packet .price-directory-list > article:has(.price-directory-selection-marker) > .price-directory-actions {
+    grid-column: 2;
+    grid-row: 2;
+    justify-content: flex-start;
+    width: 100% !important;
+  }
+  .packet .price-directory-actions .packet-link { min-height: 31px; padding-inline: 8px !important; }
+
+  .packet .price-import-preview .price-preview-table > .price-saved-import-row {
+    grid-template-columns: 27px minmax(0, 1fr) auto;
+    gap: 6px 8px;
+  }
+  .packet .price-saved-import-main,
+  .packet .price-saved-import-row > b,
+  .packet .price-saved-import-row > small { grid-column: 2; }
+  .packet .price-saved-import-row > small { white-space: normal; overflow-wrap: anywhere; }
+}
+@media (max-width: 380px) {
+  .packet .price-link-name-actions .packet-link,
+  .packet .price-link-name-editor .packet-link { flex: 1 1 auto; justify-content: center; }
+}

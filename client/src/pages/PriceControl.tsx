@@ -682,6 +682,8 @@ export default function PriceControl({
     null
   );
   const [selectedImportId, setSelectedImportId] = useState<number | null>(null);
+  const [savedImportsSupplierFilter, setSavedImportsSupplierFilter] = useState("");
+  const [savedImportsLimit, setSavedImportsLimit] = useState(8);
   const [deleteCandidateId, setDeleteCandidateId] = useState<number | null>(
     null
   );
@@ -711,6 +713,7 @@ export default function PriceControl({
     Record<number, { manufacturer: string; placeContents: string; manufacturedOn: string; shelfLifeMonths: number | null; expiresOn: string }>
   >({});
   const [previewProductLinks, setPreviewProductLinks] = useState<Record<number, string>>({});
+  const [previewProductLinkSearches, setPreviewProductLinkSearches] = useState<Record<number, string>>({});
   const [excludedPreviewRowIndexes, setExcludedPreviewRowIndexes] = useState<number[]>([]);
   const [mobilePreviewPosition, setMobilePreviewPosition] = useState(0);
   const [mobilePreviewSwipeOffset, setMobilePreviewSwipeOffset] = useState(0);
@@ -762,8 +765,12 @@ export default function PriceControl({
   } | null>(null);
   const [editingSavedImportRowId, setEditingSavedImportRowId] = useState<number | null>(null);
   const [savedImportLinkTargets, setSavedImportLinkTargets] = useState<Record<number, string>>({});
+  const [savedImportLinkSearches, setSavedImportLinkSearches] = useState<Record<number, string>>({});
+  const [editingLinkNameProductId, setEditingLinkNameProductId] = useState<number | null>(null);
+  const [linkNameDrafts, setLinkNameDrafts] = useState<Record<number, string>>({});
   const categoryEditorRef = useRef<HTMLDivElement>(null);
   const supplierEditorRef = useRef<HTMLDivElement>(null);
+  const savedImportPreviewRef = useRef<HTMLElement>(null);
   const previewPriceKey = (rowIndex: number, optionIndex: number) => `${rowIndex}:${optionIndex}`;
   const previewAddedPriceKey = (rowIndex: number, id: string) => `${rowIndex}:${id}`;
 
@@ -781,6 +788,39 @@ export default function PriceControl({
       (visibilityFilter === "active" ? visible : !visible);
   };
   const catalogProducts = overview.data?.products ?? [];
+  const productLinkOptions = (query: string, selectedValue = "") => {
+    const normalizedQuery = query.trim().toLocaleLowerCase("ru");
+    const active = catalogProducts.filter(product => product.isActive);
+    const matches = active.filter(product =>
+      !normalizedQuery ||
+      `${product.canonicalName} ${product.internalCode} ${product.category ?? ""}`
+        .toLocaleLowerCase("ru")
+        .includes(normalizedQuery)
+    );
+    const selected = active.find(product => String(product.id) === selectedValue);
+    const compact = normalizedQuery ? matches : matches.slice(0, 40);
+    const options = selected && !compact.some(product => product.id === selected.id)
+      ? [selected, ...compact]
+      : compact;
+    return options.map(product => ({
+      value: String(product.id),
+      label: `${product.internalCode} · ${product.canonicalName}`,
+    }));
+  };
+  const savedImportSuppliers = useMemo(
+    () => Array.from(new Set((overview.data?.imports ?? []).map(item => item.supplierName)))
+      .sort((left, right) => left.localeCompare(right, "ru")),
+    [overview.data?.imports]
+  );
+  const savedImports = useMemo(
+    () => (overview.data?.imports ?? []).filter(item =>
+      !savedImportsSupplierFilter || item.supplierName === savedImportsSupplierFilter
+    ),
+    [overview.data?.imports, savedImportsSupplierFilter]
+  );
+  const visibleSavedImports = selectedImportId
+    ? savedImports.filter(item => item.id === selectedImportId)
+    : savedImports.slice(0, savedImportsLimit);
   const characteristics = overview.data?.characteristics ?? [];
   const selectableCharacteristics = (kind: CharacteristicDraft["kind"]) =>
     characteristics.filter(item => item.kind === kind && item.isActive);
@@ -1051,6 +1091,14 @@ export default function PriceControl({
   const selectedImportDate = selectedImport
     ? dateDrafts[selectedImport.id] ?? selectedImport.sourceDate ?? ""
     : "";
+  const openSavedImport = (importItem: { id: number; supplierName: string }) => {
+    setSavedImportsSupplierFilter(importItem.supplierName);
+    setSelectedImportId(importItem.id);
+    setEditingSavedImportRowId(null);
+    window.setTimeout(() => {
+      savedImportPreviewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
+  };
   const previewNewRows = useMemo(
     () =>
       (preview?.rows ?? [])
@@ -2805,16 +2853,26 @@ export default function PriceControl({
                         {canEdit && (
                           <label className="price-preview-product-link">
                             <span>Внутренний товар</span>
+                            <input
+                              className="price-product-link-search"
+                              value={previewProductLinkSearches[index] ?? ""}
+                              onChange={event => setPreviewProductLinkSearches(current => ({
+                                ...current,
+                                [index]: event.target.value,
+                              }))}
+                              placeholder="Поиск товара или кода"
+                              aria-label={`Поиск внутреннего товара для «${row.rawName}»`}
+                            />
                             <PriceSelect
                               value={previewProductLinks[index] ?? "__unlinked"}
                               onValueChange={value => setPreviewProductLink(index, value)}
                               placeholder="Имя связи для сравнения"
                               options={[
                                 { value: "__unlinked", label: "Не связывать сейчас" },
-                                ...catalogProducts.filter(product => product.isActive).map(product => ({
-                                  value: String(product.id),
-                                  label: `${product.internalCode} · ${product.canonicalName}`,
-                                })),
+                                ...productLinkOptions(
+                                  previewProductLinkSearches[index] ?? "",
+                                  previewProductLinks[index] ?? ""
+                                ),
                               ]}
                             />
                             <small>{linkedProduct ? `Связано: ${linkedProduct.internalCode} · ${linkedProduct.canonicalName}` : "Укажите существующий товар, только если это та же позиция."}</small>
@@ -2905,8 +2963,34 @@ export default function PriceControl({
                 <p>Пока нет сохраненных прайс‑листов.</p>
               </div>
             ) : (
-              <div className="price-import-list">
-                {overview.data?.imports.map(importItem => (
+              <>
+                <div className="price-import-controls">
+                  <PriceSelect
+                    value={savedImportsSupplierFilter || "__all"}
+                    onValueChange={value => {
+                      setSavedImportsSupplierFilter(value === "__all" ? "" : value);
+                      setSelectedImportId(null);
+                      setSavedImportsLimit(8);
+                    }}
+                    placeholder="Все поставщики"
+                    options={[
+                      { value: "__all", label: "Все поставщики" },
+                      ...savedImportSuppliers.map(supplier => ({ value: supplier, label: supplier })),
+                    ]}
+                  />
+                  <small>Показано: {visibleSavedImports.length} из {savedImports.length}</small>
+                  {selectedImportId && (
+                    <button
+                      type="button"
+                      className="packet-link compact subtle"
+                      onClick={() => setSelectedImportId(null)}
+                    >
+                      Показать список
+                    </button>
+                  )}
+                </div>
+                <div className="price-import-list">
+                {visibleSavedImports.map(importItem => (
                   <article
                     className={
                       selectedImport?.id === importItem.id ? "active" : ""
@@ -2916,7 +3000,7 @@ export default function PriceControl({
                     <button
                       type="button"
                       className="price-import-open"
-                      onClick={() => setSelectedImportId(importItem.id)}
+                      onClick={() => openSavedImport(importItem)}
                     >
                       <strong>{importItem.supplierName}</strong>
                       <span>{importItem.fileName}</span>
@@ -2930,7 +3014,7 @@ export default function PriceControl({
                       <button
                         type="button"
                         className="packet-link compact"
-                        onClick={() => setSelectedImportId(importItem.id)}
+                        onClick={() => openSavedImport(importItem)}
                       >
                         <Eye size={14} />
                         Просмотр
@@ -2959,11 +3043,27 @@ export default function PriceControl({
                     </div>
                   </article>
                 ))}
-              </div>
+                </div>
+                {!selectedImportId && savedImports.length > visibleSavedImports.length && (
+                  <button
+                    type="button"
+                    className="packet-link price-directory-show-more"
+                    onClick={() => setSavedImportsLimit(current => Math.min(current + 8, savedImports.length))}
+                  >
+                    Показать еще · {Math.min(8, savedImports.length - visibleSavedImports.length)}
+                  </button>
+                )}
+                {!savedImports.length && (
+                  <div className="empty-state compact">
+                    <Search size={22} />
+                    <p>У выбранного поставщика пока нет сохраненных прайс‑листов.</p>
+                  </div>
+                )}
+              </>
             )}
           </section>
           {selectedImport && (
-            <section className="packet-card price-import-preview">
+            <section ref={savedImportPreviewRef} className="packet-card price-import-preview">
               <div className="card-title">
                 <div>
                   <span>ПРЕДПРОСМОТР СОХРАНЕННОГО ПРАЙСА</span>
@@ -3053,14 +3153,24 @@ export default function PriceControl({
                         <div className="price-saved-import-editor">
                           <label>
                             Связь с товаром
+                            <input
+                              className="price-product-link-search"
+                              value={savedImportLinkSearches[row.rowId] ?? ""}
+                              onChange={event => setSavedImportLinkSearches(current => ({
+                                ...current,
+                                [row.rowId]: event.target.value,
+                              }))}
+                              placeholder="Поиск товара или кода"
+                              aria-label={`Поиск товара для связи «${row.rawName}»`}
+                            />
                             <PriceSelect
                               value={currentTarget}
                               onValueChange={value => setSavedImportLinkTargets(current => ({ ...current, [row.rowId]: value }))}
                               placeholder={row.productName ? `Оставить: ${row.productName}` : "Выберите товар"}
-                              options={catalogProducts.filter(product => product.isActive).map(product => ({
-                                value: String(product.id),
-                                label: `${product.internalCode} · ${product.canonicalName}`,
-                              }))}
+                              options={productLinkOptions(
+                                savedImportLinkSearches[row.rowId] ?? "",
+                                currentTarget
+                              )}
                             />
                           </label>
                           <small>Связь объединяет это название поставщика с выбранным товаром. Следующие прайсы того же поставщика будут распознаваться автоматически.</small>
@@ -4070,7 +4180,7 @@ export default function PriceControl({
                 </div>
               ) : (
                 <>
-                <div className="price-mapping-list">
+                <div id="unmapped-price-links" className="price-mapping-list">
                   {visibleUnmappedRows.map(row => (
                     <article key={row.rowId}>
                       <div>
@@ -4194,6 +4304,62 @@ export default function PriceControl({
                       <span>Имя связи · {group.aliases.length}</span>
                       <strong>{group.canonicalName}</strong>
                       <small>{group.internalCode} · в сравнении показывается одно имя, а не все варианты поставщиков</small>
+                      {editingLinkNameProductId === group.productId ? (
+                        <div className="price-link-name-editor">
+                          <input
+                            value={linkNameDrafts[group.productId] ?? group.canonicalName}
+                            onChange={event => setLinkNameDrafts(current => ({
+                              ...current,
+                              [group.productId]: event.target.value,
+                            }))}
+                            aria-label={`Изменить имя связи «${group.canonicalName}»`}
+                          />
+                          <button
+                            type="button"
+                            className="packet-link compact"
+                            disabled={updateProduct.isPending}
+                            onClick={() => {
+                              const product = catalogProducts.find(item => item.id === group.productId);
+                              const canonicalName = (linkNameDrafts[group.productId] ?? group.canonicalName).trim();
+                              if (!product || canonicalName.length < 2) {
+                                toast.error("Имя связи должно содержать не менее двух символов.");
+                                return;
+                              }
+                              updateProduct.mutate({
+                                id: product.id,
+                                canonicalName,
+                                internalCode: product.internalCode,
+                                categoryId: product.categoryId,
+                                baseUnit: product.baseUnit,
+                              });
+                              setEditingLinkNameProductId(null);
+                            }}
+                          >
+                            <Save size={13} /> Сохранить имя
+                          </button>
+                          <button type="button" className="packet-link compact subtle" onClick={() => setEditingLinkNameProductId(null)}>Отменить</button>
+                        </div>
+                      ) : (
+                        <div className="price-link-name-actions">
+                          <button
+                            type="button"
+                            className="packet-link compact subtle"
+                            onClick={() => {
+                              setLinkNameDrafts(current => ({ ...current, [group.productId]: group.canonicalName }));
+                              setEditingLinkNameProductId(group.productId);
+                            }}
+                          >
+                            <Pencil size={13} /> Изменить имя
+                          </button>
+                          <button
+                            type="button"
+                            className="packet-link compact subtle"
+                            onClick={() => document.getElementById("unmapped-price-links")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                          >
+                            <Plus size={13} /> Добавить название
+                          </button>
+                        </div>
+                      )}
                     </div>
                     <details className="price-alias-group-members">
                       <summary>Названия поставщиков · {group.aliases.length}</summary>

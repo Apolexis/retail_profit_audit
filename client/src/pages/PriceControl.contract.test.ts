@@ -43,6 +43,25 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain(".packet .price-saved-import-row");
   });
 
+  it("открывает только выбранный сохраненный прайс, фильтрует список по поставщику и выдает его порциями", () => {
+    expect(page).toContain("savedImportsSupplierFilter");
+    expect(page).toContain("savedImportsLimit");
+    expect(page).toContain("visibleSavedImports");
+    expect(page).toContain("openSavedImport");
+    expect(page).toContain("scrollIntoView({ behavior: \"smooth\", block: \"start\" })");
+    expect(page).toContain("Все поставщики");
+    expect(page).toContain("Показать список");
+    expect(styles).toContain(".packet .price-import-controls");
+  });
+
+  it("дает искать товар непосредственно перед установкой связи в новом и сохраненном импорте", () => {
+    expect(page).toContain("previewProductLinkSearches");
+    expect(page).toContain("savedImportLinkSearches");
+    expect(page).toContain("const productLinkOptions");
+    expect(page).toContain("Поиск товара или кода");
+    expect(styles).toContain(".packet .price-product-link-search");
+  });
+
   it("объясняет точную связь названия поставщика с именем для сравнения", () => {
     expect(page).toContain("Выберите имя, под которым позиция будет показываться в");
     expect(page).toContain("Имя связи для сравнения");
@@ -56,6 +75,16 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("Убрать");
     expect(page).toContain("reassignAlias");
     expect(page).toContain("unlinkAlias");
+  });
+
+  it("дает изменить отображаемое имя связи и перейти к добавлению еще одного названия поставщика", () => {
+    expect(page).toContain("editingLinkNameProductId");
+    expect(page).toContain("linkNameDrafts");
+    expect(page).toContain("Изменить имя");
+    expect(page).toContain("Сохранить имя");
+    expect(page).toContain("Добавить название");
+    expect(page).toContain('id="unmapped-price-links"');
+    expect(styles).toContain(".packet .price-link-name-editor");
   });
 
   it("показывает нормализованную цену, исходную фасовку и обоснованного победителя", () => {
@@ -270,6 +299,7 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("priceAdditions");
     expect(page).toContain("priceRemovals");
     expect(styles).toContain(".packet .price-preview-price-edit > .price-preview-price-remove");
+    expect(styles).toContain("grid-row: 3 !important");
   });
 
   it("показывает порядковый номер новой позиции непосредственно под галочкой выбора", () => {
