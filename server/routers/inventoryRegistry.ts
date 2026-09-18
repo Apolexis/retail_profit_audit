@@ -176,7 +176,7 @@ export const inventoryRegistryRouter = router({
   }),
   printGroups: protectedProcedure.query(async ({ ctx }) => {
     const actor = await localActor(ctx.user.openId);
-    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Группы печати доступны только администратору." });
+    if (actor.role !== "admin" && actor.role !== "manager") throw new TRPCError({ code: "FORBIDDEN", message: "Группы печати доступны только руководителю или администратору." });
     return listOperationalPrintGroups(true);
   }),
   catalogCategoryNames: protectedProcedure.query(async ({ ctx }) => {
@@ -186,7 +186,7 @@ export const inventoryRegistryRouter = router({
   }),
   printCategoryGroups: protectedProcedure.query(async ({ ctx }) => {
     const actor = await localActor(ctx.user.openId);
-    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Категории печати доступны только администратору." });
+    if (actor.role !== "admin" && actor.role !== "manager") throw new TRPCError({ code: "FORBIDDEN", message: "Категории печати доступны только руководителю или администратору." });
     return listOperationalPrintCategoryGroups();
   }),
   createPrintGroup: protectedProcedure.input(z.object({ name: z.string().trim().min(1).max(128) })).mutation(async ({ ctx, input }) => {
@@ -386,8 +386,10 @@ export const inventoryRegistryRouter = router({
   }),
   printRequests: protectedProcedure.input(z.object({ businessDate: dateInput, printGroupIds: z.array(z.number().int().positive()).max(100).optional(), printCategoryGroupIds: z.array(z.number().int().positive()).min(1).max(200) })).mutation(async ({ ctx, input }) => {
     const actor = await localActor(ctx.user.openId);
-    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Групповая печать заявок доступна только администратору." });
-    const projection = await getOperationalStoreRequestPrintProjection(input);
+    if (actor.role !== "admin" && actor.role !== "manager") throw new TRPCError({ code: "FORBIDDEN", message: "Печать заявок доступна только руководителю или администратору." });
+    const storeIds = actor.role === "admin" ? null : await getAccessibleStoreIds(ctx.user.openId);
+    if (Array.isArray(storeIds) && !storeIds.length) throw new TRPCError({ code: "FORBIDDEN", message: "Нет доступных магазинов для печати заявок." });
+    const projection = await getOperationalStoreRequestPrintProjection({ ...input, storeIds });
     await recordChange({ actorId: actor.id, action: "store_request.print", entityType: "operational_store_request_print", entityId: input.businessDate, afterState: { businessDate: input.businessDate, printGroupIds: input.printGroupIds ?? "all", printCategoryGroupIds: input.printCategoryGroupIds, sheets: projection.sheets.length, source: "closed_request_snapshots" } });
     return projection;
   }),

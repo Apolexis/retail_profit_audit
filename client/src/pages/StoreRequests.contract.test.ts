@@ -22,23 +22,31 @@ describe("заявки магазинов: экран", () => {
   });
 
 	it("меняет количество прямо в строке и закрывает только непустой черновик", () => {
-    expect(page).toContain("upsertRequestLine");
-    expect(page).toContain("removeRequestLine");
+	  expect(page).toContain("upsertRequestLine");
+	  expect(page).toContain("removeRequestLine");
     expect(page).toContain("changeProductQuantity");
     expect(page).toContain("request-quantity-stepper");
     expect(page).toContain("addRequestManualLine");
-    expect(page).toContain("!active.lines.length");
-		expect(page).toContain("Готово к печати");
+		expect(page).toContain("active.lines.length > 0");
+		expect(page).toContain("Закрыть заявку");
 		expect(page).toContain("function orderSignal");
 		expect(page).toContain("остаток: {stockLabel[product.stockState]}");
-  });
+	});
 
-  it("предусматривает админскую печать закрытых заявок по группам", () => {
-    expect(page).toContain("printRequests");
-    expect(page).toContain("printCategoryGroupIds");
-    expect(page).toContain("store-request-print-sheet");
-    expect(page).toContain("ПЕЧАТЬ ЗАКРЫТЫХ ЗАЯВОК");
-  });
+	it("возвращает пользователя в уже открытый черновик и скрывает закрытие без позиций", () => {
+	  expect(page).toContain('toast.success(result.created ? "Черновик заявки открыт" : "Открыт существующий черновик")');
+	  expect(page).toContain("canCloseRequest && active.lines.length > 0");
+	  expect(page).toContain("const canCloseRequest = Boolean(isManager || isAdmin);");
+	});
+
+	it("предусматривает печать закрытых заявок только административному персоналу", () => {
+	  expect(page).toContain("printRequests");
+	  expect(page).toContain("printCategoryGroupIds");
+	  expect(page).toContain("store-request-print-sheet");
+	  expect(page).toContain("ПЕЧАТЬ ЗАКРЫТЫХ ЗАЯВОК");
+	  expect(page).toContain("const canPrintRequests = Boolean(isManager || isAdmin);");
+	  expect(page).toContain('{canPrintRequests && <section className="packet-card request-print-config">');
+	});
 });
 
 describe("заявки магазинов: адаптивность и печать", () => {

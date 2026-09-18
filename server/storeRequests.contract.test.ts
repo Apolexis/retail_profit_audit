@@ -31,6 +31,15 @@ describe("заявки магазинов: серверный контракт",
     expect(service).toContain("eq(operationalStoreRequests.status, \"closed\")");
     expect(service).toContain("eq(stores.isHidden, false)");
     expect(service).toContain("expandPrintCategoryNames(categoryGroup.id, allCategoryGroups, members)");
+    expect(service).toContain("storeIds?: number[] | null");
+    expect(service).toContain("groupedStoreIds.filter(storeId => input.storeIds!.includes(storeId))");
+  });
+
+  it("разрешает печать только административному персоналу и в пределах его магазинов", () => {
+    expect(router).toContain('actor.role !== "admin" && actor.role !== "manager"');
+    expect(router).toContain('const storeIds = actor.role === "admin" ? null : await getAccessibleStoreIds(ctx.user.openId)');
+    expect(router).toContain('getOperationalStoreRequestPrintProjection({ ...input, storeIds })');
+    expect(router).toContain("Группы печати доступны только руководителю или администратору.");
   });
 
   it("фиксирует каждую постоянную операцию существующим audit", () => {

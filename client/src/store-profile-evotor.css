@@ -1,0 +1,59 @@
+/* The Evotor fact strip extends the established store-profile language; it stays neutral until hover. */
+.packet .store-evotor-facts {
+  display: grid;
+  gap: 14px;
+  margin: 0 0 18px;
+  background: var(--surface);
+  border-color: var(--line);
+}
+.packet .store-evotor-title { align-items: flex-start; gap: 12px; }
+.packet .store-evotor-title span { display: inline-flex; align-items: center; gap: 6px; }
+.packet .store-evotor-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.packet .store-evotor-summary > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 11px 13px;
+  border-left: 1px solid var(--line);
+}
+.packet .store-evotor-summary > div:first-child { border-left: 0; }
+.packet .store-evotor-summary span,
+.packet .store-evotor-summary small { color: var(--muted); font-size: 10px; line-height: 1.3; }
+.packet .store-evotor-summary span { font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.packet .store-evotor-summary strong { overflow: hidden; color: var(--ink); font-size: 16px; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+.packet .store-evotor-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.packet .store-evotor-actions .subtle-button {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 34px;
+  margin: 0;
+  white-space: nowrap;
+}
+@media (hover: hover) and (pointer: fine) {
+  .packet .store-evotor-facts:hover { border-color: var(--accent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent); }
+}
+.packet .store-evotor-facts:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 16%, transparent); }
+@media (max-width: 860px) {
+  .packet .store-evotor-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .packet .store-evotor-summary > div:nth-child(odd) { border-left: 0; }
+  .packet .store-evotor-summary > div:nth-child(n + 3) { border-top: 1px solid var(--line); }
+}
+@media (max-width: 520px) {
+  .packet .store-evotor-title { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .packet .store-evotor-title > small { overflow-wrap: anywhere; }
+  .packet .store-evotor-summary { grid-template-columns: 1fr; }
+  .packet .store-evotor-summary > div { border-left: 0; border-top: 1px solid var(--line); }
+  .packet .store-evotor-summary > div:first-child { border-top: 0; }
+  .packet .store-evotor-actions { display: grid; grid-template-columns: 1fr; }
+  .packet .store-evotor-actions .subtle-button { width: 100%; }
+}

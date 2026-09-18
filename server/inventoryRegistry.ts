@@ -673,7 +673,7 @@ function expandPrintCategoryNames(groupId: number, groups: Array<typeof operatio
 }
 
 /** Builds a reproducible, read-only print projection from closed request snapshots. */
-export async function getOperationalStoreRequestPrintProjection(input: { businessDate: string; printGroupIds?: number[]; printCategoryGroupIds: number[] }) {
+export async function getOperationalStoreRequestPrintProjection(input: { businessDate: string; printGroupIds?: number[]; printCategoryGroupIds: number[]; storeIds?: number[] | null }) {
   const db = await getDb();
   if (!db) throw new Error("База данных недоступна");
   const businessDate = validateInventoryDate(input.businessDate);
@@ -690,10 +690,13 @@ export async function getOperationalStoreRequestPrintProjection(input: { busines
   if (!chosenPrintGroups.length) throw new Error("Нет активных групп магазинов для печати.");
   const settings = await db.select({ storeId: operationalWarehouseSettings.storeId, printGroupId: operationalWarehouseSettings.printGroupId }).from(operationalWarehouseSettings).where(inArray(operationalWarehouseSettings.printGroupId, chosenPrintGroups.map(group => group.id)));
   const groupByStore = new Map(settings.filter(setting => setting.printGroupId !== null).map(setting => [setting.storeId, setting.printGroupId!]));
-  const storeIds = Array.from(groupByStore.keys());
-  const [visibleStores, requests] = storeIds.length ? await Promise.all([
-    db.select({ id: stores.id, name: stores.name }).from(stores).where(and(inArray(stores.id, storeIds), eq(stores.isHidden, false))).orderBy(stores.name),
-    db.select().from(operationalStoreRequests).where(and(inArray(operationalStoreRequests.storeId, storeIds), eq(operationalStoreRequests.businessDate, businessDate), eq(operationalStoreRequests.status, "closed"))).orderBy(operationalStoreRequests.storeName, operationalStoreRequests.id).limit(2_000),
+  const groupedStoreIds = Array.from(groupByStore.keys());
+  const scopedStoreIds = Array.isArray(input.storeIds)
+    ? groupedStoreIds.filter(storeId => input.storeIds!.includes(storeId))
+    : groupedStoreIds;
+  const [visibleStores, requests] = scopedStoreIds.length ? await Promise.all([
+    db.select({ id: stores.id, name: stores.name }).from(stores).where(and(inArray(stores.id, scopedStoreIds), eq(stores.isHidden, false))).orderBy(stores.name),
+    db.select().from(operationalStoreRequests).where(and(inArray(operationalStoreRequests.storeId, scopedStoreIds), eq(operationalStoreRequests.businessDate, businessDate), eq(operationalStoreRequests.status, "closed"))).orderBy(operationalStoreRequests.storeName, operationalStoreRequests.id).limit(2_000),
   ]) : [[], [] as Array<typeof operationalStoreRequests.$inferSelect>];
   const requestIds = requests.map(request => request.id);
   const lines = requestIds.length ? await db.select().from(operationalStoreRequestLines).where(inArray(operationalStoreRequestLines.requestId, requestIds)).orderBy(operationalStoreRequestLines.catalogNumber).limit(20_000) : [];

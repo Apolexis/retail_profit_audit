@@ -107,6 +107,13 @@ describe("контракт страницы Выручка", () => {
     expect(page).not.toContain('{record.createdByName}</small>');
   });
 
+  it("оставляет печать финансового реестра только администратору", () => {
+    expect(router).toContain('print: protectedProcedure');
+    expect(router).toContain('if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Печать реестра доступна только администратору" });');
+    expect(page).toContain('{isAdmin && <section className="packet-card revenue-admin-register">');
+    expect(page).toContain('className="revenue-register-actions"');
+  });
+
   it("делает удаление администратора обратимым, с причиной и общим журналом", () => {
     expect(page).toContain('trpc.revenueRegistry.remove.useMutation({');
     expect(page).toContain('Причина удаления');
