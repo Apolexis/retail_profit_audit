@@ -1333,11 +1333,12 @@ export async function commitPriceImport(input: { buffer: Buffer; fileName: strin
 function sourceMimeType(sourceType: PriceImportPreview["sourceType"]) { return sourceType === "pdf" ? "application/pdf" : sourceType === "docx" ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "application/vnd.ms-excel"; }
 export async function listPriceControlData() {
   const db = await getDb(); if (!db) return emptyPriceData();
-  const [suppliers, categories, characteristics, products, imports, rows, aliases] = await Promise.all([
+  const [suppliers, categories, characteristics, linkGroups, products, imports, rows, aliases] = await Promise.all([
     db.select().from(priceSuppliers).orderBy(priceSuppliers.name),
     db.select().from(priceCategories).orderBy(priceCategories.name),
     db.select().from(priceProductCharacteristics).orderBy(priceProductCharacteristics.kind, priceProductCharacteristics.value),
-    db.select({ id: priceProducts.id, internalCode: priceProducts.internalCode, linkCode: priceProducts.linkCode, canonicalName: priceProducts.canonicalName, normalizedSignature: priceProducts.normalizedSignature, categoryId: priceProducts.categoryId, legacyCategory: priceProducts.category, categoryName: priceCategories.name, categoryIsActive: priceCategories.isActive, variantCharacteristicId: priceProducts.variantCharacteristicId, sizeCharacteristicId: priceProducts.sizeCharacteristicId, placeContentsCharacteristicId: priceProducts.placeContentsCharacteristicId, variant: priceProducts.variant, sizeText: priceProducts.sizeText, placeContents: priceProducts.placeContents, baseUnit: priceProducts.baseUnit, isActive: priceProducts.isActive }).from(priceProducts).leftJoin(priceCategories, eq(priceProducts.categoryId, priceCategories.id)).orderBy(priceProducts.canonicalName),
+    db.select().from(priceLinkGroups).orderBy(priceLinkGroups.canonicalName),
+    db.select({ id: priceProducts.id, internalCode: priceProducts.internalCode, linkCode: priceProducts.linkCode, linkGroupId: priceProducts.linkGroupId, linkGroupCode: priceLinkGroups.linkCode, linkGroupName: priceLinkGroups.canonicalName, canonicalName: priceProducts.canonicalName, normalizedSignature: priceProducts.normalizedSignature, categoryId: priceProducts.categoryId, legacyCategory: priceProducts.category, categoryName: priceCategories.name, categoryIsActive: priceCategories.isActive, variantCharacteristicId: priceProducts.variantCharacteristicId, sizeCharacteristicId: priceProducts.sizeCharacteristicId, placeContentsCharacteristicId: priceProducts.placeContentsCharacteristicId, variant: priceProducts.variant, sizeText: priceProducts.sizeText, placeContents: priceProducts.placeContents, baseUnit: priceProducts.baseUnit, isActive: priceProducts.isActive }).from(priceProducts).leftJoin(priceCategories, eq(priceProducts.categoryId, priceCategories.id)).leftJoin(priceLinkGroups, eq(priceProducts.linkGroupId, priceLinkGroups.id)).orderBy(priceProducts.canonicalName),
     db.select({ id: priceImports.id, supplierId: priceImports.supplierId, supplierName: priceSuppliers.name, fileName: priceImports.fileName, fileKey: priceImports.fileKey, sourceDate: priceImports.sourceDate, sourceType: priceImports.sourceType, rowCount: priceImports.rowCount, createdAt: priceImports.createdAt }).from(priceImports).innerJoin(priceSuppliers, eq(priceImports.supplierId, priceSuppliers.id)).orderBy(desc(priceImports.createdAt)).limit(50),
     db.select({ rowId: priceImportRows.id, importId: priceImportRows.importId, productId: priceImportRows.productId, rawName: priceImportRows.rawName, rawCategory: priceImportRows.rawCategory, rawPackaging: priceImportRows.rawPackaging, manufacturer: priceImportRows.manufacturer, placeContents: priceImportRows.placeContents, manufacturedOn: priceImportRows.manufacturedOn, shelfLifeMonths: priceImportRows.shelfLifeMonths, expiresOn: priceImportRows.expiresOn, mappingStatus: priceImportRows.mappingStatus, matchedBy: priceImportRows.matchedBy, matchConfidence: priceImportRows.matchConfidence, supplierId: priceImports.supplierId, supplierName: priceSuppliers.name, sourceDate: priceImports.sourceDate, importedAt: priceImports.createdAt, productName: priceProducts.canonicalName, internalCode: priceProducts.internalCode, priceId: priceOfferPrices.id, priceMode: priceOfferPrices.priceMode, market: priceOfferPrices.market, priceAmount: priceOfferPrices.priceAmount, priceBasis: priceOfferPrices.priceBasis, normalizedPrice: priceOfferPrices.normalizedPrice, normalizedUnit: priceOfferPrices.normalizedUnit, minimumQuantityKg: priceOfferPrices.minimumQuantityKg, sourcePriceText: priceOfferPrices.sourcePriceText }).from(priceImportRows).innerJoin(priceImports, eq(priceImportRows.importId, priceImports.id)).innerJoin(priceSuppliers, eq(priceImports.supplierId, priceSuppliers.id)).leftJoin(priceProducts, eq(priceImportRows.productId, priceProducts.id)).leftJoin(priceOfferPrices, eq(priceOfferPrices.importRowId, priceImportRows.id)).orderBy(desc(priceImports.createdAt)).limit(10000),
     db.select({ aliasId: priceSupplierAliases.id, supplierId: priceSupplierAliases.supplierId, supplierName: priceSuppliers.name, productId: priceSupplierAliases.productId, internalCode: priceProducts.internalCode, linkCode: priceProducts.linkCode, canonicalName: priceProducts.canonicalName, normalizedName: priceSupplierAliases.normalizedName, packagingSignature: priceSupplierAliases.packagingSignature, updatedAt: priceSupplierAliases.updatedAt }).from(priceSupplierAliases).innerJoin(priceSuppliers, eq(priceSupplierAliases.supplierId, priceSuppliers.id)).innerJoin(priceProducts, eq(priceSupplierAliases.productId, priceProducts.id)).orderBy(priceSuppliers.name, priceSupplierAliases.normalizedName).limit(500),
@@ -1385,9 +1386,13 @@ export async function listPriceControlData() {
     const preview = previewMap.get(row.importId);
     if (preview) preview.rows.push({ rowId: row.rowId, rawName: row.rawName, rawCategory: row.rawCategory, rawPackaging: row.rawPackaging, manufacturer: row.manufacturer, placeContents: row.placeContents, productName: row.productName, priceAmount: row.priceAmount === null ? null : Number(row.priceAmount) });
   });
-  return { suppliers, categories, characteristics, products: catalogProducts, imports, comparisons, unmappedRows, aliases, history, importPreviews: Array.from(previewMap.values()), repairableVariants: { count: repairableVariants.length, values: Array.from(new Set(repairableVariants.map(product => product.variant))).sort() }, repairablePlaceContents: { count: repairablePlaceContents.length, values: repairablePlaceContents } };
+  const groupedProducts = linkGroups.map(group => ({
+    ...group,
+    products: catalogProducts.filter(product => product.linkGroupId === group.id),
+  }));
+  return { suppliers, categories, characteristics, products: catalogProducts, linkGroups: groupedProducts, imports, comparisons, unmappedRows, aliases, history, importPreviews: Array.from(previewMap.values()), repairableVariants: { count: repairableVariants.length, values: Array.from(new Set(repairableVariants.map(product => product.variant))).sort() }, repairablePlaceContents: { count: repairablePlaceContents.length, values: repairablePlaceContents } };
 }
-function emptyPriceData() { return { suppliers: [], categories: [], characteristics: [], products: [], imports: [], comparisons: [], unmappedRows: [], aliases: [], history: [], importPreviews: [], repairableVariants: { count: 0, values: [] as string[] }, repairablePlaceContents: { count: 0, values: [] as string[] } }; }
+function emptyPriceData() { return { suppliers: [], categories: [], characteristics: [], products: [], linkGroups: [], imports: [], comparisons: [], unmappedRows: [], aliases: [], history: [], importPreviews: [], repairableVariants: { count: 0, values: [] as string[] }, repairablePlaceContents: { count: 0, values: [] as string[] } }; }
 
 export async function listSignificantPriceIncreases(importId: number) {
   const db = await getDb();
@@ -1643,6 +1648,36 @@ export async function updatePriceCategory(input: { id: number; name: string; isA
   const [category] = await db.select().from(priceCategories).where(eq(priceCategories.id, input.id)).limit(1);
   if (!category) throw new Error("Категория прайс‑контроля не найдена.");
   return category;
+}
+
+export async function getPriceLinkGroupAuditState(id: number) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const [group] = await db.select().from(priceLinkGroups).where(eq(priceLinkGroups.id, id)).limit(1);
+  if (!group) throw new Error("Имя связи не найдено.");
+  const members = await db.select({ id: priceProducts.id, internalCode: priceProducts.internalCode, canonicalName: priceProducts.canonicalName }).from(priceProducts).where(eq(priceProducts.linkGroupId, id)).orderBy(priceProducts.canonicalName);
+  return { ...group, members };
+}
+
+export async function updatePriceLinkGroup(input: { id: number; canonicalName: string; isActive?: boolean }) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const canonicalName = text(input.canonicalName); const normalizedName = productSignature(canonicalName);
+  if (canonicalName.length < 2 || !normalizedName) throw new Error("Укажите имя связи не короче двух символов.");
+  const [conflict] = await db.select({ id: priceLinkGroups.id }).from(priceLinkGroups).where(eq(priceLinkGroups.normalizedName, normalizedName)).limit(1);
+  if (conflict && conflict.id !== input.id) throw new Error("Имя связи с таким названием уже существует.");
+  await db.update(priceLinkGroups).set({ canonicalName, normalizedName, ...(input.isActive === undefined ? {} : { isActive: input.isActive }) }).where(eq(priceLinkGroups.id, input.id));
+  const [group] = await db.select().from(priceLinkGroups).where(eq(priceLinkGroups.id, input.id)).limit(1);
+  if (!group) throw new Error("Имя связи не найдено.");
+  return group;
+}
+
+export async function assignPriceProductLinkGroup(input: { productId: number; linkGroupId: number }) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const [group] = await db.select({ id: priceLinkGroups.id, isActive: priceLinkGroups.isActive }).from(priceLinkGroups).where(eq(priceLinkGroups.id, input.linkGroupId)).limit(1);
+  if (!group || !group.isActive) throw new Error("Выберите активное имя связи.");
+  await db.update(priceProducts).set({ linkGroupId: group.id }).where(eq(priceProducts.id, input.productId));
+  const [product] = await db.select().from(priceProducts).where(eq(priceProducts.id, input.productId)).limit(1);
+  if (!product) throw new Error("Товар прайс‑контроля не найден.");
+  return product;
 }
 
 export async function createPriceProduct(input: { canonicalName: string; internalCode?: string; linkGroupId?: number | null; linkGroupName?: string | null; categoryId?: number | null; category?: string | null; variantCharacteristicId?: number | null; sizeCharacteristicId?: number | null; placeContentsCharacteristicId?: number | null; variant?: string | null; sizeText?: string | null; placeContents?: string | null; baseUnit?: NormalizedUnit; defaultWeightGrams?: number | null; defaultVolumeMl?: number | null; isActive?: boolean }) {

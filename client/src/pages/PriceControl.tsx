@@ -494,6 +494,13 @@ export default function PriceControl({
     },
     onError: error => toast.error(error.message),
   });
+  const updateLinkGroup = trpc.priceControl.updateLinkGroup.useMutation({
+    onSuccess: () => {
+      invalidate();
+      toast.success("Имя связи обновлено");
+    },
+    onError: error => toast.error(error.message),
+  });
   const createCharacteristic = trpc.priceControl.createCharacteristic.useMutation({
     onSuccess: () => {
       invalidate();
@@ -801,6 +808,7 @@ export default function PriceControl({
   const [savedImportLinkSearches, setSavedImportLinkSearches] = useState<Record<number, string>>({});
   const [editingLinkNameProductId, setEditingLinkNameProductId] = useState<number | null>(null);
   const [linkNameDrafts, setLinkNameDrafts] = useState<Record<number, string>>({});
+  const [newGroupProductDrafts, setNewGroupProductDrafts] = useState<Record<number, { canonicalName: string; categoryId: string }>>({});
   const [editingAliasId, setEditingAliasId] = useState<number | null>(null);
   const [aliasSearches, setAliasSearches] = useState<Record<number, string>>({});
   const [newAliasDrafts, setNewAliasDrafts] = useState<Record<number, { supplierId: string; name: string; packaging: string }>>({});

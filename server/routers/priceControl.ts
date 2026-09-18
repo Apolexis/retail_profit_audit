@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getCurrentLocalAccount, hasPriceAccess } from "../accessControl";
 import { protectedProcedure, router } from "../_core/trpc";
-import { backfillPriceImportLinkNames, bulkAssignPriceCategory, bulkSetPriceOfferMarketByProducts, bulkSetPriceProductsActive, createManualPriceOffer, createPriceCategory, createPriceProduct, createPriceProductCharacteristic, createPriceSupplier, createPriceSupplierAlias, deletePriceImport, deletePriceImportRow, deletePriceSupplier, getPriceCategoryAuditState, getPriceImportAuditState, getPriceImportDownload, getPriceImportRowAuditState, getPriceOfferAuditState, getPriceOfferMarketAuditState, getPriceProductAuditState, getPriceProductCharacteristicAuditState, getPriceProductsAuditStates, getPriceSupplierAuditState, linkPriceImportRow, listPriceControlData, reassignPriceSupplierAlias, repairPriceProductLinkCodes, repairRecognizedPriceProductVariants, seedPriceOfferPlaceContentsCharacteristics, setPriceSupplierActive, unlinkPriceSupplierAlias, updatePriceCategory, updatePriceImportDate, updatePriceOffer, updatePriceProduct, updatePriceProductCharacteristic, updatePriceSupplier } from "../priceControl";
+import { assignPriceProductLinkGroup, backfillPriceImportLinkNames, bulkAssignPriceCategory, bulkSetPriceOfferMarketByProducts, bulkSetPriceProductsActive, createManualPriceOffer, createPriceCategory, createPriceProduct, createPriceProductCharacteristic, createPriceSupplier, createPriceSupplierAlias, deletePriceImport, deletePriceImportRow, deletePriceSupplier, getPriceCategoryAuditState, getPriceImportAuditState, getPriceImportDownload, getPriceImportRowAuditState, getPriceLinkGroupAuditState, getPriceOfferAuditState, getPriceOfferMarketAuditState, getPriceProductAuditState, getPriceProductCharacteristicAuditState, getPriceProductsAuditStates, getPriceSupplierAuditState, linkPriceImportRow, listPriceControlData, reassignPriceSupplierAlias, repairPriceProductLinkCodes, repairRecognizedPriceProductVariants, seedPriceOfferPlaceContentsCharacteristics, setPriceSupplierActive, unlinkPriceSupplierAlias, updatePriceCategory, updatePriceImportDate, updatePriceLinkGroup, updatePriceOffer, updatePriceProduct, updatePriceProductCharacteristic, updatePriceSupplier } from "../priceControl";
 import { recordChange } from "../localAuth";
 
 async function requirePricePermission(openId: string | null | undefined, required: "view" | "upload" | "edit") {
@@ -34,6 +34,18 @@ export const priceControlRouter = router({
     await requirePricePermission(ctx.user.openId, "edit");
     const actor = await localActor(ctx.user.openId); const before = await getPriceProductAuditState(input.id); const product = await updatePriceProduct(input);
     await recordChange({ actorId: actor.id, action: "price_product.update", entityType: "price_product", entityId: String(input.id), beforeState: before, afterState: await getPriceProductAuditState(product.id) });
+    return product;
+  }),
+  updateLinkGroup: protectedProcedure.input(z.object({ id: z.number().int().positive(), canonicalName: z.string().trim().min(2).max(255), isActive: z.boolean().optional() })).mutation(async ({ ctx, input }) => {
+    await requirePricePermission(ctx.user.openId, "edit");
+    const actor = await localActor(ctx.user.openId); const before = await getPriceLinkGroupAuditState(input.id); const group = await updatePriceLinkGroup(input);
+    await recordChange({ actorId: actor.id, action: "price_link_group.update", entityType: "price_link_group", entityId: String(group.id), beforeState: before, afterState: await getPriceLinkGroupAuditState(group.id) });
+    return group;
+  }),
+  assignProductLinkGroup: protectedProcedure.input(z.object({ productId: z.number().int().positive(), linkGroupId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+    await requirePricePermission(ctx.user.openId, "edit");
+    const actor = await localActor(ctx.user.openId); const before = await getPriceProductAuditState(input.productId); const product = await assignPriceProductLinkGroup(input);
+    await recordChange({ actorId: actor.id, action: "price_product.link_group_assign", entityType: "price_product", entityId: String(product.id), beforeState: before, afterState: await getPriceProductAuditState(product.id) });
     return product;
   }),
   bulkAssignCategory: protectedProcedure.input(z.object({ productIds: z.array(z.number().int().positive()).min(1).max(300), categoryId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
