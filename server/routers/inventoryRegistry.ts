@@ -10,6 +10,7 @@ import {
   createOperationalPriceType,
   createOperationalCatalogProduct,
   createInventoryDraft,
+  deleteOperationalPrintGroup,
   deleteOperationalPrintCategoryGroup,
   deleteOperationalPriceType,
   deleteInventoryDraft,
@@ -174,6 +175,13 @@ export const inventoryRegistryRouter = router({
     if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Изменять группы печати может только администратор." });
     const result = await updateOperationalPrintGroup(input);
     await recordChange({ actorId: actor.id, action: input.isActive ? "operational_print_group.update" : "operational_print_group.archive", entityType: "operational_print_group", entityId: String(input.id), beforeState: { name: result.before.name, isActive: result.before.isActive }, afterState: { name: result.after.name, isActive: result.after.isActive } });
+    return result;
+  }),
+  deletePrintGroup: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Удалять группы печати может только администратор." });
+    const result = await deleteOperationalPrintGroup(input.id);
+    await recordChange({ actorId: actor.id, action: "operational_print_group.delete", entityType: "operational_print_group", entityId: String(input.id), beforeState: { name: result.before.name, isActive: result.before.isActive }, afterState: { deleted: true, detachedWarehouses: result.detachedWarehouses } });
     return result;
   }),
   createPrintCategoryGroup: protectedProcedure.input(z.object({ name: z.string().trim().min(1).max(128) })).mutation(async ({ ctx, input }) => {

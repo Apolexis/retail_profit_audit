@@ -77,15 +77,35 @@
 .packet .warehouse-print-group-editor input { box-sizing: border-box; min-height: 34px; width: 100%; padding: 0 10px; border: 1px solid var(--warehouse-line); border-radius: 8px; background: var(--warehouse-card); color: var(--ink); }
 @media (max-width: 640px) { .packet .warehouse-print-group-editor > .subtle-button { flex: 1 1 100%; justify-content: center; } }
 
-/* The warehouse list follows the established Analysis-card hierarchy. */
+/* The warehouse list uses exactly the calm Analysis surfaces: no gradient or detached gray table. */
 html[data-audit-theme="light"] .packet :is(.warehouse-rule, .warehouse-table-card, .warehouse-guidance article) {
-  background: linear-gradient(150deg, #fff, #f6faff) !important;
-  border-color: #bdd9f6 !important;
+  --warehouse-card: #f7fbff;
+  --warehouse-panel: #edf6ff;
+  --warehouse-line: #c7e2ff;
+  --warehouse-accent: #0a84ff;
+  --warehouse-accent-faint: #eaf5ff;
+  background: #f7fbff !important;
+  border-color: #c7e2ff !important;
 }
+html[data-audit-theme="light"] .packet .warehouse-table-wrap.data-table-wrap { border-color: #c7e2ff !important; background: #f7fbff !important; }
+html[data-audit-theme="light"] .packet .warehouse-table.data-table thead th { background: #eaf5ff !important; border-color: #d8ebff !important; }
+html[data-audit-theme="light"] .packet .warehouse-table.data-table tbody tr:nth-child(odd) { background: #fff !important; }
+html[data-audit-theme="light"] .packet .warehouse-table.data-table tbody tr:nth-child(even) { background: #f6faff !important; }
+html[data-audit-theme="light"] .packet .warehouse-table.data-table tbody td { border-color: #d8ebff !important; }
 html[data-audit-theme="dark"] .packet :is(.warehouse-rule, .warehouse-table-card, .warehouse-guidance article) {
-  background: linear-gradient(150deg, #16101a, #0e0a11) !important;
+  --warehouse-card: #16101a;
+  --warehouse-panel: #1c1420;
+  --warehouse-line: #3b2435;
+  --warehouse-accent: #ff765f;
+  --warehouse-accent-faint: rgba(255, 118, 95, .075);
+  background: #16101a !important;
   border-color: #3b2435 !important;
 }
+html[data-audit-theme="dark"] .packet .warehouse-table-wrap.data-table-wrap { border-color: #3b2435 !important; background: #16101a !important; }
+html[data-audit-theme="dark"] .packet .warehouse-table.data-table thead th { background: #1c1420 !important; border-color: #2a1c29 !important; }
+html[data-audit-theme="dark"] .packet .warehouse-table.data-table tbody tr:nth-child(odd) { background: #16101a !important; }
+html[data-audit-theme="dark"] .packet .warehouse-table.data-table tbody tr:nth-child(even) { background: #1b121c !important; }
+html[data-audit-theme="dark"] .packet .warehouse-table.data-table tbody td { border-color: #2a1c29 !important; }
 
 .packet .warehouse-edit { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 34px; margin: 0; white-space: nowrap; }
 .packet .warehouse-settings-row > td { padding: 0 !important; background: var(--surface-2); }

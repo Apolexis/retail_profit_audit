@@ -96,6 +96,13 @@ describe("контракт страницы Выручка", () => {
     expect(styles).not.toContain('#d64146');
     expect(styles).not.toContain('#d55b63');
     expect(styles).toContain('--revenue-accent: #ff765f;');
+	  expect(styles).toContain('.revenue-amount { background: #f8fcff !important; border-color: #b9d9f5 !important; }');
+	  expect(styles).toContain('.revenue-amount input { background: #fff !important; border-color: #9dcbed !important; }');
+	  expect(styles).toContain('.revenue-amount { background: #19131d !important; border-color: #3b2435 !important; }');
+  });
+
+  it("не выводит в реестре логин или телефон автора передачи", () => {
+    expect(page).not.toContain('{record.createdByName}</small>');
   });
 
   it("делает удаление администратора обратимым, с причиной и общим журналом", () => {

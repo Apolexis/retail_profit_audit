@@ -35,13 +35,15 @@ describe("warehouse control contract", () => {
     expect(styles).toContain('.warehouse-table.data-table');
   });
 
-  it("allows a warehouse to join an editable print group", () => {
+	it("allows a warehouse to join an editable print group", () => {
 	  expect(page).toContain("createPrintGroup.useMutation");
 	  expect(page).toContain("setWarehousePrintGroup.useMutation");
 	  expect(page).toContain("Новая группа печати");
 	  expect(page).toContain("Группа печати сохранена");
 	  expect(page).toContain("<EyeOff size={14}/>Скрыть");
-  });
+	  expect(page).toContain("deletePrintGroup.useMutation");
+	  expect(page).toContain("Склады будут отсоединены только от этой группы");
+	});
 
 	it("allows print categories to be renamed and deleted without changing goods", () => {
     expect(page).toContain("updatePrintCategoryGroup.useMutation");

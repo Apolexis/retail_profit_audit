@@ -537,6 +537,20 @@ export async function updateOperationalPrintGroup(input: { id: number; name: str
   return { before, after: after! };
 }
 
+/** Deleting a configuration-only group first detaches warehouses; goods, prices, documents and print history remain intact. */
+export async function deleteOperationalPrintGroup(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const [before] = await db.select().from(operationalPrintGroups).where(eq(operationalPrintGroups.id, id)).limit(1);
+  if (!before) throw new Error("Группа печати не найдена.");
+  const assignments = await db.select({ storeId: operationalWarehouseSettings.storeId }).from(operationalWarehouseSettings).where(eq(operationalWarehouseSettings.printGroupId, id));
+  await db.transaction(async tx => {
+    await tx.update(operationalWarehouseSettings).set({ printGroupId: null }).where(eq(operationalWarehouseSettings.printGroupId, id));
+    await tx.delete(operationalPrintGroups).where(eq(operationalPrintGroups.id, id));
+  });
+  return { before, detachedWarehouses: assignments.length };
+}
+
 export async function listOperationalCatalogCategoryNames() {
   const db = await getDb();
   if (!db) return [];
