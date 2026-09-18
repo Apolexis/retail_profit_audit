@@ -1980,20 +1980,20 @@ export default function PriceControl({
               <div className="card-title">
                 <div>
                   <span>СРАВНЕНИЕ ПО ИМЕНИ СВЯЗИ</span>
-                  <h3>Выберите товар — увидите все варианты поставщиков</h3>
+                  <h3>Выберите связь — затем товар с его предложениями</h3>
               </div>
               <GitCompareArrows size={21} />
             </div>
             <div className="price-toolbar">
               <label>
-                Найти товар
+                Найти имя связи
                 <input
                   value={search}
                   onChange={event => {
                     setSearch(event.target.value);
                     setSelectedProductId(null);
                   }}
-                  placeholder="Название или внутренний код"
+                  placeholder="Имя связи или код A001"
                 />
               </label>
               <label>
@@ -2115,7 +2115,7 @@ export default function PriceControl({
                   <div className="price-product-panel-heading">
                     <span>ИМЕНА СВЯЗЕЙ</span>
                     <strong>{filteredComparisons.length}</strong>
-                    <small>выберите имя связи и затем товар с ценами</small>
+                    <small>связь объединяет товары; цены принадлежат товарам</small>
                   </div>
                   <div
                     className="price-product-list"
@@ -2134,7 +2134,7 @@ export default function PriceControl({
                       onClick={() => setSelectedProductId(item.product.id)}
                     >
                       <span>
-                        {item.product.internalCode}
+                        {item.product.linkGroupCode ?? item.product.linkCode ?? item.product.internalCode}
                       </span>
                       <strong>{item.product.canonicalName}</strong>
                       <small>
@@ -2154,10 +2154,10 @@ export default function PriceControl({
                   <div className="price-detail">
                     <div className="price-detail-heading">
                       <div>
-                        <span>ИМЯ СВЯЗИ · {selected.product.internalCode}</span>
+                        <span>ИМЯ СВЯЗИ · {selected.product.linkGroupCode ?? selected.product.linkCode ?? selected.product.internalCode}</span>
                         <h4>{selected.product.canonicalName}</h4>
                         <div className="price-link-product-chooser" aria-label="Товар в выбранной связи">
-                          <span>Товар с ценами</span>
+                          <span>Товар с предложениями и ценами</span>
                           {selected.products.map(product => <button key={product.id} type="button" className={selectedPriceProduct?.id === product.id ? "active" : ""} onClick={() => setSelectedProductId(product.id)}>{product.canonicalName}</button>)}
                         </div>
                         {canEdit && (
@@ -2171,7 +2171,7 @@ export default function PriceControl({
                               draft: createManualOfferDraft(selectedPriceProduct.baseUnit),
                             })}
                           >
-                            <Plus size={14} /> Добавить цену
+                            <Plus size={14} /> Добавить цену товару
                           </button>
                         )}
                       </div>
@@ -2333,8 +2333,8 @@ export default function PriceControl({
                                       : "var(--price-muted)"
                                 }
                                 strokeWidth={2.4}
-                                dot={{ r: 3, fill: index === 0 ? "var(--price-accent)" : index === 1 ? "var(--price-bar)" : "var(--price-muted)", stroke: "var(--price-surface)", strokeWidth: 1 }}
-                                activeDot={{ r: 5, fill: index === 0 ? "var(--price-accent)" : index === 1 ? "var(--price-bar)" : "var(--price-muted)", stroke: "var(--price-surface)", strokeWidth: 2 }}
+                                dot={{ r: 3, fill: index === 0 ? "var(--price-accent)" : index === 1 ? "var(--price-bar)" : "var(--price-muted)", stroke: "none", strokeWidth: 0 }}
+                                activeDot={{ r: 5, fill: index === 0 ? "var(--price-accent)" : index === 1 ? "var(--price-bar)" : "var(--price-muted)", stroke: "none", strokeWidth: 0 }}
                                 connectNulls
                               />
                             ))}

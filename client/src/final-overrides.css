@@ -4683,7 +4683,7 @@ html[data-audit-theme="dark"] .password-input-toggle { color: #c7bdcc; }
 .packet .price-detail > .price-chart-card { display: none; }
 .packet .price-history-chart { padding: 13px; border: 1px solid var(--price-border); border-radius: 14px; background: color-mix(in srgb, var(--price-surface) 96%, var(--price-accent) 4%); }
 .packet .price-history-chart > div:first-child { display: flex; align-items: end; justify-content: space-between; gap: 10px; }
-.packet .price-history-chart > div:first-child::after { content: "История выбранного имени связи"; color: var(--price-muted); font-size: 10px; line-height: 1.3; text-align: right; }
+.packet .price-history-chart > div:first-child::after { content: "История выбранного товара"; color: var(--price-muted); font-size: 10px; line-height: 1.3; text-align: right; }
 .packet .price-offer-table::before { content: "Варианты поставщиков"; display: block; padding: 0 0 8px; color: var(--price-ink); font: 800 14px/1.2 Manrope, Arial, sans-serif; }
 @media (max-width: 560px) {
   .packet .price-history-chart > div:first-child { display: grid; align-items: start; }

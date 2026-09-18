@@ -217,7 +217,7 @@ describe("страница «Прайс‑контроль»", () => {
   it("дает добавить ручную цену выбранному товару внутри имени связи", () => {
     expect(page).toContain("comparisonManualOffer");
     expect(page).toContain("price-link-product-chooser");
-    expect(page).toContain("Товар с ценами");
+    expect(page).toContain("Товар с предложениями и ценами");
     expect(page).toContain("Добавить цену товару");
     expect(page).toContain("Добавить цену");
     expect(page).toContain("ДОБАВИТЬ ЦЕНУ В ИСТОРИЮ");
