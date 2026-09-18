@@ -33,7 +33,23 @@ const normalizedManualBarcodes = (value: string | null | undefined) => {
   if (unique.some(item => item.length > 128)) throw new Error("Каждый ручной штрихкод не должен быть длиннее 128 символов.");
   return unique.join(";") || null;
 };
-const markingFromEvotorCategory = (product: { name: string; categoryName: string | null }): InventoryMarkingCategory => {
+const markingFromEvotorCategory = (product: { name: string; categoryName: string | null; type?: string | null }): InventoryMarkingCategory => {
+  /**
+   * Cloud V2 exposes the marking class as the product `type`; it is more reliable
+   * than a category name. The textual fallback keeps manually created and legacy
+   * catalog entries readable without fabricating a marking class.
+   */
+  switch (product.type?.toUpperCase()) {
+    case "DIETARY_SUPPLEMENTS_MARKED": return "supplement";
+    case "CAVIAR_MARKED": return "seafood_caviar";
+    case "CANNED_FISH_MARKED": return "seafood_canned";
+    case "BEER_MARKED": return "beer_marked";
+    case "NOT_ALCOHOL_BEER_MARKED": return "beer_non_alcoholic";
+    case "JUICE_MARKED": return "soft_drinks";
+    case "WATER_MARKED": return "water";
+    case "MILK_MARKED": return "dairy";
+    case "ALCOHOL": return "alcohol";
+  }
   const source = `${product.categoryName ?? ""} ${product.name}`.toLocaleLowerCase("ru-RU");
   if (/\b(бад|витамин)/.test(source)) return "supplement";
   if (/икр/.test(source)) return "seafood_caviar";
@@ -362,7 +378,7 @@ export async function updateOperationalCatalogCost(input: { id: number; internal
   return { before, after: after! };
 }
 
-export async function createOperationalCatalogProduct(input: { canonicalName: string; evotorCategoryName?: string | null; baseUnit: InventoryUnit; vatRate?: InventoryVatRate; internalCostPrice?: number | null; markingCategory?: InventoryMarkingCategory; alcoholCode?: string | null; alcoholStrengthPercent?: number | null; manualBarcodes?: string | null; isVisibleInRequests?: boolean; isEvotorExportEnabled?: boolean; actorId: number }) {
+export async function createOperationalCatalogProduct(input: { canonicalName: string; evotorCategoryName?: string | null; baseUnit: InventoryUnit; vatRate?: InventoryVatRate; internalCostPrice?: number | null; markingCategory?: InventoryMarkingCategory; alcoholCode?: string | null; alcoholTypeCode?: string | null; alcoholStrengthPercent?: number | null; manualBarcodes?: string | null; isVisibleInRequests?: boolean; isEvotorExportEnabled?: boolean; actorId: number }) {
   const db = await getDb();
   if (!db) throw new Error("База данных недоступна");
   const canonicalName = normalizedText(input.canonicalName);
@@ -370,7 +386,7 @@ export async function createOperationalCatalogProduct(input: { canonicalName: st
   if (canonicalName.length > 512) throw new Error("Название товара слишком длинное.");
   if (input.internalCostPrice !== undefined && input.internalCostPrice !== null && (!Number.isFinite(input.internalCostPrice) || input.internalCostPrice < 0)) throw new Error("Внутренняя себестоимость должна быть неотрицательным числом.");
   if (input.alcoholStrengthPercent !== undefined && input.alcoholStrengthPercent !== null && (!Number.isFinite(input.alcoholStrengthPercent) || input.alcoholStrengthPercent < 0 || input.alcoholStrengthPercent > 100)) throw new Error("Крепость должна быть числом от 0 до 100%.");
-  const isAlcohol = input.markingCategory === "alcohol";
+  const isAlcohol = input.markingCategory === "alcohol" || input.markingCategory === "beer_marked";
   const [inserted] = await db.insert(operationalCatalogProducts).values({
     storeId: null,
     evotorProductId: `manual:${randomUUID()}`,
@@ -383,6 +399,7 @@ export async function createOperationalCatalogProduct(input: { canonicalName: st
     internalCostPrice: input.internalCostPrice === null || input.internalCostPrice === undefined ? null : input.internalCostPrice.toFixed(2),
     markingCategory: input.markingCategory ?? "none",
     alcoholCode: isAlcohol ? normalizedText(input.alcoholCode ?? "").slice(0, 255) || null : null,
+    alcoholTypeCode: isAlcohol ? normalizedText(input.alcoholTypeCode ?? "").slice(0, 64) || null : null,
     alcoholStrengthPercent: isAlcohol && input.alcoholStrengthPercent !== null && input.alcoholStrengthPercent !== undefined ? input.alcoholStrengthPercent.toFixed(2) : null,
     manualBarcodes: normalizedManualBarcodes(input.manualBarcodes),
     isVisibleInRequests: input.isVisibleInRequests ?? true,
@@ -393,7 +410,7 @@ export async function createOperationalCatalogProduct(input: { canonicalName: st
   return after!;
 }
 
-export async function updateOperationalCatalogProduct(input: { id: number; canonicalName: string; evotorCategoryName?: string | null; baseUnit: InventoryUnit; vatRate: InventoryVatRate; markingCategory: InventoryMarkingCategory; alcoholCode?: string | null; alcoholStrengthPercent?: number | null; manualBarcodes?: string | null; isVisibleInRequests: boolean; isEvotorExportEnabled: boolean }) {
+export async function updateOperationalCatalogProduct(input: { id: number; canonicalName: string; evotorCategoryName?: string | null; baseUnit: InventoryUnit; vatRate: InventoryVatRate; markingCategory: InventoryMarkingCategory; alcoholCode?: string | null; alcoholTypeCode?: string | null; alcoholStrengthPercent?: number | null; manualBarcodes?: string | null; isVisibleInRequests: boolean; isEvotorExportEnabled: boolean }) {
   const db = await getDb();
   if (!db) throw new Error("База данных недоступна");
   const [before] = await db.select().from(operationalCatalogProducts).where(eq(operationalCatalogProducts.id, input.id)).limit(1);
@@ -402,8 +419,8 @@ export async function updateOperationalCatalogProduct(input: { id: number; canon
   if (!canonicalName) throw new Error("Введите название товара.");
   if (canonicalName.length > 512) throw new Error("Название товара слишком длинное.");
   if (input.alcoholStrengthPercent !== undefined && input.alcoholStrengthPercent !== null && (!Number.isFinite(input.alcoholStrengthPercent) || input.alcoholStrengthPercent < 0 || input.alcoholStrengthPercent > 100)) throw new Error("Крепость должна быть числом от 0 до 100%.");
-  const isAlcohol = input.markingCategory === "alcohol";
-  await db.update(operationalCatalogProducts).set({ canonicalName, evotorCategoryName: normalizedText(input.evotorCategoryName ?? "").slice(0, 512) || null, baseUnit: input.baseUnit, vatRate: input.vatRate, markingCategory: input.markingCategory, alcoholCode: isAlcohol ? normalizedText(input.alcoholCode ?? "").slice(0, 255) || null : null, alcoholStrengthPercent: isAlcohol && input.alcoholStrengthPercent !== null && input.alcoholStrengthPercent !== undefined ? input.alcoholStrengthPercent.toFixed(2) : null, manualBarcodes: normalizedManualBarcodes(input.manualBarcodes), isVisibleInRequests: input.isVisibleInRequests, isEvotorExportEnabled: input.isEvotorExportEnabled }).where(eq(operationalCatalogProducts.id, input.id));
+  const isAlcohol = input.markingCategory === "alcohol" || input.markingCategory === "beer_marked";
+  await db.update(operationalCatalogProducts).set({ canonicalName, evotorCategoryName: normalizedText(input.evotorCategoryName ?? "").slice(0, 512) || null, baseUnit: input.baseUnit, vatRate: input.vatRate, markingCategory: input.markingCategory, alcoholCode: isAlcohol ? normalizedText(input.alcoholCode ?? "").slice(0, 255) || null : null, alcoholTypeCode: isAlcohol ? normalizedText(input.alcoholTypeCode ?? "").slice(0, 64) || null : null, alcoholStrengthPercent: isAlcohol && input.alcoholStrengthPercent !== null && input.alcoholStrengthPercent !== undefined ? input.alcoholStrengthPercent.toFixed(2) : null, manualBarcodes: normalizedManualBarcodes(input.manualBarcodes), isVisibleInRequests: input.isVisibleInRequests, isEvotorExportEnabled: input.isEvotorExportEnabled }).where(eq(operationalCatalogProducts.id, input.id));
   const [after] = await db.select().from(operationalCatalogProducts).where(eq(operationalCatalogProducts.id, input.id)).limit(1);
   return { before, after: after! };
 }
@@ -622,6 +639,24 @@ export async function upsertInventoryLine(input: { inventoryId: number; productI
   };
 }
 
+/** Pre-fills only missing draft rows with known accounting balances; manually entered facts are never overwritten. */
+export async function fillInventoryLinesFromAccounting(inventoryId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const inventory = await requireInventory(inventoryId);
+  if (inventory.status !== "draft") throw new Error("Закрытую инвентаризацию нельзя заполнять учетными остатками");
+  const [existingRows, products] = await Promise.all([
+    db.select({ productId: operationalInventoryLines.productId }).from(operationalInventoryLines).where(eq(operationalInventoryLines.inventoryId, inventoryId)),
+    listInventoryProducts({ storeId: inventory.storeId, includeAccounting: true }),
+  ]);
+  const existingProductIds = new Set(existingRows.map(row => row.productId));
+  const rows = products
+    .filter(product => product.accountingQuantity !== null && !existingProductIds.has(product.id))
+    .map(product => ({ inventoryId, productId: product.id, countedQuantity: product.accountingQuantity!.toFixed(3), unit: product.baseUnit }));
+  if (rows.length) await db.insert(operationalInventoryLines).values(rows);
+  return { inventory, added: rows.length, preserved: existingRows.length, unavailable: products.length - rows.length - existingRows.length };
+}
+
 export async function removeInventoryLine(input: { inventoryId: number; productId: number }) {
   const db = await getDb();
   if (!db) throw new Error("База данных недоступна");
@@ -652,6 +687,7 @@ export async function getInventoryDetail(inventoryId: number, options?: { includ
       unit: operationalInventoryLines.unit,
       internalCode: operationalCatalogProducts.evotorCode,
       canonicalName: operationalCatalogProducts.canonicalName,
+      category: operationalCatalogProducts.evotorCategoryName,
     })
     .from(operationalInventoryLines)
     .innerJoin(operationalCatalogProducts, eq(operationalInventoryLines.productId, operationalCatalogProducts.id))
@@ -665,7 +701,7 @@ export async function getInventoryDetail(inventoryId: number, options?: { includ
     storeName: store?.name ?? `Магазин #${inventory.storeId}`,
     createdByName: creator?.displayName ?? `Пользователь #${inventory.createdByAccountId}`,
     closedByName: closer?.displayName ?? null,
-    lines: lines.map(line => ({ ...line, internalCode: line.internalCode || `Эвотор #${line.productId}`, category: null, variant: null, countedQuantity: Number(line.countedQuantity), ...(accountingAtClose ? { accountingQuantity: accountingAtClose.get(line.productId) ?? null } : {}) })),
+    lines: lines.map(line => ({ ...line, internalCode: line.internalCode || `Эвотор #${line.productId}`, variant: null, countedQuantity: Number(line.countedQuantity), ...(accountingAtClose ? { accountingQuantity: accountingAtClose.get(line.productId) ?? null } : {}) })),
   };
 }
 

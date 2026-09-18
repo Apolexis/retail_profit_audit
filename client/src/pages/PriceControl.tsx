@@ -818,7 +818,7 @@ export default function PriceControl({
   const [savedImportCategoryDrafts, setSavedImportCategoryDrafts] = useState<Record<number, string>>({});
   const [editingLinkNameProductId, setEditingLinkNameProductId] = useState<number | null>(null);
   const [linkNameDrafts, setLinkNameDrafts] = useState<Record<number, string>>({});
-  const [newGroupProductDrafts, setNewGroupProductDrafts] = useState<Record<number, { productId: string }>>({});
+  const [newGroupProductDrafts, setNewGroupProductDrafts] = useState<Record<number, { productIds: string[] }>>({});
   const [editingAliasId, setEditingAliasId] = useState<number | null>(null);
   const [aliasSearches, setAliasSearches] = useState<Record<number, string>>({});
   const [newAliasDrafts, setNewAliasDrafts] = useState<Record<number, { supplierId: string; name: string; packaging: string }>>({});
@@ -3499,7 +3499,7 @@ export default function PriceControl({
             {productDraft && (
               <div ref={productEditorRef} className="price-directory-editor">
                 <label>
-                  Имя связи <em>*</em>
+                  Наименование товара <em>*</em>
                   <input
                     value={productDraft.canonicalName}
                     onChange={event =>
@@ -3511,7 +3511,7 @@ export default function PriceControl({
                   />
                 </label>
                 <label>
-                  Код связи
+                  Код товара
                   <input
                     value={productDraft.internalCode}
                     onChange={event =>
@@ -3520,7 +3520,7 @@ export default function PriceControl({
                         internalCode: event.target.value,
                       })
                     }
-                  placeholder="Будет создан автоматически · A001"
+                  placeholder="Внутренний код товара"
                   />
                 </label>
                 <label>
@@ -4432,13 +4432,13 @@ export default function PriceControl({
               <p className="packet-note">Товар хранит собственное название, категорию и цены. Имя связи — только общая группа для сравнения. Переименование связи не меняет товары и историю цен.</p>
               {visibleLinkGroups.length ? <div className="price-alias-list">
                 {visibleLinkGroups.map(group => {
-                  const draft = newGroupProductDrafts[group.id] ?? { productId: "" };
+                  const draft = newGroupProductDrafts[group.id] ?? { productIds: [] };
                   return <article key={group.id} className="price-alias-group">
                     <div className="price-alias-group-heading">
                       <span>ИМЯ СВЯЗИ · {group.linkCode}</span><strong>{group.canonicalName}</strong>
                       <small>Товаров в связи: {group.products.length}</small>
-                      {editingLinkNameProductId === group.id ? <div className="price-link-name-editor"><input value={linkNameDrafts[group.id] ?? group.canonicalName} onChange={event => setLinkNameDrafts(current => ({ ...current, [group.id]: event.target.value }))} aria-label={`Изменить имя связи «${group.canonicalName}»`}/><button type="button" className="packet-link compact" disabled={updateLinkGroup.isPending} onClick={() => { const canonicalName = (linkNameDrafts[group.id] ?? group.canonicalName).trim(); if (canonicalName.length < 2) { toast.error("Имя связи должно содержать не менее двух символов."); return; } updateLinkGroup.mutate({ id: group.id, canonicalName }); setEditingLinkNameProductId(null); }}><Save size={13}/>Сохранить</button><button type="button" className="packet-link compact subtle" onClick={() => setEditingLinkNameProductId(null)}>Отменить</button></div> : <div className="price-link-name-actions"><button type="button" className="packet-link compact subtle" onClick={() => { setLinkNameDrafts(current => ({ ...current, [group.id]: group.canonicalName })); setEditingLinkNameProductId(group.id); }}><Pencil size={13}/>Изменить связь</button><button type="button" className="packet-link compact subtle" onClick={() => setNewGroupProductDrafts(current => ({ ...current, [group.id]: current[group.id] ?? { productId: "" } }))}><Plus size={13}/>Добавить товар</button></div>}
-                      {newGroupProductDrafts[group.id] && <form className="price-link-new-product" onSubmit={event => { event.preventDefault(); if (draft.productId) assignProductLinkGroup.mutate({ productId: Number(draft.productId), linkGroupId: group.id }); setNewGroupProductDrafts(current => { const next = { ...current }; delete next[group.id]; return next; }); }}><PriceSelect value={draft.productId} onValueChange={productId => setNewGroupProductDrafts(current => ({ ...current, [group.id]: { productId } }))} placeholder="Найти и выбрать товар" options={catalogProducts.filter(product => product.linkGroupId !== group.id).map(product => ({ value: String(product.id), label: `${product.canonicalName} · ${product.category ?? "Без категории"}` }))}/><button className="packet-link compact" disabled={assignProductLinkGroup.isPending || !draft.productId}><Plus size={13}/>Добавить товар</button><button type="button" className="packet-link compact subtle" onClick={() => setNewGroupProductDrafts(current => { const next = { ...current }; delete next[group.id]; return next; })}>Отменить</button></form>}
+                      {editingLinkNameProductId === group.id ? <div className="price-link-name-editor"><input value={linkNameDrafts[group.id] ?? group.canonicalName} onChange={event => setLinkNameDrafts(current => ({ ...current, [group.id]: event.target.value }))} aria-label={`Изменить имя связи «${group.canonicalName}»`}/><button type="button" className="packet-link compact" disabled={updateLinkGroup.isPending} onClick={() => { const canonicalName = (linkNameDrafts[group.id] ?? group.canonicalName).trim(); if (canonicalName.length < 2) { toast.error("Имя связи должно содержать не менее двух символов."); return; } updateLinkGroup.mutate({ id: group.id, canonicalName }); setEditingLinkNameProductId(null); }}><Save size={13}/>Сохранить</button><button type="button" className="packet-link compact subtle" onClick={() => setEditingLinkNameProductId(null)}>Отменить</button></div> : <div className="price-link-name-actions"><button type="button" className="packet-link compact subtle" onClick={() => { setLinkNameDrafts(current => ({ ...current, [group.id]: group.canonicalName })); setEditingLinkNameProductId(group.id); }}><Pencil size={13}/>Изменить связь</button><button type="button" className="packet-link compact subtle" onClick={() => setNewGroupProductDrafts(current => ({ ...current, [group.id]: current[group.id] ?? { productIds: [] } }))}><Plus size={13}/>Добавить товары</button></div>}
+                      {newGroupProductDrafts[group.id] && <form className="price-link-new-product" onSubmit={async event => { event.preventDefault(); if (!draft.productIds.length) return; await Promise.all(draft.productIds.map(productId => assignProductLinkGroup.mutateAsync({ productId: Number(productId), linkGroupId: group.id }))); setNewGroupProductDrafts(current => { const next = { ...current }; delete next[group.id]; return next; }); }}><PriceSelect value="" onValueChange={productId => setNewGroupProductDrafts(current => ({ ...current, [group.id]: { productIds: Array.from(new Set([...(current[group.id]?.productIds ?? []), productId])) } }))} placeholder="Найти и добавить товар" options={catalogProducts.filter(product => product.linkGroupId !== group.id && !draft.productIds.includes(String(product.id))).map(product => ({ value: String(product.id), label: `${product.canonicalName} · ${product.category ?? "Без категории"}` }))}/>{draft.productIds.length > 0 && <div className="price-link-picked-products">{draft.productIds.map(productId => { const product = catalogProducts.find(item => String(item.id) === productId); return <button type="button" key={productId} onClick={() => setNewGroupProductDrafts(current => ({ ...current, [group.id]: { productIds: (current[group.id]?.productIds ?? []).filter(item => item !== productId) } }))}>{product?.canonicalName ?? "Товар"}<X size={12}/></button>; })}</div>}<button className="packet-link compact" disabled={assignProductLinkGroup.isPending || !draft.productIds.length}><Plus size={13}/>Добавить выбранные</button><button type="button" className="packet-link compact subtle" onClick={() => setNewGroupProductDrafts(current => { const next = { ...current }; delete next[group.id]; return next; })}>Отменить</button></form>}
                     </div>
                     <div className="price-link-products"><span>Товары в связи</span>{group.products.map(product => <div key={product.id}><strong>{product.canonicalName}</strong><small>{product.internalCode} · {product.category ?? "Без категории"}</small><button type="button" className="packet-link compact subtle" onClick={() => { setDirectoryTab("products"); setDirectoryProductSearch(product.canonicalName); }}>Открыть товар</button></div>)}</div>
                   </article>;

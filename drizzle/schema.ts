@@ -339,6 +339,7 @@ export const operationalCatalogProducts = mysqlTable("operational_catalog_produc
   markingCategory: mysqlEnum("markingCategory", ["none", "supplement", "seafood_caviar", "seafood_canned", "alcohol", "beer_marked", "beer_non_alcoholic", "soft_drinks", "water", "dairy"]).default("none").notNull(),
   /** Alcohol-specific data is required only when the controlled marking selection is alcohol. */
   alcoholCode: varchar("alcoholCode", { length: 255 }),
+  alcoholTypeCode: varchar("alcoholTypeCode", { length: 64 }),
   alcoholStrengthPercent: decimal("alcoholStrengthPercent", { precision: 5, scale: 2 }),
   /** Manually confirmed barcodes, normalized as semicolon-separated text. */
   manualBarcodes: text("manualBarcodes"),

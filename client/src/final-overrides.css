@@ -4991,3 +4991,32 @@ html[data-audit-theme="dark"] .packet :is(.price-import-list, .saved-price-impor
   box-shadow: none !important;
   filter: none !important;
 }
+
+/* Multiple goods can be staged for one named link without turning the editor into a modal. */
+.packet .price-link-picked-products { display: flex; flex-wrap: wrap; gap: 5px; min-width: 0; }
+.packet .price-link-picked-products > button { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; min-height: 28px; margin: 0; padding: 4px 7px; border: 1px solid var(--price-line); border-radius: 8px; background: var(--price-panel); color: var(--ink); font: 700 11px Manrope, Arial, sans-serif; }
+.packet .price-link-picked-products > button:hover, .packet .price-link-picked-products > button:focus-visible { border-color: var(--price-accent); box-shadow: 0 0 0 1px var(--price-accent-faint); outline: none; }
+.packet .price-link-picked-products > button > svg { flex: 0 0 auto; color: var(--price-accent); }
+
+/* Operational screens inherit the approved outline behavior: icons stay before labels; no generic blue hover tile reaches their actions. */
+.packet :is(.revenue-registry, .inventory-layout, .inventory-history, .stock-table-card, .catalog-working-card, .catalog-editor-card, .warehouse-table-card) :is(.packet-link, .subtle-button) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+html[data-audit-theme="light"] .packet :is(.revenue-registry, .inventory-layout, .inventory-history, .stock-table-card, .catalog-working-card, .catalog-editor-card, .warehouse-table-card) .subtle-button:not(:disabled):hover {
+  transform: none !important;
+  border-color: #0a84ff !important;
+  background: #eaf5ff !important;
+  color: #075dbb !important;
+  box-shadow: 0 0 0 1px rgba(10, 132, 255, .12) !important;
+  filter: none !important;
+}
+html[data-audit-theme="dark"] .packet :is(.revenue-registry, .inventory-layout, .inventory-history, .stock-table-card, .catalog-working-card, .catalog-editor-card, .warehouse-table-card) .subtle-button:not(:disabled):hover {
+  transform: none !important;
+  border-color: #ff765f !important;
+  background: #26131d !important;
+  color: #ffe8ef !important;
+  box-shadow: 0 0 0 1px rgba(255, 118, 95, .18) !important;
+  filter: none !important;
+}

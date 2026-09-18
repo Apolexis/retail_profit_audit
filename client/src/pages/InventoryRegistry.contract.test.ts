@@ -56,11 +56,25 @@ describe("интерфейс операционной инвентаризаци
     expect(css).toContain('.packet .inventory-quantity-input small { position: absolute; right: 10px;');
   });
 
+  it("дает руководителю заполнить черновик известными остатками и упорядочить строки по категориям", () => {
+    expect(page).toContain("fillFromAccounting");
+    expect(page).toContain("Заполнить учетными остатками");
+    expect(page).toContain("По категориям");
+    expect(page).toContain("sortedLines");
+    expect(router).toContain("fillFromAccounting:");
+    expect(router).toContain('action: "inventory.lines.fill_from_accounting"');
+  });
+
   it("ставит иконку поиска справа, а интерактивная история не содержит вложенных кнопок", () => {
     expect(css).toContain('.packet .inventory-search svg { position: absolute; right: 10px;');
     expect(css).toContain('.packet .inventory-history-list > article { display: grid;');
     expect(css).toContain('.packet .inventory-history-select { display: grid;');
     expect(page).not.toContain('<button type="button" className={item.id === activeInventoryId');
+  });
+
+  it("использует для таблицы пересчета тот же drag-scroll контейнер, что и Ритм", () => {
+    expect(page).toContain('className="data-table-wrap inventory-lines-wrap"');
+    expect(css).toContain('.packet .inventory-lines-wrap { overflow-x: auto; cursor: grab;');
   });
 
   it("использует синие поверхности в light и нейтральные в dark без заливки coral", () => {

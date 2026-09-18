@@ -26,8 +26,8 @@ describe("warehouse control contract", () => {
   it("registers the administrator-only operational route and themed table", () => {
     expect(app).toContain('path="/warehouse-control"');
     expect(shell).toContain('["/warehouse-control", "27", "Склады", true]');
-    expect(styles).toContain('--warehouse-accent: #0a84ff');
-    expect(styles).toContain('--warehouse-accent: #ff765f');
+    expect(styles).toContain('--warehouse-accent: var(--packet-accent);');
+    expect(styles).toContain('only the shared theme tokens decide surfaces and contours');
     expect(styles).toContain('.warehouse-table.data-table');
   });
 });

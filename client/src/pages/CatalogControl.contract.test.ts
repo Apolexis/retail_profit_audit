@@ -52,11 +52,12 @@ describe("общий операционный справочник", () => {
     expect(editor).toContain("Обратная запись в Эвотор пока не подключена");
   });
 
-  it("объединяет штрихкоды в одном поле и раскрывает алкогольные поля только для алкоголя", () => {
+  it("объединяет штрихкоды в одном поле и раскрывает алкогольные поля для алкоголя и маркированного пива", () => {
     expect(editor).toContain("Эвотор и ручные, строго через ;");
     expect(editor).not.toContain("Штрихкоды Эвотор");
-    expect(editor).toContain('marking === "alcohol"');
+    expect(editor).toContain('marking === "alcohol" || marking === "beer_marked"');
     expect(editor).toContain("Алкокод");
+    expect(editor).toContain("Тип алкоголя");
     expect(editor).toContain("Крепость, %");
   });
 

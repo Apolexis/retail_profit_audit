@@ -1,10 +1,8 @@
-import { ArrowDown, Boxes, ClipboardCheck, PencilLine, Save, Search } from "lucide-react";
+import { ArrowDown, Boxes, ClipboardCheck, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { AuditShell } from "@/components/AuditShell";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ThemedSelect } from "@/components/ui/themed-select";
-import { normalizeDecimalInputText } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import "@/stock-control.css";
 
@@ -39,9 +37,6 @@ export default function StockControl() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
   const [offset, setOffset] = useState(0);
-  const [adjustingItem, setAdjustingItem] = useState<StockItem | null>(null);
-  const [adjustedQuantity, setAdjustedQuantity] = useState("");
-  const [adjustmentReason, setAdjustmentReason] = useState("");
   const isSeller = me.data?.role === "seller";
   const isManager = me.data?.role === "manager";
   const isAdmin = me.data?.role === "admin";
@@ -58,12 +53,6 @@ export default function StockControl() {
   const visibleStores = useMemo(() => (stores.data ?? []).filter(store => !store.isHidden), [stores.data]);
   const categories = useMemo(() => Array.from(new Set(((products.data ?? []) as Array<{ category?: string | null }>).map(product => product.category).filter((value): value is string => Boolean(value)))).sort((left, right) => left.localeCompare(right, "ru")), [products.data]);
   const canShowMore = Boolean(result && offset + result.items.length < result.total);
-  const adjustStock = trpc.inventoryRegistry.adjustStock.useMutation({
-    onSuccess: async () => {
-      await stock.refetch();
-      setAdjustingItem(null); setAdjustedQuantity(""); setAdjustmentReason("");
-    },
-  });
   const startRevision = (item?: StockItem) => {
     const params = new URLSearchParams();
     if (item?.storeId ?? selectedStoreId) params.set("store", String(item?.storeId ?? selectedStoreId));
@@ -71,19 +60,8 @@ export default function StockControl() {
     setLocation(`/inventory-control${params.size ? `?${params}` : ""}`);
   };
   const revisionHref = (item: StockItem) => {
-    const params = new URLSearchParams({ storeId: String(item.storeId), productId: String(item.productId) });
+    const params = new URLSearchParams({ store: String(item.storeId), product: String(item.productId) });
     return `/inventory-control?${params}`;
-  };
-  const openAdjustment = (item: StockItem) => {
-    setAdjustingItem(item);
-    setAdjustedQuantity(item.accountingQuantity === null ? "0" : String(item.accountingQuantity));
-    setAdjustmentReason("");
-  };
-  const submitAdjustment = () => {
-    if (!adjustingItem) return;
-    const countedQuantity = Number(adjustedQuantity);
-    if (!Number.isFinite(countedQuantity) || countedQuantity < 0) return;
-    adjustStock.mutate({ storeId: adjustingItem.storeId, productId: adjustingItem.productId, countedQuantity, reason: adjustmentReason });
   };
 
   if (!me.isLoading && !isSeller && !isManager && !isAdmin) {
@@ -92,7 +70,7 @@ export default function StockControl() {
 
   return <AuditShell kicker="24 / ОСТАТКИ" title="Остатки">
     <section className="page-lede stock-lede"><div><span>УПРАВЛЕНИЕ МАГАЗИНАМИ</span><h2>Остатки магазинов</h2><p>Это отдельный рабочий список по точкам. Учетный остаток берется из последнего read-only снимка Эвотор и затем корректируется закрытой инвентаризацией или подтвержденным движением. Отображается продажная цена назначенного виду цен и сумма по ней; внутренняя себестоимость не раскрывается.</p></div></section>
-    <details className="packet-card stock-rule-disclosure"><summary><span>КАК ЧИТАТЬ ОСТАТКИ</span><strong>«Не посчитан» — это не ноль</strong></summary><div><p>После «Обновить каталог» на закрепленной точке отображается read-only остаток Эвотор. Если такой снимок и закрытая ревизия отсутствуют, позиция остается со статусом «Не посчитан», а не подменяется нулем.</p><p>Руководитель или администратор может изменить остаток прямо из строки: система сохраняет отдельное неизменяемое движение, разницу и обязательную причину в общем журнале. Продавец готовит пересчет, но не подтверждает прямую корректировку.</p></div></details>
+    <details className="packet-card stock-rule-disclosure"><summary><span>КАК ЧИТАТЬ ОСТАТКИ</span><strong>«Не посчитан» — это не ноль</strong></summary><div><p>После «Обновить каталог» на закрепленной точке отображается read-only остаток Эвотор. Если такой снимок и закрытая ревизия отсутствуют, позиция остается со статусом «Не посчитан», а не подменяется нулем.</p><p>«Изменить в пересчете» сразу открывает черновик инвентаризации выбранного магазина и товара. Там вводится только фактический остаток; после закрытия пересчета система создает неизменяемую корректировку и общий audit.</p></div></details>
 
     <section className="packet-card stock-table-card">
       <div className="card-title"><div><span>УЧЕТНЫЙ ОСТАТОК</span><h3>Номенклатура по магазинам</h3></div><button type="button" className="subtle-button" onClick={() => startRevision()}><ClipboardCheck size={15}/>Новая ревизия</button></div>
@@ -101,8 +79,7 @@ export default function StockControl() {
         <label>Категория<ThemedSelect value={category} onChange={event => { setCategory(event.target.value); setOffset(0); }}><option value="">Все категории</option>{categories.map(item => <option value={item} key={item}>{item}</option>)}</ThemedSelect></label>
         <label>Поиск товара<div className="stock-search"><input value={query} onChange={event => { setQuery(event.target.value); setOffset(0); }} placeholder="Название или код"/><Search size={15}/></div></label>
       </div>
-      {stock.isLoading ? <p className="packet-note">Собираем учетные остатки…</p> : stock.isError ? <p className="packet-note">Остатки недоступны: {stock.error.message}</p> : !result?.items.length ? <div className="empty-state compact"><Boxes size={25}/><h2>{query || category ? "Ничего не найдено" : "Номенклатура пока не загружена"}</h2><p>{query || category ? "Измените запрос, категорию или магазин." : "Сначала подтвердите каталог Эвотор для нужной точки."}</p></div> : <><div className="stock-summary"><strong>{result.total} {result.total === 1 ? "позиция" : result.total < 5 ? "позиции" : "позиций"}</strong><span>{selectedStoreId ? "Выбранная точка · показаны все позиции" : "Все доступные точки"}</span></div><div className="data-table-wrap stock-table-wrap"><table className="data-table stock-table"><thead><tr><th>№</th><th>Магазин</th><th>Категория</th><th>Товар</th><th>НДС</th><th>Продажная цена</th><th>Учетный остаток</th><th>Сумма по цене</th><th aria-label="Действие"></th></tr></thead><tbody>{result.items.map((item, index) => <tr key={`${item.storeId}:${item.productId}`}><td>{offset + index + 1}</td><td><strong>{item.storeName}</strong></td><td>{item.category ?? "—"}</td><td><strong>{item.canonicalName}</strong><small>{item.internalCode}</small></td><td>{item.vatRate === "VAT_22" ? "22%" : "10%"}</td><td className="stock-money">{moneyText(item.salePrice)}</td><td className={item.accountingQuantity === null ? "stock-not-counted" : "stock-quantity"}>{item.accountingQuantity === null ? "Не посчитан" : `${quantityText(item.accountingQuantity)} ${unitLabel[item.baseUnit]}`}</td><td className="stock-money">{moneyText(item.stockValue)}</td><td><div className="stock-row-actions">{!isSeller && <button type="button" className="subtle-button stock-adjust-action" onClick={() => openAdjustment(item)}><PencilLine size={14}/>Изменить остаток</button>}<Link href={revisionHref(item)} className="subtle-button stock-revision-action"><ClipboardCheck size={14}/>Ревизия</Link></div></td></tr>)}</tbody></table></div>{canShowMore && <button type="button" className="subtle-button stock-more" onClick={() => setOffset(current => current + (selectedStoreId ? 2_000 : 50))}><ArrowDown size={14}/>Показать еще</button>}</>}
+      {stock.isLoading ? <p className="packet-note">Собираем учетные остатки…</p> : stock.isError ? <p className="packet-note">Остатки недоступны: {stock.error.message}</p> : !result?.items.length ? <div className="empty-state compact"><Boxes size={25}/><h2>{query || category ? "Ничего не найдено" : "Номенклатура пока не загружена"}</h2><p>{query || category ? "Измените запрос, категорию или магазин." : "Сначала подтвердите каталог Эвотор для нужной точки."}</p></div> : <><div className="stock-summary"><strong>{result.total} {result.total === 1 ? "позиция" : result.total < 5 ? "позиции" : "позиций"}</strong><span>{selectedStoreId ? "Выбранная точка · показаны все позиции" : "Все доступные точки"}</span></div><div className="data-table-wrap stock-table-wrap"><table className="data-table stock-table"><thead><tr><th>№</th><th>Магазин</th><th>Категория</th><th>Товар</th><th>НДС</th><th>Продажная цена</th><th>Учетный остаток</th><th>Сумма по цене</th><th aria-label="Действие"></th></tr></thead><tbody>{result.items.map((item, index) => <tr key={`${item.storeId}:${item.productId}`}><td>{offset + index + 1}</td><td><strong>{item.storeName}</strong></td><td>{item.category ?? "—"}</td><td><strong>{item.canonicalName}</strong><small>{item.internalCode}</small></td><td>{item.vatRate === "VAT_22" ? "22%" : "10%"}</td><td className="stock-money">{moneyText(item.salePrice)}</td><td className={item.accountingQuantity === null ? "stock-not-counted" : "stock-quantity"}>{item.accountingQuantity === null ? "Не посчитан" : `${quantityText(item.accountingQuantity)} ${unitLabel[item.baseUnit]}`}</td><td className="stock-money">{moneyText(item.stockValue)}</td><td><div className="stock-row-actions"><Link href={revisionHref(item)} className="subtle-button stock-revision-action"><ClipboardCheck size={14}/>Изменить в пересчете</Link></div></td></tr>)}</tbody></table></div>{canShowMore && <button type="button" className="subtle-button stock-more" onClick={() => setOffset(current => current + (selectedStoreId ? 2_000 : 50))}><ArrowDown size={14}/>Показать еще</button>}</>}
     </section>
-    <Dialog open={Boolean(adjustingItem)} onOpenChange={open => { if (!open && !adjustStock.isPending) setAdjustingItem(null); }}><DialogContent className="stock-adjust-dialog"><DialogHeader><DialogTitle>Изменить остаток</DialogTitle><DialogDescription>{adjustingItem?.storeName} · {adjustingItem?.canonicalName}. Сохранится отдельная корректировка в общем журнале.</DialogDescription></DialogHeader><label>Фактический остаток<input data-decimal-input value={adjustedQuantity} onChange={event => setAdjustedQuantity(normalizeDecimalInputText(event.target.value).replace(/[^0-9.]/g, ""))} inputMode="decimal" autoFocus/><span>{adjustingItem ? unitLabel[adjustingItem.baseUnit] : ""}</span></label><label>Причина корректировки<textarea value={adjustmentReason} onChange={event => setAdjustmentReason(event.target.value)} placeholder="Например: приемка накладной №…" maxLength={512}/></label><DialogFooter><button type="button" className="subtle-button" onClick={() => setAdjustingItem(null)} disabled={adjustStock.isPending}>Отмена</button><button type="button" className="packet-link" onClick={submitAdjustment} disabled={adjustStock.isPending || adjustmentReason.trim().length < 3 || !adjustedQuantity.trim()}><Save size={15}/>{adjustStock.isPending ? "Сохраняем…" : "Сохранить остаток"}</button></DialogFooter></DialogContent></Dialog>
   </AuditShell>;
 }

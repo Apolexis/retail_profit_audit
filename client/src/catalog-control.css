@@ -178,11 +178,19 @@ html[data-audit-theme="dark"] .packet .catalog-working-card:hover { border-color
 .packet .catalog-editor-grid { grid-template-columns: minmax(220px, 1.2fr) minmax(170px, .75fr) minmax(120px, .55fr) minmax(160px, .7fr); }
 .packet .catalog-editor-grid > label:first-child { grid-column: span 2; }
 .packet .catalog-editor-grid > label:nth-child(5) { grid-column: auto; }
-.packet .catalog-table td:nth-child(2) { min-width: 210px; max-width: 340px; }
+.packet .catalog-table td:nth-child(2) { min-width: 180px; max-width: 260px; }
 .packet .catalog-table td:nth-child(2) strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 760px) {
   .packet .catalog-editor-title-actions { width: 100%; justify-content: flex-start; }
   .packet .catalog-editor-title-actions .packet-link { margin-left: auto; }
+  .packet .catalog-editor-grid,
+  .packet .catalog-editor-price-grid { grid-template-columns: minmax(0, 1fr); }
+  .packet .catalog-editor-grid > label:first-child,
+  .packet .catalog-editor-grid > label:nth-child(5),
+  .packet .catalog-editor-locked { grid-column: auto; }
+  .packet .catalog-editor-title-actions .subtle-button,
+  .packet .catalog-editor-title-actions .packet-link,
+  .packet .catalog-editor-price-grid > .subtle-button { min-width: 0; }
 }
 
 .packet .catalog-table-money { min-width: 126px; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }

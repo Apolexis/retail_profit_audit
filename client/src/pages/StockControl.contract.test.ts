@@ -5,16 +5,15 @@ const page = readFileSync(new URL("./StockControl.tsx", import.meta.url), "utf8"
 const css = readFileSync(new URL("../stock-control.css", import.meta.url), "utf8");
 
 describe("интерфейс операционных остатков", () => {
-  it("отделяет остатки от ревизии и сохраняет прямую корректировку отдельным действием", () => {
+  it("отделяет остатки от ревизии и открывает выбранную строку в пересчете", () => {
     expect(page).toContain("Остатки магазинов");
     expect(page).toContain("«Не посчитан» — это не ноль");
-    expect(page).toContain("сохраняет отдельное неизменяемое движение");
+    expect(page).toContain("сразу открывает черновик инвентаризации выбранного магазина и товара");
     expect(page).toContain("Новая ревизия");
-    expect(page).toContain("Ревизия");
+    expect(page).toContain("Изменить в пересчете");
     expect(page).toContain('href={revisionHref(item)}');
-    expect(page).toContain("trpc.inventoryRegistry.adjustStock.useMutation");
-    expect(page).toContain("Изменить остаток");
-    expect(page).toContain("Причина корректировки");
+    expect(page).toContain('new URLSearchParams({ store: String(item.storeId), product: String(item.productId) })');
+    expect(page).not.toContain("stock-adjust-dialog");
   });
 
   it("дает выбрать одну точку или смотреть все доступные, с поиском и постраничной загрузкой", () => {
@@ -31,7 +30,7 @@ describe("интерфейс операционных остатков", () => {
     expect(css).toContain(".packet .stock-search > svg { position: absolute; right: 10px;");
     expect(page).toContain('className="data-table-wrap stock-table-wrap"');
     expect(css).toContain('.packet .stock-table-wrap { overflow-x: auto; cursor: grab;');
-    expect(css).toContain('--stock-accent: #ff765f;');
-    expect(css).toContain('--stock-accent: #0a84ff;');
+    expect(css).toContain('--stock-accent: var(--packet-accent);');
+    expect(css).toContain('no page-local palette is introduced');
   });
 });

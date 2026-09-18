@@ -39,6 +39,8 @@
 .packet .inventory-note-form textarea:focus-visible,
 .packet .inventory-line-create input:focus-visible { border-color: var(--inventory-accent); outline: 2px solid var(--inventory-accent); outline-offset: 1px; box-shadow: none; }
 .packet .inventory-create-actions { display: flex; justify-content: flex-end; }
+.packet .inventory-table-actions { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+.packet .inventory-table-actions .subtle-button { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; margin: 0; white-space: nowrap; }
 
 .packet .inventory-note-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: end; }
 .packet .inventory-note-form .subtle-button,
@@ -55,7 +57,9 @@
 .packet .inventory-quantity-input { position: relative; display: grid; align-items: center; }
 .packet .inventory-quantity-input input { padding-right: 42px; }
 .packet .inventory-quantity-input small { position: absolute; right: 10px; color: var(--muted); font: 750 11px Manrope, Arial, sans-serif; letter-spacing: 0; pointer-events: none; text-transform: none; }
-.packet .inventory-lines-wrap { overflow-x: auto; cursor: default; }
+.packet .inventory-lines-wrap { overflow-x: auto; cursor: grab; scrollbar-width: none; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y; }
+.packet .inventory-lines-wrap::-webkit-scrollbar { display: none; }
+.packet .inventory-lines-wrap.table-mouse-dragging { cursor: grabbing; user-select: none; }
 .packet .inventory-lines { min-width: 660px; }
 .packet .inventory-lines tbody tr:nth-child(even) { background: color-mix(in srgb, var(--inventory-panel) 72%, transparent); }
 .packet .inventory-lines td small { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
@@ -126,7 +130,7 @@ html[data-audit-theme="dark"] .packet .inventory-lines tbody tr:nth-child(even) 
 html[data-audit-theme="dark"] .packet .inventory-history-list > article .subtle-button:hover,
 html[data-audit-theme="dark"] .packet .inventory-history-list > article .subtle-button:focus-visible,
 html[data-audit-theme="dark"] .packet .inventory-draft-actions .subtle-button:hover,
-html[data-audit-theme="dark"] .packet .inventory-draft-actions .subtle-button:focus-visible { border-color: var(--inventory-accent); background: rgba(255, 118, 95, .07); color: #ffd1c8; box-shadow: 0 0 0 1px rgba(255, 118, 95, .1); }
+html[data-audit-theme="dark"] .packet .inventory-draft-actions .subtle-button:focus-visible { border-color: var(--inventory-accent); background: rgba(255, 118, 95, .07); color: var(--inventory-accent); box-shadow: 0 0 0 1px rgba(255, 118, 95, .1); }
 
 /* The legacy stylesheet has a generic important packet-card rule. Override it locally. */
 html[data-audit-theme="light"] .packet .packet-card.inventory-create-card,
@@ -152,7 +156,7 @@ html[data-audit-theme="light"] .packet .packet-card.inventory-rule-disclosure:fo
 html[data-audit-theme="dark"] .packet .packet-card.inventory-create-card:focus-within,
 html[data-audit-theme="dark"] .packet .packet-card.inventory-draft-card:focus-within,
 html[data-audit-theme="dark"] .packet .packet-card.inventory-history:focus-within,
-html[data-audit-theme="dark"] .packet .packet-card.inventory-rule-disclosure:focus-within { border-color: var(--inventory-accent) !important; background: var(--inventory-card) !important; box-shadow: 0 0 0 1px rgba(255, 155, 136, .12), inset 0 1px 0 rgba(255, 255, 255, .025) !important; }
+html[data-audit-theme="dark"] .packet .packet-card.inventory-rule-disclosure:focus-within { border-color: var(--inventory-accent) !important; background: var(--inventory-card) !important; box-shadow: 0 0 0 1px rgba(255, 118, 95, .12), inset 0 1px 0 rgba(255, 255, 255, .025) !important; }
 
 @media (max-width: 760px) {
   .packet .inventory-meta-grid,
@@ -171,6 +175,8 @@ html[data-audit-theme="dark"] .packet .packet-card.inventory-rule-disclosure:foc
   .packet .inventory-history-select small { grid-column: 1; }
   .packet .inventory-history-select b { grid-column: 2; grid-row: 1 / span 2; }
   .packet .inventory-history-list > article .subtle-button { width: calc(100% - 24px); margin: 0 12px 12px; justify-content: center; }
+  .packet .inventory-table-actions { width: 100%; justify-content: stretch; }
+  .packet .inventory-table-actions .subtle-button { flex: 1 1 190px; justify-content: center; }
 }
 @media (max-width: 400px) {
   .packet .inventory-rule-disclosure > summary { grid-template-columns: 1fr; gap: 4px; }
