@@ -12,6 +12,7 @@ type EvotorPage = {
 };
 
 type EvotorRecord = Record<string, unknown>;
+type EvotorProductGroup = { id: string; name: string; parentId: string | null };
 
 export type EvotorCatalogStore = {
   id: string;
@@ -24,6 +25,7 @@ export type EvotorCatalogPreviewItem = {
   code: string | null;
   name: string;
   barcodes: string[];
+  quantity: number | null;
   unit: string | null;
   tax: string | null;
   vatRate: "VAT_10" | "VAT_22";
@@ -92,6 +94,8 @@ export function normalizeEvotorCatalogPreviewItem(value: unknown): EvotorCatalog
     name,
     code: text(record.code),
     barcodes: barcodeList(record.barcodes),
+    // Cloud API marks an untracked/unlimited balance with one million. It is not a physical stock fact.
+    quantity: (() => { const value = finiteNumber(record.quantity); return value !== null && value >= 999_999 ? null : value; })(),
     unit: text(record.measure_name),
     tax: text(record.tax),
     vatRate: vatRateFromEvotorTax(record.tax),
@@ -99,6 +103,15 @@ export function normalizeEvotorCatalogPreviewItem(value: unknown): EvotorCatalog
     parentId: text(record.parent_id),
     categoryName: null,
   };
+}
+
+function normalizeEvotorProductGroup(value: unknown): EvotorProductGroup | null {
+  const record = asRecord(value);
+  if (!record) return null;
+  const id = text(record.id);
+  const name = text(record.name);
+  if (!id || !name) return null;
+  return { id, name, parentId: text(record.parent_id) };
 }
 
 function evotorHeaders() {
@@ -173,12 +186,17 @@ export async function listEvotorCatalogStoresPreview(): Promise<EvotorCatalogSto
 
 export async function listEvotorCatalogPreview(storeId: string): Promise<EvotorCatalogPreviewItem[]> {
   const encodedStoreId = encodeURIComponent(storeId);
-  const products = (await readEvotorPages(`/stores/${encodedStoreId}/products`))
+  const [rawProducts, rawGroups] = await Promise.all([
+    readEvotorPages(`/stores/${encodedStoreId}/products`),
+    readEvotorPages(`/stores/${encodedStoreId}/product-groups`),
+  ]);
+  const products = rawProducts
     .map(normalizeEvotorCatalogPreviewItem)
     .filter((product): product is EvotorCatalogPreviewItem => Boolean(product));
+  const groups = rawGroups.map(normalizeEvotorProductGroup).filter((group): group is EvotorProductGroup => Boolean(group));
   const all = Array.from(new Map(products.map(product => [product.id, product])).values());
-  const namesById = new Map(all.map(product => [product.id, product.name]));
-  return all.map(product => ({ ...product, categoryName: product.parentId ? namesById.get(product.parentId) ?? null : null }))
+  const groupsById = new Map(groups.map(group => [group.id, group]));
+  return all.map(product => ({ ...product, categoryName: product.parentId ? groupsById.get(product.parentId)?.name ?? null : null }))
     .filter(product => !/^(group|folder|category)$/i.test(product.type ?? ""))
     .sort((left, right) => left.name.localeCompare(right.name, "ru"));
 }

@@ -33,6 +33,19 @@ const normalizedManualBarcodes = (value: string | null | undefined) => {
   if (unique.some(item => item.length > 128)) throw new Error("Каждый ручной штрихкод не должен быть длиннее 128 символов.");
   return unique.join(";") || null;
 };
+const markingFromEvotorCategory = (product: { name: string; categoryName: string | null }): InventoryMarkingCategory => {
+  const source = `${product.categoryName ?? ""} ${product.name}`.toLocaleLowerCase("ru-RU");
+  if (/\b(бад|витамин)/.test(source)) return "supplement";
+  if (/икр/.test(source)) return "seafood_caviar";
+  if (/консерв/.test(source)) return "seafood_canned";
+  if (/безалкогольн.*пиво/.test(source)) return "beer_non_alcoholic";
+  if (/пиво/.test(source)) return "beer_marked";
+  if (/бутилирован.*вод|питьев.*вод/.test(source)) return "water";
+  if (/молок|сливк|сыр|йогурт/.test(source)) return "dairy";
+  if (/сок|лимонад|напит/.test(source)) return "soft_drinks";
+  if (/алкогол|вино|водка|коньяк|виски|ром|ликер/.test(source)) return "alcohol";
+  return "none";
+};
 
 export function validateInventoryDate(value: string) {
   if (!isoDate.test(value)) throw new Error("Выберите дату инвентаризации в формате ГГГГ-ММ-ДД");
@@ -88,9 +101,11 @@ async function requireInventory(id: number) {
 export async function getInventoryAccountingQuantities(storeId: number, productIds?: number[]) {
   const db = await getDb();
   if (!db) return new Map<number, number>();
+  const snapshotConditions = [eq(operationalEvotorProductLinks.storeId, storeId), productIds?.length ? inArray(operationalEvotorProductLinks.productId, productIds) : undefined].filter(Boolean);
+  const snapshots = await db.select({ productId: operationalEvotorProductLinks.productId, quantity: operationalEvotorProductLinks.evotorQuantitySnapshot }).from(operationalEvotorProductLinks).where(and(...snapshotConditions));
   const conditions = [eq(operationalStockMovements.storeId, storeId), productIds?.length ? inArray(operationalStockMovements.productId, productIds) : undefined].filter(Boolean);
   const rows = await db.select({ productId: operationalStockMovements.productId, quantityDelta: operationalStockMovements.quantityDelta }).from(operationalStockMovements).where(and(...conditions));
-  const quantities = new Map<number, number>();
+  const quantities = new Map<number, number>(snapshots.filter(row => row.quantity !== null).map(row => [row.productId, Number(row.quantity)]));
   for (const row of rows) quantities.set(row.productId, Math.round(((quantities.get(row.productId) ?? 0) + Number(row.quantityDelta)) * 1000) / 1000);
   return quantities;
 }
@@ -196,6 +211,11 @@ export async function listOperationalStock(input: { storeIds?: number[] | null; 
     ? await db.select({ productId: operationalProductSalePrices.productId, priceTypeId: operationalProductSalePrices.priceTypeId, salePrice: operationalProductSalePrices.salePrice }).from(operationalProductSalePrices).where(and(inArray(operationalProductSalePrices.productId, productIds), inArray(operationalProductSalePrices.priceTypeId, priceTypeIds)))
     : [];
   const salePriceByProductType = new Map(salePriceRows.map(row => [`${row.productId}:${row.priceTypeId}`, Number(row.salePrice)]));
+  const snapshots = await db
+    .select({ storeId: operationalEvotorProductLinks.storeId, productId: operationalEvotorProductLinks.productId, quantity: operationalEvotorProductLinks.evotorQuantitySnapshot })
+    .from(operationalEvotorProductLinks)
+    .where(and(inArray(operationalEvotorProductLinks.productId, productIds), inArray(operationalEvotorProductLinks.storeId, storeIds)));
+  const snapshotByStoreProduct = new Map(snapshots.filter(row => row.quantity !== null).map(row => [`${row.storeId}:${row.productId}`, Number(row.quantity)]));
   const movements = await db
     .select({ storeId: operationalStockMovements.storeId, productId: operationalStockMovements.productId, quantityDelta: operationalStockMovements.quantityDelta, createdAt: operationalStockMovements.createdAt })
     .from(operationalStockMovements)
@@ -220,16 +240,18 @@ export async function listOperationalStock(input: { storeIds?: number[] | null; 
   return {
     total: filtered.length,
     items: filtered.slice(offset, offset + limit).map(product => {
-      const balance = balanceByStoreProduct.get(`${product.storeId}:${product.productId}`);
+      const key = `${product.storeId}:${product.productId}`;
+      const movementBalance = balanceByStoreProduct.get(key);
+      const snapshot = snapshotByStoreProduct.get(key);
       const salePrice = priceTypeByStore.get(product.storeId) ? salePriceByProductType.get(`${product.productId}:${priceTypeByStore.get(product.storeId)}`) ?? null : null;
-      const accountingQuantity = balance?.quantity ?? null;
+      const accountingQuantity = snapshot === undefined && !movementBalance ? null : Math.round(((snapshot ?? 0) + (movementBalance?.quantity ?? 0)) * 1_000) / 1_000;
       return {
         ...product,
         internalCode: product.internalCode || `Эвотор #${product.productId}`,
         accountingQuantity,
         salePrice,
         stockValue: accountingQuantity === null || salePrice === null ? null : Math.round(accountingQuantity * salePrice * 100) / 100,
-        lastCountedAt: balance?.lastCountedAt ?? null,
+        lastCountedAt: movementBalance?.lastCountedAt ?? null,
       };
     }),
   };
@@ -303,9 +325,12 @@ export async function confirmOperationalCatalogFromEvotor(input: { storeId: numb
   if (!preview.products.length) throw new Error("В каталоге выбранной точки Эвотор нет товарных позиций для сохранения.");
   for (const product of preview.products) {
     const baseUnit = unitFromEvotor(product.unit);
+    const evotorQuantitySnapshot = product.quantity !== null && finiteThreeDecimals(product.quantity) ? product.quantity.toFixed(3) : null;
     const [link] = await db.select().from(operationalEvotorProductLinks).where(and(eq(operationalEvotorProductLinks.storeId, input.storeId), eq(operationalEvotorProductLinks.evotorProductId, product.id))).limit(1);
     if (link) {
-      await db.update(operationalCatalogProducts).set({ evotorCode: product.code, canonicalName: product.name, evotorCategoryName: product.categoryName, barcodes: product.barcodes, baseUnit, vatRate: product.vatRate, isActive: true, importedAt: new Date() }).where(eq(operationalCatalogProducts.id, link.productId));
+      const [existing] = await db.select({ markingCategory: operationalCatalogProducts.markingCategory }).from(operationalCatalogProducts).where(eq(operationalCatalogProducts.id, link.productId)).limit(1);
+      await db.update(operationalCatalogProducts).set({ evotorCode: product.code, canonicalName: product.name, evotorCategoryName: product.categoryName, barcodes: product.barcodes, baseUnit, vatRate: product.vatRate, markingCategory: existing?.markingCategory === "none" ? markingFromEvotorCategory(product) : existing?.markingCategory ?? "none", isActive: true, importedAt: new Date() }).where(eq(operationalCatalogProducts.id, link.productId));
+      await db.update(operationalEvotorProductLinks).set({ evotorQuantitySnapshot, evotorQuantityUpdatedAt: new Date() }).where(eq(operationalEvotorProductLinks.id, link.id));
       continue;
     }
     const [inserted] = await db.insert(operationalCatalogProducts).values({
@@ -317,10 +342,11 @@ export async function confirmOperationalCatalogFromEvotor(input: { storeId: numb
       barcodes: product.barcodes,
       baseUnit,
       vatRate: product.vatRate,
+      markingCategory: markingFromEvotorCategory(product),
       evotorCostPrice: "0.00",
       importedByAccountId: input.actorId,
     }).$returningId();
-    await db.insert(operationalEvotorProductLinks).values({ storeId: input.storeId, evotorProductId: product.id, productId: inserted.id, linkedByAccountId: input.actorId });
+    await db.insert(operationalEvotorProductLinks).values({ storeId: input.storeId, evotorProductId: product.id, productId: inserted.id, evotorQuantitySnapshot, evotorQuantityUpdatedAt: new Date(), linkedByAccountId: input.actorId });
   }
   return { storeId: input.storeId, evotorStoreName: preview.mapping.evotorStoreName, imported: preview.products.length };
 }

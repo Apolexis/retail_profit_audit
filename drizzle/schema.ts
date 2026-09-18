@@ -390,6 +390,9 @@ export const operationalEvotorProductLinks = mysqlTable("operational_evotor_prod
   storeId: int("storeId").notNull(),
   evotorProductId: varchar("evotorProductId", { length: 128 }).notNull(),
   productId: int("productId").notNull(),
+  /** Current quantity from the read-only Evotor catalog; later manual/inventory movements are applied above it. */
+  evotorQuantitySnapshot: decimal("evotorQuantitySnapshot", { precision: 16, scale: 3 }),
+  evotorQuantityUpdatedAt: timestamp("evotorQuantityUpdatedAt"),
   linkedByAccountId: int("linkedByAccountId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

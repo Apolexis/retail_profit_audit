@@ -13,6 +13,7 @@ describe("Эвотор V2: preview номенклатуры", () => {
       name: "Форель",
       code: "F-1",
       barcodes: ["123", "123", "456"],
+      quantity: 2.5,
       measure_name: "дроб",
       tax: "vat10",
       type: "commodity",
@@ -20,9 +21,13 @@ describe("Эвотор V2: preview номенклатуры", () => {
       price: 1000,
       cost_price: 700,
     });
-    expect(preview).toEqual({ id: "product-1", name: "Форель", code: "F-1", barcodes: ["123", "456"], unit: "дроб", tax: "vat10", vatRate: "VAT_10", type: "commodity", parentId: "group-1", categoryName: null });
+    expect(preview).toEqual({ id: "product-1", name: "Форель", code: "F-1", barcodes: ["123", "456"], quantity: 2.5, unit: "дроб", tax: "vat10", vatRate: "VAT_10", type: "commodity", parentId: "group-1", categoryName: null });
     expect(preview).not.toHaveProperty("price");
     expect(preview).not.toHaveProperty("costPrice");
+  });
+
+  it("не выдает служебный миллион Эвотор за физический остаток", () => {
+    expect(normalizeEvotorCatalogPreviewItem({ id: "product-2", name: "Товар", quantity: 1_000_000 })?.quantity).toBeNull();
   });
 
   it("нормализует только необходимые поля документа и строки без фискальных реквизитов", () => {
