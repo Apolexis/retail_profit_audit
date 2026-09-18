@@ -127,7 +127,7 @@ type ProductDraft = {
 };
 type CharacteristicDraft = { id: number | null; kind: "variant" | "size" | "place_contents" | "manufacturer"; value: string; isActive: boolean };
 type CategoryDraft = { id: number | null; name: string; isActive: boolean };
-type DirectoryTab = "products" | "categories" | "suppliers";
+type DirectoryTab = "products" | "categories" | "suppliers" | "links";
 type VisibilityFilter = "active" | "all" | "hidden";
 type SupplierDraft = {
   id: number | null;
@@ -732,6 +732,8 @@ export default function PriceControl({
   const [directoryProductSearch, setDirectoryProductSearch] = useState("");
   const [directoryProductLimit, setDirectoryProductLimit] = useState(60);
   const [directoryCategorySearch, setDirectoryCategorySearch] = useState("");
+  const [directoryLinkSearch, setDirectoryLinkSearch] = useState("");
+  const [directoryLinkLimit, setDirectoryLinkLimit] = useState(40);
   const [selectedDirectoryProductIds, setSelectedDirectoryProductIds] = useState<
     number[]
   >([]);
@@ -846,6 +848,39 @@ export default function PriceControl({
       left.canonicalName.localeCompare(right.canonicalName, "ru")
     );
   }, [overview.data?.aliases]);
+  const filteredAliasGroups = useMemo(() => {
+    const query = directoryLinkSearch.trim().toLocaleLowerCase("ru");
+    if (!query) return aliasGroups;
+    return aliasGroups.filter(group =>
+      [
+        group.canonicalName,
+        group.internalCode,
+        ...group.aliases.flatMap(alias => [alias.supplierName, alias.normalizedName, alias.packagingSignature ?? ""]),
+      ]
+        .join(" ")
+        .toLocaleLowerCase("ru")
+        .includes(query)
+    );
+  }, [aliasGroups, directoryLinkSearch]);
+  const visibleAliasGroups = filteredAliasGroups.slice(0, directoryLinkLimit);
+  const filteredUnmappedRows = useMemo(() => {
+    const query = directoryLinkSearch.trim().toLocaleLowerCase("ru");
+    const rows = overview.data?.unmappedRows ?? [];
+    if (!query) return rows;
+    return rows.filter(row =>
+      [
+        row.supplierName,
+        row.rawName,
+        row.rawCategory ?? "",
+        row.rawPackaging ?? "",
+        row.suggestedProduct?.name ?? "",
+      ]
+        .join(" ")
+        .toLocaleLowerCase("ru")
+        .includes(query)
+    );
+  }, [overview.data?.unmappedRows, directoryLinkSearch]);
+  const visibleUnmappedRows = filteredUnmappedRows.slice(0, directoryLinkLimit);
   const directoryCategories = useMemo(() => {
     const query = directoryCategorySearch.trim().toLocaleLowerCase("ru");
     return categories.filter(category => {
@@ -1987,6 +2022,8 @@ export default function PriceControl({
                           <button
                             type="button"
                             className="packet-link compact price-add-history-action"
+                            aria-label="Добавить цену в историю выбранного имени связи"
+                            title="Добавить цену в историю"
                             onClick={() =>
                               setComparisonManualOffer({
                                 productId: selected.product.id,
@@ -1994,7 +2031,7 @@ export default function PriceControl({
                               })
                             }
                           >
-                            <Plus size={14} /> Добавить цену в историю
+                            <Plus size={14} /> Добавить цену
                           </button>
                         )}
                       </div>
@@ -2112,7 +2149,7 @@ export default function PriceControl({
                         <ResponsiveContainer width="100%" height={230}>
                           <LineChart
                             data={historyData}
-                            margin={{ top: 8, right: 8, left: -12, bottom: 0 }}
+                            margin={{ top: 8, right: 8, left: 8, bottom: 6 }}
                           >
                             <CartesianGrid
                               strokeDasharray="3 5"
@@ -2122,6 +2159,8 @@ export default function PriceControl({
                               dataKey="date"
                               tickLine={false}
                               axisLine={false}
+                              interval="preserveStartEnd"
+                              minTickGap={18}
                               tick={{ fontSize: 11 }}
                               tickFormatter={value =>
                                 dateLabel(String(value)).replace(/\s+\d{4}/, "")
@@ -2130,6 +2169,7 @@ export default function PriceControl({
                             <YAxis
                               tickLine={false}
                               axisLine={false}
+                              width={54}
                               tickFormatter={value => `${formatMoney(value)} ₽`}
                             />
                             <Tooltip
@@ -2221,7 +2261,7 @@ export default function PriceControl({
                               <small>{modeLabel[currentDraft.priceMode]} · {marketLabel[currentDraft.market]}</small>
                               {canEdit && !isEditingOffer && <button type="button" className="price-offer-edit-action" onClick={() => setEditingOfferId(offer.priceId)}><Pencil size={13} /> Изменить</button>}
                             </span>
-                            <span>
+                            <span className="price-offer-normalized">
                               <strong>{priceLabel({ normalizedPrice: offer.normalizedPrice, normalizedUnit: offer.normalizedUnit ?? "kg" })}</strong>
                               <PriceChangeBadge change={offer.priceChange} unit={offer.normalizedUnit ?? "kg"} />
                               {offer.minimumQuantityKg && <small>от {formatMoney(offer.minimumQuantityKg)} кг</small>}
@@ -3082,6 +3122,13 @@ export default function PriceControl({
               onClick={() => setDirectoryTab("suppliers")}
             >
               Поставщики
+            </button>
+            <button
+              type="button"
+              className={directoryTab === "links" ? "active" : ""}
+              onClick={() => setDirectoryTab("links")}
+            >
+              Связи
             </button>
           </nav>
           {directoryTab === "products" && (
@@ -3979,7 +4026,7 @@ export default function PriceControl({
             </AlertDialog>
           </section>
           )}
-          {directoryTab === "products" && canEdit && (
+          {directoryTab === "links" && canEdit && (
             <section className="packet-card price-mapping">
               <div className="card-title">
                 <div>
@@ -3995,16 +4042,36 @@ export default function PriceControl({
                 сравнении. Это объединяет разные названия одного товара у
                 поставщиков; исходное название и фасовка сохраняются рядом для контроля.
               </p>
-              {!overview.data?.unmappedRows.length ? (
+              <div className="price-links-toolbar" role="search">
+                <label className="price-directory-search">
+                  <Search size={15} aria-hidden="true" />
+                  <input
+                    value={directoryLinkSearch}
+                    onChange={event => {
+                      setDirectoryLinkSearch(event.target.value);
+                      setDirectoryLinkLimit(40);
+                    }}
+                    placeholder="Поиск по имени связи, поставщику или названию"
+                    aria-label="Поиск связей поставщиков"
+                  />
+                </label>
+                <small>
+                  Нераспознано: {filteredUnmappedRows.length} · связей: {filteredAliasGroups.length}
+                </small>
+              </div>
+              {!filteredUnmappedRows.length ? (
                 <div className="empty-state compact">
                   <CheckCircle2 size={22} />
                   <p>
-                    Все распознанные строки уже связаны с внутренними товарами.
+                    {directoryLinkSearch
+                      ? "Нераспознанных названий по этому поиску нет."
+                      : "Все распознанные строки уже связаны с внутренними товарами."}
                   </p>
                 </div>
               ) : (
+                <>
                 <div className="price-mapping-list">
-                  {overview.data?.unmappedRows.map(row => (
+                  {visibleUnmappedRows.map(row => (
                     <article key={row.rowId}>
                       <div>
                         <span>{row.supplierName}</span>
@@ -4100,10 +4167,11 @@ export default function PriceControl({
                     </article>
                   ))}
                 </div>
+                </>
               )}
             </section>
           )}
-          {canEdit && (overview.data?.aliases.length ?? 0) > 0 && (
+          {directoryTab === "links" && canEdit && (overview.data?.aliases.length ?? 0) > 0 && (
             <section className="packet-card price-aliases">
               <div className="card-title">
                 <div>
@@ -4118,8 +4186,9 @@ export default function PriceControl({
                 будет видно в сравнении. Изменение действует только на новые
                 импорты, сохраненная история остается неизменной.
               </p>
+              {visibleAliasGroups.length ? (
               <div className="price-alias-list">
-                {aliasGroups.map(group => (
+                {visibleAliasGroups.map(group => (
                   <article key={group.productId} className="price-alias-group">
                     <div className="price-alias-group-heading">
                       <span>Имя связи · {group.aliases.length}</span>
@@ -4170,6 +4239,23 @@ export default function PriceControl({
                   </article>
                 ))}
               </div>
+              ) : (
+                <div className="empty-state compact">
+                  <Search size={22} />
+                  <p>Связи по этому поиску не найдены.</p>
+                </div>
+              )}
+              {(filteredUnmappedRows.length > visibleUnmappedRows.length || filteredAliasGroups.length > visibleAliasGroups.length) && (
+                <div className="price-directory-show-more">
+                  <button
+                    type="button"
+                    className="packet-link compact"
+                    onClick={() => setDirectoryLinkLimit(current => current + 40)}
+                  >
+                    Показать еще
+                  </button>
+                </div>
+              )}
             </section>
           )}
         </>

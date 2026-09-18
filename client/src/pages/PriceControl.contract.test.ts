@@ -112,6 +112,17 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("openProductEditor");
   });
 
+  it("выносит связи названий поставщиков в отдельную вкладку с поиском и порционной выдачей", () => {
+    expect(page).toContain('type DirectoryTab = "products" | "categories" | "suppliers" | "links"');
+    expect(page).toContain('directoryTab === "links"');
+    expect(page).toContain("Связи");
+    expect(page).toContain("directoryLinkSearch");
+    expect(page).toContain("visibleAliasGroups");
+    expect(page).toContain("visibleUnmappedRows");
+    expect(page).toContain("Поиск по имени связи, поставщику или названию");
+    expect(page).toContain("Показать еще");
+  });
+
   it("раскрывает товары категории и характеристики только по действию, с компактными кнопками показа и редактирования", () => {
     expect(page).toContain('<details className="price-category-members">');
     expect(page).toContain("characteristicGroups");
@@ -160,7 +171,8 @@ describe("страница «Прайс‑контроль»", () => {
 
   it("дает добавить ручную цену прямо у выбранного имени связи", () => {
     expect(page).toContain("comparisonManualOffer");
-    expect(page).toContain("Добавить цену в историю");
+    expect(page).toContain('aria-label="Добавить цену в историю выбранного имени связи"');
+    expect(page).toContain("Добавить цену");
     expect(page).toContain("ДОБАВИТЬ ЦЕНУ В ИСТОРИЮ");
     expect(page).toContain("createManualOffer.mutate");
     expect(styles).toContain(".packet .price-comparison-manual-offer");
@@ -300,6 +312,17 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("Изменение предложения");
     expect(page).toContain("Сохранить изменения");
     expect(styles).toContain(".packet .price-offer-edit-panel");
+  });
+
+  it("не выводит мобильную таблицу и график за границы выбранной области", () => {
+    expect(page).toContain('width={54}');
+    expect(page).toContain('interval="preserveStartEnd"');
+    expect(page).toContain('className="price-offer-normalized"');
+    expect(styles).toContain("@media (max-width: 620px)");
+    expect(styles).toContain(".packet .price-offer-table { overflow: hidden; }");
+    expect(styles).toContain(".packet .price-history-chart { min-width: 0; overflow: hidden;");
+    expect(styles).toContain(".packet .price-offer-table::before { margin: 0; padding: 12px 14px 10px; }");
+    expect(styles).toContain(".packet .packet-link.compact.price-add-history-action");
   });
 
   it("дает уточнить оплату, город и метаданные предложения вместе с ручной ценой", () => {

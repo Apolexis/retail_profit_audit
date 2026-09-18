@@ -4698,7 +4698,15 @@ html[data-audit-theme="dark"] .password-input-toggle { color: #c7bdcc; }
 .packet .price-comparison-manual-fields > label { display: grid; gap: 4px; color: var(--price-muted); font-size: 10px; font-weight: 750; }
 .packet .price-comparison-manual-fields input { width: 100%; min-height: 37px; border-color: var(--price-border); background: var(--price-surface); color: var(--price-ink); }
 .packet .price-comparison-manual-actions { display: flex; justify-content: flex-end; gap: 6px; }
-.packet .price-add-history-action { margin-top: 8px; }
+.packet .packet-link.compact.price-add-history-action { display: inline-flex; width: fit-content; height: 30px !important; min-height: 30px !important; margin-top: 8px !important; padding: 4px 8px !important; gap: 5px; font-size: 10px; line-height: 1; }
+.packet .price-offer-table::before { margin: 0; padding: 12px 14px 10px; }
+.packet .price-offer-head { border-top: 1px solid var(--price-border); }
+.packet .price-offer-normalized { display: grid; gap: 4px; align-content: start; }
+.packet .price-offer-normalized > strong { display: block; }
+.packet .price-offer-normalized .price-change { display: inline-flex; width: fit-content; margin-top: 0; }
+.packet .price-links-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin: 13px 0 2px; }
+.packet .price-links-toolbar .price-directory-search { flex: 1 1 300px; }
+.packet .price-links-toolbar > small { color: var(--price-muted); font-size: 10px; }
 @media (max-width: 760px) {
   .packet .price-comparison-manual-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -4706,4 +4714,45 @@ html[data-audit-theme="dark"] .password-input-toggle { color: #c7bdcc; }
   .packet .price-comparison-manual-fields { grid-template-columns: minmax(0, 1fr); }
   .packet .price-comparison-manual-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
   .packet .price-comparison-manual-actions .packet-link { justify-content: center; }
+  .packet .price-add-history-action { min-height: 29px; padding-inline: 8px; }
+}
+
+/* Телефон: таблица не прокручивается за край, а показывает смысл строки в читаемом порядке. */
+@media (max-width: 620px) {
+  .packet .price-offer-table { overflow: hidden; }
+  .packet .price-offer-table::before { padding: 11px 12px 9px; font-size: 13px; }
+  .packet .price-offer-head { display: none; }
+  .packet .price-offer {
+    grid-template-columns: minmax(0, 1fr) minmax(100px, .72fr);
+    gap: 9px 12px;
+    min-width: 0;
+    padding: 12px;
+  }
+  .packet .price-offer > span:nth-child(1) { grid-column: 1; grid-row: 1; }
+  .packet .price-offer > span:nth-child(2) { grid-column: 2; grid-row: 1; }
+  .packet .price-offer > span:nth-child(3) { grid-column: 1; grid-row: 2; }
+  .packet .price-offer > .price-offer-normalized { grid-column: 2; grid-row: 2; }
+  .packet .price-offer > span:nth-child(1)::before,
+  .packet .price-offer > span:nth-child(2)::before,
+  .packet .price-offer > span:nth-child(3)::before,
+  .packet .price-offer > .price-offer-normalized::before {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--price-muted);
+    font: 750 8px/1.15 "IBM Plex Mono", monospace;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+  .packet .price-offer > span:nth-child(1)::before { content: "ПОСТАВЩИК"; }
+  .packet .price-offer > span:nth-child(2)::before { content: "ФАСОВКА"; }
+  .packet .price-offer > span:nth-child(3)::before { content: "ЦЕНА"; }
+  .packet .price-offer > .price-offer-normalized::before { content: "НОРМАЛИЗАЦИЯ"; }
+  .packet .price-offer small { white-space: normal; overflow: visible; text-overflow: clip; }
+  .packet .price-history-chart { min-width: 0; overflow: hidden; padding: 12px 8px; }
+  .packet .price-history-chart .recharts-wrapper,
+  .packet .price-history-chart .recharts-surface { max-width: 100%; }
+  .packet .price-history-chart .recharts-legend-wrapper { width: auto !important; max-width: calc(100% - 18px); }
+  .packet .price-history-chart .recharts-default-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 8px; }
+  .packet .price-history-chart .recharts-legend-item { margin-right: 0 !important; }
+  .packet .price-history-chart .recharts-legend-item-text { font-size: 10px; }
 }
