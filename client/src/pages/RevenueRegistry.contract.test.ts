@@ -109,10 +109,15 @@ describe("контракт страницы Выручка", () => {
 
   it("дает печать финансового реестра административному персоналу по назначенным точкам", () => {
     expect(router).toContain('print: protectedProcedure');
-    expect(router).toContain('const isRevenueAdministrativeRole = (role: string) => role === "admin" || role === "analyst";');
+    expect(router).toContain('const isRevenueAdministrativeRole = (role: string) => role === "admin" || role === "analyst" || role === "manager";');
     expect(router).toContain('if (!isRevenueAdministrativeRole(actor.role)) throw new TRPCError({ code: "FORBIDDEN", message: "Печать реестра доступна только административному персоналу" });');
     expect(router).toContain('const storeIds = await getAccessibleStoreIds(ctx.user?.openId);');
-    expect(page).toContain('const isAdministrative = isAdmin || me.data?.role === "analyst";');
+    expect(page).toContain('const isAdministrative = isAdmin || me.data?.role === "analyst" || isManager;');
+    expect(page).toContain('const permittedRevenueStores = isAdmin ? (stores.data ?? []) : (revenueStores.data ?? []);');
+    expect(page).toContain('const canSubmitRevenue = isSeller || isAdmin;');
+    expect(page).toContain('{canSubmitRevenue && <section className="revenue-layout">');
+    expect(page).toContain('{isSeller && <section className="packet-card revenue-own-history">');
+    expect(page).toContain('Только печать');
     expect(page).toContain('{isAdministrative && <section className="packet-card revenue-admin-register">');
     expect(page).toContain('className="revenue-register-actions"');
   });

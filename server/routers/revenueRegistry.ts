@@ -22,7 +22,8 @@ async function requireRevenueStorePermission(openId: string | null | undefined, 
   if (!await hasStoreAccess(openId, storeId, "view")) throw new TRPCError({ code: "FORBIDDEN", message: "Нет назначенного доступа к этому магазину" });
 }
 
-const isRevenueAdministrativeRole = (role: string) => role === "admin" || role === "analyst";
+/** Managers are administrative staff for the operational register: they can view and print only assigned stores. */
+const isRevenueAdministrativeRole = (role: string) => role === "admin" || role === "analyst" || role === "manager";
 
 /** A seller belongs to exactly one operational point; broad financial grants never imply this access. */
 async function requireSellerStore(openId: string | null | undefined) {
