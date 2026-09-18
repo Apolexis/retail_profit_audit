@@ -119,7 +119,8 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
   const guidance=recommendations[kicker.slice(0,2)]??recommendations["00"];
   const analyticsSection=!['12','13','14','15','16','17','18','20','21','22','23','24','25','26'].includes(kicker.slice(0,2));
   const unread=notificationSummary.data?.unread??0;
-  const sectionIsActive=(groups:readonly NavGroup[])=>groups.some(group=>group.items.some(([href])=>href===location));
+  const routeIsActive=(href:string)=>href===location||(href==="/catalog-control"&&location.startsWith("/catalog-control/"));
+  const sectionIsActive=(groups:readonly NavGroup[])=>groups.some(group=>group.items.some(([href])=>routeIsActive(href)));
   const sectionIsOpen=(section:NavSection)=>Object.hasOwn(expandedSections,section.title)?Boolean(expandedSections[section.title]):sectionIsActive(section.groups);
   const toggleSection=(title:string,defaultOpen:boolean)=>setExpandedSections(current=>{
     const open=Object.hasOwn(current,title)?Boolean(current[title]):defaultOpen;

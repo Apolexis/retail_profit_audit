@@ -171,7 +171,7 @@ export const inventoryRegistryRouter = router({
       ? products
       : products.map(({ evotorCostPrice: _evotorCostPrice, internalCostPrice: _internalCostPrice, ...product }) => product);
   }),
-  stock: protectedProcedure.input(z.object({ storeId: z.number().int().positive().optional(), query: z.string().max(160).optional(), category: z.string().max(512).optional(), offset: z.number().int().min(0).optional(), limit: z.number().int().min(1).max(100).optional() }).optional()).query(async ({ ctx, input }) => {
+  stock: protectedProcedure.input(z.object({ storeId: z.number().int().positive().optional(), query: z.string().max(160).optional(), category: z.string().max(512).optional(), offset: z.number().int().min(0).optional(), limit: z.number().int().min(1).max(2_000).optional() }).optional()).query(async ({ ctx, input }) => {
     const actor = await localActor(ctx.user.openId);
     if (input?.storeId) await requireInventoryStoreAccess(ctx.user.openId, input.storeId, "view");
     const storeIds = actor.role === "admin" ? null : await getAccessibleStoreIds(ctx.user.openId);

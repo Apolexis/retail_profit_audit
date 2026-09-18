@@ -50,3 +50,8 @@ html[data-audit-theme="dark"] .packet :is(.warehouse-rule, .warehouse-table-card
 @media (hover: hover) and (pointer: fine) { .packet :is(.warehouse-rule, .warehouse-table-card, .warehouse-guidance article):hover { border-color: color-mix(in srgb, var(--warehouse-accent) 56%, var(--warehouse-line)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--warehouse-accent) 18%, transparent); } }
 .packet :is(.warehouse-rule, .warehouse-table-card, .warehouse-guidance article):focus-within { border-color: color-mix(in srgb, var(--warehouse-accent) 62%, var(--warehouse-line)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--warehouse-accent) 18%, transparent); }
 @media (max-width: 760px) { .packet .warehouse-guidance { grid-template-columns: 1fr; } .packet .warehouse-table-card .card-title { gap: 12px; } .packet .warehouse-table-card .card-title small { white-space: normal; text-align: right; } }
+
+.packet .warehouse-filters { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(220px, .6fr); gap: 12px; align-items: end; }
+.packet .warehouse-filters > label { display: grid; gap: 6px; color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+.packet .warehouse-filters > label select { min-height: 40px; border-color: var(--warehouse-line); background: var(--warehouse-panel); color: var(--ink); }
+@media (max-width: 760px) { .packet .warehouse-filters { grid-template-columns: 1fr; } }

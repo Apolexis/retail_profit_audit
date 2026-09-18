@@ -103,6 +103,7 @@ export async function listInventoryProducts(input?: { storeId?: number; includeA
       id: operationalCatalogProducts.id,
       internalCode: operationalCatalogProducts.evotorCode,
       canonicalName: operationalCatalogProducts.canonicalName,
+      barcodes: operationalCatalogProducts.barcodes,
       category: operationalCatalogProducts.evotorCategoryName,
       baseUnit: operationalCatalogProducts.baseUnit,
       vatRate: operationalCatalogProducts.vatRate,
@@ -154,6 +155,16 @@ export async function listOperationalStock(input: { storeIds?: number[] | null; 
   if (!catalog.length) return { items: [], total: 0 };
   const productIds = catalog.map(product => product.productId);
   const storeIds = storeRows.map(store => store.storeId);
+  const priceAssignments = await db
+    .select({ storeId: operationalStorePriceTypes.storeId, priceTypeId: operationalStorePriceTypes.priceTypeId })
+    .from(operationalStorePriceTypes)
+    .where(inArray(operationalStorePriceTypes.storeId, storeIds));
+  const priceTypeByStore = new Map(priceAssignments.map(row => [row.storeId, row.priceTypeId]));
+  const priceTypeIds = Array.from(new Set(priceAssignments.map(row => row.priceTypeId)));
+  const salePriceRows = priceTypeIds.length
+    ? await db.select({ productId: operationalProductSalePrices.productId, priceTypeId: operationalProductSalePrices.priceTypeId, salePrice: operationalProductSalePrices.salePrice }).from(operationalProductSalePrices).where(and(inArray(operationalProductSalePrices.productId, productIds), inArray(operationalProductSalePrices.priceTypeId, priceTypeIds)))
+    : [];
+  const salePriceByProductType = new Map(salePriceRows.map(row => [`${row.productId}:${row.priceTypeId}`, Number(row.salePrice)]));
   const movements = await db
     .select({ storeId: operationalStockMovements.storeId, productId: operationalStockMovements.productId, quantityDelta: operationalStockMovements.quantityDelta, createdAt: operationalStockMovements.createdAt })
     .from(operationalStockMovements)
@@ -174,15 +185,19 @@ export async function listOperationalStock(input: { storeIds?: number[] | null; 
   const categorizedProducts = normalizedCategory ? matchedProducts.filter(product => (product.category ?? "").toLocaleLowerCase("ru-RU") === normalizedCategory) : matchedProducts;
   const filtered = storeRows.flatMap(store => categorizedProducts.map(product => ({ ...product, storeId: store.storeId, storeName: store.storeName })));
   const offset = Math.max(0, Math.floor(input.offset ?? 0));
-  const limit = Math.min(Math.max(1, Math.floor(input.limit ?? 50)), 100);
+  const limit = Math.min(Math.max(1, Math.floor(input.limit ?? 50)), 2_000);
   return {
     total: filtered.length,
     items: filtered.slice(offset, offset + limit).map(product => {
       const balance = balanceByStoreProduct.get(`${product.storeId}:${product.productId}`);
+      const salePrice = priceTypeByStore.get(product.storeId) ? salePriceByProductType.get(`${product.productId}:${priceTypeByStore.get(product.storeId)}`) ?? null : null;
+      const accountingQuantity = balance?.quantity ?? null;
       return {
         ...product,
         internalCode: product.internalCode || `Эвотор #${product.productId}`,
-        accountingQuantity: balance?.quantity ?? null,
+        accountingQuantity,
+        salePrice,
+        stockValue: accountingQuantity === null || salePrice === null ? null : Math.round(accountingQuantity * salePrice * 100) / 100,
         lastCountedAt: balance?.lastCountedAt ?? null,
       };
     }),

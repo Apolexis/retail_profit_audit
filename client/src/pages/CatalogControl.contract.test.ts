@@ -24,9 +24,9 @@ describe("общий операционный справочник", () => {
   it("разделяет видимость в заявках и отключенную выгрузку Эвотор", () => {
     expect(page).toContain("Заявки");
     expect(page).toContain("Выключена");
-    expect(editor).toContain("Показывать в заявках");
-    expect(editor).toContain("Разрешить выгрузку в Эвотор");
-    expect(editor).toContain("обратная запись пока отключена");
+    expect(editor).toContain("В заявках");
+    expect(editor).toContain("Выгрузка Эвотор");
+    expect(editor).toContain("aria-pressed={visibleInRequests}");
   });
 
   it("возвращает архивный товар в справочник вместо необратимого исчезновения", () => {
