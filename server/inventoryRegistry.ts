@@ -100,6 +100,7 @@ export async function listInventoryProducts(input?: { storeId?: number; includeA
       id: operationalCatalogProducts.id,
       internalCode: operationalCatalogProducts.evotorCode,
       canonicalName: operationalCatalogProducts.canonicalName,
+      category: operationalCatalogProducts.evotorCategoryName,
       baseUnit: operationalCatalogProducts.baseUnit,
       vatRate: operationalCatalogProducts.vatRate,
       evotorCostPrice: operationalCatalogProducts.evotorCostPrice,
@@ -114,7 +115,7 @@ export async function listInventoryProducts(input?: { storeId?: number; includeA
     .where(input?.includeInactive ? undefined : eq(operationalCatalogProducts.isActive, true))
     .orderBy(operationalCatalogProducts.canonicalName)
     .limit(2_000);
-  const products = rows.filter((row): row is typeof row & { baseUnit: InventoryUnit } => row.baseUnit !== "unknown").map(row => ({ ...row, internalCode: row.internalCode || `Эвотор #${row.id}`, category: null, variant: null }));
+  const products = rows.filter((row): row is typeof row & { baseUnit: InventoryUnit } => row.baseUnit !== "unknown").map(row => ({ ...row, internalCode: row.internalCode || `Эвотор #${row.id}`, variant: null }));
   const quantities = input?.includeAccounting && input.storeId ? await getInventoryAccountingQuantities(input.storeId, products.map(product => product.id)) : null;
   return products.map(product => ({ ...product, accountingQuantity: quantities?.get(product.id) ?? null }));
 }
@@ -124,7 +125,7 @@ export async function listInventoryProducts(input?: { storeId?: number; includeA
  * A null quantity means that the product has not yet been counted, rather than
  * a fictitious zero. This is intentionally separate from the inventory draft.
  */
-export async function listOperationalStock(input: { storeIds?: number[] | null; storeId?: number; query?: string; offset?: number; limit?: number }) {
+export async function listOperationalStock(input: { storeIds?: number[] | null; storeId?: number; query?: string; category?: string; offset?: number; limit?: number }) {
   const db = await getDb();
   if (!db || (Array.isArray(input.storeIds) && !input.storeIds.length)) return { items: [], total: 0 };
   const storeConditions = [
@@ -139,6 +140,7 @@ export async function listOperationalStock(input: { storeIds?: number[] | null; 
       productId: operationalCatalogProducts.id,
       internalCode: operationalCatalogProducts.evotorCode,
       canonicalName: operationalCatalogProducts.canonicalName,
+      category: operationalCatalogProducts.evotorCategoryName,
       baseUnit: operationalCatalogProducts.baseUnit,
       vatRate: operationalCatalogProducts.vatRate,
     })
@@ -165,7 +167,9 @@ export async function listOperationalStock(input: { storeIds?: number[] | null; 
   const matchedProducts = query
     ? catalog.filter(product => `${product.canonicalName} ${product.internalCode ?? ""}`.toLocaleLowerCase("ru-RU").includes(query))
     : catalog;
-  const filtered = storeRows.flatMap(store => matchedProducts.map(product => ({ ...product, storeId: store.storeId, storeName: store.storeName })));
+  const normalizedCategory = normalizedText(input.category ?? "").toLocaleLowerCase("ru-RU");
+  const categorizedProducts = normalizedCategory ? matchedProducts.filter(product => (product.category ?? "").toLocaleLowerCase("ru-RU") === normalizedCategory) : matchedProducts;
+  const filtered = storeRows.flatMap(store => categorizedProducts.map(product => ({ ...product, storeId: store.storeId, storeName: store.storeName })));
   const offset = Math.max(0, Math.floor(input.offset ?? 0));
   const limit = Math.min(Math.max(1, Math.floor(input.limit ?? 50)), 100);
   return {
@@ -192,7 +196,7 @@ export async function confirmOperationalCatalogFromEvotor(input: { storeId: numb
     const baseUnit = unitFromEvotor(product.unit);
     const [link] = await db.select().from(operationalEvotorProductLinks).where(and(eq(operationalEvotorProductLinks.storeId, input.storeId), eq(operationalEvotorProductLinks.evotorProductId, product.id))).limit(1);
     if (link) {
-      await db.update(operationalCatalogProducts).set({ evotorCode: product.code, canonicalName: product.name, barcodes: product.barcodes, baseUnit, vatRate: product.vatRate, isActive: true, importedAt: new Date() }).where(eq(operationalCatalogProducts.id, link.productId));
+      await db.update(operationalCatalogProducts).set({ evotorCode: product.code, canonicalName: product.name, evotorCategoryName: product.categoryName, barcodes: product.barcodes, baseUnit, vatRate: product.vatRate, isActive: true, importedAt: new Date() }).where(eq(operationalCatalogProducts.id, link.productId));
       continue;
     }
     const [inserted] = await db.insert(operationalCatalogProducts).values({
@@ -200,6 +204,7 @@ export async function confirmOperationalCatalogFromEvotor(input: { storeId: numb
       evotorProductId: product.id,
       evotorCode: product.code,
       canonicalName: product.name,
+      evotorCategoryName: product.categoryName,
       barcodes: product.barcodes,
       baseUnit,
       vatRate: product.vatRate,
@@ -268,6 +273,17 @@ export async function archiveOperationalCatalogProduct(id: number) {
   const [before] = await db.select().from(operationalCatalogProducts).where(eq(operationalCatalogProducts.id, id)).limit(1);
   if (!before) throw new Error("Позиция рабочего справочника не найдена.");
   await db.update(operationalCatalogProducts).set({ isActive: false }).where(eq(operationalCatalogProducts.id, id));
+  const [after] = await db.select().from(operationalCatalogProducts).where(eq(operationalCatalogProducts.id, id)).limit(1);
+  return { before, after: after! };
+}
+
+/** Restores a previously archived record without altering its history or prices. */
+export async function restoreOperationalCatalogProduct(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const [before] = await db.select().from(operationalCatalogProducts).where(eq(operationalCatalogProducts.id, id)).limit(1);
+  if (!before) throw new Error("Позиция рабочего справочника не найдена.");
+  await db.update(operationalCatalogProducts).set({ isActive: true }).where(eq(operationalCatalogProducts.id, id));
   const [after] = await db.select().from(operationalCatalogProducts).where(eq(operationalCatalogProducts.id, id)).limit(1);
   return { before, after: after! };
 }
@@ -436,7 +452,7 @@ export async function upsertInventoryLine(input: { inventoryId: number; productI
   if (!db) throw new Error("База данных недоступна");
   const inventory = await requireInventory(input.inventoryId);
   if (inventory.status !== "draft") throw new Error("Закрытую инвентаризацию нельзя изменять");
-  const [product] = await db.select().from(operationalCatalogProducts).where(and(eq(operationalCatalogProducts.id, input.productId), eq(operationalCatalogProducts.storeId, inventory.storeId), eq(operationalCatalogProducts.isActive, true))).limit(1);
+  const [product] = await db.select().from(operationalCatalogProducts).where(and(eq(operationalCatalogProducts.id, input.productId), eq(operationalCatalogProducts.isActive, true))).limit(1);
   if (!product) throw new Error("Товар не найден или скрыт из рабочего справочника");
   const unit = unitFromProduct(product.baseUnit);
   const countedQuantity = validateCountedQuantity(input.countedQuantity);

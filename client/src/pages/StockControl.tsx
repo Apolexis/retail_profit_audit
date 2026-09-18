@@ -13,6 +13,7 @@ type StockItem = {
   storeName: string;
   internalCode: string;
   canonicalName: string;
+  category: string | null;
   baseUnit: StockUnit | "unknown";
   vatRate: "VAT_10" | "VAT_22";
   accountingQuantity: number | null;
@@ -31,13 +32,15 @@ export default function StockControl() {
   const stores = trpc.audit.stores.useQuery(undefined, { retry: false });
   const [storeId, setStoreId] = useState("");
   const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("");
   const [offset, setOffset] = useState(0);
   const isSeller = me.data?.role === "seller";
   const isManager = me.data?.role === "manager";
   const isAdmin = me.data?.role === "admin";
   const selectedStoreId = Number(storeId);
-  const stock = trpc.inventoryRegistry.stock.useQuery({ storeId: selectedStoreId || undefined, query: query.trim() || undefined, offset, limit: 50 }, { enabled: Boolean(me.data && (isSeller || isManager || isAdmin)), retry: false });
+  const stock = trpc.inventoryRegistry.stock.useQuery({ storeId: selectedStoreId || undefined, query: query.trim() || undefined, category: category || undefined, offset, limit: 50 }, { enabled: Boolean(me.data && (isSeller || isManager || isAdmin)), retry: false });
   const result = stock.data as StockResult | undefined;
+  const products = trpc.inventoryRegistry.products.useQuery({ storeId: selectedStoreId || undefined }, { enabled: Boolean(me.data && (isSeller || isManager || isAdmin)), retry: false });
 
   useEffect(() => {
     if (storeId || !stores.data?.length) return;
@@ -45,6 +48,7 @@ export default function StockControl() {
   }, [isSeller, storeId, stores.data]);
 
   const visibleStores = useMemo(() => (stores.data ?? []).filter(store => !store.isHidden), [stores.data]);
+  const categories = useMemo(() => Array.from(new Set(((products.data ?? []) as Array<{ category?: string | null }>).map(product => product.category).filter((value): value is string => Boolean(value)))).sort((left, right) => left.localeCompare(right, "ru")), [products.data]);
   const canShowMore = Boolean(result && offset + result.items.length < result.total);
   const startRevision = (item?: StockItem) => {
     const params = new URLSearchParams();
@@ -65,9 +69,10 @@ export default function StockControl() {
       <div className="card-title"><div><span>УЧЕТНЫЙ ОСТАТОК</span><h3>Номенклатура по магазинам</h3></div><button type="button" className="subtle-button" onClick={() => startRevision()}><ClipboardCheck size={15}/>Новая ревизия</button></div>
       <div className="stock-controls">
         <label>Магазин<ThemedSelect value={storeId} onChange={event => { setStoreId(event.target.value); setOffset(0); }}><option value="">Все доступные магазины</option>{visibleStores.map(store => <option value={store.id} key={store.id}>{store.name}</option>)}</ThemedSelect></label>
+        <label>Категория<ThemedSelect value={category} onChange={event => { setCategory(event.target.value); setOffset(0); }}><option value="">Все категории</option>{categories.map(item => <option value={item} key={item}>{item}</option>)}</ThemedSelect></label>
         <label>Поиск товара<div className="stock-search"><input value={query} onChange={event => { setQuery(event.target.value); setOffset(0); }} placeholder="Название или код"/><Search size={15}/></div></label>
       </div>
-      {stock.isLoading ? <p className="packet-note">Собираем учетные остатки…</p> : stock.isError ? <p className="packet-note">Остатки недоступны: {stock.error.message}</p> : !result?.items.length ? <div className="empty-state compact"><Boxes size={25}/><h2>{query ? "Ничего не найдено" : "Номенклатура пока не загружена"}</h2><p>{query ? "Измените запрос или выберите другой магазин." : "Сначала подтвердите каталог Эвотор для нужной точки."}</p></div> : <><div className="stock-summary"><strong>{result.total} {result.total === 1 ? "позиция" : result.total < 5 ? "позиции" : "позиций"}</strong><span>{selectedStoreId ? "Выбранная точка" : "Все доступные точки"}</span></div><div className="data-table-wrap stock-table-wrap"><table className="data-table stock-table"><thead><tr><th>Магазин</th><th>Товар</th><th>НДС</th><th>Учетный остаток</th><th>Последний пересчет</th><th aria-label="Действие"></th></tr></thead><tbody>{result.items.map(item => <tr key={`${item.storeId}:${item.productId}`}><td><strong>{item.storeName}</strong></td><td><strong>{item.canonicalName}</strong><small>{item.internalCode}</small></td><td>{item.vatRate === "VAT_22" ? "22%" : "10%"}</td><td className={item.accountingQuantity === null ? "stock-not-counted" : "stock-quantity"}>{item.accountingQuantity === null ? "Не посчитан" : `${quantityText(item.accountingQuantity)} ${unitLabel[item.baseUnit]}`}</td><td>{item.lastCountedAt ? displayMoscowDate(item.lastCountedAt) : "—"}</td><td><button type="button" className="subtle-button stock-revision-action" onClick={() => startRevision(item)}><ClipboardCheck size={14}/>Ревизия<ArrowRight size={14}/></button></td></tr>)}</tbody></table></div>{canShowMore && <button type="button" className="subtle-button stock-more" onClick={() => setOffset(current => current + 50)}>Показать еще</button>}</>}
+      {stock.isLoading ? <p className="packet-note">Собираем учетные остатки…</p> : stock.isError ? <p className="packet-note">Остатки недоступны: {stock.error.message}</p> : !result?.items.length ? <div className="empty-state compact"><Boxes size={25}/><h2>{query || category ? "Ничего не найдено" : "Номенклатура пока не загружена"}</h2><p>{query || category ? "Измените запрос, категорию или магазин." : "Сначала подтвердите каталог Эвотор для нужной точки."}</p></div> : <><div className="stock-summary"><strong>{result.total} {result.total === 1 ? "позиция" : result.total < 5 ? "позиции" : "позиций"}</strong><span>{selectedStoreId ? "Выбранная точка" : "Все доступные точки"}</span></div><div className="data-table-wrap stock-table-wrap"><table className="data-table stock-table"><thead><tr><th>№</th><th>Магазин</th><th>Категория</th><th>Товар</th><th>НДС</th><th>Учетный остаток</th><th aria-label="Действие"></th></tr></thead><tbody>{result.items.map((item, index) => <tr key={`${item.storeId}:${item.productId}`}><td>{offset + index + 1}</td><td><strong>{item.storeName}</strong></td><td>{item.category ?? "—"}</td><td><strong>{item.canonicalName}</strong><small>{item.internalCode}</small></td><td>{item.vatRate === "VAT_22" ? "22%" : "10%"}</td><td className={item.accountingQuantity === null ? "stock-not-counted" : "stock-quantity"}>{item.accountingQuantity === null ? "Не посчитан" : `${quantityText(item.accountingQuantity)} ${unitLabel[item.baseUnit]}`}</td><td><button type="button" className="subtle-button stock-revision-action" onClick={() => startRevision(item)}><ClipboardCheck size={14}/>Ревизия<ArrowRight size={14}/></button></td></tr>)}</tbody></table></div>{canShowMore && <button type="button" className="subtle-button stock-more" onClick={() => setOffset(current => current + 50)}><ArrowRight size={14}/>Показать еще</button>}</>}
     </section>
   </AuditShell>;
 }

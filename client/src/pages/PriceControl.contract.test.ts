@@ -43,6 +43,12 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain(".packet .price-saved-import-row");
   });
 
+  it("дает изменить категорию непосредственно у сохраненной импортированной строки", () => {
+    expect(page).toContain("updateImportRowCategory");
+    expect(page).toContain("Категория импортированного товара");
+    expect(page).toContain("Сохранить категорию");
+  });
+
   it("открывает только выбранный сохраненный прайс, фильтрует список по поставщику и выдает его порциями", () => {
     expect(page).toContain("savedImportsSupplierFilter");
     expect(page).toContain("savedImportsLimit");
@@ -195,6 +201,8 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("Одно имя связи — несколько отдельных товаров");
     expect(page).toContain("Товары в связи");
     expect(page).toContain("Добавить товар");
+    expect(page).toContain("price-directory-prices");
+    expect(page).toContain("Сохранённых цен пока нет");
     expect(page).toContain("Без категории");
     expect(styles).toContain(".packet .price-link-products");
   });

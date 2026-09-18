@@ -19,6 +19,7 @@ import {
   listOperationalStock,
   listStoreInventories,
   removeInventoryLine,
+  restoreOperationalCatalogProduct,
   setOperationalProductSalePrice,
   setOperationalStorePriceType,
   updateInventoryNote,
@@ -97,6 +98,13 @@ export const inventoryRegistryRouter = router({
     await recordChange({ actorId: actor.id, action: "operational_catalog.archive", entityType: "operational_catalog_product", entityId: String(input.id), beforeState: { product: result.before.canonicalName, isActive: result.before.isActive }, afterState: { product: result.after.canonicalName, isActive: result.after.isActive } });
     return result;
   }),
+  restoreCatalogProduct: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Возвращать номенклатуру может только администратор." });
+    const result = await restoreOperationalCatalogProduct(input.id);
+    await recordChange({ actorId: actor.id, action: "operational_catalog.restore", entityType: "operational_catalog_product", entityId: String(input.id), beforeState: { product: result.before.canonicalName, isActive: result.before.isActive }, afterState: { product: result.after.canonicalName, isActive: result.after.isActive } });
+    return result;
+  }),
   priceTypes: protectedProcedure.query(async ({ ctx }) => {
     const actor = await localActor(ctx.user.openId);
     if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Виды цен доступны только администратору." });
@@ -155,7 +163,7 @@ export const inventoryRegistryRouter = router({
       ? products
       : products.map(({ evotorCostPrice: _evotorCostPrice, internalCostPrice: _internalCostPrice, ...product }) => product);
   }),
-  stock: protectedProcedure.input(z.object({ storeId: z.number().int().positive().optional(), query: z.string().max(160).optional(), offset: z.number().int().min(0).optional(), limit: z.number().int().min(1).max(100).optional() }).optional()).query(async ({ ctx, input }) => {
+  stock: protectedProcedure.input(z.object({ storeId: z.number().int().positive().optional(), query: z.string().max(160).optional(), category: z.string().max(512).optional(), offset: z.number().int().min(0).optional(), limit: z.number().int().min(1).max(100).optional() }).optional()).query(async ({ ctx, input }) => {
     const actor = await localActor(ctx.user.openId);
     if (input?.storeId) await requireInventoryStoreAccess(ctx.user.openId, input.storeId, "view");
     const storeIds = actor.role === "admin" ? null : await getAccessibleStoreIds(ctx.user.openId);

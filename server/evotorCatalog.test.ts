@@ -20,7 +20,7 @@ describe("Эвотор V2: preview номенклатуры", () => {
       price: 1000,
       cost_price: 700,
     });
-    expect(preview).toEqual({ id: "product-1", name: "Форель", code: "F-1", barcodes: ["123", "456"], unit: "дроб", tax: "vat10", vatRate: "VAT_10", type: "commodity", parentId: "group-1" });
+    expect(preview).toEqual({ id: "product-1", name: "Форель", code: "F-1", barcodes: ["123", "456"], unit: "дроб", tax: "vat10", vatRate: "VAT_10", type: "commodity", parentId: "group-1", categoryName: null });
     expect(preview).not.toHaveProperty("price");
     expect(preview).not.toHaveProperty("costPrice");
   });

@@ -1,5 +1,5 @@
 import { Boxes, ClipboardCheck, FilePlus2, Plus, Save, Search, ShieldCheck, Trash2, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 import { AuditShell } from "@/components/AuditShell";
@@ -37,6 +37,7 @@ export default function InventoryRegistry() {
   const [productSearch, setProductSearch] = useState("");
   const [productId, setProductId] = useState("");
   const [quantity, setQuantity] = useState("");
+  const openedFromStock = useRef(false);
   const isSeller = me.data?.role === "seller";
   const isManager = me.data?.role === "manager";
   const isAdmin = me.data?.role === "admin";
@@ -86,6 +87,11 @@ export default function InventoryRegistry() {
     },
     onError: error => toast.error("Пересчет не открыт", { description: error.message }),
   });
+  useEffect(() => {
+    if (openedFromStock.current || !requestedProductId || !selectedStoreId || !selectedProduct || activeInventoryId || create.isPending) return;
+    openedFromStock.current = true;
+    create.mutate({ storeId: selectedStoreId, businessDate, note: "" });
+  }, [activeInventoryId, businessDate, create, requestedProductId, selectedProduct, selectedStoreId]);
   const updateNote = trpc.inventoryRegistry.updateNote.useMutation({
     onSuccess: async () => { await refresh(); toast.success("Комментарий к пересчету сохранен"); },
     onError: error => toast.error("Комментарий не сохранен", { description: error.message }),

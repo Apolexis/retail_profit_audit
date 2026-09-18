@@ -1957,6 +1957,15 @@ export async function updatePriceImportDate(input: { importId: number; sourceDat
   return record;
 }
 
+/** The source row keeps its own editable category; products and offer prices are untouched. */
+export async function updatePriceImportRowCategory(input: { rowId: number; category: string | null }) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const category = text(input.category || "") || null;
+  const result = await db.update(priceImportRows).set({ rawCategory: category }).where(eq(priceImportRows.id, input.rowId));
+  if (!result[0]?.affectedRows) throw new Error("Позиция прайс‑листа не найдена.");
+  return { rowId: input.rowId, category };
+}
+
 export async function linkPriceImportRow(input: { rowId: number; productId: number; actorId: number; saveAlias: boolean }) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
   const [row] = await db.select({ id: priceImportRows.id, importId: priceImportRows.importId, normalizedName: priceImportRows.normalizedName, rawName: priceImportRows.rawName, rawPackaging: priceImportRows.rawPackaging, mappingStatus: priceImportRows.mappingStatus, supplierId: priceImports.supplierId, supplierName: priceSuppliers.name, previousProductName: priceProducts.canonicalName, previousInternalCode: priceProducts.internalCode }).from(priceImportRows).innerJoin(priceImports, eq(priceImportRows.importId, priceImports.id)).innerJoin(priceSuppliers, eq(priceImports.supplierId, priceSuppliers.id)).leftJoin(priceProducts, eq(priceImportRows.productId, priceProducts.id)).where(eq(priceImportRows.id, input.rowId)).limit(1);

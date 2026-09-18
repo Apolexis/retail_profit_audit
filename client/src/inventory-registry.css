@@ -109,12 +109,12 @@ html[data-audit-theme="light"] .packet .inventory-draft-actions .subtle-button:f
 
 /* Dark: neutral slate/plum surfaces remain dominant; coral is an outline, never a table fill. */
 html[data-audit-theme="dark"] .packet {
-  --inventory-card: #151820;
-  --inventory-panel: #1a1e27;
-  --inventory-field: #20242d;
-  --inventory-input: #12151b;
-  --inventory-line: #363d49;
-  --inventory-quiet-line: #2d3440;
+  --inventory-card: #16101a;
+  --inventory-panel: #0e0a11;
+  --inventory-field: #17111b;
+  --inventory-input: #17111b;
+  --inventory-line: #3b2435;
+  --inventory-quiet-line: #2a1c29;
   --inventory-accent: #ff765f;
   --inventory-accent-soft: #64394d;
   --inventory-accent-faint: rgba(255, 118, 95, .075);
@@ -122,7 +122,7 @@ html[data-audit-theme="dark"] .packet {
 html[data-audit-theme="dark"] .packet :is(.inventory-line-create, .inventory-accounting-readout) { border-color: var(--inventory-quiet-line); background: var(--inventory-panel); }
 html[data-audit-theme="dark"] .packet .inventory-history-list > article { border-color: var(--inventory-line); background: var(--inventory-field); }
 html[data-audit-theme="dark"] .packet .inventory-history-list > article.selected { border-color: var(--inventory-accent); background: var(--inventory-accent-faint); }
-html[data-audit-theme="dark"] .packet .inventory-lines tbody tr:nth-child(even) { background: #1c2028; }
+html[data-audit-theme="dark"] .packet .inventory-lines tbody tr:nth-child(even) { background: #1b121c; }
 html[data-audit-theme="dark"] .packet .inventory-history-list > article .subtle-button:hover,
 html[data-audit-theme="dark"] .packet .inventory-history-list > article .subtle-button:focus-visible,
 html[data-audit-theme="dark"] .packet .inventory-draft-actions .subtle-button:hover,

@@ -143,20 +143,20 @@ html[data-audit-theme="light"] .packet .revenue-form-actions .packet-link:focus-
 
 /* Dark: cards and table cells remain deep neutral; coral is confined to an outline, icon and key total. */
 html[data-audit-theme="dark"] .packet {
-  --revenue-card: #151820;
-  --revenue-panel: #1a1e27;
-  --revenue-field: #20242d;
-  --revenue-input: #12151b;
-  --revenue-line: #363d49;
-  --revenue-quiet-line: #2d3440;
+  --revenue-card: #16101a;
+  --revenue-panel: #0e0a11;
+  --revenue-field: #17111b;
+  --revenue-input: #17111b;
+  --revenue-line: #3b2435;
+  --revenue-quiet-line: #2a1c29;
   --revenue-accent: #ff765f;
   --revenue-accent-soft: #64394d;
   --revenue-accent-faint: rgba(255, 118, 95, .075);
-  --revenue-table-head: #20242d;
-  --revenue-table-row: #171a21;
-  --revenue-table-zebra: #1c2028;
-  --revenue-table-hover: #222731;
-  --revenue-total-surface: #20242d;
+  --revenue-table-head: #1c1420;
+  --revenue-table-row: #16101a;
+  --revenue-table-zebra: #1b121c;
+  --revenue-table-hover: #231623;
+  --revenue-total-surface: #1c1420;
 }
 html[data-audit-theme="dark"] .packet .revenue-entry-card,
 html[data-audit-theme="dark"] .packet .revenue-rule-disclosure,

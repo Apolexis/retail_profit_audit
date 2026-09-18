@@ -36,6 +36,8 @@ import RevenueRegistry from "./pages/RevenueRegistry";
 import InventoryRegistry from "./pages/InventoryRegistry";
 import StockControl from "./pages/StockControl";
 import CatalogControl from "./pages/CatalogControl";
+import CatalogProductEditor from "./pages/CatalogProductEditor";
+import WarehouseControl from "./pages/WarehouseControl";
 import { trpc } from "./lib/trpc";
 import "./access.css";
 import "./theme-refresh.css";
@@ -71,7 +73,10 @@ function Router() {
       <Route path="/revenue" component={RevenueRegistry} />
       <Route path="/stock-control" component={StockControl} />
       <Route path="/inventory-control" component={InventoryRegistry} />
+      <Route path="/catalog-control/new"><CatalogProductEditor /></Route>
+      <Route path="/catalog-control/:id/edit">{params => <CatalogProductEditor productId={Number(params.id)} />}</Route>
       <Route path="/catalog-control" component={CatalogControl} />
+      <Route path="/warehouse-control" component={WarehouseControl} />
       <Route path="/import" component={ImportData} />
       <Route path="/manage" component={ManageData} />
       <Route path="/profile" component={Profile} />

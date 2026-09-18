@@ -29,6 +29,7 @@ export type EvotorCatalogPreviewItem = {
   vatRate: "VAT_10" | "VAT_22";
   type: string | null;
   parentId: string | null;
+  categoryName: string | null;
 };
 
 function vatRateFromEvotorTax(value: unknown): "VAT_10" | "VAT_22" {
@@ -74,6 +75,7 @@ export function normalizeEvotorCatalogPreviewItem(value: unknown): EvotorCatalog
     vatRate: vatRateFromEvotorTax(record.tax),
     type: text(record.type),
     parentId: text(record.parent_id),
+    categoryName: null,
   };
 }
 
@@ -121,7 +123,10 @@ export async function listEvotorCatalogPreview(storeId: string): Promise<EvotorC
   const products = (await readEvotorPages(`/stores/${encodedStoreId}/products`))
     .map(normalizeEvotorCatalogPreviewItem)
     .filter((product): product is EvotorCatalogPreviewItem => Boolean(product));
-  return Array.from(new Map(products.map(product => [product.id, product])).values())
+  const all = Array.from(new Map(products.map(product => [product.id, product])).values());
+  const namesById = new Map(all.map(product => [product.id, product.name]));
+  return all.map(product => ({ ...product, categoryName: product.parentId ? namesById.get(product.parentId) ?? null : null }))
+    .filter(product => !/^(group|folder|category)$/i.test(product.type ?? ""))
     .sort((left, right) => left.name.localeCompare(right.name, "ru"));
 }
 

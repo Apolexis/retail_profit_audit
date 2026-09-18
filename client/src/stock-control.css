@@ -20,7 +20,7 @@
 .packet .stock-rule-disclosure > summary > strong { min-width: 0; color: var(--ink); font-size: 14px; }
 .packet .stock-rule-disclosure > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 24px; padding-top: 14px; }
 .packet .stock-rule-disclosure p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
-.packet .stock-controls { display: grid; grid-template-columns: minmax(210px, .7fr) minmax(260px, 1.3fr); gap: 12px; }
+.packet .stock-controls { display: grid; grid-template-columns: minmax(180px, .65fr) minmax(200px, .8fr) minmax(260px, 1.25fr); gap: 12px; }
 .packet .stock-controls > label { display: grid; gap: 6px; min-width: 0; color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
 .packet .stock-search { position: relative; display: grid; align-items: center; }
 .packet .stock-search > svg { position: absolute; right: 10px; color: var(--faint); pointer-events: none; }
@@ -31,18 +31,28 @@
 .packet .stock-table-wrap { overflow-x: auto; cursor: grab; scrollbar-width: none; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y; }
 .packet .stock-table-wrap::-webkit-scrollbar { display: none; }
 .packet .stock-table-wrap.table-mouse-dragging { cursor: grabbing; user-select: none; }
-.packet .stock-table { min-width: 820px; }
+.packet .stock-table { min-width: 980px; }
 .packet .stock-table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--stock-panel) 72%, transparent); }
 .packet .stock-table td small { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
-.packet .stock-table td:nth-child(1) { min-width: 116px; }
-.packet .stock-table td:nth-child(2) { min-width: 260px; }
-.packet .stock-table td:nth-child(3) { white-space: nowrap; }
+.packet .stock-table td:nth-child(1) { min-width: 36px; color: var(--muted); font-weight: 800; }
+.packet .stock-table td:nth-child(2) { min-width: 116px; }
+.packet .stock-table td:nth-child(3) { min-width: 160px; }
+.packet .stock-table td:nth-child(4) { min-width: 260px; }
+.packet .stock-table td:nth-child(5) { white-space: nowrap; }
 .packet .stock-quantity { color: var(--ink); font-weight: 800; white-space: nowrap; }
 .packet .stock-not-counted { color: var(--muted); font-style: italic; white-space: nowrap; }
 .packet .stock-revision-action { display: inline-flex; min-height: 34px; margin: 0; padding: 6px 9px; white-space: nowrap; }
 .packet .stock-more { justify-self: start; min-height: 36px; margin: 0; }
 html[data-audit-theme="light"] .packet :is(.stock-rule-disclosure, .stock-table-card) { --stock-card: #f7fbff; --stock-panel: #edf6ff; --stock-line: #c7e2ff; --stock-accent: #0a84ff; --stock-accent-faint: rgba(10, 132, 255, .14); }
-html[data-audit-theme="dark"] .packet :is(.stock-rule-disclosure, .stock-table-card) { --stock-card: #151820; --stock-panel: #1a1e27; --stock-line: #363d49; --stock-accent: #ff765f; --stock-accent-faint: rgba(255, 118, 95, .14); }
+html[data-audit-theme="dark"] .packet :is(.stock-rule-disclosure, .stock-table-card) { --stock-card: #16101a; --stock-panel: #0e0a11; --stock-line: #3b2435; --stock-accent: #ff765f; --stock-accent-faint: rgba(255, 118, 95, .14); }
+/* Keep the proven Rhythm table geometry while preventing legacy plum/blue table inheritance. */
+.packet .stock-table-wrap.data-table-wrap { border-color: var(--stock-line); background: var(--stock-panel); }
+.packet .stock-table.data-table { border-spacing: 0; color: var(--ink); }
+.packet .stock-table.data-table :is(th, td) { border-color: var(--stock-line); }
+.packet .stock-table.data-table thead th { background: var(--stock-panel); color: var(--muted); }
+.packet .stock-table.data-table tbody tr:nth-child(odd) { background: transparent; }
+.packet .stock-table.data-table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--stock-panel) 76%, transparent); }
+.packet .stock-table.data-table tbody tr:hover { background: color-mix(in srgb, var(--stock-accent) 8%, var(--stock-panel)); transform: none; }
 @media (hover: hover) and (pointer: fine) { .packet :is(.stock-rule-disclosure, .stock-table-card):hover { border-color: color-mix(in srgb, var(--stock-accent) 56%, var(--stock-line)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--stock-accent) 18%, transparent); } }
 .packet :is(.stock-rule-disclosure, .stock-table-card):focus-within { border-color: color-mix(in srgb, var(--stock-accent) 62%, var(--stock-line)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--stock-accent) 18%, transparent); }
 @media (max-width: 760px) { .packet .stock-rule-disclosure > div, .packet .stock-controls { grid-template-columns: 1fr; } .packet .stock-table-card .card-title { gap: 12px; } .packet .stock-table-card .card-title .subtle-button { width: 100%; justify-content: center; } }

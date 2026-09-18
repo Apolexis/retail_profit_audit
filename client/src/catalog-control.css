@@ -14,9 +14,9 @@ html[data-audit-theme="light"] .packet {
   --catalog-accent-faint: rgba(10, 132, 255, .14);
 }
 html[data-audit-theme="dark"] .packet {
-  --catalog-card: #151820;
-  --catalog-panel: #1a1e27;
-  --catalog-line: #363d49;
+  --catalog-card: #16101a;
+  --catalog-panel: #0e0a11;
+  --catalog-line: #3b2435;
   --catalog-accent: #ff765f;
   --catalog-accent-faint: rgba(255, 118, 95, .13);
 }
@@ -117,3 +117,55 @@ html[data-audit-theme="dark"] .packet .catalog-working-card:hover { border-color
   .packet .catalog-edit-actions { display: grid; }
   .packet .catalog-more { width: 100%; justify-content: center; }
 }
+
+/* Compact view: the directory is a table; all data entry lives in a dedicated card route. */
+.packet .catalog-price-types { gap: 12px; }
+.packet .catalog-price-types > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; list-style: none; }
+.packet .catalog-price-types > summary::-webkit-details-marker { display: none; }
+.packet .catalog-price-types > summary > div { min-width: 0; }
+.packet .catalog-price-types > summary span { display: block; color: var(--muted); font: 800 10px/1.2 Manrope, Arial, sans-serif; letter-spacing: .08em; }
+.packet .catalog-price-types > summary h3 { margin: 3px 0 0; color: var(--ink); font-size: 15px; }
+.packet .catalog-price-types > summary small { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+.packet .catalog-price-types > summary > svg { flex: 0 0 auto; color: var(--catalog-accent); transition: transform 160ms var(--audit-hover-ease); }
+.packet .catalog-price-types[open] > summary > svg { transform: rotate(180deg); }
+.packet .catalog-price-primary { display: grid; grid-template-columns: minmax(180px, .8fr) minmax(200px, 1fr) auto auto; gap: 10px; align-items: end; }
+.packet .catalog-price-primary > label, .packet .catalog-price-secondary label, .packet .catalog-editor-grid > label, .packet .catalog-editor-price-grid > label { display: grid; gap: 6px; color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+.packet .catalog-price-primary input, .packet .catalog-price-secondary input, .packet .catalog-editor-grid input, .packet .catalog-editor-price-grid input { width: 100%; min-width: 0; height: 40px; padding: 0 10px; border: 1px solid var(--catalog-line); border-radius: 9px; background: var(--catalog-panel); color: var(--ink); font: 700 13px Manrope, Arial, sans-serif; outline: none; }
+.packet .catalog-price-secondary { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; padding-top: 2px; }
+.packet .catalog-price-secondary form { display: grid; grid-template-columns: minmax(210px, 1fr) auto; gap: 10px; align-items: end; }
+.packet .catalog-table-wrap { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y; }
+.packet .catalog-table-wrap::-webkit-scrollbar { display: none; }
+.packet .catalog-table { min-width: 1100px; }
+.packet .catalog-table :is(th, td) { border-color: var(--catalog-line); vertical-align: middle; }
+.packet .catalog-table thead th { background: var(--catalog-panel); color: var(--muted); white-space: nowrap; }
+.packet .catalog-table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--catalog-panel) 76%, transparent); }
+.packet .catalog-table tbody tr:hover { background: color-mix(in srgb, var(--catalog-accent) 7%, var(--catalog-panel)); }
+.packet .catalog-table tr.is-archived { opacity: .64; }
+.packet .catalog-table td:first-child { color: var(--muted); font-weight: 800; }
+.packet .catalog-table td:nth-child(2) { min-width: 280px; }
+.packet .catalog-table td:nth-child(6) { max-width: 230px; overflow-wrap: anywhere; }
+.packet .catalog-table td strong, .packet .catalog-table td small { display: block; }
+.packet .catalog-table td small { margin-top: 3px; color: var(--muted); font-size: 11px; }
+.packet .catalog-table-flag { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-weight: 750; white-space: nowrap; }
+.packet .catalog-table-flag.is-on { color: var(--catalog-accent); }
+.packet .catalog-editor-card { display: grid; gap: 16px; margin-bottom: 18px; border-color: var(--catalog-line); background: var(--catalog-card); }
+.packet .catalog-editor-grid { display: grid; grid-template-columns: minmax(260px, 1.4fr) 105px 120px minmax(190px, 1fr); gap: 12px; align-items: end; }
+.packet .catalog-editor-grid > label:first-child, .packet .catalog-editor-grid > label:nth-child(5) { grid-column: span 2; }
+.packet .catalog-editor-grid > label select, .packet .catalog-editor-price-grid select { width: 100%; min-width: 0; height: 40px; border-color: var(--catalog-line); background: var(--catalog-panel); color: var(--ink); }
+.packet .catalog-editor-grid > label small { font-size: 10px; letter-spacing: 0; text-transform: none; }
+.packet .catalog-editor-switch, .packet .catalog-editor-locked { display: flex !important; align-items: center; gap: 7px; min-height: 40px; padding: 0 2px; color: var(--ink) !important; font-size: 12px !important; letter-spacing: 0 !important; text-transform: none !important; }
+.packet .catalog-editor-switch { cursor: pointer; }
+.packet .catalog-editor-switch input { width: 16px; height: 16px; accent-color: var(--catalog-accent); }
+.packet .catalog-editor-locked { grid-column: span 2; color: var(--muted) !important; }
+.packet .catalog-editor-locked svg { color: var(--catalog-accent); }
+.packet .catalog-editor-locked strong, .packet .catalog-editor-locked span { display: block; }
+.packet .catalog-editor-locked span { margin-top: 2px; color: var(--muted); font-size: 11px; }
+.packet .catalog-editor-price-grid { display: grid; grid-template-columns: minmax(180px, .8fr) auto minmax(180px, .8fr) minmax(180px, .8fr) auto; gap: 10px; align-items: end; }
+.packet .catalog-editor-price-grid > label { position: relative; }
+.packet .catalog-editor-price-grid > label span { position: absolute; right: 10px; bottom: 11px; color: var(--muted); font-size: 12px; letter-spacing: 0; text-transform: none; }
+.packet .catalog-editor-price-grid > label input { padding-right: 27px; }
+@media (max-width: 980px) { .packet .catalog-price-primary, .packet .catalog-editor-price-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .packet .catalog-price-primary > .subtle-button, .packet .catalog-editor-price-grid > .subtle-button { justify-content: center; } .packet .catalog-editor-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .packet .catalog-price-primary, .packet .catalog-price-secondary form, .packet .catalog-editor-grid, .packet .catalog-editor-price-grid { grid-template-columns: 1fr; } .packet .catalog-price-secondary { display: grid; } .packet .catalog-price-primary > .subtle-button, .packet .catalog-price-secondary .subtle-button, .packet .catalog-editor-price-grid > .subtle-button { width: 100%; justify-content: center; } .packet .catalog-editor-grid > label:first-child, .packet .catalog-editor-grid > label:nth-child(5), .packet .catalog-editor-locked { grid-column: auto; } }
+.packet .catalog-editor-readonly { display: grid; gap: 5px; min-height: 40px; padding: 7px 10px; border: 1px solid var(--catalog-line); border-radius: 9px; background: var(--catalog-panel); }
+.packet .catalog-editor-readonly > span { color: var(--muted); font: 800 9px/1 Manrope, Arial, sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+.packet .catalog-editor-readonly > strong { overflow: hidden; color: var(--ink); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }

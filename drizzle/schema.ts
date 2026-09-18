@@ -326,6 +326,8 @@ export const operationalCatalogProducts = mysqlTable("operational_catalog_produc
   evotorCode: varchar("evotorCode", { length: 128 }),
   canonicalName: varchar("canonicalName", { length: 512 }).notNull(),
   barcodes: json("barcodes"),
+  /** Read-only category name resolved from Evotor's product-group hierarchy. */
+  evotorCategoryName: varchar("evotorCategoryName", { length: 512 }),
   baseUnit: mysqlEnum("baseUnit", ["kg", "l", "piece", "unknown"]).default("unknown").notNull(),
   /** Network works only with VAT. The default for a manually added item is 10%. */
   vatRate: mysqlEnum("vatRate", ["VAT_10", "VAT_22"]).default("VAT_10").notNull(),

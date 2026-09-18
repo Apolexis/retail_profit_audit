@@ -630,6 +630,10 @@ export default function PriceControl({
     },
     onError: error => toast.error(error.message),
   });
+  const updateImportRowCategory = trpc.priceControl.updateImportRowCategory.useMutation({
+    onSuccess: () => { invalidate(); toast.success("Категория позиции обновлена"); },
+    onError: error => toast.error(error.message),
+  });
   const linkRow = trpc.priceControl.linkRow.useMutation({
     onSuccess: () => {
       invalidate();
@@ -777,6 +781,7 @@ export default function PriceControl({
   );
   const [directoryTab, setDirectoryTab] = useState<DirectoryTab>("products");
   const [directoryProductSearch, setDirectoryProductSearch] = useState("");
+  const [directoryCategoryPresence, setDirectoryCategoryPresence] = useState<"all" | "assigned" | "unassigned">("all");
   const [directoryProductLimit, setDirectoryProductLimit] = useState(60);
   const [directoryCategorySearch, setDirectoryCategorySearch] = useState("");
   const [directoryLinkSearch, setDirectoryLinkSearch] = useState("");
@@ -810,6 +815,7 @@ export default function PriceControl({
   const [editingSavedImportRowId, setEditingSavedImportRowId] = useState<number | null>(null);
   const [savedImportLinkTargets, setSavedImportLinkTargets] = useState<Record<number, string>>({});
   const [savedImportLinkSearches, setSavedImportLinkSearches] = useState<Record<number, string>>({});
+  const [savedImportCategoryDrafts, setSavedImportCategoryDrafts] = useState<Record<number, string>>({});
   const [editingLinkNameProductId, setEditingLinkNameProductId] = useState<number | null>(null);
   const [linkNameDrafts, setLinkNameDrafts] = useState<Record<number, string>>({});
   const [newGroupProductDrafts, setNewGroupProductDrafts] = useState<Record<number, { productId: string }>>({});
@@ -897,9 +903,11 @@ export default function PriceControl({
         `${product.canonicalName} ${product.internalCode} ${product.category ?? ""}`
           .toLocaleLowerCase("ru")
           .includes(query);
-      return matchesSearch && matchesVisibility(product);
+      const matchesCategoryPresence = directoryCategoryPresence === "all" ||
+        (directoryCategoryPresence === "assigned" ? Boolean(product.category) : !product.category);
+      return matchesSearch && matchesCategoryPresence && matchesVisibility(product);
     });
-  }, [catalogProducts, directoryProductSearch, visibilityFilter]);
+  }, [catalogProducts, directoryProductSearch, directoryCategoryPresence, visibilityFilter]);
   const visibleDirectoryProducts = directoryProducts.slice(0, directoryProductLimit);
   const selectedDirectoryProducts = catalogProducts.filter(product => selectedDirectoryProductIds.includes(product.id));
   const selectedDirectoryProductsHaveActive = selectedDirectoryProducts.some(product => product.isActive);
@@ -3234,6 +3242,15 @@ export default function PriceControl({
                               />
                             </label>
                           )}
+                          <label>
+                            Категория импортированного товара
+                            <PriceSelect
+                              value={savedImportCategoryDrafts[row.rowId] ?? row.rawCategory ?? ""}
+                              onValueChange={category => setSavedImportCategoryDrafts(current => ({ ...current, [row.rowId]: category }))}
+                              placeholder="Выберите категорию"
+                              options={selectableCategories.map(category => ({ value: category.name, label: category.name }))}
+                            />
+                          </label>
                           <small>Имя связи объединяет разные названия поставщиков. Следующие прайсы этого поставщика будут находить его автоматически.</small>
                           <div>
                             <button
@@ -3254,6 +3271,14 @@ export default function PriceControl({
                                 <Plus size={14} /> Создать связь
                               </button>
                             )}
+                            <button
+                              type="button"
+                              className="packet-link compact subtle"
+                              disabled={updateImportRowCategory.isPending || !(savedImportCategoryDrafts[row.rowId] ?? row.rawCategory ?? "").trim()}
+                              onClick={() => updateImportRowCategory.mutate({ rowId: row.rowId, category: (savedImportCategoryDrafts[row.rowId] ?? row.rawCategory ?? "").trim() })}
+                            >
+                              <Save size={14} /> Сохранить категорию
+                            </button>
                             <button type="button" className="packet-link compact subtle" onClick={() => setEditingSavedImportRowId(null)}>Готово</button>
                           </div>
                         </div>
@@ -3274,7 +3299,7 @@ export default function PriceControl({
           <section className="page-lede price-lede">
             <div>
               <span>СПРАВОЧНИК ПРАЙС‑КОНТРОЛЯ</span>
-              <h2>Имена связей, категории и поставщики</h2>
+              <h2>Товары, связи, категории и поставщики</h2>
               <p>
                 Здесь редактируются только данные коммерческих прайс‑листов.
                 Финансовая «База» и ее показатели остаются отдельными и не
@@ -3288,7 +3313,7 @@ export default function PriceControl({
               className={directoryTab === "products" ? "active" : ""}
               onClick={() => setDirectoryTab("products")}
             >
-              Имена связей
+              Товары
             </button>
             <button
               type="button"
@@ -3316,8 +3341,8 @@ export default function PriceControl({
           <section className="packet-card price-directory">
             <div className="card-title">
               <div>
-                <span>ИМЕНА СВЯЗЕЙ</span>
-                <h3>Единые имена, коды и характеристики сравнения</h3>
+                <span>ТОВАРЫ</span>
+                <h3>Самостоятельные товары, цены и характеристики</h3>
               </div>
               <Tags size={21} />
             </div>
@@ -3341,7 +3366,7 @@ export default function PriceControl({
                 }
               >
                 <Plus size={14} />
-                Новое имя связи
+                Добавить товар
               </button>
             )}
             <section className="price-characteristics-panel" aria-label="Характеристики товаров">
@@ -3723,17 +3748,30 @@ export default function PriceControl({
                     setDirectoryProductSearch(event.target.value);
                     setDirectoryProductLimit(60);
                   }}
-                  placeholder="Поиск по имени связи, коду или категории"
-                  aria-label="Поиск имен связей"
+                  placeholder="Поиск товара, коду или категории"
+                  aria-label="Поиск товаров"
                 />
               </label>
+              <PriceSelect
+                value={directoryCategoryPresence}
+                onValueChange={value => {
+                  setDirectoryCategoryPresence(value as "all" | "assigned" | "unassigned");
+                  setDirectoryProductLimit(60);
+                }}
+                placeholder="Категории"
+                options={[
+                  { value: "all", label: "Все категории" },
+                  { value: "unassigned", label: `Без категории · ${catalogProducts.filter(product => !product.category).length}` },
+                  { value: "assigned", label: "Только с категорией" },
+                ]}
+              />
               <small>
                 По текущему фильтру: {directoryProducts.length} · скрыто: {hiddenProductsCount}
               </small>
             </div>
             {canEdit && selectedDirectoryProductIds.length > 0 && (
               <div className="price-bulk-actions">
-                <span>Выбрано связей: {selectedDirectoryProductIds.length}</span>
+                  <span>Выбрано товаров: {selectedDirectoryProductIds.length}</span>
                 <PriceSelect
                   value={bulkCategoryId}
                   onValueChange={setBulkCategoryId}
@@ -3832,6 +3870,17 @@ export default function PriceControl({
                             .join(" · ")
                         : "Параметры не уточнены"}
                     </small>
+                    {(() => {
+                      const offers = overview.data?.comparisons.find(item => item.product.id === product.id)?.offers ?? [];
+                      const lowest = offers.reduce<number | null>((minimum, offer) => minimum === null || offer.normalizedPrice < minimum ? offer.normalizedPrice : minimum, null);
+                      return (
+                        <small className="price-directory-prices">
+                          {lowest === null
+                            ? "Сохранённых цен пока нет"
+                            : `Цен: ${offers.length} · от ${formatMoney(lowest)} ₽/${offers[0]?.normalizedUnit === "piece" ? "шт" : offers[0]?.normalizedUnit}`}
+                        </small>
+                      );
+                    })()}
                   </div>
                   {canEdit && (
                     <div className="price-directory-actions">
@@ -3879,7 +3928,7 @@ export default function PriceControl({
               {!directoryProducts.length && (
                 <div className="empty-state compact">
                   <Search size={22} />
-                  <p>Имена связей по текущему поиску и фильтру не найдены.</p>
+                  <p>Товары по текущему поиску и фильтру не найдены.</p>
                 </div>
               )}
             </div>

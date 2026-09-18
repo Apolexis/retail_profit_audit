@@ -47,6 +47,7 @@ export function FreeScrollSelect({
   const [search, setSearch] = useState("");
   const contentRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const scrollFrame = useRef<number | null>(null);
   const listId = useId();
   const selected = options.find(option => option.value === value);
@@ -101,9 +102,12 @@ export function FreeScrollSelect({
   useEffect(() => {
     if (!open) return;
     setSearch("");
-    const frame = window.requestAnimationFrame(updateScrollAvailability);
+    const frame = window.requestAnimationFrame(() => {
+      updateScrollAvailability();
+      if (searchable) searchInputRef.current?.focus({ preventScroll: true });
+    });
     return () => window.cancelAnimationFrame(frame);
-  }, [open, visibleOptions.length, updateScrollAvailability]);
+  }, [open, searchable, visibleOptions.length, updateScrollAvailability]);
 
   return (
     <Popover open={open} onOpenChange={setOpen} modal={false}>
@@ -134,7 +138,7 @@ export function FreeScrollSelect({
         collisionPadding={12}
         className={cn("free-scroll-select-content", contentClassName)}
       >
-        {searchable && <label className="free-scroll-select-search"><span className="sr-only">{searchPlaceholder}</span><input autoFocus value={search} onChange={event => setSearch(event.target.value)} onKeyDown={event => event.stopPropagation()} placeholder={searchPlaceholder}/></label>}
+        {searchable && <label className="free-scroll-select-search"><span className="sr-only">{searchPlaceholder}</span><input ref={searchInputRef} value={search} onChange={event => setSearch(event.target.value)} onPointerDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()} onKeyDown={event => event.stopPropagation()} placeholder={searchPlaceholder}/></label>}
         <button
           type="button"
           tabIndex={canScroll.up ? 0 : -1}

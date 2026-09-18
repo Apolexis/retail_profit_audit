@@ -232,6 +232,13 @@
       "when": 1789716440118,
       "tag": "0032_careless_phil_sheldon",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "5",
+      "when": 1789719600346,
+      "tag": "0033_goofy_power_pack",
+      "breakpoints": true
     }
   ]
 }

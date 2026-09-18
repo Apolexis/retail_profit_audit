@@ -68,8 +68,8 @@ describe("интерфейс операционной инвентаризаци
     expect(css).toContain('--inventory-accent: #0a84ff;');
     expect(css).toContain('--inventory-panel: #edf6ff;');
     expect(css).toContain('html[data-audit-theme="dark"] .packet {');
-    expect(css).toContain('--inventory-card: #151820;');
-    expect(css).toContain('--inventory-panel: #1a1e27;');
+    expect(css).toContain('--inventory-card: #16101a;');
+    expect(css).toContain('--inventory-panel: #0e0a11;');
     expect(css).toContain('coral is an outline, never a table fill');
     expect(css).not.toContain('#533043');
     expect(css).not.toContain('#a85b72');

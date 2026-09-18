@@ -87,8 +87,8 @@ describe("контракт страницы Выручка", () => {
     expect(styles).toContain('--revenue-panel: #edf6ff;');
     expect(styles).toContain('--revenue-table-zebra: #f6faff;');
     expect(styles).toContain('html[data-audit-theme="dark"] .packet {');
-    expect(styles).toContain('--revenue-panel: #1a1e27;');
-    expect(styles).toContain('--revenue-table-zebra: #1c2028;');
+    expect(styles).toContain('--revenue-panel: #0e0a11;');
+    expect(styles).toContain('--revenue-table-zebra: #1b121c;');
     expect(styles).not.toContain('#d64146');
     expect(styles).not.toContain('#d55b63');
     expect(styles).toContain('--revenue-accent: #ff765f;');
