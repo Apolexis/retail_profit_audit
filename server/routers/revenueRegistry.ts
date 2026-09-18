@@ -22,6 +22,8 @@ async function requireRevenueStorePermission(openId: string | null | undefined, 
   if (!await hasStoreAccess(openId, storeId, "view")) throw new TRPCError({ code: "FORBIDDEN", message: "Нет назначенного доступа к этому магазину" });
 }
 
+const isRevenueAdministrativeRole = (role: string) => role === "admin" || role === "analyst";
+
 /** A seller belongs to exactly one operational point; broad financial grants never imply this access. */
 async function requireSellerStore(openId: string | null | undefined) {
   const storeIds = await getAccessibleStoreIds(openId);
@@ -52,13 +54,17 @@ export const revenueRegistryRouter = router({
   }),
   adminList: protectedProcedure.input(z.object({ from: businessDate.optional(), to: businessDate.optional(), storeId: z.number().int().positive().optional() }).refine(input => !input.from || !input.to || input.from <= input.to, { message: "Дата начала не может быть позже даты окончания" })).query(async ({ input, ctx }) => {
     const actor = await requireOperationalActor(ctx.user?.openId);
-    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Реестр всех магазинов доступен только администратору" });
-    return listRevenueRecords({ ...input, limit: 500 });
+    if (!isRevenueAdministrativeRole(actor.role)) throw new TRPCError({ code: "FORBIDDEN", message: "Реестр всех магазинов доступен только административному персоналу" });
+    const storeIds = await getAccessibleStoreIds(ctx.user?.openId);
+    if (input.storeId && storeIds && !storeIds.includes(input.storeId)) throw new TRPCError({ code: "FORBIDDEN", message: "Нет назначенного доступа к этому магазину" });
+    return listRevenueRecords({ ...input, storeIds, limit: 500 });
   }),
   print: protectedProcedure.input(z.object({ from: businessDate.optional(), to: businessDate.optional(), storeId: z.number().int().positive().optional() }).refine(input => !input.from || !input.to || input.from <= input.to, { message: "Дата начала не может быть позже даты окончания" })).mutation(async ({ input, ctx }) => {
     const actor = await requireOperationalActor(ctx.user?.openId);
-    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Печать реестра доступна только администратору" });
-    const records = await listRevenueRecords({ ...input, limit: 500 });
+    if (!isRevenueAdministrativeRole(actor.role)) throw new TRPCError({ code: "FORBIDDEN", message: "Печать реестра доступна только административному персоналу" });
+    const storeIds = await getAccessibleStoreIds(ctx.user?.openId);
+    if (input.storeId && storeIds && !storeIds.includes(input.storeId)) throw new TRPCError({ code: "FORBIDDEN", message: "Нет назначенного доступа к этому магазину" });
+    const records = await listRevenueRecords({ ...input, storeIds, limit: 500 });
     await recordChange({ actorId: actor.id, action: "operational_revenue.print", entityType: "operational_revenue_register", entityId: `${input.from ?? "all"}:${input.to ?? "all"}:${input.storeId ?? "all"}`, afterState: { businessDate: input.from ?? input.to ?? null, storeId: input.storeId ?? null, recordCount: records.length, storeCount: new Set(records.map(record => record.storeId)).size } });
     return { recordCount: records.length };
   }),

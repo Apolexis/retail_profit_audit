@@ -107,10 +107,13 @@ describe("контракт страницы Выручка", () => {
     expect(page).not.toContain('{record.createdByName}</small>');
   });
 
-  it("оставляет печать финансового реестра только администратору", () => {
+  it("дает печать финансового реестра административному персоналу по назначенным точкам", () => {
     expect(router).toContain('print: protectedProcedure');
-    expect(router).toContain('if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Печать реестра доступна только администратору" });');
-    expect(page).toContain('{isAdmin && <section className="packet-card revenue-admin-register">');
+    expect(router).toContain('const isRevenueAdministrativeRole = (role: string) => role === "admin" || role === "analyst";');
+    expect(router).toContain('if (!isRevenueAdministrativeRole(actor.role)) throw new TRPCError({ code: "FORBIDDEN", message: "Печать реестра доступна только административному персоналу" });');
+    expect(router).toContain('const storeIds = await getAccessibleStoreIds(ctx.user?.openId);');
+    expect(page).toContain('const isAdministrative = isAdmin || me.data?.role === "analyst";');
+    expect(page).toContain('{isAdministrative && <section className="packet-card revenue-admin-register">');
     expect(page).toContain('className="revenue-register-actions"');
   });
 

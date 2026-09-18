@@ -1,33 +1,16 @@
-import { BarChart3, FileSpreadsheet, ReceiptText, ShoppingBasket } from "lucide-react";
-import { useMemo } from "react";
-import { Link } from "wouter";
+import { FileSpreadsheet } from "lucide-react";
 import { AuditShell } from "@/components/AuditShell";
-import { MetricLineChart, formatFactAmount, formatK, formatPct } from "@/components/AuditCharts";
+import { MetricLineChart, formatK, formatPct } from "@/components/AuditCharts";
 import { FactsLoader } from "@/components/OceanLoader";
 import { ThemedSelect } from "@/components/ui/themed-select";
 import { useAudit } from "@/contexts/AuditContext";
 import { expenseDefinitions, useAuditFacts } from "@/hooks/useAuditFacts";
-import { trpc } from "@/lib/trpc";
-import "@/store-profile-evotor.css";
 
 const money = (value: number) => formatK(value / 1000);
-const integer = (value: number) => new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(value);
 const median = (values: number[]) => {
   const sorted = [...values].sort((a, b) => a - b);
   const middle = Math.floor(sorted.length / 2);
   return sorted.length ? (sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2) : 0;
-};
-
-type EvotorFactSummary = {
-  checks: number;
-  amount: number;
-  positions: number;
-  quantity: number;
-};
-
-type EvotorSalesData = {
-  summary: EvotorFactSummary;
-  coverage: { from: string | null; to: string | null };
 };
 
 export default function Stores() {
@@ -54,24 +37,6 @@ export default function Stores() {
   const expenseShare = store.revenue ? expenseTotal / store.revenue * 100 : 0;
   const smokedMarkup = store.purchaseSmoked ? (store.salesSmoked / store.purchaseSmoked - 1) * 100 : 0;
   const frozenMarkup = store.purchaseFrozen ? (store.salesFrozen / store.purchaseFrozen - 1) * 100 : 0;
-
-  const auditStores = trpc.audit.stores.useQuery(undefined, { retry: false });
-  const linkedEvotorStore = useMemo(
-    () => (auditStores.data ?? []).find(candidate => candidate.name === storeName && !candidate.isHidden) ?? null,
-    [auditStores.data, storeName],
-  );
-  const evotorSales = trpc.inventoryRegistry.evotorSalesAnalytics.useQuery(
-    {
-      from: range.from,
-      to: range.to,
-      granularity: "week",
-      storeIds: linkedEvotorStore ? [linkedEvotorStore.id] : [],
-    },
-    { enabled: Boolean(linkedEvotorStore), retry: false },
-  );
-  const evotorData = evotorSales.data as EvotorSalesData | undefined;
-  const evotorSummary = evotorData?.summary;
-  const averageReceipt = evotorSummary?.checks ? evotorSummary.amount / evotorSummary.checks : 0;
 
   if (facts.loading) {
     return <AuditShell kicker="05 / ПРОФИЛИ ТОЧЕК" title="Магазин: полный разбор"><FactsLoader /></AuditShell>;
@@ -109,31 +74,6 @@ export default function Stores() {
           <article className={store.netProfit < 0 ? "packet-kpi risk" : "packet-kpi"}><span>Чистая прибыль</span><strong>{money(store.netProfit)}</strong><small>маржа {formatPct(store.netMargin)} · ранг #{rank}</small></article>
           <article className="packet-kpi"><span>Все расходы</span><strong>{money(store.expenses)}</strong><small>фактический P&amp;L</small></article>
           <article className="packet-kpi"><span>Конечный остаток</span><strong>{money(store.stockClose)}</strong><small>{store.coverDays.toFixed(1)} дня покрытия</small></article>
-        </section>
-
-        <section className="packet-card store-evotor-facts">
-          <div className="card-title store-evotor-title">
-            <div>
-              <span><ReceiptText size={15} /> ЧЕКИ ЭВОТОР · READ-ONLY</span>
-              <h3>Операционный факт за активный срез</h3>
-            </div>
-            <small>{storeName} · {rangeLabel}</small>
-          </div>
-          {!linkedEvotorStore ? <p className="packet-note">Для этой точки пока нет доступного read-only соответствия с магазином Эвотор.</p>
-            : evotorSales.isLoading ? <p className="packet-note">Загружаем нормализованные чеки Эвотор…</p>
-              : evotorSales.isError ? <p className="packet-note">Факты чеков Эвотор временно недоступны. Финансовый P&amp;L не меняется.</p>
-                : !evotorSummary?.checks ? <p className="packet-note">В активном срезе пока нет нормализованных чеков Эвотор. Витрина заполняется автоматически и не подменяет финансовые факты.</p>
-                  : <div className="store-evotor-summary" aria-label="Операционные показатели Эвотор">
-                    <div><span>Чеки</span><strong>{integer(evotorSummary.checks)}</strong></div>
-                    <div><span>Сумма чеков</span><strong>{formatFactAmount(evotorSummary.amount)}</strong></div>
-                    <div><span>Средний чек</span><strong>{formatFactAmount(averageReceipt)}</strong></div>
-                    <div><span>Продано</span><strong>{integer(evotorSummary.quantity)}</strong><small>товаров · {integer(evotorSummary.positions)} строк</small></div>
-                  </div>}
-          <div className="store-evotor-actions">
-            <Link href="/evotor-sales/metrics" className="subtle-button"><BarChart3 size={15} /> Показатели Эвотор</Link>
-            <Link href="/evotor-sales/products" className="subtle-button"><ShoppingBasket size={15} /> Проданные товары</Link>
-          </div>
-          <p className="packet-note">Этот блок показывает только нормализованный read-only факт чеков. Он не пересчитывает финансовый P&amp;L, не раскрывает себестоимость и не выполняет запись в Эвотор.</p>
         </section>
 
         <section className="packet-split">

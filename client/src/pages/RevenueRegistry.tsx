@@ -97,10 +97,11 @@ export default function RevenueRegistry() {
   const registerScrollRef = useRef<{ startX: number; scrollLeft: number; pointerId: number } | null>(null);
   const isAdmin = me.data?.role === "admin";
   const isSeller = me.data?.role === "seller";
+  const isAdministrative = isAdmin || me.data?.role === "analyst";
   const adminFilter = useMemo(() => ({ from: registryDate, to: registryDate, storeId: adminStoreId ? Number(adminStoreId) : undefined }), [registryDate, adminStoreId]);
   const myRecords = trpc.revenueRegistry.myLatest.useQuery(undefined, { retry: false, enabled: isSeller || isAdmin });
-  const adminRecords = trpc.revenueRegistry.adminList.useQuery(adminFilter, { retry: false, enabled: isAdmin });
-  const currentRecords = ((isAdmin ? adminRecords.data : myRecords.data) ?? []) as RevenueRecord[];
+  const adminRecords = trpc.revenueRegistry.adminList.useQuery(adminFilter, { retry: false, enabled: isAdministrative });
+  const currentRecords = ((isAdministrative ? adminRecords.data : myRecords.data) ?? []) as RevenueRecord[];
   const visibleExpenseFields = fields.filter(field => field.kind === "expense" && (printCoreExpenseFields.has(field.key as ExpenseField) || currentRecords.some(record => record[field.key] !== 0)));
   const printComments = currentRecords.flatMap(record => fields.filter(field => field.kind === "expense" && record[field.key] > 0 && record.expenseComments[field.key as ExpenseField]).map(field => ({ record, field })));
   const hasExpenseComments = printComments.length > 0;
@@ -181,7 +182,7 @@ export default function RevenueRegistry() {
     event.currentTarget.classList.remove("is-dragging");
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   };
-  const printSheet = isAdmin && currentRecords.length ? createPortal(
+  const printSheet = isAdministrative && currentRecords.length ? createPortal(
     <section id="revenue-print-root" className="revenue-print-sheet" aria-hidden="true">
       <p>{displayDate(registryDate)}</p>
       <table className="revenue-print-table">
@@ -193,7 +194,7 @@ export default function RevenueRegistry() {
     </section>, document.body
   ) : null;
 
-  if (!isAdmin && !isSeller && !me.isLoading) return <AuditShell kicker="23 / ВЫРУЧКА" title="Операционный реестр «Выручка»"><section className="empty-state"><ReceiptText size={28}/><h2>Нет операционного доступа</h2><p>Эта страница доступна только назначенному продавцу или администратору.</p></section></AuditShell>;
+  if (!isAdministrative && !isSeller && !me.isLoading) return <AuditShell kicker="23 / ВЫРУЧКА" title="Операционный реестр «Выручка»"><section className="empty-state"><ReceiptText size={28}/><h2>Нет операционного доступа</h2><p>Эта страница доступна назначенному продавцу или административному персоналу.</p></section></AuditShell>;
 
   return <AuditShell kicker="23 / ВЫРУЧКА" title="Операционный реестр «Выручка»">
     <section className="page-lede revenue-lede"><div><span>ОПЕРАЦИОННЫЙ КОНТУР</span><h2>{editing ? `Изменение записи · ${displayDate(editing.businessDate)}` : "Передача выручки за день"}</h2><p>Итог равен сумме сданных наличных, безналичных оплат и наличных расходов. Это отдельная операционная запись: она не меняет финансовый факт, P&L или Excel.</p></div>{editing && <button type="button" className="subtle-button" onClick={resetForm}><RotateCcw size={15}/>Новая запись</button>}</section>
@@ -209,7 +210,7 @@ export default function RevenueRegistry() {
       <div className="revenue-form-actions"><button className="packet-link" disabled={!storeId || create.isPending || correct.isPending}><FilePlus2 size={16}/>{editing ? "Сохранить новой версией" : "Передать выручку"}</button>{editing && <small>Версия {editing.currentVersion + 1}; исходная запись сохранится в истории.</small>}</div>
       </form>
     </details></section>
-    {isAdmin && <section className="packet-card revenue-admin-register">
+    {isAdministrative && <section className="packet-card revenue-admin-register">
       <div className="card-title"><div><span>РЕЕСТР ВСЕХ МАГАЗИНОВ</span><h3>Печать, контроль и изменения</h3></div></div>
       <div className="revenue-filter-row"><div><span>Дата</span><ExactDateControl value={registryDate} onChange={setRegistryDate} title="ДАТА РЕЕСТРА ВЫРУЧКИ" ariaLabel="Изменить дату реестра выручки"/></div><label>Магазин<ThemedSelect value={adminStoreId} onChange={event => setAdminStoreId(event.target.value)}><option value="">Все магазины</option>{(stores.data ?? []).map(store => <option key={store.id} value={store.id}>{store.name}</option>)}</ThemedSelect></label></div>
       <div className="revenue-register-actions"><button type="button" className="subtle-button" disabled={printRegistry.isPending} onClick={() => printRegistry.mutate(adminFilter, { onSuccess: async () => { await refresh(); window.print(); }, onError: error => toast.error("Печать не выполнена", { description: error.message }) })}><Printer size={14}/>{printRegistry.isPending ? "Готовим…" : "Печать"}</button></div>
