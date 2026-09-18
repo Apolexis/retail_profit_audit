@@ -63,3 +63,13 @@ html[data-audit-theme="dark"] .packet :is(.stock-rule-disclosure, .stock-table-c
 .packet :is(.stock-rule-disclosure, .stock-table-card):focus-within { border-color: color-mix(in srgb, var(--stock-accent) 62%, var(--stock-line)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--stock-accent) 18%, transparent); }
 @media (max-width: 760px) { .packet .stock-rule-disclosure > div, .packet .stock-controls { grid-template-columns: 1fr; } .packet .stock-table-card .card-title { gap: 12px; } .packet .stock-table-card .card-title .subtle-button { width: 100%; justify-content: center; } }
 @media (max-width: 400px) { .packet .stock-rule-disclosure > summary { grid-template-columns: 1fr; gap: 4px; } }
+
+.packet .stock-row-actions { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.packet .stock-adjust-dialog { border-color: var(--line); background: var(--surface); color: var(--ink); }
+.packet .stock-adjust-dialog > label { display: grid; gap: 6px; position: relative; color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.packet .stock-adjust-dialog input, .packet .stock-adjust-dialog textarea { width: 100%; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); color: var(--ink); font: 700 14px Manrope, Arial, sans-serif; outline: none; }
+.packet .stock-adjust-dialog input { height: 40px; padding: 0 44px 0 10px; }
+.packet .stock-adjust-dialog textarea { min-height: 76px; padding: 10px; resize: vertical; }
+.packet .stock-adjust-dialog > label > span { position: absolute; right: 11px; top: 30px; color: var(--muted); font: 700 12px Manrope, Arial, sans-serif; letter-spacing: 0; text-transform: none; pointer-events: none; }
+.packet .stock-adjust-dialog :is(input, textarea):focus-visible { border-color: var(--stock-accent); box-shadow: 0 0 0 2px var(--stock-accent-faint); }
+@media (max-width: 760px) { .packet .stock-row-actions { justify-content: flex-start; } }

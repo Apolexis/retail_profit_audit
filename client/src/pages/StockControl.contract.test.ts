@@ -5,12 +5,15 @@ const page = readFileSync(new URL("./StockControl.tsx", import.meta.url), "utf8"
 const css = readFileSync(new URL("../stock-control.css", import.meta.url), "utf8");
 
 describe("интерфейс операционных остатков", () => {
-  it("отделяет остатки от ревизии и показывает только проверенный учет", () => {
+  it("отделяет остатки от ревизии и сохраняет прямую корректировку отдельным действием", () => {
     expect(page).toContain("Остатки магазинов");
     expect(page).toContain("«Не посчитан» — это не ноль");
-    expect(page).toContain("Прямое редактирование учетного остатка исключено");
+    expect(page).toContain("сохраняет отдельное неизменяемое движение");
     expect(page).toContain("Новая ревизия");
     expect(page).toContain("Ревизия");
+    expect(page).toContain("trpc.inventoryRegistry.adjustStock.useMutation");
+    expect(page).toContain("Изменить остаток");
+    expect(page).toContain("Причина корректировки");
   });
 
   it("дает выбрать одну точку или смотреть все доступные, с поиском и постраничной загрузкой", () => {

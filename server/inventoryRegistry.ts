@@ -95,6 +95,37 @@ export async function getInventoryAccountingQuantities(storeId: number, productI
   return quantities;
 }
 
+/** Direct correction never overwrites history: it emits one immutable, reasoned adjustment. */
+export async function setOperationalStockQuantity(input: { storeId: number; productId: number; countedQuantity: number; reason: string; actorId: number }) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const countedQuantity = validateCountedQuantity(input.countedQuantity);
+  const reason = normalizedText(input.reason);
+  if (reason.length < 3 || reason.length > 512) throw new Error("Укажите причину корректировки остатка (от 3 до 512 символов).");
+  const [product] = await db
+    .select({ id: operationalCatalogProducts.id, canonicalName: operationalCatalogProducts.canonicalName, baseUnit: operationalCatalogProducts.baseUnit })
+    .from(operationalCatalogProducts)
+    .where(and(eq(operationalCatalogProducts.id, input.productId), eq(operationalCatalogProducts.isActive, true)))
+    .limit(1);
+  if (!product) throw new Error("Товар не найден в активном общем справочнике.");
+  const previousQuantity = (await getInventoryAccountingQuantities(input.storeId, [input.productId])).get(input.productId) ?? 0;
+  const quantityDelta = calculateInventoryAdjustment(previousQuantity, countedQuantity);
+  const movement = {
+    storeId: input.storeId,
+    productId: input.productId,
+    inventoryId: null,
+    kind: "manual_adjustment" as const,
+    previousQuantity: previousQuantity.toFixed(3),
+    countedQuantity: countedQuantity.toFixed(3),
+    quantityDelta: quantityDelta.toFixed(3),
+    unit: unitFromProduct(product.baseUnit),
+    adjustmentReason: reason,
+    createdByAccountId: input.actorId,
+  };
+  await db.insert(operationalStockMovements).values(movement);
+  return { product, before: previousQuantity, after: countedQuantity, quantityDelta, reason };
+}
+
 export async function listInventoryProducts(input?: { storeId?: number; includeAccounting?: boolean; includeInactive?: boolean }) {
   const db = await getDb();
   if (!db) return [];

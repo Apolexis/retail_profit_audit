@@ -443,17 +443,18 @@ export const operationalInventoryLines = mysqlTable("operational_inventory_lines
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => [unique("operational_inventory_line_product_uq").on(table.inventoryId, table.productId)]);
 
-/** Immutable stock adjustments are emitted solely on closing an inventory. */
+/** Immutable stock adjustments preserve either an inventory result or a reasoned direct correction. */
 export const operationalStockMovements = mysqlTable("operational_stock_movements", {
   id: int("id").autoincrement().primaryKey(),
   storeId: int("storeId").notNull(),
   productId: int("productId").notNull(),
-  inventoryId: int("inventoryId").notNull(),
-  kind: mysqlEnum("kind", ["first_count", "inventory_adjustment"]).notNull(),
+  inventoryId: int("inventoryId"),
+  kind: mysqlEnum("kind", ["first_count", "inventory_adjustment", "manual_adjustment"]).notNull(),
   previousQuantity: decimal("previousQuantity", { precision: 16, scale: 3 }).notNull(),
   countedQuantity: decimal("countedQuantity", { precision: 16, scale: 3 }).notNull(),
   quantityDelta: decimal("quantityDelta", { precision: 16, scale: 3 }).notNull(),
   unit: mysqlEnum("unit", ["kg", "l", "piece"]).notNull(),
+  adjustmentReason: varchar("adjustmentReason", { length: 512 }),
   createdByAccountId: int("createdByAccountId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, table => [unique("operational_stock_movement_inventory_product_uq").on(table.inventoryId, table.productId)]);

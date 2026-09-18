@@ -20,6 +20,7 @@ import {
   listStoreInventories,
   removeInventoryLine,
   restoreOperationalCatalogProduct,
+  setOperationalStockQuantity,
   setOperationalProductSalePrice,
   setOperationalStorePriceType,
   syncOperationalEvotorDocumentPage,
@@ -176,6 +177,13 @@ export const inventoryRegistryRouter = router({
     if (input?.storeId) await requireInventoryStoreAccess(ctx.user.openId, input.storeId, "view");
     const storeIds = actor.role === "admin" ? null : await getAccessibleStoreIds(ctx.user.openId);
     return listOperationalStock({ ...input, storeIds, storeId: input?.storeId, limit: input?.limit ?? 50 });
+  }),
+  adjustStock: protectedProcedure.input(z.object({ storeId: z.number().int().positive(), productId: z.number().int().positive(), countedQuantity: z.number().finite().min(0).max(1_000_000), reason: z.string().trim().min(3).max(512) })).mutation(async ({ ctx, input }) => {
+    const actor = await requireInventoryStoreAccess(ctx.user.openId, input.storeId, "edit");
+    if (actor.role === "seller") throw new TRPCError({ code: "FORBIDDEN", message: "Продавец проводит пересчет, а прямую корректировку подтверждает руководитель или администратор." });
+    const result = await setOperationalStockQuantity({ ...input, actorId: actor.id });
+    await recordChange({ actorId: actor.id, action: "operational_stock.manual_adjustment", entityType: "operational_stock_movement", entityId: `${input.storeId}:${input.productId}`, beforeState: { product: result.product.canonicalName, storeId: input.storeId, quantity: result.before }, afterState: { product: result.product.canonicalName, storeId: input.storeId, quantity: result.after, delta: result.quantityDelta, reason: result.reason } });
+    return result;
   }),
   list: protectedProcedure.input(z.object({ storeId: z.number().int().positive().optional(), limit: z.number().int().min(1).max(30).optional() }).optional()).query(async ({ ctx, input }) => {
     const actor = await localActor(ctx.user.openId);
