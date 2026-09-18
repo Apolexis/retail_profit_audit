@@ -80,4 +80,12 @@ describe("компактный журнал изменений", () => {
     expect(journal).toContain('voidReason:"Причина удаления"');
     expect(journal).toContain('correctionReason:"Причина изменения"');
   });
+
+  it("показывает сохранение каталога и внутреннюю себестоимость в общем журнале операций", () => {
+    expect(journal).toContain('"operational_catalog.evotor_confirm":"Сохранение номенклатуры Эвотор"');
+    expect(journal).toContain('"operational_catalog.internal_cost.update":"Изменение внутренней себестоимости"');
+    expect(journal).toContain('savedPositions:"Сохранено позиций"');
+    expect(journal).toContain('costPricePolicy:"Правило себестоимости"');
+    expect(journal).toContain('internalCostPrice:"Внутренняя себестоимость"');
+  });
 });
