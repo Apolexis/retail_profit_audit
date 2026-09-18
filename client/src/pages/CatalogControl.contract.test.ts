@@ -47,6 +47,11 @@ describe("общий операционный справочник", () => {
     expect(page).toContain("catalog-table-money");
   });
 
+  it("сразу подставляет цену для выбранного вида", () => {
+    expect(editor).toContain("item.productId === productId && item.priceTypeId === selectedPriceType.id");
+    expect(editor).toContain("setPriceTypeId(event.target.value); const next = ((salePrices.data ?? []) as SalePrice[]).find(item => item.productId === productId && item.priceTypeId === Number(event.target.value)); setSalePrice(next?.salePrice ?? \"\");");
+  });
+
   it("не выдает read-only интеграцию Эвотор за работающую выгрузку", () => {
     expect(editor).toContain("Эвотор: не подключено");
     expect(editor).toContain("Обратная запись в Эвотор пока не подключена");
@@ -60,6 +65,9 @@ describe("общий операционный справочник", () => {
     expect(editor).toContain("Код вида АП (ФСРАР)");
     expect(editor).toContain("Крепость, %");
     expect(editor).toContain("Объем тары, л");
+	  expect(editor).toContain("Код типа товара Эвотор");
+	  expect(editor).toContain('beer_marked: "ALCOHOL_MARKED"');
+	  expect(editor).toContain("сейчас read-only");
   });
 
 	it("использует обычные ссылки для самостоятельных маршрутов номенклатуры", () => {
@@ -72,6 +80,7 @@ describe("общий операционный справочник", () => {
 	  expect(page).toContain('data-label="№ / ID / артикул"');
 	  expect(page).toContain("№ / ID / артикул: {product.internalCode}");
 	  expect(page).not.toContain("ID {product.id} · артикул Эвотор");
+	  expect(editor).toContain("№ / ID / артикул:");
 	});
 
 	it("превращает широкую таблицу справочника в подписанные карточки на телефоне", () => {

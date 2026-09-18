@@ -169,6 +169,8 @@ html[data-audit-theme="dark"] .packet .catalog-working-card:hover { border-color
 .packet .catalog-editor-readonly { display: grid; gap: 5px; min-height: 40px; padding: 7px 10px; border: 1px solid var(--catalog-line); border-radius: 9px; background: var(--catalog-panel); }
 .packet .catalog-editor-readonly > span { color: var(--muted); font: 800 9px/1 Manrope, Arial, sans-serif; letter-spacing: .06em; text-transform: uppercase; }
 .packet .catalog-editor-readonly > strong { overflow: hidden; color: var(--ink); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.packet .catalog-editor-readonly > small { color: var(--muted); font-size: 10px; line-height: 1.25; }
+.packet .catalog-marking-code { align-content: center; min-width: 0; }
 
 /* Card actions are compact, semantic controls; no checkbox layout is used for visibility flags. */
 .packet .catalog-editor-card .card-title { align-items: flex-start; }
