@@ -320,6 +320,8 @@ export const operationalInventories = mysqlTable("operational_inventories", {
  */
 export const operationalCatalogProducts = mysqlTable("operational_catalog_products", {
   id: int("id").autoincrement().primaryKey(),
+  /** Business identifier: a human-visible sequence, future Evotor article and 1C matching key. Database primary key stays internal. */
+  catalogNumber: int("catalogNumber").notNull().unique(),
   /** Historic source point for an initial read-only import; global manual products have no source point. */
   storeId: int("storeId"),
   evotorProductId: varchar("evotorProductId", { length: 128 }).notNull(),
@@ -341,6 +343,7 @@ export const operationalCatalogProducts = mysqlTable("operational_catalog_produc
   alcoholCode: varchar("alcoholCode", { length: 255 }),
   alcoholTypeCode: varchar("alcoholTypeCode", { length: 64 }),
   alcoholStrengthPercent: decimal("alcoholStrengthPercent", { precision: 5, scale: 2 }),
+  alcoholVolumeLiters: decimal("alcoholVolumeLiters", { precision: 8, scale: 3 }),
   /** Manually confirmed barcodes, normalized as semicolon-separated text. */
   manualBarcodes: text("manualBarcodes"),
   /** A hidden product is excluded from future store requests, but never from history. */
@@ -393,6 +396,30 @@ export const operationalWarehouseSettings = mysqlTable("operational_warehouse_se
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => [unique("operational_warehouse_store_uq").on(table.storeId)]);
+
+/** Configurable printing rules for product categories, including nested groups such as SRS → SRS V/U. */
+export const operationalPrintCategoryGroups = mysqlTable("operational_print_category_groups", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 128 }).notNull(),
+  normalizedName: varchar("normalizedName", { length: 160 }).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdByAccountId: int("createdByAccountId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [unique("operational_print_category_group_name_uq").on(table.normalizedName)]);
+
+/** A member is either one catalog category name or another print-category group; service rules prevent cycles. */
+export const operationalPrintCategoryGroupMembers = mysqlTable("operational_print_category_group_members", {
+  id: int("id").autoincrement().primaryKey(),
+  groupId: int("groupId").notNull(),
+  memberType: mysqlEnum("memberType", ["catalog_category", "category_group"]).notNull(),
+  catalogCategory: varchar("catalogCategory", { length: 512 }),
+  childGroupId: int("childGroupId"),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => [
+  unique("operational_print_category_member_uq").on(table.groupId, table.memberType, table.catalogCategory, table.childGroupId),
+]);
 
 /** A missing row intentionally means that the product has no stated sale price for the selected price type. */
 export const operationalProductSalePrices = mysqlTable("operational_product_sale_prices", {

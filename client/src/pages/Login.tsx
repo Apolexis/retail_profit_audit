@@ -70,7 +70,7 @@ export default function Login({ accessError }: { accessError?: unknown }) {
         </div>
         <h1>{storeLoginMode ? "Вход магазина" : "Вход в управленческий контур"}</h1>
         <form onSubmit={submit}>
-          <label className="login-store-mode"><input type="checkbox" checked={storeLoginMode} onChange={event => { setStoreLoginMode(event.target.checked); setIdentifier(""); }} /><span>Вход для магазинов</span></label>
+          <label className="login-store-mode"><input type="checkbox" checked={storeLoginMode} onChange={event => { setStoreLoginMode(event.target.checked); setIdentifier(""); }} /><span className="login-store-mode-switch" aria-hidden="true"/><span>Вход для магазинов</span></label>
           {storeLoginMode ? <label>Логин магазина<input type="text" inputMode="text" autoComplete="username" value={identifier} onChange={event => setIdentifier(event.target.value)} placeholder="Логин магазина" maxLength={64} required /></label> : <label>Номер телефона<PhoneInput value={identifier} onValueChange={setIdentifier} required /></label>}
           <label>Пароль<PasswordInput autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} required /></label>
           {(accessError || login.error) && <div className="login-error">{authErrorText(accessError ?? login.error)}</div>}

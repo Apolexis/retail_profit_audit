@@ -59,3 +59,13 @@
 
 .packet .stock-row-actions { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
 @media (max-width: 760px) { .packet .stock-row-actions { justify-content: flex-start; } }
+
+/* Key operational cards use the approved Analysis-card contrast rather than flat gray. */
+html[data-audit-theme="light"] .packet :is(.stock-rule-disclosure, .stock-table-card) {
+  background: linear-gradient(150deg, #fff, #f6faff) !important;
+  border-color: #bdd9f6 !important;
+}
+html[data-audit-theme="dark"] .packet :is(.stock-rule-disclosure, .stock-table-card) {
+  background: linear-gradient(150deg, #16101a, #0e0a11) !important;
+  border-color: #3b2435 !important;
+}

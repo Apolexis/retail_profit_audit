@@ -16,11 +16,11 @@ describe("warehouse control contract", () => {
 
   it("keeps Evotor read-only and omits addresses", () => {
     expect(page).toContain("READ‑ONLY ЭВОТОР");
-    expect(page).toContain("Адреса и технические идентификаторы Эвотор здесь не выводятся");
-    expect(page).toContain("Запись в Эвотор, изменение кассы и показ адреса исключены");
+    expect(page).toContain("Адреса и технические идентификаторы в интерфейсе не показываются");
+    expect(page).toContain("Запись в Эвотор исключена");
     expect(page).toContain("syncEvotorDocumentPage.useMutation");
-    expect(page).toContain("Документы");
-    expect(page).not.toContain("evotorStoreName");
+    expect(page).toContain("Загрузить документы");
+    expect(page).toContain("setWarehouseEvotorMapping.useMutation");
   });
 
   it("registers the administrator-only operational route and themed table", () => {
@@ -35,7 +35,7 @@ describe("warehouse control contract", () => {
     expect(page).toContain("createPrintGroup.useMutation");
     expect(page).toContain("setWarehousePrintGroup.useMutation");
     expect(page).toContain("Новая группа печати");
-    expect(page).toContain("Сохранить группу");
-    expect(page).toContain("Скрыть группу");
+    expect(page).toContain("Сохранить печать");
+    expect(page).toContain("<EyeOff size={14}/>Скрыть");
   });
 });

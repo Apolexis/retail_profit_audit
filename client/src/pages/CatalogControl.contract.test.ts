@@ -57,8 +57,9 @@ describe("общий операционный справочник", () => {
     expect(editor).not.toContain("Штрихкоды Эвотор");
     expect(editor).toContain('marking === "alcohol" || marking === "beer_marked"');
     expect(editor).toContain("Алкокод");
-    expect(editor).toContain("Тип алкоголя");
+    expect(editor).toContain("Код вида АП (ФСРАР)");
     expect(editor).toContain("Крепость, %");
+    expect(editor).toContain("Объем тары, л");
   });
 
   it("использует обычные ссылки для самостоятельных маршрутов номенклатуры", () => {

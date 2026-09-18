@@ -5,6 +5,7 @@ import {
   archiveOperationalCatalogProduct,
   closeInventory,
   createOperationalPrintGroup,
+  createOperationalPrintCategoryGroup,
   confirmOperationalCatalogFromEvotor,
   createOperationalPriceType,
   createOperationalCatalogProduct,
@@ -15,16 +16,22 @@ import {
   getInventoryAuditState,
   getInventoryDetail,
   listOperationalPriceTypes,
+  listOperationalCatalogCategoryNames,
+  listOperationalPrintCategoryGroups,
   listOperationalPrintGroups,
   listOperationalSalePrices,
+  listOperationalEvotorStoreChoices,
   listOperationalWarehouses,
   listInventoryProducts,
   listOperationalStock,
   listStoreInventories,
   removeInventoryLine,
+  removeOperationalPrintCategoryGroupMember,
   restoreOperationalCatalogProduct,
   setOperationalProductSalePrice,
+  setOperationalWarehouseEvotorMapping,
   setOperationalWarehousePrintGroup,
+  setOperationalPrintCategoryGroupMember,
   setOperationalStorePriceType,
   syncOperationalEvotorDocumentPage,
   updateInventoryNote,
@@ -90,14 +97,14 @@ export const inventoryRegistryRouter = router({
     await recordChange({ actorId: actor.id, action: "operational_catalog.internal_cost.update", entityType: "operational_catalog_product", entityId: String(input.id), beforeState: { product: result.before.canonicalName, evotorCostPrice: result.before.evotorCostPrice, internalCostPrice: result.before.internalCostPrice }, afterState: { product: result.after.canonicalName, evotorCostPrice: result.after.evotorCostPrice, internalCostPrice: result.after.internalCostPrice } });
     return result;
   }),
-  createCatalogProduct: protectedProcedure.input(z.object({ canonicalName: z.string().trim().min(1).max(512), evotorCategoryName: z.string().trim().max(512).nullable().optional(), baseUnit: inventoryUnit, vatRate: z.enum(["VAT_10", "VAT_22"]).optional(), internalCostPrice: z.number().finite().min(0).max(10_000_000).nullable().optional(), markingCategory: markingCategory.optional(), alcoholCode: z.string().trim().max(255).nullable().optional(), alcoholTypeCode: z.string().trim().max(64).nullable().optional(), alcoholStrengthPercent: z.number().finite().min(0).max(100).nullable().optional(), manualBarcodes: z.string().max(4_000).nullable().optional(), isVisibleInRequests: z.boolean().optional(), isEvotorExportEnabled: z.boolean().optional() })).mutation(async ({ ctx, input }) => {
+  createCatalogProduct: protectedProcedure.input(z.object({ canonicalName: z.string().trim().min(1).max(512), evotorCategoryName: z.string().trim().max(512).nullable().optional(), baseUnit: inventoryUnit, vatRate: z.enum(["VAT_10", "VAT_22"]).optional(), internalCostPrice: z.number().finite().min(0).max(10_000_000).nullable().optional(), markingCategory: markingCategory.optional(), alcoholCode: z.string().trim().max(255).nullable().optional(), alcoholTypeCode: z.string().trim().max(64).nullable().optional(), alcoholStrengthPercent: z.number().finite().min(0).max(100).nullable().optional(), alcoholVolumeLiters: z.number().finite().min(0).max(1_000).nullable().optional(), manualBarcodes: z.string().max(4_000).nullable().optional(), isVisibleInRequests: z.boolean().optional(), isEvotorExportEnabled: z.boolean().optional() })).mutation(async ({ ctx, input }) => {
     const actor = await localActor(ctx.user.openId);
     if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Добавлять номенклатуру может только администратор." });
     const after = await createOperationalCatalogProduct({ ...input, actorId: actor.id });
     await recordChange({ actorId: actor.id, action: "operational_catalog.manual.create", entityType: "operational_catalog_product", entityId: String(after.id), afterState: { product: after.canonicalName, category: after.evotorCategoryName, unit: after.baseUnit, vatRate: after.vatRate, markingCategory: after.markingCategory, alcoholCode: after.alcoholCode, alcoholTypeCode: after.alcoholTypeCode, alcoholStrengthPercent: after.alcoholStrengthPercent, manualBarcodes: after.manualBarcodes, isVisibleInRequests: after.isVisibleInRequests, isEvotorExportEnabled: after.isEvotorExportEnabled, internalCostPrice: after.internalCostPrice } });
     return after;
   }),
-  updateCatalogProduct: protectedProcedure.input(z.object({ id: z.number().int().positive(), canonicalName: z.string().trim().min(1).max(512), evotorCategoryName: z.string().trim().max(512).nullable().optional(), baseUnit: inventoryUnit, vatRate: z.enum(["VAT_10", "VAT_22"]), markingCategory, alcoholCode: z.string().trim().max(255).nullable().optional(), alcoholTypeCode: z.string().trim().max(64).nullable().optional(), alcoholStrengthPercent: z.number().finite().min(0).max(100).nullable().optional(), manualBarcodes: z.string().max(4_000).nullable().optional(), isVisibleInRequests: z.boolean(), isEvotorExportEnabled: z.boolean() })).mutation(async ({ ctx, input }) => {
+  updateCatalogProduct: protectedProcedure.input(z.object({ id: z.number().int().positive(), canonicalName: z.string().trim().min(1).max(512), evotorCategoryName: z.string().trim().max(512).nullable().optional(), baseUnit: inventoryUnit, vatRate: z.enum(["VAT_10", "VAT_22"]), markingCategory, alcoholCode: z.string().trim().max(255).nullable().optional(), alcoholTypeCode: z.string().trim().max(64).nullable().optional(), alcoholStrengthPercent: z.number().finite().min(0).max(100).nullable().optional(), alcoholVolumeLiters: z.number().finite().min(0).max(1_000).nullable().optional(), manualBarcodes: z.string().max(4_000).nullable().optional(), isVisibleInRequests: z.boolean(), isEvotorExportEnabled: z.boolean() })).mutation(async ({ ctx, input }) => {
     const actor = await localActor(ctx.user.openId);
     if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Изменять номенклатуру может только администратор." });
     const result = await updateOperationalCatalogProduct(input);
@@ -133,10 +140,25 @@ export const inventoryRegistryRouter = router({
     if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Список складов доступен только администратору." });
     return listOperationalWarehouses();
   }),
+  evotorStoreChoices: protectedProcedure.query(async ({ ctx }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Связи складов с Эвотор доступны только администратору." });
+    return listOperationalEvotorStoreChoices();
+  }),
   printGroups: protectedProcedure.query(async ({ ctx }) => {
     const actor = await localActor(ctx.user.openId);
     if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Группы печати доступны только администратору." });
     return listOperationalPrintGroups(true);
+  }),
+  catalogCategoryNames: protectedProcedure.query(async ({ ctx }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Категории печати доступны только администратору." });
+    return listOperationalCatalogCategoryNames();
+  }),
+  printCategoryGroups: protectedProcedure.query(async ({ ctx }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Категории печати доступны только администратору." });
+    return listOperationalPrintCategoryGroups();
   }),
   createPrintGroup: protectedProcedure.input(z.object({ name: z.string().trim().min(1).max(128) })).mutation(async ({ ctx, input }) => {
     const actor = await localActor(ctx.user.openId);
@@ -151,6 +173,27 @@ export const inventoryRegistryRouter = router({
     const result = await updateOperationalPrintGroup(input);
     await recordChange({ actorId: actor.id, action: input.isActive ? "operational_print_group.update" : "operational_print_group.archive", entityType: "operational_print_group", entityId: String(input.id), beforeState: { name: result.before.name, isActive: result.before.isActive }, afterState: { name: result.after.name, isActive: result.after.isActive } });
     return result;
+  }),
+  createPrintCategoryGroup: protectedProcedure.input(z.object({ name: z.string().trim().min(1).max(128) })).mutation(async ({ ctx, input }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Создавать категории печати может только администратор." });
+    const after = await createOperationalPrintCategoryGroup({ ...input, actorId: actor.id });
+    await recordChange({ actorId: actor.id, action: "operational_print_category_group.create", entityType: "operational_print_category_group", entityId: String(after.id), afterState: { name: after.name } });
+    return after;
+  }),
+  addPrintCategoryGroupMember: protectedProcedure.input(z.object({ groupId: z.number().int().positive(), memberType: z.enum(["catalog_category", "category_group"]), catalogCategory: z.string().trim().min(1).max(512).optional(), childGroupId: z.number().int().positive().optional() })).mutation(async ({ ctx, input }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Настраивать категории печати может только администратор." });
+    const result = await setOperationalPrintCategoryGroupMember(input);
+    if (result.created) await recordChange({ actorId: actor.id, action: "operational_print_category_group.member.add", entityType: "operational_print_category_group", entityId: String(input.groupId), afterState: { memberType: input.memberType, catalogCategory: input.catalogCategory ?? null, childGroupId: input.childGroupId ?? null } });
+    return result;
+  }),
+  removePrintCategoryGroupMember: protectedProcedure.input(z.object({ groupId: z.number().int().positive(), memberId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Настраивать категории печати может только администратор." });
+    const before = await removeOperationalPrintCategoryGroupMember(input);
+    await recordChange({ actorId: actor.id, action: "operational_print_category_group.member.remove", entityType: "operational_print_category_group", entityId: String(input.groupId), beforeState: { memberType: before.memberType, catalogCategory: before.catalogCategory, childGroupId: before.childGroupId } });
+    return before;
   }),
   createPriceType: protectedProcedure.input(z.object({ name: z.string().trim().min(1).max(128), isDefault: z.boolean().optional() })).mutation(async ({ ctx, input }) => {
     const actor = await localActor(ctx.user.openId);
@@ -185,6 +228,13 @@ export const inventoryRegistryRouter = router({
     if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Настраивать группы печати склада может только администратор." });
     const result = await setOperationalWarehousePrintGroup({ ...input, actorId: actor.id });
     await recordChange({ actorId: actor.id, action: "operational_warehouse.print_group.assign", entityType: "operational_warehouse", entityId: String(input.storeId), beforeState: result.before ? { printGroupId: result.before.printGroupId } : null, afterState: { printGroupId: result.after.printGroupId } });
+    return result;
+  }),
+  setWarehouseEvotorMapping: protectedProcedure.input(z.object({ storeId: z.number().int().positive(), evotorStoreId: z.string().min(1).max(128) })).mutation(async ({ ctx, input }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Связь склада с Эвотор может изменить только администратор." });
+    const result = await setOperationalWarehouseEvotorMapping({ ...input, actorId: actor.id });
+    await recordChange({ actorId: actor.id, action: "operational_warehouse.evotor_mapping.assign", entityType: "operational_warehouse", entityId: String(input.storeId), beforeState: result.before, afterState: result.after });
     return result;
   }),
   setProductSalePrice: protectedProcedure.input(z.object({ productId: z.number().int().positive(), priceTypeId: z.number().int().positive(), salePrice: z.number().finite().min(0).max(10_000_000).nullable() })).mutation(async ({ ctx, input }) => {

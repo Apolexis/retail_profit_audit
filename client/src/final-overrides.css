@@ -5025,3 +5025,31 @@ html[data-audit-theme="dark"] .packet :is(.revenue-registry, .inventory-layout, 
 .packet .price-history-chart :is(.recharts-xAxis, .recharts-yAxis) text { fill: var(--price-muted); }
 .packet .price-history-chart .recharts-legend-item-text { color: var(--price-muted) !important; }
 .packet .price-history-chart .recharts-tooltip-wrapper { outline: none; }
+
+/* Price-control rows follow the same non-moving contour convention as Analysis pages. */
+@media (hover: hover) and (pointer: fine) {
+  .packet .price-alias-list > .price-alias-group:hover,
+  .packet .price-preview-table > .price-saved-import-row:hover,
+  .packet .price-product-choice:hover {
+    border-color: color-mix(in srgb, var(--price-accent) 62%, var(--price-border));
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--price-accent) 16%, transparent);
+    transform: none;
+  }
+}
+.packet .price-alias-list > .price-alias-group:focus-within,
+.packet .price-preview-table > .price-saved-import-row:focus-within,
+.packet .price-product-choice:focus-visible {
+  border-color: color-mix(in srgb, var(--price-accent) 70%, var(--price-border));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--price-accent) 16%, transparent);
+  outline: none;
+}
+
+/* One invariant across Analysis, Price control and Store management: action icons precede their label. */
+.packet :is(.packet-link, .subtle-button) {
+  display: inline-flex;
+  flex-direction: row !important;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.packet :is(.packet-link, .subtle-button) > svg { flex: 0 0 auto; }

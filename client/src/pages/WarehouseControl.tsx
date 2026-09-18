@@ -1,5 +1,5 @@
-import { Building2, Download, EyeOff, Link2, Pencil, Plus, RefreshCw, Save, Search, Tags, Warehouse } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Building2, Download, EyeOff, Link2, Pencil, Plus, RefreshCw, Save, Search, Tags, Warehouse, X } from "lucide-react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AuditShell } from "@/components/AuditShell";
 import { ThemedSelect } from "@/components/ui/themed-select";
@@ -8,7 +8,9 @@ import "@/warehouse-control.css";
 
 type PriceType = { id: number; name: string; isDefault: boolean; isActive: boolean };
 type PrintGroup = { id: number; name: string; isActive: boolean };
-type WarehouseRow = { storeId: number; storeName: string; isHidden: boolean; priceTypeId: number | null; priceTypeName: string | null; printGroupId: number | null; printGroupName: string | null; hasEvotorMapping: boolean; evotorLinkedProductCount: number };
+type PrintCategoryGroup = { id: number; name: string; members: Array<{ id: number; memberType: "catalog_category" | "category_group"; catalogCategory: string | null; childGroupId: number | null; childGroupName: string | null }> };
+type EvotorStoreChoice = { id: string; name: string };
+type WarehouseRow = { storeId: number; storeName: string; isHidden: boolean; priceTypeId: number | null; priceTypeName: string | null; printGroupId: number | null; printGroupName: string | null; hasEvotorMapping: boolean; evotorStoreName?: string | null; evotorLinkedProductCount: number };
 
 export default function WarehouseControl() {
   const utils = trpc.useUtils();
@@ -17,96 +19,82 @@ export default function WarehouseControl() {
   const warehouses = trpc.inventoryRegistry.warehouses.useQuery(undefined, { enabled: isAdmin, retry: false });
   const priceTypes = trpc.inventoryRegistry.priceTypes.useQuery(undefined, { enabled: isAdmin, retry: false });
   const printGroups = trpc.inventoryRegistry.printGroups.useQuery(undefined, { enabled: isAdmin, retry: false });
-  const [drafts, setDrafts] = useState<Record<number, string>>({});
+  const categoryNames = trpc.inventoryRegistry.catalogCategoryNames.useQuery(undefined, { enabled: isAdmin, retry: false });
+  const printCategoryGroups = trpc.inventoryRegistry.printCategoryGroups.useQuery(undefined, { enabled: isAdmin, retry: false });
+  const evotorChoices = trpc.inventoryRegistry.evotorStoreChoices.useQuery(undefined, { enabled: isAdmin, retry: false });
+  const [priceDrafts, setPriceDrafts] = useState<Record<number, string>>({});
   const [printGroupDrafts, setPrintGroupDrafts] = useState<Record<number, string>>({});
+  const [evotorDrafts, setEvotorDrafts] = useState<Record<number, string>>({});
   const [newPrintGroupName, setNewPrintGroupName] = useState("");
+  const [newCategoryGroupName, setNewCategoryGroupName] = useState("");
+  const [categoryMemberDrafts, setCategoryMemberDrafts] = useState<Record<number, string>>({});
+  const [childGroupDrafts, setChildGroupDrafts] = useState<Record<number, string>>({});
   const [editingPrintGroup, setEditingPrintGroup] = useState<{ id: number; name: string; isActive: boolean } | null>(null);
+  const [editingStoreId, setEditingStoreId] = useState<number | null>(null);
   const [warehouseSearch, setWarehouseSearch] = useState("");
   const [warehouseFilter, setWarehouseFilter] = useState<"all" | "mapped" | "not_mapped">("all");
+  const [activeExternalAction, setActiveExternalAction] = useState<{ storeId: number; kind: "catalog" | "documents" } | null>(null);
 
   const activePriceTypes = ((priceTypes.data ?? []) as PriceType[]).filter(type => type.isActive);
   const activePrintGroups = ((printGroups.data ?? []) as PrintGroup[]).filter(group => group.isActive);
+  const categoryPrintGroups = (printCategoryGroups.data ?? []) as PrintCategoryGroup[];
+  const catalogCategoryNames = (categoryNames.data ?? []) as string[];
   const rows = (warehouses.data ?? []) as WarehouseRow[];
+  const choices = (evotorChoices.data ?? []) as EvotorStoreChoice[];
   const visibleRows = useMemo(() => {
     const query = warehouseSearch.trim().toLocaleLowerCase("ru-RU");
     return rows.filter(row => !row.isHidden).filter(row => warehouseFilter === "all" || (warehouseFilter === "mapped" ? row.hasEvotorMapping : !row.hasEvotorMapping)).filter(row => !query || row.storeName.toLocaleLowerCase("ru-RU").includes(query));
   }, [rows, warehouseFilter, warehouseSearch]);
   useEffect(() => {
-    setDrafts(current => {
+    setPriceDrafts(current => {
       const next = { ...current };
-      for (const row of rows) {
-        if (next[row.storeId] === undefined) next[row.storeId] = row.priceTypeId ? String(row.priceTypeId) : "";
-      }
+      for (const row of rows) if (next[row.storeId] === undefined) next[row.storeId] = row.priceTypeId ? String(row.priceTypeId) : "";
       return next;
     });
-  }, [warehouses.data]);
-  useEffect(() => {
     setPrintGroupDrafts(current => {
       const next = { ...current };
       for (const row of rows) if (next[row.storeId] === undefined) next[row.storeId] = row.printGroupId ? String(row.printGroupId) : "";
       return next;
     });
-  }, [warehouses.data]);
+    setEvotorDrafts(current => {
+      const next = { ...current };
+      for (const row of rows) {
+        if (next[row.storeId] !== undefined) continue;
+        next[row.storeId] = choices.find(choice => choice.name === row.evotorStoreName)?.id ?? "";
+      }
+      return next;
+    });
+  }, [rows, choices]);
 
-  const assignPriceType = trpc.inventoryRegistry.setStorePriceType.useMutation({
-    onSuccess: async () => {
-      await Promise.all([utils.inventoryRegistry.warehouses.invalidate(), utils.inventoryRegistry.stock.invalidate(), utils.audit.changes.invalidate()]);
-      toast.success("Вид цены назначен складу");
-    },
-    onError: error => toast.error("Вид цены не назначен", { description: error.message }),
-  });
-  const assignPrintGroup = trpc.inventoryRegistry.setWarehousePrintGroup.useMutation({
-    onSuccess: async () => {
-      await Promise.all([utils.inventoryRegistry.warehouses.invalidate(), utils.audit.changes.invalidate()]);
-      toast.success("Группа печати сохранена");
-    },
-    onError: error => toast.error("Группа печати не сохранена", { description: error.message }),
-  });
-  const createPrintGroup = trpc.inventoryRegistry.createPrintGroup.useMutation({
-    onSuccess: async () => {
-      setNewPrintGroupName("");
-      await Promise.all([utils.inventoryRegistry.printGroups.invalidate(), utils.audit.changes.invalidate()]);
-      toast.success("Группа печати создана");
-    },
-    onError: error => toast.error("Группа печати не создана", { description: error.message }),
-  });
-  const updatePrintGroup = trpc.inventoryRegistry.updatePrintGroup.useMutation({
-    onSuccess: async () => {
-      setEditingPrintGroup(null);
-      await Promise.all([utils.inventoryRegistry.printGroups.invalidate(), utils.inventoryRegistry.warehouses.invalidate(), utils.audit.changes.invalidate()]);
-      toast.success("Группа печати сохранена");
-    },
-    onError: error => toast.error("Группа печати не сохранена", { description: error.message }),
-  });
-  const syncDocuments = trpc.inventoryRegistry.syncEvotorDocumentPage.useMutation({
-    onSuccess: result => toast.success(result.completed ? "Документы Эвотор загружены" : "Загружена следующая страница документов", { description: `${result.readDocuments} документов · ${result.readPositions} позиций` }),
-    onError: error => toast.error("Документы Эвотор не загружены", { description: error.message }),
-  });
-  const refreshEvotorCatalog = trpc.inventoryRegistry.confirmEvotorCatalog.useMutation({
-    onSuccess: async result => {
-      await Promise.all([utils.inventoryRegistry.products.invalidate(), utils.inventoryRegistry.stock.invalidate(), utils.inventoryRegistry.warehouses.invalidate(), utils.audit.changes.invalidate()]);
-      toast.success("Каталог Эвотор обновлен", { description: `${result.imported} позиций; категории и штрихкоды обновлены из закрепленной точки.` });
-    },
-    onError: error => toast.error("Каталог Эвотор не обновлен", { description: error.message }),
-  });
+  const invalidateWarehouse = async () => Promise.all([utils.inventoryRegistry.warehouses.invalidate(), utils.inventoryRegistry.stock.invalidate(), utils.audit.changes.invalidate()]);
+  const assignPriceType = trpc.inventoryRegistry.setStorePriceType.useMutation({ onSuccess: async () => { await invalidateWarehouse(); toast.success("Вид цены сохранен"); }, onError: error => toast.error("Вид цены не сохранен", { description: error.message }) });
+  const assignPrintGroup = trpc.inventoryRegistry.setWarehousePrintGroup.useMutation({ onSuccess: async () => { await invalidateWarehouse(); toast.success("Группа печати сохранена"); }, onError: error => toast.error("Группа печати не сохранена", { description: error.message }) });
+  const assignEvotorMapping = trpc.inventoryRegistry.setWarehouseEvotorMapping.useMutation({ onSuccess: async () => { await invalidateWarehouse(); toast.success("Магазин Эвотор закреплен за складом"); }, onError: error => toast.error("Связь с Эвотор не сохранена", { description: error.message }) });
+  const createPrintGroup = trpc.inventoryRegistry.createPrintGroup.useMutation({ onSuccess: async () => { setNewPrintGroupName(""); await Promise.all([utils.inventoryRegistry.printGroups.invalidate(), utils.audit.changes.invalidate()]); toast.success("Группа печати создана"); }, onError: error => toast.error("Группа печати не создана", { description: error.message }) });
+  const updatePrintGroup = trpc.inventoryRegistry.updatePrintGroup.useMutation({ onSuccess: async () => { setEditingPrintGroup(null); await Promise.all([utils.inventoryRegistry.printGroups.invalidate(), utils.inventoryRegistry.warehouses.invalidate(), utils.audit.changes.invalidate()]); toast.success("Группа печати сохранена"); }, onError: error => toast.error("Группа печати не сохранена", { description: error.message }) });
+  const invalidateCategoryPrintGroups = async () => Promise.all([utils.inventoryRegistry.printCategoryGroups.invalidate(), utils.audit.changes.invalidate()]);
+  const createCategoryPrintGroup = trpc.inventoryRegistry.createPrintCategoryGroup.useMutation({ onSuccess: async () => { setNewCategoryGroupName(""); await invalidateCategoryPrintGroups(); toast.success("Категория печати создана"); }, onError: error => toast.error("Категория печати не создана", { description: error.message }) });
+  const addCategoryPrintMember = trpc.inventoryRegistry.addPrintCategoryGroupMember.useMutation({ onSuccess: invalidateCategoryPrintGroups, onError: error => toast.error("Категория не добавлена", { description: error.message }) });
+  const removeCategoryPrintMember = trpc.inventoryRegistry.removePrintCategoryGroupMember.useMutation({ onSuccess: invalidateCategoryPrintGroups, onError: error => toast.error("Категория не удалена", { description: error.message }) });
+  const syncDocuments = trpc.inventoryRegistry.syncEvotorDocumentPage.useMutation({ onSuccess: result => { setActiveExternalAction(null); toast.success(result.completed ? "Документы Эвотор загружены" : "Загружена следующая страница документов", { description: `${result.readDocuments} документов · ${result.readPositions} позиций` }); }, onError: error => { setActiveExternalAction(null); toast.error("Документы Эвотор не загружены", { description: error.message }); } });
+  const refreshEvotorCatalog = trpc.inventoryRegistry.confirmEvotorCatalog.useMutation({ onSuccess: async result => { setActiveExternalAction(null); await Promise.all([utils.inventoryRegistry.products.invalidate(), utils.inventoryRegistry.stock.invalidate(), utils.inventoryRegistry.warehouses.invalidate(), utils.audit.changes.invalidate()]); toast.success("Каталог Эвотор обновлен", { description: `${result.imported} позиций; обновлены категории, маркировка и штрихкоды.` }); }, onError: error => { setActiveExternalAction(null); toast.error("Каталог Эвотор не обновлен", { description: error.message }); } });
 
-  if (!me.isLoading && !isAdmin) {
-    return <AuditShell kicker="27 / СКЛАДЫ" title="Склады"><section className="empty-state"><Warehouse size={28}/><h2>Склады доступны администратору</h2><p>Продавцы и руководители работают только с назначенными операционными действиями и не видят настройку цен.</p></section></AuditShell>;
-  }
+  if (!me.isLoading && !isAdmin) return <AuditShell kicker="27 / СКЛАДЫ" title="Склады"><section className="empty-state"><Warehouse size={28}/><h2>Склады доступны администратору</h2><p>Продавцы и руководители работают только с назначенными операционными действиями и не видят настройку цен.</p></section></AuditShell>;
 
   return <AuditShell kicker="27 / СКЛАДЫ" title="Склады">
-    <section className="page-lede warehouse-lede"><div><span>УПРАВЛЕНИЕ МАГАЗИНАМИ</span><h2>Склады и виды цен</h2><p>Каждый магазин — склад общего справочника. Номенклатура едина; различается только назначенный вид продажной цены. Адреса и технические идентификаторы Эвотор здесь не выводятся.</p></div></section>
-
-    <section className="packet-card warehouse-rule"><div><Link2 size={18}/><div><span>READ‑ONLY ЭВОТОР</span><strong>Связь точки закреплена, а не выбирается вручную</strong><p>Список показывает только факт закрепленного соответствия и количество связанных кассовых позиций. Запись в Эвотор, изменение кассы и показ адреса исключены. Документы читаются порциями и сохраняются без фискальных номеров, реквизитов оплат, адресов и технических идентификаторов.</p></div></div></section>
-
+    <section className="page-lede warehouse-lede"><div><span>УПРАВЛЕНИЕ МАГАЗИНАМИ</span><h2>Склады и виды цен</h2><p>Каждый видимый магазин — склад общего справочника. Номенклатура едина; меняется только назначенный вид продажной цены, группа печати и закрепленная точка Эвотор.</p></div></section>
+    <section className="packet-card warehouse-rule"><div><Link2 size={18}/><div><span>READ‑ONLY ЭВОТОР</span><strong>Связь склада задается явно и остается закрепленной</strong><p>Администратор выбирает точку Эвотор только из обнаруженного read-only списка и сохраняет привязку к конкретному складу. Адреса и технические идентификаторы в интерфейсе не показываются. Запись в Эвотор исключена.</p></div></div></section>
     <section className="packet-card warehouse-table-card">
-      <div className="card-title"><div><span>СКЛАДЫ СЕТИ</span><h3>{visibleRows.length} {visibleRows.length === 1 ? "склад" : visibleRows.length < 5 ? "склада" : "складов"}</h3></div><small>Настройка цены и печати — у каждого склада</small></div>
+      <div className="card-title"><div><span>СКЛАДЫ СЕТИ</span><h3>{visibleRows.length} {visibleRows.length === 1 ? "склад" : visibleRows.length < 5 ? "склада" : "складов"}</h3></div><small>Настроить — откроет параметры только выбранного склада</small></div>
       <div className="warehouse-filters"><label className="warehouse-search"><Search size={15}/><input value={warehouseSearch} onChange={event => setWarehouseSearch(event.target.value)} placeholder="Поиск склада / магазина" aria-label="Поиск склада или магазина"/></label><label>Показывать<ThemedSelect value={warehouseFilter} onChange={event => setWarehouseFilter(event.target.value as "all" | "mapped" | "not_mapped")}><option value="all">Все рабочие склады</option><option value="mapped">Только закрепленные Эвотор</option><option value="not_mapped">Без закрепления Эвотор</option></ThemedSelect></label></div>
-      <div className="warehouse-print-group-create"><label>Новая группа печати<input value={newPrintGroupName} onChange={event => setNewPrintGroupName(event.target.value)} placeholder="Например, Область 1" maxLength={128}/></label><button type="button" className="subtle-button" onClick={() => createPrintGroup.mutate({ name: newPrintGroupName })} disabled={createPrintGroup.isPending || !newPrintGroupName.trim()}><Plus size={14}/>Создать группу</button></div>
-      {editingPrintGroup ? <div className="warehouse-print-group-editor"><label>Группа печати<input value={editingPrintGroup.name} onChange={event => setEditingPrintGroup({ ...editingPrintGroup, name: event.target.value })} maxLength={128}/></label><button type="button" className="subtle-button" disabled={updatePrintGroup.isPending || !editingPrintGroup.name.trim()} onClick={() => updatePrintGroup.mutate(editingPrintGroup)}><Save size={14}/>Сохранить группу</button><button type="button" className="subtle-button" disabled={updatePrintGroup.isPending} onClick={() => updatePrintGroup.mutate({ ...editingPrintGroup, isActive: false })}><EyeOff size={14}/>Скрыть группу</button><button type="button" className="subtle-button" onClick={() => setEditingPrintGroup(null)}>Отмена</button></div> : <div className="warehouse-print-group-list" aria-label="Группы печати">{activePrintGroups.length ? activePrintGroups.map(group => <button type="button" key={group.id} className="warehouse-print-group-chip" onClick={() => setEditingPrintGroup(group)}><Pencil size={13}/>{group.name}</button>) : <small>Группы печати еще не созданы.</small>}</div>}
-      {warehouses.isLoading || priceTypes.isLoading || printGroups.isLoading ? <p className="packet-note">Загружаем настройки складов…</p> : warehouses.isError ? <p className="packet-note">Склады недоступны: {warehouses.error.message}</p> : <><p className="warehouse-result-count">Показано: <strong>{visibleRows.length}</strong></p><div className="data-table-wrap warehouse-table-wrap"><table className="data-table warehouse-table"><thead><tr><th>Склад / магазин</th><th>Вид продажной цены</th><th>Группа печати</th><th>Эвотор</th><th aria-label="Действия"></th></tr></thead><tbody>{visibleRows.map(row => <tr key={row.storeId}><td><strong>{row.storeName}</strong></td><td><ThemedSelect value={drafts[row.storeId] ?? ""} onChange={event => setDrafts(current => ({ ...current, [row.storeId]: event.target.value }))}><option value="" disabled>Выберите вид цены</option>{activePriceTypes.map(type => <option value={type.id} key={type.id}>{type.name}{type.isDefault ? " · основной" : ""}</option>)}</ThemedSelect></td><td><ThemedSelect value={printGroupDrafts[row.storeId] ?? ""} onChange={event => setPrintGroupDrafts(current => ({ ...current, [row.storeId]: event.target.value }))}><option value="">Не назначена</option>{activePrintGroups.map(group => <option value={group.id} key={group.id}>{group.name}</option>)}</ThemedSelect></td><td><span className={row.hasEvotorMapping ? "warehouse-status is-linked" : "warehouse-status"}>{row.hasEvotorMapping ? <><Link2 size={14}/>Закреплен{row.evotorLinkedProductCount ? ` · ${row.evotorLinkedProductCount} поз.` : ""}</> : "Не задан"}</span></td><td><div className="warehouse-actions"><button type="button" className="subtle-button warehouse-save" disabled={!drafts[row.storeId] || Number(drafts[row.storeId]) === row.priceTypeId || assignPriceType.isPending} onClick={() => assignPriceType.mutate({ storeId: row.storeId, priceTypeId: Number(drafts[row.storeId]) })}><Save size={14}/>Сохранить вид цены</button><button type="button" className="subtle-button warehouse-save" disabled={(printGroupDrafts[row.storeId] || "") === (row.printGroupId ? String(row.printGroupId) : "") || assignPrintGroup.isPending} onClick={() => assignPrintGroup.mutate({ storeId: row.storeId, printGroupId: printGroupDrafts[row.storeId] ? Number(printGroupDrafts[row.storeId]) : null })}><Save size={14}/>Сохранить группу</button><button type="button" className="subtle-button warehouse-catalog" disabled={!row.hasEvotorMapping || refreshEvotorCatalog.isPending} onClick={() => refreshEvotorCatalog.mutate({ storeId: row.storeId })}><RefreshCw size={14}/>{refreshEvotorCatalog.isPending ? "Обновляем…" : "Обновить каталог"}</button><button type="button" className="subtle-button warehouse-documents" disabled={!row.hasEvotorMapping || syncDocuments.isPending} onClick={() => syncDocuments.mutate({ storeId: row.storeId })}><Download size={14}/>Документы</button></div></td></tr>)}</tbody></table></div></>}
+      <div className="warehouse-print-group-create"><label>Новая группа печати<input value={newPrintGroupName} onChange={event => setNewPrintGroupName(event.target.value)} placeholder="Например, Область 1" maxLength={128}/></label><button type="button" className="subtle-button" onClick={() => createPrintGroup.mutate({ name: newPrintGroupName })} disabled={createPrintGroup.isPending || !newPrintGroupName.trim()}><Plus size={14}/>Создать</button></div>
+      {editingPrintGroup ? <div className="warehouse-print-group-editor"><label>Группа печати<input value={editingPrintGroup.name} onChange={event => setEditingPrintGroup({ ...editingPrintGroup, name: event.target.value })} maxLength={128}/></label><button type="button" className="subtle-button" disabled={updatePrintGroup.isPending || !editingPrintGroup.name.trim()} onClick={() => updatePrintGroup.mutate(editingPrintGroup)}><Save size={14}/>Сохранить</button><button type="button" className="subtle-button" disabled={updatePrintGroup.isPending} onClick={() => updatePrintGroup.mutate({ ...editingPrintGroup, isActive: false })}><EyeOff size={14}/>Скрыть</button><button type="button" className="subtle-button" onClick={() => setEditingPrintGroup(null)}><X size={14}/>Отмена</button></div> : <div className="warehouse-print-group-list" aria-label="Группы печати">{activePrintGroups.length ? activePrintGroups.map(group => <button type="button" key={group.id} className="warehouse-print-group-chip" onClick={() => setEditingPrintGroup(group)}><Pencil size={13}/>{group.name}</button>) : <small>Группы печати еще не созданы.</small>}</div>}
+      {warehouses.isLoading || priceTypes.isLoading || printGroups.isLoading || evotorChoices.isLoading ? <p className="packet-note">Загружаем настройки складов…</p> : warehouses.isError ? <p className="packet-note">Склады недоступны: {warehouses.error.message}</p> : <div className="data-table-wrap warehouse-table-wrap"><table className="data-table warehouse-table"><thead><tr><th>Склад / магазин</th><th>Вид цены</th><th>Печать</th><th>Эвотор</th><th aria-label="Настройка"></th></tr></thead><tbody>{visibleRows.map(row => <Fragment key={row.storeId}>
+        <tr key={row.storeId}><td><strong>{row.storeName}</strong></td><td>{row.priceTypeName ?? "Не назначен"}</td><td>{row.printGroupName ?? "Не назначена"}</td><td><span className={row.hasEvotorMapping ? "warehouse-status is-linked" : "warehouse-status"}>{row.hasEvotorMapping ? <><Link2 size={14}/>Закреплен{row.evotorLinkedProductCount ? ` · ${row.evotorLinkedProductCount} поз.` : ""}</> : "Не задан"}</span></td><td><button type="button" className="subtle-button warehouse-edit" onClick={() => setEditingStoreId(current => current === row.storeId ? null : row.storeId)}><Pencil size={14}/>{editingStoreId === row.storeId ? "Свернуть" : "Настроить"}</button></td></tr>
+        {editingStoreId === row.storeId && <tr className="warehouse-settings-row"><td colSpan={5}><div className="warehouse-settings-grid"><label>Вид продажной цены<ThemedSelect value={priceDrafts[row.storeId] ?? ""} onChange={event => setPriceDrafts(current => ({ ...current, [row.storeId]: event.target.value }))}><option value="" disabled>Выберите вид цены</option>{activePriceTypes.map(type => <option value={type.id} key={type.id}>{type.name}{type.isDefault ? " · основной" : ""}</option>)}</ThemedSelect></label><label>Группа печати<ThemedSelect value={printGroupDrafts[row.storeId] ?? ""} onChange={event => setPrintGroupDrafts(current => ({ ...current, [row.storeId]: event.target.value }))}><option value="">Не назначена</option>{activePrintGroups.map(group => <option value={group.id} key={group.id}>{group.name}</option>)}</ThemedSelect></label><label>Магазин Эвотор<ThemedSelect value={evotorDrafts[row.storeId] ?? ""} onChange={event => setEvotorDrafts(current => ({ ...current, [row.storeId]: event.target.value }))}><option value="" disabled>Выберите точку из Эвотор</option>{choices.map(choice => <option value={choice.id} key={choice.id}>{choice.name}</option>)}</ThemedSelect></label><div className="warehouse-settings-actions"><button type="button" className="subtle-button" disabled={!priceDrafts[row.storeId] || Number(priceDrafts[row.storeId]) === row.priceTypeId || assignPriceType.isPending} onClick={() => assignPriceType.mutate({ storeId: row.storeId, priceTypeId: Number(priceDrafts[row.storeId]) })}><Save size={14}/>Сохранить цену</button><button type="button" className="subtle-button" disabled={(printGroupDrafts[row.storeId] || "") === (row.printGroupId ? String(row.printGroupId) : "") || assignPrintGroup.isPending} onClick={() => assignPrintGroup.mutate({ storeId: row.storeId, printGroupId: printGroupDrafts[row.storeId] ? Number(printGroupDrafts[row.storeId]) : null })}><Save size={14}/>Сохранить печать</button><button type="button" className="subtle-button" disabled={!evotorDrafts[row.storeId] || assignEvotorMapping.isPending} onClick={() => assignEvotorMapping.mutate({ storeId: row.storeId, evotorStoreId: evotorDrafts[row.storeId] })}><Link2 size={14}/>Закрепить Эвотор</button><button type="button" className="subtle-button" disabled={!row.hasEvotorMapping || activeExternalAction?.storeId === row.storeId} onClick={() => { setActiveExternalAction({ storeId: row.storeId, kind: "catalog" }); refreshEvotorCatalog.mutate({ storeId: row.storeId }); }}><RefreshCw size={14}/>{activeExternalAction?.storeId === row.storeId && activeExternalAction.kind === "catalog" ? "Обновляем…" : "Обновить каталог"}</button><button type="button" className="subtle-button" disabled={!row.hasEvotorMapping || activeExternalAction?.storeId === row.storeId} onClick={() => { setActiveExternalAction({ storeId: row.storeId, kind: "documents" }); syncDocuments.mutate({ storeId: row.storeId }); }}><Download size={14}/>{activeExternalAction?.storeId === row.storeId && activeExternalAction.kind === "documents" ? "Загружаем…" : "Загрузить документы"}</button></div><p className="warehouse-settings-note">«Обновить каталог» читает товары, категории, штрихкоды и остатки Эвотор выбранного закрепленного склада. «Загрузить документы» читает следующую страницу чеков и товарных строк. Оба действия read-only и записывают результат только во внутренний журнал.</p></div></td></tr>}
+      </Fragment>)}</tbody></table></div>}
     </section>
-
-    <section className="warehouse-guidance"><article><Building2 size={18}/><div><span>ОБЩИЙ СПРАВОЧНИК</span><strong>Товар не дублируется по магазинам</strong><p>Наименование, НДС, маркировка, ручные штрихкоды и внутренняя себестоимость задаются один раз в «Номенклатуре».</p></div></article><article><Tags size={18}/><div><span>ПРОДАЖНАЯ ЦЕНА</span><strong>Цена хранится по виду, а не по складу</strong><p>Назначьте вид цены магазину здесь, затем заполните цены товаров для этого вида в общей номенклатуре.</p></div></article></section>
+    <section className="packet-card warehouse-category-print-card"><div className="card-title"><div><span>КАТЕГОРИИ ДЛЯ ПЕЧАТИ ЗАЯВОК</span><h3>Состав печатных подборок</h3></div><small>Группа может включать категории товаров и другие группы без циклов</small></div><div className="warehouse-print-group-create"><label>Новая категория печати<input value={newCategoryGroupName} onChange={event => setNewCategoryGroupName(event.target.value)} placeholder="Например, СРС" maxLength={128}/></label><button type="button" className="subtle-button" disabled={!newCategoryGroupName.trim() || createCategoryPrintGroup.isPending} onClick={() => createCategoryPrintGroup.mutate({ name: newCategoryGroupName })}><Plus size={14}/>Создать</button></div><div className="warehouse-category-print-groups">{categoryPrintGroups.length ? categoryPrintGroups.map(group => <article key={group.id}><strong>{group.name}</strong><div className="warehouse-category-member-list">{group.members.map(member => <span className="warehouse-category-member" key={member.id}>{member.memberType === "catalog_category" ? member.catalogCategory : member.childGroupName}<button type="button" aria-label="Убрать из группы" onClick={() => removeCategoryPrintMember.mutate({ groupId: group.id, memberId: member.id })}><X size={12}/></button></span>)}</div><div className="warehouse-category-add"><ThemedSelect value={categoryMemberDrafts[group.id] ?? ""} onChange={event => setCategoryMemberDrafts(current => ({ ...current, [group.id]: event.target.value }))}><option value="">Категория товара</option>{catalogCategoryNames.map(category => <option value={category} key={category}>{category}</option>)}</ThemedSelect><button type="button" className="subtle-button" disabled={!categoryMemberDrafts[group.id] || addCategoryPrintMember.isPending} onClick={() => addCategoryPrintMember.mutate({ groupId: group.id, memberType: "catalog_category", catalogCategory: categoryMemberDrafts[group.id] })}><Plus size={14}/>Добавить категорию</button><ThemedSelect value={childGroupDrafts[group.id] ?? ""} onChange={event => setChildGroupDrafts(current => ({ ...current, [group.id]: event.target.value }))}><option value="">Вложенная группа</option>{categoryPrintGroups.filter(candidate => candidate.id !== group.id).map(candidate => <option value={candidate.id} key={candidate.id}>{candidate.name}</option>)}</ThemedSelect><button type="button" className="subtle-button" disabled={!childGroupDrafts[group.id] || addCategoryPrintMember.isPending} onClick={() => addCategoryPrintMember.mutate({ groupId: group.id, memberType: "category_group", childGroupId: Number(childGroupDrafts[group.id]) })}><Plus size={14}/>Добавить группу</button></div></article>) : <p className="packet-note">Создайте группу, затем добавьте в нее категории номенклатуры или другую печатную группу.</p>}</div></section>
+    <section className="warehouse-guidance"><article><Building2 size={18}/><div><span>ОБЩИЙ СПРАВОЧНИК</span><strong>Товар не дублируется по магазинам</strong><p>Наименование, НДС, маркировка, штрихкоды и внутренняя себестоимость задаются один раз в «Номенклатуре».</p></div></article><article><Tags size={18}/><div><span>ПРОДАЖНАЯ ЦЕНА</span><strong>Цена хранится по виду, а не по складу</strong><p>Выберите вид цены в настройке склада, затем задайте цену товара для этого вида в общей номенклатуре.</p></div></article></section>
   </AuditShell>;
 }

@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, inArray, ne } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNotNull, ne } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import {
   localAccounts,
@@ -10,6 +10,8 @@ import {
   operationalInventories,
   operationalInventoryLines,
   operationalPriceTypes,
+  operationalPrintCategoryGroupMembers,
+  operationalPrintCategoryGroups,
   operationalPrintGroups,
   operationalProductSalePrices,
   operationalStockMovements,
@@ -19,7 +21,7 @@ import {
   stores,
 } from "../drizzle/schema";
 import { getDb } from "./db";
-import { listEvotorCatalogPreviewForOperationalStore, listEvotorDocumentsPreviewForOperationalStore } from "./evotorCatalog";
+import { listEvotorCatalogPreviewForOperationalStore, listEvotorCatalogStoresPreview, listEvotorDocumentsPreviewForOperationalStore } from "./evotorCatalog";
 
 export type InventoryUnit = "kg" | "l" | "piece";
 export type InventoryStatus = "draft" | "closed";
@@ -35,6 +37,13 @@ const normalizedManualBarcodes = (value: string | null | undefined) => {
   if (unique.some(item => item.length > 128)) throw new Error("Каждый ручной штрихкод не должен быть длиннее 128 символов.");
   return unique.join(";") || null;
 };
+
+async function nextCatalogNumber() {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const [last] = await db.select({ catalogNumber: operationalCatalogProducts.catalogNumber }).from(operationalCatalogProducts).orderBy(desc(operationalCatalogProducts.catalogNumber)).limit(1);
+  return (last?.catalogNumber ?? 0) + 1;
+}
 const markingFromEvotorCategory = (product: { name: string; categoryName: string | null; type?: string | null }): InventoryMarkingCategory => {
   /**
    * Cloud V2 exposes the marking class as the product `type`; it is more reliable
@@ -165,7 +174,7 @@ export async function listInventoryProducts(input?: { storeId?: number; includeA
   const rows = await db
     .select({
       id: operationalCatalogProducts.id,
-      internalCode: operationalCatalogProducts.evotorCode,
+      catalogNumber: operationalCatalogProducts.catalogNumber,
       canonicalName: operationalCatalogProducts.canonicalName,
       barcodes: operationalCatalogProducts.barcodes,
       category: operationalCatalogProducts.evotorCategoryName,
@@ -181,9 +190,9 @@ export async function listInventoryProducts(input?: { storeId?: number; includeA
     })
     .from(operationalCatalogProducts)
     .where(input?.includeInactive ? undefined : eq(operationalCatalogProducts.isActive, true))
-    .orderBy(operationalCatalogProducts.canonicalName)
+    .orderBy(operationalCatalogProducts.catalogNumber)
     .limit(2_000);
-  const products = rows.filter((row): row is typeof row & { baseUnit: InventoryUnit } => row.baseUnit !== "unknown").map(row => ({ ...row, internalCode: row.internalCode || `Эвотор #${row.id}`, variant: null }));
+  const products = rows.filter((row): row is typeof row & { baseUnit: InventoryUnit } => row.baseUnit !== "unknown").map(row => ({ ...row, internalCode: String(row.catalogNumber), variant: null }));
   const quantities = input?.includeAccounting && input.storeId ? await getInventoryAccountingQuantities(input.storeId, products.map(product => product.id)) : null;
   return products.map(product => ({ ...product, accountingQuantity: quantities?.get(product.id) ?? null }));
 }
@@ -206,7 +215,7 @@ export async function listOperationalStock(input: { storeIds?: number[] | null; 
   const catalog = await db
     .select({
       productId: operationalCatalogProducts.id,
-      internalCode: operationalCatalogProducts.evotorCode,
+      internalCode: operationalCatalogProducts.catalogNumber,
       canonicalName: operationalCatalogProducts.canonicalName,
       category: operationalCatalogProducts.evotorCategoryName,
       baseUnit: operationalCatalogProducts.baseUnit,
@@ -214,7 +223,7 @@ export async function listOperationalStock(input: { storeIds?: number[] | null; 
     })
     .from(operationalCatalogProducts)
     .where(eq(operationalCatalogProducts.isActive, true))
-    .orderBy(operationalCatalogProducts.canonicalName)
+    .orderBy(operationalCatalogProducts.catalogNumber)
     .limit(2_000);
   if (!catalog.length) return { items: [], total: 0 };
   const productIds = catalog.map(product => product.productId);
@@ -341,6 +350,7 @@ export async function confirmOperationalCatalogFromEvotor(input: { storeId: numb
   if (!db) throw new Error("База данных недоступна");
   const preview = await listEvotorCatalogPreviewForOperationalStore(input.storeId);
   if (!preview.products.length) throw new Error("В каталоге выбранной точки Эвотор нет товарных позиций для сохранения.");
+  let nextNumber = await nextCatalogNumber();
   for (const product of preview.products) {
     const baseUnit = unitFromEvotor(product.unit);
     const evotorQuantitySnapshot = product.quantity !== null && finiteThreeDecimals(product.quantity) ? product.quantity.toFixed(3) : null;
@@ -352,6 +362,7 @@ export async function confirmOperationalCatalogFromEvotor(input: { storeId: numb
       continue;
     }
     const [inserted] = await db.insert(operationalCatalogProducts).values({
+      catalogNumber: nextNumber++,
       storeId: input.storeId,
       evotorProductId: product.id,
       evotorCode: product.code,
@@ -380,7 +391,7 @@ export async function updateOperationalCatalogCost(input: { id: number; internal
   return { before, after: after! };
 }
 
-export async function createOperationalCatalogProduct(input: { canonicalName: string; evotorCategoryName?: string | null; baseUnit: InventoryUnit; vatRate?: InventoryVatRate; internalCostPrice?: number | null; markingCategory?: InventoryMarkingCategory; alcoholCode?: string | null; alcoholTypeCode?: string | null; alcoholStrengthPercent?: number | null; manualBarcodes?: string | null; isVisibleInRequests?: boolean; isEvotorExportEnabled?: boolean; actorId: number }) {
+export async function createOperationalCatalogProduct(input: { canonicalName: string; evotorCategoryName?: string | null; baseUnit: InventoryUnit; vatRate?: InventoryVatRate; internalCostPrice?: number | null; markingCategory?: InventoryMarkingCategory; alcoholCode?: string | null; alcoholTypeCode?: string | null; alcoholStrengthPercent?: number | null; alcoholVolumeLiters?: number | null; manualBarcodes?: string | null; isVisibleInRequests?: boolean; isEvotorExportEnabled?: boolean; actorId: number }) {
   const db = await getDb();
   if (!db) throw new Error("База данных недоступна");
   const canonicalName = normalizedText(input.canonicalName);
@@ -390,6 +401,7 @@ export async function createOperationalCatalogProduct(input: { canonicalName: st
   if (input.alcoholStrengthPercent !== undefined && input.alcoholStrengthPercent !== null && (!Number.isFinite(input.alcoholStrengthPercent) || input.alcoholStrengthPercent < 0 || input.alcoholStrengthPercent > 100)) throw new Error("Крепость должна быть числом от 0 до 100%.");
   const isAlcohol = input.markingCategory === "alcohol" || input.markingCategory === "beer_marked";
   const [inserted] = await db.insert(operationalCatalogProducts).values({
+    catalogNumber: await nextCatalogNumber(),
     storeId: null,
     evotorProductId: `manual:${randomUUID()}`,
     canonicalName,
@@ -403,6 +415,7 @@ export async function createOperationalCatalogProduct(input: { canonicalName: st
     alcoholCode: isAlcohol ? normalizedText(input.alcoholCode ?? "").slice(0, 255) || null : null,
     alcoholTypeCode: isAlcohol ? normalizedText(input.alcoholTypeCode ?? "").slice(0, 64) || null : null,
     alcoholStrengthPercent: isAlcohol && input.alcoholStrengthPercent !== null && input.alcoholStrengthPercent !== undefined ? input.alcoholStrengthPercent.toFixed(2) : null,
+    alcoholVolumeLiters: isAlcohol && input.alcoholVolumeLiters !== null && input.alcoholVolumeLiters !== undefined ? input.alcoholVolumeLiters.toFixed(3) : null,
     manualBarcodes: normalizedManualBarcodes(input.manualBarcodes),
     isVisibleInRequests: input.isVisibleInRequests ?? true,
     isEvotorExportEnabled: input.isEvotorExportEnabled ?? false,
@@ -412,7 +425,7 @@ export async function createOperationalCatalogProduct(input: { canonicalName: st
   return after!;
 }
 
-export async function updateOperationalCatalogProduct(input: { id: number; canonicalName: string; evotorCategoryName?: string | null; baseUnit: InventoryUnit; vatRate: InventoryVatRate; markingCategory: InventoryMarkingCategory; alcoholCode?: string | null; alcoholTypeCode?: string | null; alcoholStrengthPercent?: number | null; manualBarcodes?: string | null; isVisibleInRequests: boolean; isEvotorExportEnabled: boolean }) {
+export async function updateOperationalCatalogProduct(input: { id: number; canonicalName: string; evotorCategoryName?: string | null; baseUnit: InventoryUnit; vatRate: InventoryVatRate; markingCategory: InventoryMarkingCategory; alcoholCode?: string | null; alcoholTypeCode?: string | null; alcoholStrengthPercent?: number | null; alcoholVolumeLiters?: number | null; manualBarcodes?: string | null; isVisibleInRequests: boolean; isEvotorExportEnabled: boolean }) {
   const db = await getDb();
   if (!db) throw new Error("База данных недоступна");
   const [before] = await db.select().from(operationalCatalogProducts).where(eq(operationalCatalogProducts.id, input.id)).limit(1);
@@ -422,7 +435,7 @@ export async function updateOperationalCatalogProduct(input: { id: number; canon
   if (canonicalName.length > 512) throw new Error("Название товара слишком длинное.");
   if (input.alcoholStrengthPercent !== undefined && input.alcoholStrengthPercent !== null && (!Number.isFinite(input.alcoholStrengthPercent) || input.alcoholStrengthPercent < 0 || input.alcoholStrengthPercent > 100)) throw new Error("Крепость должна быть числом от 0 до 100%.");
   const isAlcohol = input.markingCategory === "alcohol" || input.markingCategory === "beer_marked";
-  await db.update(operationalCatalogProducts).set({ canonicalName, evotorCategoryName: normalizedText(input.evotorCategoryName ?? "").slice(0, 512) || null, baseUnit: input.baseUnit, vatRate: input.vatRate, markingCategory: input.markingCategory, alcoholCode: isAlcohol ? normalizedText(input.alcoholCode ?? "").slice(0, 255) || null : null, alcoholTypeCode: isAlcohol ? normalizedText(input.alcoholTypeCode ?? "").slice(0, 64) || null : null, alcoholStrengthPercent: isAlcohol && input.alcoholStrengthPercent !== null && input.alcoholStrengthPercent !== undefined ? input.alcoholStrengthPercent.toFixed(2) : null, manualBarcodes: normalizedManualBarcodes(input.manualBarcodes), isVisibleInRequests: input.isVisibleInRequests, isEvotorExportEnabled: input.isEvotorExportEnabled }).where(eq(operationalCatalogProducts.id, input.id));
+  await db.update(operationalCatalogProducts).set({ canonicalName, evotorCategoryName: normalizedText(input.evotorCategoryName ?? "").slice(0, 512) || null, baseUnit: input.baseUnit, vatRate: input.vatRate, markingCategory: input.markingCategory, alcoholCode: isAlcohol ? normalizedText(input.alcoholCode ?? "").slice(0, 255) || null : null, alcoholTypeCode: isAlcohol ? normalizedText(input.alcoholTypeCode ?? "").slice(0, 64) || null : null, alcoholStrengthPercent: isAlcohol && input.alcoholStrengthPercent !== null && input.alcoholStrengthPercent !== undefined ? input.alcoholStrengthPercent.toFixed(2) : null, alcoholVolumeLiters: isAlcohol && input.alcoholVolumeLiters !== null && input.alcoholVolumeLiters !== undefined ? input.alcoholVolumeLiters.toFixed(3) : null, manualBarcodes: normalizedManualBarcodes(input.manualBarcodes), isVisibleInRequests: input.isVisibleInRequests, isEvotorExportEnabled: input.isEvotorExportEnabled }).where(eq(operationalCatalogProducts.id, input.id));
   const [after] = await db.select().from(operationalCatalogProducts).where(eq(operationalCatalogProducts.id, input.id)).limit(1);
   return { before, after: after! };
 }
@@ -487,6 +500,77 @@ export async function updateOperationalPrintGroup(input: { id: number; name: str
   await db.update(operationalPrintGroups).set({ name, normalizedName, isActive: input.isActive }).where(eq(operationalPrintGroups.id, input.id));
   const [after] = await db.select().from(operationalPrintGroups).where(eq(operationalPrintGroups.id, input.id)).limit(1);
   return { before, after: after! };
+}
+
+export async function listOperationalCatalogCategoryNames() {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select({ category: operationalCatalogProducts.evotorCategoryName }).from(operationalCatalogProducts).where(and(eq(operationalCatalogProducts.isActive, true), isNotNull(operationalCatalogProducts.evotorCategoryName))).limit(20_000);
+  return Array.from(new Set(rows.map(row => row.category).filter((category): category is string => Boolean(category)))).sort((left, right) => left.localeCompare(right, "ru"));
+}
+
+export async function listOperationalPrintCategoryGroups() {
+  const db = await getDb();
+  if (!db) return [];
+  const [groups, members] = await Promise.all([
+    db.select().from(operationalPrintCategoryGroups).orderBy(operationalPrintCategoryGroups.name).limit(200),
+    db.select().from(operationalPrintCategoryGroupMembers).orderBy(operationalPrintCategoryGroupMembers.sortOrder, operationalPrintCategoryGroupMembers.id).limit(2_000),
+  ]);
+  const names = new Map(groups.map(group => [group.id, group.name]));
+  return groups.map(group => ({ ...group, members: members.filter(member => member.groupId === group.id).map(member => ({ id: member.id, memberType: member.memberType, catalogCategory: member.catalogCategory, childGroupId: member.childGroupId, childGroupName: member.childGroupId ? names.get(member.childGroupId) ?? null : null })) }));
+}
+
+export async function createOperationalPrintCategoryGroup(input: { name: string; actorId: number }) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const name = normalizedText(input.name);
+  if (!name) throw new Error("Укажите название категории печати.");
+  const normalizedName = normalizedKey(name);
+  const [existing] = await db.select().from(operationalPrintCategoryGroups).where(eq(operationalPrintCategoryGroups.normalizedName, normalizedName)).limit(1);
+  if (existing) throw new Error("Такая категория печати уже существует.");
+  await db.insert(operationalPrintCategoryGroups).values({ name, normalizedName, createdByAccountId: input.actorId });
+  const [after] = await db.select().from(operationalPrintCategoryGroups).where(eq(operationalPrintCategoryGroups.normalizedName, normalizedName)).limit(1);
+  return after!;
+}
+
+export async function setOperationalPrintCategoryGroupMember(input: { groupId: number; memberType: "catalog_category" | "category_group"; catalogCategory?: string; childGroupId?: number }) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const [group] = await db.select().from(operationalPrintCategoryGroups).where(eq(operationalPrintCategoryGroups.id, input.groupId)).limit(1);
+  if (!group) throw new Error("Категория печати не найдена.");
+  if (input.memberType === "catalog_category") {
+    const catalogCategory = normalizedText(input.catalogCategory ?? "");
+    if (!catalogCategory) throw new Error("Выберите категорию номенклатуры.");
+    const [existing] = await db.select().from(operationalPrintCategoryGroupMembers).where(and(eq(operationalPrintCategoryGroupMembers.groupId, input.groupId), eq(operationalPrintCategoryGroupMembers.memberType, "catalog_category"), eq(operationalPrintCategoryGroupMembers.catalogCategory, catalogCategory))).limit(1);
+    if (existing) return { created: false, member: existing };
+    await db.insert(operationalPrintCategoryGroupMembers).values({ groupId: input.groupId, memberType: "catalog_category", catalogCategory, sortOrder: 0 });
+  } else {
+    if (!input.childGroupId || input.childGroupId === input.groupId) throw new Error("Выберите другую категорию печати.");
+    const links = await db.select({ groupId: operationalPrintCategoryGroupMembers.groupId, childGroupId: operationalPrintCategoryGroupMembers.childGroupId }).from(operationalPrintCategoryGroupMembers).where(eq(operationalPrintCategoryGroupMembers.memberType, "category_group")).limit(2_000);
+    const descendants = new Set<number>();
+    const stack = [input.childGroupId];
+    while (stack.length) {
+      const current = stack.pop()!;
+      if (descendants.has(current)) continue;
+      descendants.add(current);
+      for (const link of links) if (link.groupId === current && link.childGroupId) stack.push(link.childGroupId);
+    }
+    if (descendants.has(input.groupId)) throw new Error("Нельзя создать циклическое включение категорий печати.");
+    const [existing] = await db.select().from(operationalPrintCategoryGroupMembers).where(and(eq(operationalPrintCategoryGroupMembers.groupId, input.groupId), eq(operationalPrintCategoryGroupMembers.memberType, "category_group"), eq(operationalPrintCategoryGroupMembers.childGroupId, input.childGroupId))).limit(1);
+    if (existing) return { created: false, member: existing };
+    await db.insert(operationalPrintCategoryGroupMembers).values({ groupId: input.groupId, memberType: "category_group", childGroupId: input.childGroupId, sortOrder: 0 });
+  }
+  const [member] = await db.select().from(operationalPrintCategoryGroupMembers).where(eq(operationalPrintCategoryGroupMembers.groupId, input.groupId)).orderBy(desc(operationalPrintCategoryGroupMembers.id)).limit(1);
+  return { created: true, member: member! };
+}
+
+export async function removeOperationalPrintCategoryGroupMember(input: { groupId: number; memberId: number }) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const [member] = await db.select().from(operationalPrintCategoryGroupMembers).where(and(eq(operationalPrintCategoryGroupMembers.id, input.memberId), eq(operationalPrintCategoryGroupMembers.groupId, input.groupId))).limit(1);
+  if (!member) throw new Error("Связь категории печати не найдена.");
+  await db.delete(operationalPrintCategoryGroupMembers).where(eq(operationalPrintCategoryGroupMembers.id, member.id));
+  return member;
 }
 
 export async function setOperationalWarehousePrintGroup(input: { storeId: number; printGroupId: number | null; actorId: number }) {
@@ -609,6 +693,25 @@ export async function listOperationalWarehouses() {
   const linkCount = new Map<number, number>();
   for (const link of links) linkCount.set(link.storeId, (linkCount.get(link.storeId) ?? 0) + 1);
   return rows.map(row => ({ ...row, evotorLinkedProductCount: linkCount.get(row.storeId) ?? 0, hasEvotorMapping: Boolean(row.evotorStoreName) }));
+}
+
+/** Candidate display names are safe for the administrator UI; technical IDs stay server-side until selected. */
+export async function listOperationalEvotorStoreChoices() {
+  const stores = await listEvotorCatalogStoresPreview();
+  return stores.map(store => ({ id: store.id, name: store.name }));
+}
+
+/** Establishes one explicit internal-store → Evotor-store mapping. No catalog or external data is changed. */
+export async function setOperationalWarehouseEvotorMapping(input: { storeId: number; evotorStoreId: string; actorId: number }) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const evotorStore = (await listEvotorCatalogStoresPreview()).find(store => store.id === input.evotorStoreId);
+  if (!evotorStore) throw new Error("Выбранный магазин Эвотор больше недоступен.");
+  const [before] = await db.select().from(operationalStoreMappings).where(eq(operationalStoreMappings.storeId, input.storeId)).limit(1);
+  const next = { evotorStoreName: evotorStore.name, evotorAddress: evotorStore.address ?? "", evotorTerminalUuid: evotorStore.id, configuredByAccountId: input.actorId };
+  if (before) await db.update(operationalStoreMappings).set(next).where(eq(operationalStoreMappings.id, before.id));
+  else await db.insert(operationalStoreMappings).values({ storeId: input.storeId, ...next });
+  return { before: before ? { evotorStoreName: before.evotorStoreName } : null, after: { evotorStoreName: evotorStore.name } };
 }
 
 export async function createInventoryDraft(input: { storeId: number; businessDate: string; createdByAccountId: number; note?: string }) {

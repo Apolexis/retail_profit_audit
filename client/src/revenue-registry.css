@@ -224,7 +224,7 @@ html[data-audit-theme="dark"] .packet .packet-card.revenue-own-history:hover { b
   #revenue-print-root .revenue-print-table thead th { background: #e2e2e2 !important; font-family: "Arial Black", Arial, sans-serif; font-weight: 900; text-align: center; white-space: normal; }
   #revenue-print-root .revenue-print-table thead th:nth-child(3) { white-space: nowrap; }
   #revenue-print-root .revenue-print-table tbody td { background: #fff !important; }
-  #revenue-print-root .revenue-print-table tbody tr:nth-child(even) td { background: #f0f0f0 !important; }
+  #revenue-print-root .revenue-print-table tbody td:nth-child(even) { background: #f0f0f0 !important; }
   #revenue-print-root .revenue-print-table tbody td:first-child,
   #revenue-print-root .revenue-print-table tfoot :is(th, td) { font-family: "Arial Black", Arial, sans-serif; font-weight: 900; }
   #revenue-print-root .revenue-print-table tfoot th { text-align: left; }

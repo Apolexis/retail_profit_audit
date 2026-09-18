@@ -194,3 +194,28 @@ html[data-audit-theme="dark"] .packet .catalog-working-card:hover { border-color
 }
 
 .packet .catalog-table-money { min-width: 126px; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* Product card: compact desktop fields, full-width barcode entry, and the established icon-before-label action layout. */
+.packet :is(.catalog-lede .subtle-button, .catalog-editor-title-actions .subtle-button, .catalog-editor-title-actions .packet-link, .catalog-editor-price-grid > .subtle-button) {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center;
+  gap: 6px;
+}
+.packet .catalog-editor-grid {
+  grid-template-columns: minmax(300px, 1.4fr) minmax(180px, .85fr) 110px 110px;
+}
+.packet .catalog-editor-grid > label:first-child { grid-column: auto; }
+.packet .catalog-editor-grid > label.catalog-editor-barcodes { grid-column: span 3; }
+.packet .catalog-editor-grid > label:nth-child(4) { max-width: 110px; }
+.packet .catalog-editor-barcodes input { min-width: 0; }
+.packet .catalog-editor-price-grid > .subtle-button { min-height: 40px; white-space: nowrap; }
+@media (max-width: 980px) {
+  .packet .catalog-editor-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .packet .catalog-editor-grid > label.catalog-editor-barcodes { grid-column: span 2; }
+}
+@media (max-width: 620px) {
+  .packet .catalog-editor-grid > label.catalog-editor-barcodes { grid-column: auto; }
+  .packet .catalog-lede .subtle-button { width: auto; }
+}
