@@ -19,24 +19,63 @@ describe("контракт страницы Выручка", () => {
     expect(page).toContain('displayMoscowTimestamp');
   });
 
-  it("использует общий календарь одной даты и утвержденную карточную форму", () => {
+  it("использует общий календарь одной даты и компактную карточную форму", () => {
     expect(page).toContain('ExactDateControl value={registryDate}');
     expect(page).toContain('title="ДАТА РЕЕСТРА ВЫРУЧКИ"');
     expect(page).toContain('className="packet-card revenue-rule-disclosure"');
     expect(styles).toContain('.packet .revenue-input-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));');
     expect(styles).toContain('@media (max-width: 760px)');
     expect(styles).toContain('.packet .revenue-input-grid,');
-    expect(styles).toContain('.packet .revenue-amount { display: grid; align-content: start; gap: 8px; min-width: 0; min-height: 104px; padding: 15px; border: 1px solid var(--line);');
+    expect(styles).toContain('.packet .revenue-amount { display: grid; align-content: start; gap: 8px; min-width: 0; min-height: 104px; padding: 15px; border: 1px solid var(--revenue-quiet-line);');
   });
 
-  it("делает печать журналируемой, компактной таблицей, после выбора даты", () => {
+  it("закрывает ежедневную передачу по умолчанию и снова после успешного создания", () => {
+    expect(page).toContain('const entryCardRef = useRef<HTMLDetailsElement>(null);');
+    expect(page).toContain('entryCardRef.current?.removeAttribute("open")');
+    expect(page).toContain('className="packet-card revenue-entry-card" ref={entryCardRef}');
+    expect(page).not.toContain('className="packet-card revenue-entry-card" open');
+    expect(page).toContain('className="revenue-entry-summary"');
+    expect(page).toContain('ОПЛАТЫ');
+    expect(page).toContain('НАЛИЧНЫЕ РАСХОДЫ');
+    expect(styles).toContain('.packet .revenue-entry-card:not([open]) .revenue-entry-summary');
+  });
+
+  it("показывает заполненные расходы в таблице Ритма, а не скрывает их в раскрытии", () => {
+    expect(page).toContain('const visibleExpenseFields = fields.filter');
+    expect(page).toContain('visibleExpenseFields.map(field => <th className="numeric-column"');
+    expect(page).toContain('visibleExpenseFields.map(field => <td className="numeric-column"');
+    expect(page).toContain('className="data-table-wrap revenue-register-table-wrap"');
+    expect(page).toContain('onPointerDown={beginRegisterDrag}');
+    expect(page).toContain('className="table-total"');
+    expect(page).not.toContain('className="revenue-details"');
+    expect(styles).toContain('.packet .data-table-wrap.revenue-register-table-wrap { overflow-x: auto; overflow-y: hidden; cursor: grab; touch-action: pan-y;');
+    expect(styles).toContain('.packet .revenue-register-table.data-table tbody tr:nth-child(even) td { background: var(--revenue-table-zebra); }');
+  });
+
+  it("печатает только дату, zebra-таблицу, итог и короткие комментарии расходов", () => {
     expect(page).toContain('trpc.revenueRegistry.print.useMutation()');
     expect(page).toContain('window.print()');
     expect(page).toContain('<Printer size={14}/>');
     expect(page.indexOf('className="revenue-filter-row"')).toBeLessThan(page.indexOf('className="revenue-register-actions"'));
+    expect(page).toContain('className="revenue-print-date"');
     expect(page).toContain('className="revenue-print-summary"');
-    expect(styles).toContain('.packet .revenue-print-summary { display: none; }');
-    expect(styles).toContain('.packet .revenue-register-table tbody tr:nth-child(even) { background: #f1f1f1; }');
+    expect(page).not.toContain('<h4>Комментарии к расходам</h4>');
+    expect(styles).toContain('/* Print intentionally contains only the selected date, a compact zebra table, total and expense notes. */');
+    expect(styles).toContain('.packet .revenue-admin-register .card-title { display: none !important; }');
+    expect(styles).toContain('.packet .revenue-register-table.data-table tbody tr:nth-child(even) td { background: #eeeeee; }');
+  });
+
+  it("отделяет синий light-контур от сдержанной темной поверхности", () => {
+    expect(styles).toContain('html[data-audit-theme="light"] .packet {');
+    expect(styles).toContain('--revenue-accent: #0a84ff;');
+    expect(styles).toContain('--revenue-panel: #edf6ff;');
+    expect(styles).toContain('--revenue-table-zebra: #f6faff;');
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet {');
+    expect(styles).toContain('--revenue-panel: #1b1920;');
+    expect(styles).toContain('--revenue-table-zebra: #1c1920;');
+    expect(styles).not.toContain('#d64146');
+    expect(styles).not.toContain('#d55b63');
+    expect(styles).not.toContain('#ff765f');
   });
 
   it("делает удаление администратора обратимым, с причиной и общим журналом", () => {
@@ -61,24 +100,5 @@ describe("контракт страницы Выручка", () => {
   it("не открывает реестр до обязательной смены первичного пароля магазина", () => {
     expect(router).toContain('if (account.mustChangePassword) throw new TRPCError');
     expect(router).toContain('Сначала измените первичный пароль в профиле');
-  });
-
-  it("собирает ежедневную передачу в раскрываемую форму с отдельными блоками оплат и расходов", () => {
-    expect(page).toContain('className="packet-card revenue-entry-card"');
-    expect(page).not.toContain('className="packet-card revenue-entry-card" open');
-    expect(page).toContain('className="revenue-entry-summary"');
-    expect(page).toContain('ОПЛАТЫ');
-    expect(page).toContain('НАЛИЧНЫЕ РАСХОДЫ');
-    expect(styles).toContain('.packet .revenue-entry-card:not([open]) .revenue-entry-summary');
-    expect(styles).toContain('.packet .revenue-field-section');
-  });
-
-  it("повторяет палитру карточек «Сигналов» в обеих темах", () => {
-    expect(styles).toContain('html[data-audit-theme="dark"] .packet .revenue-entry-card');
-    expect(styles).toContain('linear-gradient(145deg,#191019,#101216)');
-    expect(styles).toContain('html[data-audit-theme="dark"] .packet .revenue-amount');
-    expect(styles).toContain('border-color: #553345;');
-    expect(styles).toContain('html[data-audit-theme="light"] .packet .revenue-entry-card');
-    expect(styles).toContain('background: #fff;');
   });
 });

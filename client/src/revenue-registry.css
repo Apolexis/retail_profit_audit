@@ -1,15 +1,34 @@
-/* Isolated operational registry: common packet surfaces, the approved signal-form geometry and no financial status colors. */
+/* Isolated «Выручка»: light uses restrained iOS-blue surfaces; dark stays neutral with coral only as a small signal accent. */
+.packet {
+  --revenue-card: var(--surface);
+  --revenue-panel: var(--surface-2);
+  --revenue-field: var(--surface);
+  --revenue-input: var(--surface-2);
+  --revenue-line: var(--line);
+  --revenue-quiet-line: var(--line);
+  --revenue-accent: var(--packet-accent);
+  --revenue-accent-soft: var(--packet-accent-soft);
+  --revenue-accent-faint: var(--packet-accent-faint);
+  --revenue-table-head: var(--surface-2);
+  --revenue-table-row: transparent;
+  --revenue-table-zebra: color-mix(in srgb, var(--surface-2) 72%, transparent);
+  --revenue-table-hover: color-mix(in srgb, var(--packet-accent) 5%, transparent);
+  --revenue-total-surface: var(--packet-accent-faint);
+}
+
+/* The daily form follows the compact Signals hierarchy without inventing a secondary card language. */
 .packet .revenue-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
 .packet :is(.revenue-entry-card, .revenue-admin-register, .revenue-own-history, .revenue-rule-disclosure) { min-width: 0; }
-.packet .revenue-entry-card { display: grid; gap: 0; }
+.packet .revenue-entry-card { display: grid; gap: 0; border-color: var(--revenue-line); background: var(--revenue-card); box-shadow: none; }
 .packet .revenue-entry-summary { display: flex; align-items: center; justify-content: space-between; gap: 14px; cursor: pointer; list-style: none; }
 .packet .revenue-entry-summary::-webkit-details-marker { display: none; }
 .packet .revenue-entry-summary > div { display: grid; min-width: 0; gap: 3px; }
 .packet .revenue-entry-summary span { color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .08em; }
 .packet .revenue-entry-summary h3 { margin: 0; color: var(--ink); font-size: 18px; }
 .packet .revenue-entry-summary small { color: var(--muted); font-size: 11px; }
-.packet .revenue-entry-summary > svg { flex: 0 0 auto; color: var(--packet-accent); transition: transform 160ms var(--audit-hover-ease); }
+.packet .revenue-entry-summary > svg { flex: 0 0 auto; color: var(--revenue-accent); transition: transform 160ms var(--audit-hover-ease); }
 .packet .revenue-entry-card:not([open]) .revenue-entry-summary > svg { transform: rotate(-90deg); }
+.packet .revenue-entry-card:focus-within { border-color: var(--revenue-accent-soft); }
 .packet .revenue-entry-form { display: grid; gap: 16px; padding-top: 16px; }
 .packet .revenue-meta-row { display: grid; grid-template-columns: minmax(190px, .75fr) minmax(190px, 1fr); gap: 12px; }
 .packet .revenue-meta-row > label,
@@ -19,78 +38,151 @@
 .packet .revenue-store-readonly,
 .packet .revenue-correction-reason,
 .packet .revenue-filter-row > :is(label, div) { color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
-.packet .revenue-store-readonly { align-content: center; min-height: 42px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); }
+.packet .revenue-store-readonly { align-content: center; min-height: 42px; padding: 9px 12px; border: 1px solid var(--revenue-line); border-radius: 11px; background: var(--revenue-field); }
 .packet .revenue-store-readonly strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); letter-spacing: normal; text-transform: none; }
 
-/* Same compact card pattern as the approved signal controls. */
-.packet .revenue-input-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
-.packet .revenue-amount { display: grid; align-content: start; gap: 8px; min-width: 0; min-height: 104px; padding: 15px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); box-shadow: none; transition: border-color 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease); }
-.packet .revenue-amount:hover,
-.packet .revenue-amount:focus-within { border-color: var(--packet-accent); background: color-mix(in srgb, var(--packet-accent) 5%, var(--surface)); box-shadow: none; }
-.packet .revenue-amount > span { color: var(--muted); font: 800 10px "IBM Plex Mono", monospace; letter-spacing: .04em; }
-.packet .revenue-amount input,
-.packet .revenue-filter-row input { width: 100%; min-width: 0; height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); color: var(--ink); font: 700 13px Manrope, Arial, sans-serif; outline: none; }
-.packet .revenue-amount input:focus-visible,
-.packet .revenue-filter-row input:focus-visible,
-.packet .revenue-correction-reason textarea:focus-visible,
-.packet .revenue-amount textarea:focus-visible { border-color: var(--packet-accent); box-shadow: none; }
-.packet .revenue-amount textarea,
-.packet .revenue-correction-reason textarea { min-height: 65px; width: 100%; resize: vertical; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); color: var(--ink); font: 650 12px Manrope, Arial, sans-serif; outline: none; }
-.packet .revenue-total { display: grid; grid-template-columns: auto 1fr; gap: 2px 14px; align-items: center; padding: 14px 16px; border: 1px solid var(--packet-accent-soft); border-radius: 12px; background: var(--packet-accent-faint); }
-.packet .revenue-total > span { color: var(--ink); font-size: 16px; font-weight: 850; }
-.packet .revenue-total > strong { justify-self: end; color: var(--packet-accent); font-size: 22px; line-height: 1.15; }
-.packet .revenue-total > small { grid-column: 1 / -1; color: var(--muted); font-size: 11px; }
 .packet .revenue-field-sections { display: grid; gap: 14px; }
-.packet .revenue-field-section { display: grid; gap: 10px; padding: 13px; border: 1px solid var(--line); border-radius: 13px; background: color-mix(in srgb, var(--surface-2) 72%, var(--surface)); }
+.packet .revenue-field-section { display: grid; gap: 10px; padding: 13px; border: 1px solid var(--revenue-quiet-line); border-radius: 13px; background: var(--revenue-panel); }
 .packet .revenue-field-section-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .packet .revenue-field-section-title span { color: var(--ink); font: 850 11px Manrope, Arial, sans-serif; letter-spacing: .07em; }
 .packet .revenue-field-section-title small { color: var(--muted); font-size: 11px; text-align: right; }
+.packet .revenue-input-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+.packet .revenue-amount { display: grid; align-content: start; gap: 8px; min-width: 0; min-height: 104px; padding: 15px; border: 1px solid var(--revenue-quiet-line); border-radius: 13px; background: var(--revenue-field); box-shadow: none; transition: border-color 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease); }
+.packet .revenue-amount:hover,
+.packet .revenue-amount:focus-within { border-color: var(--revenue-accent); background: var(--revenue-accent-faint); box-shadow: 0 0 0 1px var(--revenue-accent-faint); }
+.packet .revenue-amount > span { color: var(--muted); font: 800 10px "IBM Plex Mono", monospace; letter-spacing: .04em; }
+.packet .revenue-amount input,
+.packet .revenue-filter-row input { width: 100%; min-width: 0; height: 36px; padding: 0 10px; border: 1px solid var(--revenue-line); border-radius: 9px; background: var(--revenue-input); color: var(--ink); font: 700 13px Manrope, Arial, sans-serif; outline: none; }
+.packet .revenue-amount textarea,
+.packet .revenue-correction-reason textarea,
+.packet .revenue-void-reason textarea { min-height: 65px; width: 100%; resize: vertical; padding: 8px 10px; border: 1px solid var(--revenue-line); border-radius: 9px; background: var(--revenue-input); color: var(--ink); font: 650 12px Manrope, Arial, sans-serif; outline: none; text-transform: none; letter-spacing: normal; }
+.packet .revenue-void-reason textarea { min-height: 72px; }
+.packet .revenue-entry-card :is(input, textarea, .app-select-trigger[data-slot="select-trigger"]):focus-visible { border-color: var(--revenue-accent) !important; outline: 2px solid var(--revenue-accent) !important; outline-offset: 1px; box-shadow: none !important; }
+.packet .revenue-total { display: grid; grid-template-columns: auto 1fr; gap: 2px 14px; align-items: center; padding: 14px 16px; border: 1px solid var(--revenue-accent-soft); border-radius: 12px; background: var(--revenue-total-surface); }
+.packet .revenue-total > span { color: var(--ink); font-size: 16px; font-weight: 850; }
+.packet .revenue-total > strong { justify-self: end; color: var(--revenue-accent); font-size: 22px; line-height: 1.15; }
+.packet .revenue-total > small { grid-column: 1 / -1; color: var(--muted); font-size: 11px; }
 .packet .revenue-form-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap; }
 .packet .revenue-form-actions small { color: var(--muted); font-size: 11px; }
 
-/* Rule follows the page lead instead of occupying an unrelated side column. */
-.packet .revenue-rule-disclosure { display: grid; gap: 0; margin: 18px 0; }
+/* The rule is an explanatory disclosure directly after the lead, not a competing side card. */
+.packet .revenue-rule-disclosure { display: grid; gap: 0; margin: 18px 0; border-color: var(--revenue-line); background: var(--revenue-card); box-shadow: none; }
 .packet .revenue-rule-disclosure > summary { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: baseline; cursor: pointer; list-style: none; }
 .packet .revenue-rule-disclosure > summary::-webkit-details-marker { display: none; }
-.packet .revenue-rule-disclosure > summary > span { color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .08em; }
+.packet .revenue-rule-disclosure > summary > span { color: var(--revenue-accent); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .08em; }
 .packet .revenue-rule-disclosure > summary > strong { min-width: 0; color: var(--ink); font-size: 14px; }
 .packet .revenue-rule-content { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 1fr); gap: 16px 24px; padding-top: 14px; }
 .packet .revenue-rule-content ol { display: grid; gap: 7px; margin: 0; padding-left: 22px; color: var(--ink); font-size: 13px; line-height: 1.4; }
 .packet .revenue-rule-content .packet-note { margin: 0; align-self: start; }
 
-.packet :is(.revenue-admin-register, .revenue-own-history) { display: grid; gap: 15px; margin-top: 18px; }
-.packet .revenue-register-actions { display: flex; justify-content: flex-end; gap: 8px; }
-.packet .revenue-register-actions .subtle-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 32px; height: 32px; padding: 0 10px; font-size: 11px; }
+/* The registry reuses the Rhythm table rhythm: simple header, zebra body, fixed numeric alignment and native touch scroll. */
+.packet :is(.revenue-admin-register, .revenue-own-history) { display: grid; gap: 15px; margin-top: 18px; border-color: var(--revenue-line); background: var(--revenue-card); box-shadow: none; }
 .packet .revenue-filter-row { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(190px, .75fr); gap: 12px; align-items: end; }
 .packet .revenue-filter-row > :is(label, div) { display: grid; gap: 6px; min-width: 0; }
 .packet .revenue-filter-row .date-range-control { width: 100%; min-width: 0; }
-.packet .revenue-register-table-wrap { overflow-x: auto; cursor: grab; touch-action: pan-y; }
-.packet .revenue-register-table-wrap.is-dragging { cursor: grabbing; user-select: none; }
-.packet .revenue-register-table { min-width: 900px; }
-.packet .revenue-register-table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--surface-2) 72%, transparent); }
-.packet .revenue-register-table td small { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
-.packet .revenue-register-table tfoot { background: color-mix(in srgb, var(--packet-accent-faint) 72%, var(--surface)); }
-.packet .revenue-register-table tfoot > tr > :is(th, td) { font-weight: 750; }
-.packet .revenue-register-table tfoot > tr > th { font-size: 14px; font-weight: 850; }
-.packet .revenue-details { display: inline-block; vertical-align: middle; margin-right: 7px; }
-.packet .revenue-details > summary { cursor: pointer; color: var(--packet-accent); font-size: 12px; font-weight: 750; white-space: nowrap; }
-.packet .revenue-details > dl { display: grid; gap: 6px; min-width: 240px; margin: 8px 0 0; padding: 9px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); box-shadow: 0 8px 24px color-mix(in srgb, #000 16%, transparent); }
-.packet .revenue-details > dl > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start; }
-.packet .revenue-details dt { color: var(--muted); font-size: 11px; }
-.packet .revenue-details dd { display: grid; gap: 2px; margin: 0; text-align: right; font-size: 12px; font-weight: 750; }
-.packet .revenue-details dd small { max-width: 150px; font-weight: 500; text-align: right; white-space: normal; }
-.packet .revenue-print-summary { display: none; }
+.packet .revenue-register-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.packet .revenue-register-actions .subtle-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 32px; height: 32px; padding: 0 10px; font-size: 11px; }
+.packet .revenue-print-date { display: none; }
+.packet .data-table-wrap.revenue-register-table-wrap { overflow-x: auto; overflow-y: hidden; cursor: grab; touch-action: pan-y; overscroll-behavior-inline: contain; border: 1px solid var(--revenue-line); background: var(--revenue-table-row); }
+.packet .data-table-wrap.revenue-register-table-wrap.is-dragging { cursor: grabbing; user-select: none; }
+.packet .revenue-admin-register .revenue-register-table.data-table { min-width: max-content; width: 100%; color: var(--ink); font-variant-numeric: tabular-nums; }
+.packet .revenue-register-table.data-table :is(th, td) { white-space: nowrap; }
+.packet .revenue-register-table.data-table thead th { border-color: var(--revenue-line); background: var(--revenue-table-head); color: var(--muted); font: 800 11px/1.3 Manrope, Arial, sans-serif; letter-spacing: .015em; }
+.packet .revenue-register-table.data-table tbody td { border-color: var(--revenue-quiet-line); background: var(--revenue-table-row); }
+.packet .revenue-register-table.data-table tbody tr:nth-child(even) td { background: var(--revenue-table-zebra); }
+.packet .revenue-register-table.data-table tbody tr:hover td { background: var(--revenue-table-hover); }
+.packet .revenue-register-table.data-table td small { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+.packet .revenue-register-table.data-table :is(.numeric-column) { text-align: right; }
+.packet .revenue-register-table.data-table tfoot .table-total > :is(th, td) { border-top: 1px solid var(--revenue-accent-soft); background: var(--revenue-total-surface); color: var(--ink); font-weight: 800; }
+.packet .revenue-register-table.data-table tfoot .table-total > th { font-size: 14px; font-weight: 900; letter-spacing: .04em; }
+.packet .revenue-row-actions { display: flex; align-items: center; gap: 7px; }
+.packet .revenue-row-actions .subtle-button { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.packet .revenue-print-summary,
 .packet .revenue-print-comments { display: none; }
 .packet .revenue-void-reason { display: grid; gap: 6px; color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
-.packet .revenue-void-reason textarea { min-height: 72px; width: 100%; resize: vertical; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); color: var(--ink); font: 650 12px Manrope, Arial, sans-serif; outline: none; text-transform: none; letter-spacing: normal; }
 .packet .revenue-history-list { display: grid; gap: 8px; }
-.packet .revenue-history-list article { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 0; border-bottom: 1px solid var(--line); }
+.packet .revenue-history-list article { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 0; border-bottom: 1px solid var(--revenue-quiet-line); }
 .packet .revenue-history-list article:last-child { border-bottom: 0; }
 .packet .revenue-history-list article > div { display: grid; gap: 2px; min-width: 0; }
 .packet .revenue-history-list span { color: var(--muted); font-size: 11px; }
 .packet .revenue-history-list strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .packet .revenue-history-list small { color: var(--muted); font-size: 11px; }
-.packet .revenue-history-list b { white-space: nowrap; color: var(--packet-accent); }
+.packet .revenue-history-list b { white-space: nowrap; color: var(--revenue-accent); }
+
+/* Light: every operational surface is neutral / iOS-blue. Coral is deliberately absent. */
+html[data-audit-theme="light"] .packet {
+  --revenue-card: #f7fbff;
+  --revenue-panel: #edf6ff;
+  --revenue-field: #ffffff;
+  --revenue-input: #ffffff;
+  --revenue-line: #c7e2ff;
+  --revenue-quiet-line: #d8ebff;
+  --revenue-accent: #0a84ff;
+  --revenue-accent-soft: #8bc7ff;
+  --revenue-accent-faint: #eaf5ff;
+  --revenue-table-head: #eaf5ff;
+  --revenue-table-row: #ffffff;
+  --revenue-table-zebra: #f6faff;
+  --revenue-table-hover: #edf6ff;
+  --revenue-total-surface: #e5f3ff;
+}
+html[data-audit-theme="light"] .packet .revenue-entry-card,
+html[data-audit-theme="light"] .packet .revenue-rule-disclosure,
+html[data-audit-theme="light"] .packet :is(.revenue-admin-register, .revenue-own-history) { border-color: var(--revenue-line) !important; background: var(--revenue-card) !important; box-shadow: 0 8px 20px rgba(10, 94, 180, .06) !important; }
+html[data-audit-theme="light"] .packet :is(.revenue-entry-card, .revenue-rule-disclosure):hover,
+html[data-audit-theme="light"] .packet :is(.revenue-entry-card, .revenue-rule-disclosure):focus-within { border-color: var(--revenue-accent-soft) !important; background: var(--revenue-card) !important; box-shadow: 0 8px 20px rgba(10, 94, 180, .08) !important; }
+html[data-audit-theme="light"] .packet .revenue-row-actions .subtle-button:hover,
+html[data-audit-theme="light"] .packet .revenue-row-actions .subtle-button:focus-visible,
+html[data-audit-theme="light"] .packet .revenue-register-actions .subtle-button:hover,
+html[data-audit-theme="light"] .packet .revenue-register-actions .subtle-button:focus-visible { border-color: var(--revenue-accent); background: var(--revenue-accent-faint); color: #075dbb; box-shadow: 0 0 0 1px rgba(10, 132, 255, .1); }
+html[data-audit-theme="light"] .packet .revenue-form-actions .packet-link { border-color: #0a84ff !important; background: #0a84ff !important; color: #fff !important; box-shadow: 0 8px 18px rgba(10, 132, 255, .22) !important; }
+html[data-audit-theme="light"] .packet .revenue-form-actions .packet-link:hover,
+html[data-audit-theme="light"] .packet .revenue-form-actions .packet-link:focus-visible { border-color: #075dbb !important; background: #075dbb !important; box-shadow: 0 8px 18px rgba(10, 132, 255, .28) !important; }
+
+/* Dark: cards and table cells remain deep neutral; coral is confined to an outline, icon and key total. */
+html[data-audit-theme="dark"] .packet {
+  --revenue-card: #15141a;
+  --revenue-panel: #1b1920;
+  --revenue-field: #201d25;
+  --revenue-input: #121116;
+  --revenue-line: #3f3a47;
+  --revenue-quiet-line: #332f39;
+  --revenue-accent: #ff9b88;
+  --revenue-accent-soft: #6b4850;
+  --revenue-accent-faint: rgba(255, 155, 136, .075);
+  --revenue-table-head: #211e27;
+  --revenue-table-row: #17151b;
+  --revenue-table-zebra: #1c1920;
+  --revenue-table-hover: #221d24;
+  --revenue-total-surface: #201b22;
+}
+html[data-audit-theme="dark"] .packet .revenue-entry-card,
+html[data-audit-theme="dark"] .packet .revenue-rule-disclosure,
+html[data-audit-theme="dark"] .packet :is(.revenue-admin-register, .revenue-own-history) { border-color: var(--revenue-line) !important; background: var(--revenue-card) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .025) !important; }
+html[data-audit-theme="dark"] .packet :is(.revenue-entry-card, .revenue-rule-disclosure):hover,
+html[data-audit-theme="dark"] .packet :is(.revenue-entry-card, .revenue-rule-disclosure):focus-within { border-color: var(--revenue-accent-soft) !important; background: var(--revenue-card) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04) !important; }
+html[data-audit-theme="dark"] .packet .revenue-row-actions .subtle-button:hover,
+html[data-audit-theme="dark"] .packet .revenue-row-actions .subtle-button:focus-visible,
+html[data-audit-theme="dark"] .packet .revenue-register-actions .subtle-button:hover,
+html[data-audit-theme="dark"] .packet .revenue-register-actions .subtle-button:focus-visible { border-color: var(--revenue-accent); background: rgba(255, 155, 136, .07); color: #ffd1c8; box-shadow: 0 0 0 1px rgba(255, 155, 136, .1); }
+
+/* Legacy final-overrides has a broad !important `.packet-card` rule. These selectors intentionally outrank it without leaking into other modules. */
+html[data-audit-theme="light"] .packet .packet-card.revenue-entry-card,
+html[data-audit-theme="light"] .packet .packet-card.revenue-rule-disclosure,
+html[data-audit-theme="light"] .packet .packet-card.revenue-admin-register,
+html[data-audit-theme="light"] .packet .packet-card.revenue-own-history { border-color: var(--revenue-line) !important; background: var(--revenue-card) !important; box-shadow: 0 8px 20px rgba(10, 94, 180, .06) !important; }
+html[data-audit-theme="dark"] .packet .packet-card.revenue-entry-card,
+html[data-audit-theme="dark"] .packet .packet-card.revenue-rule-disclosure,
+html[data-audit-theme="dark"] .packet .packet-card.revenue-admin-register,
+html[data-audit-theme="dark"] .packet .packet-card.revenue-own-history { border-color: var(--revenue-line) !important; background: var(--revenue-card) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .025) !important; }
+html[data-audit-theme="light"] .packet .packet-card.revenue-entry-card:hover,
+html[data-audit-theme="light"] .packet .packet-card.revenue-rule-disclosure:hover,
+html[data-audit-theme="light"] .packet .packet-card.revenue-admin-register:hover,
+html[data-audit-theme="light"] .packet .packet-card.revenue-own-history:hover { border-color: var(--revenue-accent) !important; background: var(--revenue-card) !important; box-shadow: 0 0 0 1px rgba(10, 132, 255, .14), 0 10px 22px rgba(10, 94, 180, .08) !important; transform: none !important; }
+html[data-audit-theme="dark"] .packet .packet-card.revenue-entry-card:hover,
+html[data-audit-theme="dark"] .packet .packet-card.revenue-rule-disclosure:hover,
+html[data-audit-theme="dark"] .packet .packet-card.revenue-admin-register:hover,
+html[data-audit-theme="dark"] .packet .packet-card.revenue-own-history:hover { border-color: var(--revenue-accent) !important; background: var(--revenue-card) !important; box-shadow: 0 0 0 1px rgba(255, 155, 136, .12), inset 0 1px 0 rgba(255, 255, 255, .025) !important; transform: none !important; }
 
 /* Phone and compact tablet: one continuous entry column and full-width primary actions. */
 @media (max-width: 760px) {
@@ -106,139 +198,39 @@
   .packet .revenue-register-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
   .packet .revenue-form-actions > .packet-link,
   .packet .revenue-register-actions > .subtle-button { width: 100%; justify-content: center; }
+  .packet .revenue-admin-register .revenue-register-table.data-table { min-width: max-content; }
 }
 @media (max-width: 400px) {
   .packet .revenue-history-list article { align-items: flex-start; flex-direction: column; gap: 5px; }
   .packet .revenue-rule-disclosure > summary { grid-template-columns: 1fr; gap: 4px; }
 }
+
+/* Print intentionally contains only the selected date, a compact zebra table, total and expense notes. */
 @media print {
+  @page { size: auto; margin: 8mm; }
   .packet .packet-spine,
   .packet .packet-top,
+  .packet .page-lede,
   .packet .section-recommendation,
   .packet .revenue-entry-card,
   .packet .revenue-rule-disclosure,
   .packet .revenue-filter-row,
   .packet .revenue-not-for-print,
-  .packet .revenue-register-actions { display: none !important; }
+  .packet .revenue-register-actions,
+  .packet .revenue-admin-register .card-title { display: none !important; }
   .packet .packet-main { display: block; padding: 0; }
-  .packet .revenue-admin-register { display: block; margin: 0; border: 0; box-shadow: none; }
-  .packet .revenue-admin-register .card-title { margin-bottom: 14px; }
-  .packet .revenue-register-table { min-width: 0; width: 100%; font-size: 10px; }
-  .packet .revenue-register-table tbody tr:nth-child(even) { background: #f1f1f1; }
-  .packet .revenue-register-table tfoot { background: #e7e7e7; }
-  .packet .revenue-print-summary { display: block; margin-top: 16px; padding-top: 10px; border-top: 1px solid #777; break-inside: avoid; }
-  .packet .revenue-print-comments { display: grid; gap: 5px; }
-  .packet .revenue-print-comments h4 { margin: 0; font-size: 11px; }
-  .packet .revenue-print-comments p { display: grid; grid-template-columns: minmax(180px, .8fr) minmax(0, 1.2fr); gap: 10px; margin: 0; font-size: 10px; line-height: 1.35; }
-}
-
-/* «Выручка» использует ту же двухслойную форму, что «Сигналы»: темная сливовая поверхность, вложенные карточки без белых/серых контуров. */
-html[data-audit-theme="dark"] .packet .revenue-entry-card {
-  border-color: #64394d;
-  background: radial-gradient(circle at 92% 0, rgba(255,118,95,.11), transparent 34%), linear-gradient(145deg,#191019,#101216);
-  box-shadow: none;
-}
-html[data-audit-theme="dark"] .packet .revenue-field-section {
-  border-color: #553345;
-  background: linear-gradient(145deg,#1c1119,#151018);
-}
-html[data-audit-theme="dark"] .packet .revenue-amount {
-  border-color: #553345;
-  background: #1c1119;
-}
-html[data-audit-theme="dark"] .packet .revenue-amount:hover,
-html[data-audit-theme="dark"] .packet .revenue-amount:focus-within {
-  border-color: #a9516a;
-  background: #21131b;
-  box-shadow: none;
-}
-html[data-audit-theme="dark"] .packet .revenue-amount > span { color: #bfa9b3; }
-html[data-audit-theme="dark"] .packet .revenue-amount input,
-html[data-audit-theme="dark"] .packet .revenue-amount textarea,
-html[data-audit-theme="dark"] .packet .revenue-correction-reason textarea {
-  border-color: #63394b;
-  background: #100d13;
-  color: #fff0f4;
-}
-html[data-audit-theme="dark"] .packet .revenue-amount input:focus-visible,
-html[data-audit-theme="dark"] .packet .revenue-amount textarea:focus-visible,
-html[data-audit-theme="dark"] .packet .revenue-correction-reason textarea:focus-visible {
-  border-color: #ff765f;
-  box-shadow: 0 0 0 2px rgba(255,118,95,.18);
-}
-html[data-audit-theme="dark"] .packet .revenue-total {
-  border-color: #704052;
-  background: #181119;
-}
-html[data-audit-theme="dark"] .packet .revenue-total > span { color: #fff1f5; }
-html[data-audit-theme="dark"] .packet .revenue-total > strong { color: #ffb8c7; }
-
-html[data-audit-theme="light"] .packet .revenue-entry-card {
-  border-color: #dcc7cd;
-  background: radial-gradient(circle at 92% 0, rgba(214,65,70,.08), transparent 34%), linear-gradient(145deg,#fffdfb,#f8f5f4);
-  box-shadow: none;
-}
-html[data-audit-theme="light"] .packet .revenue-field-section {
-  border-color: #e2d7da;
-  background: #fff;
-}
-html[data-audit-theme="light"] .packet .revenue-amount {
-  border-color: #e2d7da;
-  background: #fff;
-}
-html[data-audit-theme="light"] .packet .revenue-amount:hover,
-html[data-audit-theme="light"] .packet .revenue-amount:focus-within {
-  border-color: #d55b63;
-  background: #fffafb;
-  box-shadow: 0 0 0 2px rgba(213,91,99,.12);
-}
-html[data-audit-theme="light"] .packet .revenue-amount > span { color: #6a5f65; }
-html[data-audit-theme="light"] .packet .revenue-amount input,
-html[data-audit-theme="light"] .packet .revenue-amount textarea,
-html[data-audit-theme="light"] .packet .revenue-correction-reason textarea {
-  border-color: #d9cbd0;
-  background: #fff;
-  color: #252025;
-}
-html[data-audit-theme="light"] .packet .revenue-amount input:focus-visible,
-html[data-audit-theme="light"] .packet .revenue-amount textarea:focus-visible,
-html[data-audit-theme="light"] .packet .revenue-correction-reason textarea:focus-visible {
-  border-color: #d64146;
-  box-shadow: 0 0 0 2px rgba(214,65,70,.14);
-}
-html[data-audit-theme="light"] .packet .revenue-total {
-  border-color: #edb9c1;
-  background: #fff8f8;
-}
-html[data-audit-theme="light"] .packet .revenue-total > span { color: #272127; }
-html[data-audit-theme="light"] .packet .revenue-total > strong { color: #a53d4c; }
-
-/* Global control defaults are intentionally neutral-blue. Within this form the last override keeps every editable control in the revenue palette. */
-html[data-audit-theme="dark"] .packet .revenue-entry-card .revenue-amount :is(input, textarea),
-html[data-audit-theme="dark"] .packet .revenue-entry-card .revenue-correction-reason textarea,
-html[data-audit-theme="dark"] .packet .revenue-entry-card .app-select-trigger[data-slot="select-trigger"] {
-  border-color: #63394b !important;
-  background: #100d13 !important;
-  color: #fff0f4 !important;
-  box-shadow: none !important;
-}
-html[data-audit-theme="dark"] .packet .revenue-entry-card .revenue-amount :is(input, textarea):focus-visible,
-html[data-audit-theme="dark"] .packet .revenue-entry-card .revenue-correction-reason textarea:focus-visible,
-html[data-audit-theme="dark"] .packet .revenue-entry-card .app-select-trigger[data-slot="select-trigger"]:focus-visible {
-  border-color: #ff765f !important;
-  box-shadow: 0 0 0 2px rgba(255,118,95,.18) !important;
-}
-html[data-audit-theme="light"] .packet .revenue-entry-card .revenue-amount :is(input, textarea),
-html[data-audit-theme="light"] .packet .revenue-entry-card .revenue-correction-reason textarea,
-html[data-audit-theme="light"] .packet .revenue-entry-card .app-select-trigger[data-slot="select-trigger"] {
-  border-color: #d9cbd0 !important;
-  background: #fff !important;
-  color: #252025 !important;
-  box-shadow: none !important;
-}
-html[data-audit-theme="light"] .packet .revenue-entry-card .revenue-amount :is(input, textarea):focus-visible,
-html[data-audit-theme="light"] .packet .revenue-entry-card .revenue-correction-reason textarea:focus-visible,
-html[data-audit-theme="light"] .packet .revenue-entry-card .app-select-trigger[data-slot="select-trigger"]:focus-visible {
-  border-color: #d64146 !important;
-  box-shadow: 0 0 0 2px rgba(214,65,70,.14) !important;
+  .packet .revenue-admin-register { display: block; margin: 0; padding: 0; border: 0; background: #fff; box-shadow: none; }
+  .packet .revenue-print-date { display: block; margin: 0 0 3px; color: #000; font-size: 10px; font-weight: 800; text-align: center; }
+  .packet .data-table-wrap.revenue-register-table-wrap { overflow: visible; border: 0; border-radius: 0; background: transparent; }
+  .packet .revenue-admin-register .revenue-register-table.data-table { min-width: 0; width: 100%; color: #000; font-size: 7.5px; line-height: 1.15; }
+  .packet .revenue-register-table.data-table :is(th, td) { padding: 2px 3px; border: 1px solid #555; white-space: normal; }
+  .packet .revenue-register-table.data-table thead th { background: #d8d8d8; color: #000; font-size: 7.5px; font-weight: 800; }
+  .packet .revenue-register-table.data-table tbody td { background: #fff; border-color: #555; }
+  .packet .revenue-register-table.data-table tbody tr:nth-child(even) td { background: #eeeeee; }
+  .packet .revenue-register-table.data-table tbody tr:hover td { background: inherit; }
+  .packet .revenue-register-table.data-table tfoot .table-total > :is(th, td) { border-color: #444; background: #cecece; color: #000; font-size: 8px; font-weight: 900; }
+  .packet .revenue-screen-only { display: none !important; }
+  .packet .revenue-print-summary:not(:empty) { display: block; margin-top: 5px; break-inside: avoid; }
+  .packet .revenue-print-comments:not(:empty) { display: grid; gap: 2px; }
+  .packet .revenue-print-comments p { display: grid; grid-template-columns: minmax(120px, auto) minmax(0, 1fr); gap: 5px; margin: 0; color: #000; font-size: 7.5px; line-height: 1.25; }
 }
