@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const page = readFileSync(new URL("./InventoryRegistry.tsx", import.meta.url), "utf8");
 const css = readFileSync(new URL("../inventory-registry.css", import.meta.url), "utf8");
+const router = readFileSync(new URL("../../../server/routers/inventoryRegistry.ts", import.meta.url), "utf8");
 
 describe("интерфейс операционной инвентаризации", () => {
   it("не переиспользует старую финансовую страницу остатков", () => {
@@ -22,28 +23,57 @@ describe("интерфейс операционной инвентаризаци
     expect(page).toContain("Вы можете подготовить пересчет");
     expect(page).toContain("Закрыть и создать корректировки может назначенный руководитель или администратор");
     expect(page).toContain("Проверить и закрыть");
+    expect(router).toContain('if (actor.role === "seller") throw new TRPCError');
   });
 
-  it("позволяет удалить только незакрытый черновик без изменения остатка", () => {
+  it("переносит удаление черновика в историю и сохраняет общий аудит", () => {
     expect(page).toContain("trpc.inventoryRegistry.deleteDraft");
+    expect(page).toContain('item.status === "draft" && <ConfirmDangerDialog');
     expect(page).toContain("Удалить черновик");
     expect(page).toContain("Учетные остатки не изменятся");
-    expect(page).toContain('active.status === "draft"');
-    expect(css).toContain(".packet .inventory-draft-actions");
+    expect(page).toContain('className="inventory-history-select"');
+    expect(page).toContain('<article className={item.id === activeInventoryId ? "selected" : ""}');
+    expect(router).toContain('action: "inventory.draft.delete"');
+    expect(router).toContain('afterState: { deleted: true }');
+  });
+
+  it("называет сброс открытого пересчета отменой и ставит иконку слева", () => {
+    expect(page).toContain('<X size={14}/>Отмена');
+    expect(page).not.toContain('onClick={startNewInventory}>Новый пересчет');
+    expect(page).toContain('<Save size={14}/>');
+    expect(page).toContain('<Plus size={16}/>');
+    expect(page).toContain('<Trash2 size={14}/>{deleteDraft.isPending ? "Удаляем…" : "Удалить"}');
   });
 
   it("разделяет учетный остаток, физический факт и расхождение", () => {
-    expect(page).toContain("Инвентаризация магазина");
     expect(page).toContain("Учетный остаток и факт — разные значения");
     expect(page).toContain("Учетный остаток");
     expect(page).toContain("Расхождение");
     expect(page).toContain("accountingQuantity");
     expect(css).toContain('.packet .inventory-accounting-readout');
+    expect(page).toContain('className="inventory-quantity-input"');
+    expect(page).toContain('{selectedProduct ? unitLabel[selectedProduct.baseUnit] : "Ед."}');
+    expect(css).toContain('.packet .inventory-quantity-input small { position: absolute; right: 10px;');
   });
 
-  it("ставит иконку поиска справа и не создает двойной светлый контур в темной теме", () => {
+  it("ставит иконку поиска справа, а интерактивная история не содержит вложенных кнопок", () => {
     expect(css).toContain('.packet .inventory-search svg { position: absolute; right: 10px;');
-    expect(css).toContain('html[data-audit-theme="dark"] .packet :is(.inventory-create-card');
+    expect(css).toContain('.packet .inventory-history-list > article { display: grid;');
+    expect(css).toContain('.packet .inventory-history-select { display: grid;');
+    expect(page).not.toContain('<button type="button" className={item.id === activeInventoryId');
+  });
+
+  it("использует синие поверхности в light и нейтральные в dark без заливки coral", () => {
+    expect(css).toContain('html[data-audit-theme="light"] .packet {');
+    expect(css).toContain('--inventory-accent: #0a84ff;');
+    expect(css).toContain('--inventory-panel: #edf6ff;');
+    expect(css).toContain('html[data-audit-theme="dark"] .packet {');
+    expect(css).toContain('--inventory-card: #15141a;');
+    expect(css).toContain('--inventory-panel: #1b1920;');
+    expect(css).toContain('coral is an outline, never a table fill');
+    expect(css).not.toContain('#533043');
+    expect(css).not.toContain('#a85b72');
+    expect(css).not.toContain('#121824');
   });
 
   it("использует общий календарь и одно-колоночную мобильную форму", () => {
