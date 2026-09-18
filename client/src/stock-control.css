@@ -60,12 +60,24 @@
 .packet .stock-row-actions { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
 @media (max-width: 760px) { .packet .stock-row-actions { justify-content: flex-start; } }
 
-/* Key operational cards use the approved Analysis-card contrast rather than flat gray. */
-html[data-audit-theme="light"] .packet :is(.stock-rule-disclosure, .stock-table-card) {
-  background: linear-gradient(150deg, #fff, #f6faff) !important;
-  border-color: #bdd9f6 !important;
-}
-html[data-audit-theme="dark"] .packet :is(.stock-rule-disclosure, .stock-table-card) {
-  background: linear-gradient(150deg, #16101a, #0e0a11) !important;
-  border-color: #3b2435 !important;
+@media (max-width: 760px) {
+  .packet .stock-table-wrap { overflow: visible; cursor: default; touch-action: pan-y; border: 0; border-radius: 0; background: transparent; }
+  .packet .stock-table { display: block; min-width: 0; }
+  .packet .stock-table thead { display: none; }
+  .packet .stock-table tbody { display: grid; gap: 9px; }
+  .packet .stock-table tbody tr,
+  .packet .stock-table.data-table tbody tr:nth-child(odd),
+  .packet .stock-table.data-table tbody tr:nth-child(even) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; overflow: hidden; border: 1px solid var(--stock-line); border-radius: 11px; background: var(--stock-card); }
+  .packet .stock-table td { display: grid; min-width: 0; min-height: 42px; align-content: center; gap: 3px; padding: 8px 10px; border: 0 !important; border-top: 1px solid var(--stock-line) !important; text-align: left !important; white-space: normal; }
+  .packet .stock-table td::before { content: attr(data-label); color: var(--muted); font: 800 9px/1.15 Manrope, Arial, sans-serif; letter-spacing: .07em; text-transform: uppercase; }
+  .packet .stock-table td:nth-child(-n+2) { border-top: 0 !important; }
+  .packet .stock-table td:nth-child(1) { min-width: 0; padding: 8px 10px !important; color: var(--stock-accent); font-size: 12px; }
+  .packet .stock-table td:nth-child(4),
+  .packet .stock-table td:nth-child(9) { grid-column: 1 / -1; }
+  .packet .stock-table td:nth-child(4) { padding-top: 10px; }
+  .packet .stock-table td:nth-child(4) strong { overflow-wrap: anywhere; }
+  .packet .stock-table td:nth-child(9) { padding-bottom: 10px; }
+  .packet .stock-money { text-align: left !important; }
+  .packet .stock-row-actions { display: grid; width: 100%; }
+  .packet .stock-revision-action { width: 100%; min-height: 36px; justify-content: center; }
 }

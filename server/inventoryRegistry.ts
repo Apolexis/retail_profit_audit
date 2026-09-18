@@ -168,7 +168,7 @@ export async function setOperationalStockQuantity(input: { storeId: number; prod
   return { product, before: previousQuantity, after: countedQuantity, quantityDelta, reason };
 }
 
-export async function listInventoryProducts(input?: { storeId?: number; includeAccounting?: boolean; includeInactive?: boolean }) {
+export async function listInventoryProducts(input?: { storeId?: number; includeAccounting?: boolean; includeInactive?: boolean; includeUnknown?: boolean }) {
   const db = await getDb();
   if (!db) return [];
   const rows = await db
@@ -199,7 +199,9 @@ export async function listInventoryProducts(input?: { storeId?: number; includeA
     .where(input?.includeInactive ? undefined : eq(operationalCatalogProducts.isActive, true))
     .orderBy(operationalCatalogProducts.catalogNumber)
     .limit(2_000);
-  const products = rows.filter((row): row is typeof row & { baseUnit: InventoryUnit } => row.baseUnit !== "unknown").map(row => ({ ...row, internalCode: String(row.catalogNumber), variant: null }));
+  const products = rows
+    .filter(row => input?.includeUnknown || row.baseUnit !== "unknown")
+    .map(row => ({ ...row, baseUnit: row.baseUnit as InventoryUnit, internalCode: String(row.catalogNumber), variant: null }));
   const quantities = input?.includeAccounting && input.storeId ? await getInventoryAccountingQuantities(input.storeId, products.map(product => product.id)) : null;
   return products.map(product => ({ ...product, accountingQuantity: quantities?.get(product.id) ?? null }));
 }

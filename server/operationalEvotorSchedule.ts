@@ -29,10 +29,10 @@ const SYNC_JOBS: Record<OperationalEvotorScheduledKind, { name: string; cron: st
   // Documents are cursor-paged one store at a time, so a slow external response
   // cannot block the other scheduled work or exhaust the two-minute callback budget.
   evotor_documents: {
-    name: "operational-evotor-documents-quarter-hour",
-    cron: "0 */15 * * * *",
+    name: "operational-evotor-documents-rolling",
+    cron: "0 */10 * * * *",
     path: "/api/scheduled/operational-evotor-documents",
-    description: "Read-only подгрузка следующей страницы чеков и товарных строк Эвотор каждые 15 минут.",
+    description: "Read-only подгрузка следующей страницы чеков и товарных строк одного закрепленного склада Эвотор каждые 10 минут.",
   },
 };
 

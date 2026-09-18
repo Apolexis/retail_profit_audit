@@ -62,9 +62,20 @@ describe("общий операционный справочник", () => {
     expect(editor).toContain("Объем тары, л");
   });
 
-  it("использует обычные ссылки для самостоятельных маршрутов номенклатуры", () => {
-    expect(page).toContain('href="/catalog-control/new"');
-    expect(page).toContain('href={`/catalog-control/${product.id}/edit`}');
-    expect(editor).toContain('href="/catalog-control"');
-  });
+	it("использует обычные ссылки для самостоятельных маршрутов номенклатуры", () => {
+	  expect(page).toContain('href="/catalog-control/new"');
+	  expect(page).toContain('href={`/catalog-control/${product.id}/edit`}');
+	  expect(editor).toContain('href="/catalog-control"');
+	});
+
+	it("показывает бизнес-номер без технического идентификатора в общем списке", () => {
+	  expect(page).toContain('data-label="№ / ID / артикул"');
+	  expect(page).toContain("№ / ID / артикул: {product.internalCode}");
+	  expect(page).not.toContain("ID {product.id} · артикул Эвотор");
+	});
+
+	it("превращает широкую таблицу справочника в подписанные карточки на телефоне", () => {
+	  expect(css).toContain(".catalog-table tbody tr:nth-child(even) { display: grid");
+	  expect(css).toContain("content: attr(data-label)");
+	});
 });

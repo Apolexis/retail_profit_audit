@@ -126,3 +126,24 @@ html[data-audit-theme="dark"] .packet :is(.warehouse-rule, .warehouse-table-card
   .packet .warehouse-category-group-edit { align-self: flex-start; }
   .packet .warehouse-category-group-editor label { width: 100%; }
 }
+
+@media (max-width: 760px) {
+  .packet .warehouse-table-wrap.data-table-wrap { overflow: visible; border: 0; border-radius: 0; background: transparent; }
+  .packet .warehouse-table.data-table { display: block; min-width: 0; }
+  .packet .warehouse-table thead { display: none; }
+  .packet .warehouse-table tbody { display: grid; gap: 9px; }
+  .packet .warehouse-table tbody > tr:not(.warehouse-settings-row) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: hidden; border: 1px solid var(--warehouse-line); border-radius: 11px; background: var(--warehouse-card); }
+  .packet .warehouse-table tbody > tr:not(.warehouse-settings-row) > td { display: grid; min-width: 0; min-height: 41px; align-content: center; gap: 3px; padding: 8px 10px; border: 0 !important; border-top: 1px solid var(--warehouse-line) !important; white-space: normal; }
+  .packet .warehouse-table tbody > tr:not(.warehouse-settings-row) > td::before { content: attr(data-label); color: var(--muted); font: 800 9px/1.15 Manrope, Arial, sans-serif; letter-spacing: .07em; text-transform: uppercase; }
+  .packet .warehouse-table tbody > tr:not(.warehouse-settings-row) > td:first-child,
+  .packet .warehouse-table tbody > tr:not(.warehouse-settings-row) > td:nth-child(2) { border-top: 0 !important; }
+  .packet .warehouse-table tbody > tr:not(.warehouse-settings-row) > td:last-child { grid-column: 1 / -1; padding-bottom: 10px; }
+  .packet .warehouse-table td:nth-child(2) { min-width: 0; }
+  .packet .warehouse-table td:nth-child(2) select { min-width: 0; }
+  .packet .warehouse-edit { width: 100%; min-height: 36px; justify-content: center; }
+  .packet .warehouse-settings-row { display: block; margin-top: -10px; border: 1px solid var(--warehouse-line); border-top: 0; border-radius: 0 0 11px 11px; background: var(--warehouse-panel); }
+  .packet .warehouse-settings-row > td { display: block; width: 100%; box-sizing: border-box; }
+  .packet .warehouse-settings-grid { grid-template-columns: 1fr; padding: 12px 10px; }
+  .packet .warehouse-settings-actions { display: grid; grid-template-columns: 1fr; }
+  .packet .warehouse-settings-actions .subtle-button { width: 100%; justify-content: center; }
+}

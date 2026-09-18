@@ -260,10 +260,10 @@ export const inventoryRegistryRouter = router({
     await recordChange({ actorId: actor.id, action: input.salePrice === null ? "operational_product_sale_price.delete" : "operational_product_sale_price.update", entityType: "operational_product_sale_price", entityId: `${input.productId}:${input.priceTypeId}`, beforeState: result.before ? { product: result.product.canonicalName, priceType: result.priceType.name, salePrice: result.before.salePrice } : null, afterState: result.after ? { product: result.product.canonicalName, priceType: result.priceType.name, salePrice: result.after.salePrice } : { deleted: true } });
     return result;
   }),
-  products: protectedProcedure.input(z.object({ storeId: z.number().int().positive().optional() }).optional()).query(async ({ ctx, input }) => {
+  products: protectedProcedure.input(z.object({ storeId: z.number().int().positive().optional(), includeUnknown: z.boolean().optional() }).optional()).query(async ({ ctx, input }) => {
     const actor = await localActor(ctx.user.openId);
     if (input?.storeId) await requireInventoryStoreAccess(ctx.user.openId, input.storeId, "view");
-    const products = await listInventoryProducts({ storeId: input?.storeId, includeAccounting: actor.role !== "seller" && Boolean(input?.storeId), includeInactive: actor.role === "admin" });
+    const products = await listInventoryProducts({ storeId: input?.storeId, includeAccounting: actor.role !== "seller" && Boolean(input?.storeId), includeInactive: actor.role === "admin", includeUnknown: actor.role === "admin" && Boolean(input?.includeUnknown) });
     return actor.role === "admin"
       ? products
       : products.map(({ evotorCostPrice: _evotorCostPrice, internalCostPrice: _internalCostPrice, ...product }) => product);

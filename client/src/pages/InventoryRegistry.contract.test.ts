@@ -90,14 +90,21 @@ describe("интерфейс операционной инвентаризаци
     expect(css).not.toContain('#121824');
   });
 
-  it("использует общий календарь и одно-колоночную мобильную форму", () => {
+	it("использует общий календарь и одно-колоночную мобильную форму", () => {
     expect(page).toContain("ExactDateControl");
     expect(page).not.toContain('type="date"');
     expect(css).toContain("@media (max-width: 760px)");
-    expect(css).toContain(".packet .inventory-line-create { grid-template-columns: 1fr; }");
-  });
+	  expect(css).toContain(".packet .inventory-line-create { grid-template-columns: 1fr; }");
+	});
 
-  it("не смешивает каталог и себестоимость с ревизией", () => {
+	it("сворачивает строки пересчета в подписанные карточки на узком экране", () => {
+	  expect(page).toContain('data-label="Фактически"');
+	  expect(page).toContain('data-label="Расхождение"');
+	  expect(css).toContain(".inventory-lines tbody tr:nth-child(even) { display: grid");
+	  expect(css).toContain("content: attr(data-label)");
+	});
+
+	it("не смешивает каталог и себестоимость с ревизией", () => {
     expect(page).not.toContain("ЭВОТОР · READ-ONLY PREVIEW");
     expect(page).not.toContain("ВНУТРЕННЯЯ СЕБЕСТОИМОСТЬ");
     expect(page).not.toContain("confirmEvotorCatalog.mutate");

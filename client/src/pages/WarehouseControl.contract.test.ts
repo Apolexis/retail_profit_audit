@@ -14,13 +14,17 @@ describe("warehouse control contract", () => {
     expect(page).toContain("Товар не дублируется по магазинам");
   });
 
-  it("keeps Evotor read-only and omits addresses", () => {
-    expect(page).toContain("READ‑ONLY ЭВОТОР");
-    expect(page).toContain("Адреса и технические идентификаторы в интерфейсе не показываются");
-    expect(page).toContain("Запись в Эвотор исключена");
-    expect(page).toContain("syncEvotorDocumentPage.useMutation");
-    expect(page).not.toContain("Загрузить документы");
-    expect(page).toContain("setWarehouseEvotorMapping.useMutation");
+	it("keeps Evotor read-only and omits addresses", () => {
+	  expect(page).toContain("READ‑ONLY ЭВОТОР");
+	  expect(page).toContain("Адреса и технические идентификаторы в интерфейсе не показываются");
+	  expect(page).toContain("Запись в Эвотор исключена");
+	  expect(page).toContain("Автоматическая read-only синхронизация");
+	  expect(page).toContain("каждые 15 минут");
+	  expect(page).toContain("каждые 10 минут");
+	  expect(page).not.toContain("syncEvotorDocumentPage.useMutation");
+	  expect(page).not.toContain("Загрузить документы");
+	  expect(page).not.toContain("Обновить данные Эвотор");
+	  expect(page).toContain("setWarehouseEvotorMapping.useMutation");
   });
 
   it("registers the administrator-only operational route and themed table", () => {
@@ -32,17 +36,24 @@ describe("warehouse control contract", () => {
   });
 
   it("allows a warehouse to join an editable print group", () => {
-    expect(page).toContain("createPrintGroup.useMutation");
-    expect(page).toContain("setWarehousePrintGroup.useMutation");
-    expect(page).toContain("Новая группа печати");
-    expect(page).toContain("Сохранить печать");
-    expect(page).toContain("<EyeOff size={14}/>Скрыть");
+	  expect(page).toContain("createPrintGroup.useMutation");
+	  expect(page).toContain("setWarehousePrintGroup.useMutation");
+	  expect(page).toContain("Новая группа печати");
+	  expect(page).toContain("Группа печати сохранена");
+	  expect(page).toContain("<EyeOff size={14}/>Скрыть");
   });
 
-  it("allows print categories to be renamed and deleted without changing goods", () => {
+	it("allows print categories to be renamed and deleted without changing goods", () => {
     expect(page).toContain("updatePrintCategoryGroup.useMutation");
     expect(page).toContain("deletePrintCategoryGroup.useMutation");
     expect(page).toContain("Категория печати сохранена");
-    expect(page).toContain("Товары не изменятся, а вложенные связи будут отсоединены.");
-  });
+	  expect(page).toContain("Товары не изменятся, а вложенные связи будут отсоединены.");
+	});
+
+	it("stacks warehouse data into labelled cards on narrow screens", () => {
+	  expect(page).toContain('data-label="Склад / магазин"');
+	  expect(page).toContain('data-label="Действие"');
+	  expect(styles).toContain(".warehouse-table tbody > tr:not(.warehouse-settings-row)");
+	  expect(styles).toContain("content: attr(data-label)");
+	});
 });

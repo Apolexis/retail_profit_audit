@@ -23,7 +23,7 @@ describe("интерфейс операционных остатков", () => {
     expect(page).toContain("trpc.inventoryRegistry.stock");
   });
 
-  it("показывает продажную цену без раскрытия себестоимости и помещает поиск справа", () => {
+	it("показывает продажную цену без раскрытия себестоимости и помещает поиск справа", () => {
     expect(page).toContain("внутренняя себестоимость не раскрывается");
     expect(page).toContain("Продажная цена");
     expect(page).toContain("Сумма по цене");
@@ -31,6 +31,13 @@ describe("интерфейс операционных остатков", () => {
     expect(page).toContain('className="data-table-wrap stock-table-wrap"');
     expect(css).toContain('.packet .stock-table-wrap { overflow-x: auto; cursor: grab;');
     expect(css).toContain('--stock-accent: var(--packet-accent);');
-    expect(css).toContain('no page-local palette is introduced');
-  });
+	  expect(css).toContain('no page-local palette is introduced');
+	});
+
+	it("на узком экране заменяет широкую таблицу подписанными карточками", () => {
+	  expect(page).toContain('data-label="Учетный остаток"');
+	  expect(page).toContain('data-label="Действие"');
+	  expect(css).toContain(".stock-table.data-table tbody tr:nth-child(even) { display: grid");
+	  expect(css).toContain("content: attr(data-label)");
+	});
 });
