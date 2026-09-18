@@ -15,6 +15,8 @@ type FreeScrollSelectProps = {
   onValueChange: (value: string) => void;
   placeholder: string;
   options: FreeScrollSelectOption[];
+  searchable?: boolean;
+  searchPlaceholder?: string;
   className?: string;
   contentClassName?: string;
   disabled?: boolean;
@@ -32,6 +34,8 @@ export function FreeScrollSelect({
   onValueChange,
   placeholder,
   options,
+  searchable = false,
+  searchPlaceholder = "Поиск в списке",
   className,
   contentClassName,
   disabled = false,
@@ -40,11 +44,16 @@ export function FreeScrollSelect({
   ariaInvalid,
 }: FreeScrollSelectProps) {
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const contentRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const scrollFrame = useRef<number | null>(null);
   const listId = useId();
   const selected = options.find(option => option.value === value);
+  const normalizedSearch = search.trim().toLocaleLowerCase("ru-RU");
+  const visibleOptions = normalizedSearch
+    ? options.filter(option => option.label.toLocaleLowerCase("ru-RU").includes(normalizedSearch))
+    : options;
   const [canScroll, setCanScroll] = useState({ up: false, down: false });
 
   const updateScrollAvailability = useCallback(() => {
@@ -91,9 +100,10 @@ export function FreeScrollSelect({
 
   useEffect(() => {
     if (!open) return;
+    setSearch("");
     const frame = window.requestAnimationFrame(updateScrollAvailability);
     return () => window.cancelAnimationFrame(frame);
-  }, [open, options.length, updateScrollAvailability]);
+  }, [open, visibleOptions.length, updateScrollAvailability]);
 
   return (
     <Popover open={open} onOpenChange={setOpen} modal={false}>
@@ -124,6 +134,7 @@ export function FreeScrollSelect({
         collisionPadding={12}
         className={cn("free-scroll-select-content", contentClassName)}
       >
+        {searchable && <label className="free-scroll-select-search"><span className="sr-only">{searchPlaceholder}</span><input autoFocus value={search} onChange={event => setSearch(event.target.value)} onKeyDown={event => event.stopPropagation()} placeholder={searchPlaceholder}/></label>}
         <button
           type="button"
           tabIndex={canScroll.up ? 0 : -1}
@@ -139,9 +150,9 @@ export function FreeScrollSelect({
           <ChevronUp size={15} aria-hidden="true" />
         </button>
         <div ref={viewportRef} className="free-scroll-select-viewport" onScroll={updateScrollAvailability}>
-          {options.map((option, index) => (
+          {visibleOptions.map((option, index) => (
             <div key={`${option.group ?? "base"}-${option.value}-${index}`}>
-              {option.group && !options.slice(0, index).some(previous => previous.group === option.group) && <span className="free-scroll-select-group">{option.group}</span>}
+              {option.group && !visibleOptions.slice(0, index).some(previous => previous.group === option.group) && <span className="free-scroll-select-group">{option.group}</span>}
               <button
                 type="button"
                 role="option"
@@ -159,6 +170,7 @@ export function FreeScrollSelect({
               </button>
             </div>
           ))}
+          {!visibleOptions.length && <p className="free-scroll-select-empty">Совпадений нет</p>}
         </div>
         <button
           type="button"

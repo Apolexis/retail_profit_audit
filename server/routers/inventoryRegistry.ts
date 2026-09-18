@@ -5,18 +5,26 @@ import {
   archiveOperationalCatalogProduct,
   closeInventory,
   confirmOperationalCatalogFromEvotor,
+  createOperationalPriceType,
   createOperationalCatalogProduct,
   createInventoryDraft,
+  deleteOperationalPriceType,
   deleteInventoryDraft,
   getInventoryAuditState,
   getInventoryDetail,
+  listOperationalPriceTypes,
+  listOperationalSalePrices,
+  listOperationalWarehouses,
   listInventoryProducts,
   listOperationalStock,
   listStoreInventories,
   removeInventoryLine,
+  setOperationalProductSalePrice,
+  setOperationalStorePriceType,
   updateInventoryNote,
   updateOperationalCatalogProduct,
   updateOperationalCatalogCost,
+  updateOperationalPriceType,
   upsertInventoryLine,
 } from "../inventoryRegistry";
 import { recordChange } from "../localAuth";
@@ -24,6 +32,7 @@ import { protectedProcedure, router } from "../_core/trpc";
 
 const dateInput = z.string().regex(/^20\d{2}-\d{2}-\d{2}$/, "Выберите дату в формате ГГГГ-ММ-ДД");
 const inventoryUnit = z.enum(["kg", "l", "piece"]);
+const markingCategory = z.enum(["none", "supplement", "seafood_caviar", "seafood_canned", "alcohol", "beer_marked", "beer_non_alcoholic", "soft_drinks", "water", "dairy"]);
 
 async function localActor(openId: string | null | undefined) {
   const actor = await getCurrentLocalAccount(openId);
@@ -67,18 +76,18 @@ export const inventoryRegistryRouter = router({
     await recordChange({ actorId: actor.id, action: "operational_catalog.internal_cost.update", entityType: "operational_catalog_product", entityId: String(input.id), beforeState: { product: result.before.canonicalName, evotorCostPrice: result.before.evotorCostPrice, internalCostPrice: result.before.internalCostPrice }, afterState: { product: result.after.canonicalName, evotorCostPrice: result.after.evotorCostPrice, internalCostPrice: result.after.internalCostPrice } });
     return result;
   }),
-  createCatalogProduct: protectedProcedure.input(z.object({ storeId: z.number().int().positive(), canonicalName: z.string().trim().min(1).max(512), baseUnit: inventoryUnit, vatRate: z.enum(["VAT_10", "VAT_22"]).optional(), internalCostPrice: z.number().finite().min(0).max(10_000_000).nullable().optional() })).mutation(async ({ ctx, input }) => {
+  createCatalogProduct: protectedProcedure.input(z.object({ canonicalName: z.string().trim().min(1).max(512), baseUnit: inventoryUnit, vatRate: z.enum(["VAT_10", "VAT_22"]).optional(), internalCostPrice: z.number().finite().min(0).max(10_000_000).nullable().optional(), markingCategory: markingCategory.optional(), manualBarcodes: z.string().max(4_000).nullable().optional(), isVisibleInRequests: z.boolean().optional(), isEvotorExportEnabled: z.boolean().optional() })).mutation(async ({ ctx, input }) => {
     const actor = await localActor(ctx.user.openId);
     if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Добавлять номенклатуру может только администратор." });
     const after = await createOperationalCatalogProduct({ ...input, actorId: actor.id });
-    await recordChange({ actorId: actor.id, action: "operational_catalog.manual.create", entityType: "operational_catalog_product", entityId: String(after.id), afterState: { storeId: after.storeId, product: after.canonicalName, unit: after.baseUnit, vatRate: after.vatRate, internalCostPrice: after.internalCostPrice } });
+    await recordChange({ actorId: actor.id, action: "operational_catalog.manual.create", entityType: "operational_catalog_product", entityId: String(after.id), afterState: { product: after.canonicalName, unit: after.baseUnit, vatRate: after.vatRate, markingCategory: after.markingCategory, manualBarcodes: after.manualBarcodes, isVisibleInRequests: after.isVisibleInRequests, isEvotorExportEnabled: after.isEvotorExportEnabled, internalCostPrice: after.internalCostPrice } });
     return after;
   }),
-  updateCatalogProduct: protectedProcedure.input(z.object({ id: z.number().int().positive(), canonicalName: z.string().trim().min(1).max(512), baseUnit: inventoryUnit, vatRate: z.enum(["VAT_10", "VAT_22"]) })).mutation(async ({ ctx, input }) => {
+  updateCatalogProduct: protectedProcedure.input(z.object({ id: z.number().int().positive(), canonicalName: z.string().trim().min(1).max(512), baseUnit: inventoryUnit, vatRate: z.enum(["VAT_10", "VAT_22"]), markingCategory, manualBarcodes: z.string().max(4_000).nullable().optional(), isVisibleInRequests: z.boolean(), isEvotorExportEnabled: z.boolean() })).mutation(async ({ ctx, input }) => {
     const actor = await localActor(ctx.user.openId);
     if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Изменять номенклатуру может только администратор." });
     const result = await updateOperationalCatalogProduct(input);
-    await recordChange({ actorId: actor.id, action: "operational_catalog.update", entityType: "operational_catalog_product", entityId: String(input.id), beforeState: { product: result.before.canonicalName, unit: result.before.baseUnit, vatRate: result.before.vatRate }, afterState: { product: result.after.canonicalName, unit: result.after.baseUnit, vatRate: result.after.vatRate } });
+    await recordChange({ actorId: actor.id, action: "operational_catalog.update", entityType: "operational_catalog_product", entityId: String(input.id), beforeState: { product: result.before.canonicalName, unit: result.before.baseUnit, vatRate: result.before.vatRate, markingCategory: result.before.markingCategory, manualBarcodes: result.before.manualBarcodes, isVisibleInRequests: result.before.isVisibleInRequests, isEvotorExportEnabled: result.before.isEvotorExportEnabled }, afterState: { product: result.after.canonicalName, unit: result.after.baseUnit, vatRate: result.after.vatRate, markingCategory: result.after.markingCategory, manualBarcodes: result.after.manualBarcodes, isVisibleInRequests: result.after.isVisibleInRequests, isEvotorExportEnabled: result.after.isEvotorExportEnabled } });
     return result;
   }),
   archiveCatalogProduct: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
@@ -86,6 +95,56 @@ export const inventoryRegistryRouter = router({
     if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Скрывать номенклатуру может только администратор." });
     const result = await archiveOperationalCatalogProduct(input.id);
     await recordChange({ actorId: actor.id, action: "operational_catalog.archive", entityType: "operational_catalog_product", entityId: String(input.id), beforeState: { product: result.before.canonicalName, isActive: result.before.isActive }, afterState: { product: result.after.canonicalName, isActive: result.after.isActive } });
+    return result;
+  }),
+  priceTypes: protectedProcedure.query(async ({ ctx }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Виды цен доступны только администратору." });
+    return listOperationalPriceTypes(true);
+  }),
+  salePrices: protectedProcedure.input(z.object({ priceTypeId: z.number().int().positive().optional() }).optional()).query(async ({ ctx, input }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Продажные цены доступны только администратору." });
+    return listOperationalSalePrices(input?.priceTypeId);
+  }),
+  warehouses: protectedProcedure.query(async ({ ctx }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Список складов доступен только администратору." });
+    return listOperationalWarehouses();
+  }),
+  createPriceType: protectedProcedure.input(z.object({ name: z.string().trim().min(1).max(128), isDefault: z.boolean().optional() })).mutation(async ({ ctx, input }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Создавать виды цен может только администратор." });
+    const after = await createOperationalPriceType(input);
+    await recordChange({ actorId: actor.id, action: "operational_price_type.create", entityType: "operational_price_type", entityId: String(after.id), afterState: { name: after.name, isDefault: after.isDefault, isActive: after.isActive } });
+    return after;
+  }),
+  updatePriceType: protectedProcedure.input(z.object({ id: z.number().int().positive(), name: z.string().trim().min(1).max(128), isDefault: z.boolean(), isActive: z.boolean() })).mutation(async ({ ctx, input }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Изменять виды цен может только администратор." });
+    const result = await updateOperationalPriceType(input);
+    await recordChange({ actorId: actor.id, action: "operational_price_type.update", entityType: "operational_price_type", entityId: String(input.id), beforeState: { name: result.before.name, isDefault: result.before.isDefault, isActive: result.before.isActive }, afterState: { name: result.after.name, isDefault: result.after.isDefault, isActive: result.after.isActive } });
+    return result;
+  }),
+  deletePriceType: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Удалять виды цен может только администратор." });
+    const result = await deleteOperationalPriceType(input.id);
+    await recordChange({ actorId: actor.id, action: "operational_price_type.delete", entityType: "operational_price_type", entityId: String(input.id), beforeState: { name: result.before.name, isDefault: result.before.isDefault }, afterState: { deleted: true } });
+    return result;
+  }),
+  setStorePriceType: protectedProcedure.input(z.object({ storeId: z.number().int().positive(), priceTypeId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Назначать вид цены складу может только администратор." });
+    const result = await setOperationalStorePriceType({ ...input, actorId: actor.id });
+    await recordChange({ actorId: actor.id, action: "operational_warehouse.price_type.assign", entityType: "operational_warehouse", entityId: String(input.storeId), beforeState: result.before ? { priceTypeId: result.before.priceTypeId } : null, afterState: { priceTypeId: result.after.priceTypeId } });
+    return result;
+  }),
+  setProductSalePrice: protectedProcedure.input(z.object({ productId: z.number().int().positive(), priceTypeId: z.number().int().positive(), salePrice: z.number().finite().min(0).max(10_000_000).nullable() })).mutation(async ({ ctx, input }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Менять продажную цену может только администратор." });
+    const result = await setOperationalProductSalePrice({ ...input, actorId: actor.id });
+    await recordChange({ actorId: actor.id, action: input.salePrice === null ? "operational_product_sale_price.delete" : "operational_product_sale_price.update", entityType: "operational_product_sale_price", entityId: `${input.productId}:${input.priceTypeId}`, beforeState: result.before ? { product: result.product.canonicalName, priceType: result.priceType.name, salePrice: result.before.salePrice } : null, afterState: result.after ? { product: result.product.canonicalName, priceType: result.priceType.name, salePrice: result.after.salePrice } : { deleted: true } });
     return result;
   }),
   products: protectedProcedure.input(z.object({ storeId: z.number().int().positive().optional() }).optional()).query(async ({ ctx, input }) => {

@@ -5,7 +5,7 @@ import mammoth from "mammoth";
 import { PDFParse } from "pdf-parse";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import * as XLSX from "xlsx";
-import { priceCategories, priceImports, priceImportRows, priceOfferPrices, priceProductCharacteristics, priceProducts, priceSupplierAliases, priceSuppliers } from "../drizzle/schema";
+import { priceCategories, priceImports, priceImportRows, priceLinkGroups, priceOfferPrices, priceProductCharacteristics, priceProducts, priceSupplierAliases, priceSuppliers } from "../drizzle/schema";
 import { getDb } from "./db";
 import { storageGet, storagePut } from "./storage";
 
@@ -1423,13 +1423,35 @@ function formatPriceLinkCode(sequence: number) {
 }
 
 async function nextPriceLinkCode(db: NonNullable<Awaited<ReturnType<typeof getDb>>>) {
-  const rows = await db.select({ linkCode: priceProducts.linkCode }).from(priceProducts).where(sql`${priceProducts.linkCode} is not null`);
+  const rows = await db.select({ linkCode: priceLinkGroups.linkCode }).from(priceLinkGroups);
   const maximum = rows.reduce((max, row) => {
     const match = row.linkCode?.match(/^([A-Z])(\d{3})$/);
     if (!match) return max;
     return Math.max(max, (match[1]!.charCodeAt(0) - 65) * 999 + Number(match[2]));
   }, 0);
   return formatPriceLinkCode(maximum + 1);
+}
+
+async function ensurePriceLinkGroup(
+  db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
+  name: string,
+  requestedId?: number | null,
+) {
+  if (requestedId) {
+    const [existing] = await db.select().from(priceLinkGroups).where(eq(priceLinkGroups.id, requestedId)).limit(1);
+    if (!existing) throw new Error("Имя связи не найдено.");
+    if (!existing.isActive) throw new Error("Выберите активное имя связи.");
+    return existing;
+  }
+  const canonicalName = text(name);
+  const normalizedName = productSignature(canonicalName);
+  if (canonicalName.length < 2 || !normalizedName) throw new Error("Укажите имя связи не короче двух символов.");
+  const [existing] = await db.select().from(priceLinkGroups).where(eq(priceLinkGroups.normalizedName, normalizedName)).limit(1);
+  if (existing) return existing;
+  const linkCode = await nextPriceLinkCode(db);
+  const [inserted] = await db.insert(priceLinkGroups).values({ linkCode, canonicalName, normalizedName, isActive: true }).$returningId();
+  const [created] = await db.select().from(priceLinkGroups).where(eq(priceLinkGroups.id, inserted.id)).limit(1);
+  return created!;
 }
 async function getPriceCategory(categoryId: number | null | undefined) {
   if (!categoryId) return null;
@@ -1623,18 +1645,18 @@ export async function updatePriceCategory(input: { id: number; name: string; isA
   return category;
 }
 
-export async function createPriceProduct(input: { canonicalName: string; internalCode?: string; categoryId?: number | null; category?: string | null; variantCharacteristicId?: number | null; sizeCharacteristicId?: number | null; placeContentsCharacteristicId?: number | null; variant?: string | null; sizeText?: string | null; placeContents?: string | null; baseUnit?: NormalizedUnit; defaultWeightGrams?: number | null; defaultVolumeMl?: number | null; isActive?: boolean }) {
+export async function createPriceProduct(input: { canonicalName: string; internalCode?: string; linkGroupId?: number | null; linkGroupName?: string | null; categoryId?: number | null; category?: string | null; variantCharacteristicId?: number | null; sizeCharacteristicId?: number | null; placeContentsCharacteristicId?: number | null; variant?: string | null; sizeText?: string | null; placeContents?: string | null; baseUnit?: NormalizedUnit; defaultWeightGrams?: number | null; defaultVolumeMl?: number | null; isActive?: boolean }) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
   const canonicalName = text(input.canonicalName); const signature = productSignature(canonicalName);
   const category = await getPriceCategory(input.categoryId);
-  const [existing] = await db.select().from(priceProducts).where(eq(priceProducts.normalizedSignature, signature)).limit(1);
-  if (existing) return existing;
-  const internalCode = text(input.internalCode || productCodeFromSignature(signature)).toUpperCase();
-  const linkCode = await nextPriceLinkCode(db);
+  const baseCode = text(input.internalCode || productCodeFromSignature(signature)).toUpperCase();
+  const codes = await db.select({ internalCode: priceProducts.internalCode }).from(priceProducts).where(sql`${priceProducts.internalCode} = ${baseCode} OR ${priceProducts.internalCode} LIKE ${`${baseCode}-%`}`);
+  const internalCode = !codes.length ? baseCode : `${baseCode}-${codes.length + 1}`;
+  const linkGroup = await ensurePriceLinkGroup(db, input.linkGroupName || canonicalName, input.linkGroupId);
   const variant = input.variantCharacteristicId === undefined ? await ensurePriceProductCharacteristic("variant", input.variant || extractVariant(canonicalName)) : await findPriceProductCharacteristic("variant", input.variantCharacteristicId);
   const size = input.sizeCharacteristicId === undefined ? await ensurePriceProductCharacteristic("size", input.sizeText || extractSizeText(canonicalName)) : await findPriceProductCharacteristic("size", input.sizeCharacteristicId);
   const placeContents = input.placeContentsCharacteristicId === undefined ? await ensurePriceProductCharacteristic("place_contents", input.placeContents) : await findPriceProductCharacteristic("place_contents", input.placeContentsCharacteristicId);
-  const [inserted] = await db.insert(priceProducts).values({ internalCode, linkCode, canonicalName, normalizedSignature: signature, categoryId: category?.id ?? null, category: category?.name ?? (input.category || null), variantCharacteristicId: variant?.id ?? null, sizeCharacteristicId: size?.id ?? null, placeContentsCharacteristicId: placeContents?.id ?? null, variant: variant?.value ?? null, sizeText: size?.value ?? null, placeContents: placeContents?.value ?? null, baseUnit: input.baseUnit || "unknown", defaultWeightGrams: input.defaultWeightGrams === null || input.defaultWeightGrams === undefined ? null : input.defaultWeightGrams.toFixed(2), defaultVolumeMl: input.defaultVolumeMl === null || input.defaultVolumeMl === undefined ? null : input.defaultVolumeMl.toFixed(2), isActive: input.isActive ?? true }).$returningId();
+  const [inserted] = await db.insert(priceProducts).values({ internalCode, linkCode: null, linkGroupId: linkGroup.id, canonicalName, normalizedSignature: signature, categoryId: category?.id ?? null, category: category?.name ?? (input.category || null), variantCharacteristicId: variant?.id ?? null, sizeCharacteristicId: size?.id ?? null, placeContentsCharacteristicId: placeContents?.id ?? null, variant: variant?.value ?? null, sizeText: size?.value ?? null, placeContents: placeContents?.value ?? null, baseUnit: input.baseUnit || "unknown", defaultWeightGrams: input.defaultWeightGrams === null || input.defaultWeightGrams === undefined ? null : input.defaultWeightGrams.toFixed(2), defaultVolumeMl: input.defaultVolumeMl === null || input.defaultVolumeMl === undefined ? null : input.defaultVolumeMl.toFixed(2), isActive: input.isActive ?? true }).$returningId();
   const [created] = await db.select().from(priceProducts).where(eq(priceProducts.id, inserted.id)).limit(1);
   return created!;
 }
@@ -1645,8 +1667,6 @@ export async function updatePriceProduct(input: { id: number; canonicalName: str
   if (canonicalName.length < 2 || internalCode.length < 3) throw new Error("Укажите эталонное название и внутренний код товара.");
   const signature = productSignature(canonicalName);
   const category = await getPriceCategory(input.categoryId);
-  const [signatureConflict] = await db.select({ id: priceProducts.id }).from(priceProducts).where(eq(priceProducts.normalizedSignature, signature)).limit(1);
-  if (signatureConflict && signatureConflict.id !== input.id) throw new Error("Товар с такой нормализованной сигнатурой уже существует.");
   const [codeConflict] = await db.select({ id: priceProducts.id }).from(priceProducts).where(eq(priceProducts.internalCode, internalCode)).limit(1);
   if (codeConflict && codeConflict.id !== input.id) throw new Error("Такой внутренний код уже используется другим товаром.");
   const [current] = await db.select({ variantCharacteristicId: priceProducts.variantCharacteristicId, sizeCharacteristicId: priceProducts.sizeCharacteristicId, placeContentsCharacteristicId: priceProducts.placeContentsCharacteristicId, variant: priceProducts.variant, sizeText: priceProducts.sizeText, placeContents: priceProducts.placeContents }).from(priceProducts).where(eq(priceProducts.id, input.id)).limit(1);

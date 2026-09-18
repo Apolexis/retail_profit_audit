@@ -6,10 +6,10 @@ const css = readFileSync(new URL("../catalog-control.css", import.meta.url), "ut
 
 describe("отдельный операционный справочник", () => {
   it("отделяет номенклатуру и Эвотор от инвентаризации", () => {
-    expect(page).toContain("Номенклатура магазинов");
-    expect(page).toContain("ЭВОТОР · READ-ONLY");
-    expect(page).toContain("только ее закрепленный магазин Эвотор");
-    expect(page).toContain("не отправляются обратно в кассу");
+    expect(page).toContain("Общая номенклатура сети");
+    expect(page).toContain("Каталог Эвотор остается отдельным read-only списком");
+    expect(page).toContain("Флаг выгрузки в Эвотор пока недоступен");
+    expect(page).toContain("Эвотор: read-only");
   });
 
   it("позволяет администратору добавлять, менять и архивировать номенклатуру", () => {
@@ -17,7 +17,7 @@ describe("отдельный операционный справочник", () 
     expect(page).toContain("trpc.inventoryRegistry.createCatalogProduct");
     expect(page).toContain("trpc.inventoryRegistry.updateCatalogProduct");
     expect(page).toContain("trpc.inventoryRegistry.archiveCatalogProduct");
-    expect(page).toContain("Удаление заменено скрытием");
+    expect(page).toContain("Товар перестанет отображаться в рабочем справочнике");
   });
 
   it("держит НДС только в согласованном списке с 10% по умолчанию", () => {
@@ -27,9 +27,10 @@ describe("отдельный операционный справочник", () 
   });
 
   it("не показывает нулевую себестоимость Эвотор и использует тематичные поля", () => {
-    expect(page).toContain("«Себестоимость Эвотор» равна 0 и не выводится");
+    expect(page).toContain("Кассовая себестоимость скрыта и равна 0");
     expect(page).toContain("Внутренняя себестоимость");
     expect(css).toContain('.packet .catalog-search > svg { position: absolute; right: 10px;');
-    expect(css).toContain('html[data-audit-theme="dark"] .packet .catalog-store-card');
+    expect(css).toContain('--catalog-accent: #ff765f;');
+    expect(css).toContain('--catalog-accent: #0a84ff;');
   });
 });

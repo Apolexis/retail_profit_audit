@@ -4401,6 +4401,10 @@ html[data-audit-theme="dark"] .password-input-toggle { color: #c7bdcc; }
 .free-scroll-select-content { position: relative; z-index: 90 !important; width: var(--radix-popover-trigger-width) !important; min-width: min(calc(100vw - 24px), var(--radix-popover-trigger-width)) !important; overflow: hidden; padding: 4px !important; border: 1px solid var(--app-select-border) !important; border-radius: 12px !important; background: var(--app-select-surface) !important; color: var(--app-select-ink) !important; box-shadow: 0 16px 38px color-mix(in srgb, var(--app-select-shadow) 28%, transparent) !important; animation: none !important; transition: none !important; }
 .free-scroll-select-viewport { max-height: min(42vh, 320px); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; touch-action: pan-y; }
 .free-scroll-select-viewport::-webkit-scrollbar { display: none; }
+.free-scroll-select-search { display: block; padding: 2px 2px 6px; }
+.free-scroll-select-search input { width: 100%; height: 34px; padding: 0 9px; border: 1px solid var(--app-select-border); border-radius: 8px; background: color-mix(in srgb, var(--app-select-surface) 86%, var(--app-select-ink)); color: var(--app-select-ink); font: 700 12px/1 Manrope, Arial, sans-serif; outline: 0; }
+.free-scroll-select-search input:focus-visible { border-color: var(--app-select-accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--app-select-accent) 22%, transparent); }
+.free-scroll-select-empty { margin: 0; padding: 12px 9px; color: var(--faint); font: 700 12px/1.35 Manrope, Arial, sans-serif; }
 .free-scroll-select-edge { position: absolute; z-index: 2; right: 4px; left: 4px; display: none; height: 24px; min-height: 24px; align-items: center; justify-content: center; padding: 0; border: 0; border-radius: 8px; color: var(--app-select-accent); cursor: default; opacity: .96; }
 .free-scroll-select-edge-up { top: 4px; background: linear-gradient(to bottom, var(--app-select-surface) 42%, color-mix(in srgb, var(--app-select-surface) 78%, transparent)); }
 .free-scroll-select-edge-down { bottom: 4px; background: linear-gradient(to top, var(--app-select-surface) 42%, color-mix(in srgb, var(--app-select-surface) 78%, transparent)); }
@@ -4419,6 +4423,8 @@ html[data-audit-theme="dark"] .password-input-toggle { color: #c7bdcc; }
 .price-select-content [data-slot="select-item"][data-state="checked"] { background: color-mix(in srgb, var(--price-menu-accent) 16%, var(--price-menu-surface)); color: var(--price-menu-accent); }
 @media (hover: hover) { .price-select-content [data-slot="select-item"]:hover:not(:disabled) { background: color-mix(in srgb, var(--price-menu-accent) 16%, var(--price-menu-surface)); color: var(--price-menu-accent); } }
 .price-select-content [data-slot="select-item"] svg { color: var(--price-menu-accent); }
+.price-select-content .free-scroll-select-search input { border-color: var(--price-menu-border); background: color-mix(in srgb, var(--price-menu-surface) 87%, var(--price-menu-ink)); color: var(--price-menu-ink); }
+.price-select-content .free-scroll-select-search input:focus-visible { border-color: var(--price-menu-accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--price-menu-accent) 22%, transparent); }
 .price-select-content .free-scroll-select-edge { color: var(--price-menu-accent); }
 .price-select-content .free-scroll-select-edge-up { background: linear-gradient(to bottom, var(--price-menu-surface) 42%, color-mix(in srgb, var(--price-menu-surface) 78%, transparent)); }
 .price-select-content .free-scroll-select-edge-down { background: linear-gradient(to top, var(--price-menu-surface) 42%, color-mix(in srgb, var(--price-menu-surface) 78%, transparent)); }

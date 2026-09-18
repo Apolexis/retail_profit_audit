@@ -155,6 +155,8 @@ function PriceSelect({
       onValueChange={onValueChange}
       placeholder={placeholder}
       options={options}
+      searchable
+      searchPlaceholder="Найти в списке"
       className={`price-select-trigger ${className}`}
       contentClassName="price-select-content"
     />
@@ -481,7 +483,7 @@ export default function PriceControl({
   const createProduct = trpc.priceControl.createProduct.useMutation({
     onSuccess: () => {
       invalidate();
-      toast.success("Имя связи создано");
+      toast.success("Товар добавлен в справочник");
     },
     onError: error => toast.error(error.message),
   });
@@ -541,7 +543,7 @@ export default function PriceControl({
     onSuccess: result => {
       invalidate();
       setSelectedDirectoryProductIds([]);
-      toast.success(result.isActive ? "Имена связей показаны" : "Имена связей скрыты", {
+      toast.success(result.isActive ? "Товары показаны" : "Товары скрыты", {
         description: `Обновлено товаров: ${result.updated}.`,
       });
     },

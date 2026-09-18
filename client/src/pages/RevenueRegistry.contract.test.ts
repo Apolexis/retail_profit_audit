@@ -52,17 +52,31 @@ describe("контракт страницы Выручка", () => {
     expect(styles).toContain('.packet .revenue-register-table.data-table tbody tr:nth-child(even) td { background: var(--revenue-table-zebra); }');
   });
 
-  it("печатает только дату, zebra-таблицу, итог и короткие комментарии расходов", () => {
+  it("раскрывает редактор при изменении записи из реестра", () => {
+    expect(page).toContain('entryCardRef.current?.setAttribute("open", "");');
+    expect(page).toContain('onClick={() => fillEdit(record)}');
+  });
+
+  it("показывает комментарии расходов прямо в рабочем реестре", () => {
+    expect(page).toContain('const hasExpenseComments = printComments.length > 0;');
+    expect(page).toContain('formatRecordComments');
+    expect(page).toContain('Комментарии расходов');
+    expect(page).toContain('className="revenue-comment-cell"');
+  });
+
+  it("печатает отдельный черно-белый лист с датой, zebra-таблицей, итогом и комментариями", () => {
     expect(page).toContain('trpc.revenueRegistry.print.useMutation()');
     expect(page).toContain('window.print()');
     expect(page).toContain('<Printer size={14}/>');
     expect(page.indexOf('className="revenue-filter-row"')).toBeLessThan(page.indexOf('className="revenue-register-actions"'));
-    expect(page).toContain('className="revenue-print-date"');
-    expect(page).toContain('className="revenue-print-summary"');
-    expect(page).not.toContain('<h4>Комментарии к расходам</h4>');
-    expect(styles).toContain('/* Print intentionally contains only the selected date, a compact zebra table, total and expense notes. */');
-    expect(styles).toContain('.packet .revenue-admin-register .card-title { display: none !important; }');
-    expect(styles).toContain('.packet .revenue-register-table.data-table tbody tr:nth-child(even) td { background: #eeeeee; }');
+    expect(page).toContain('className="revenue-print-sheet"');
+    expect(page).toContain('className="revenue-print-table"');
+    expect(page).toContain('— {field.label}:');
+    expect(styles).toContain('/* Print uses a separate sheet, never the interactive/sortable registry table. */');
+    expect(styles).toContain('.packet .revenue-admin-register > :not(.revenue-print-sheet) { display: none !important; }');
+    expect(styles).toContain('font-family: Arial, sans-serif; font-size: 9pt;');
+    expect(styles).toContain('font-family: "Arial Black", Arial, sans-serif;');
+    expect(styles).toContain('tbody tr:nth-child(even) td { background: #f0f0f0 !important; }');
   });
 
   it("отделяет синий light-контур от сдержанной темной поверхности", () => {
@@ -75,7 +89,7 @@ describe("контракт страницы Выручка", () => {
     expect(styles).toContain('--revenue-table-zebra: #1c1920;');
     expect(styles).not.toContain('#d64146');
     expect(styles).not.toContain('#d55b63');
-    expect(styles).not.toContain('#ff765f');
+    expect(styles).toContain('--revenue-accent: #ff765f;');
   });
 
   it("делает удаление администратора обратимым, с причиной и общим журналом", () => {

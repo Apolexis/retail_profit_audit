@@ -320,7 +320,8 @@ export const operationalInventories = mysqlTable("operational_inventories", {
  */
 export const operationalCatalogProducts = mysqlTable("operational_catalog_products", {
   id: int("id").autoincrement().primaryKey(),
-  storeId: int("storeId").notNull(),
+  /** Historic source point for an initial read-only import; global manual products have no source point. */
+  storeId: int("storeId"),
   evotorProductId: varchar("evotorProductId", { length: 128 }).notNull(),
   evotorCode: varchar("evotorCode", { length: 128 }),
   canonicalName: varchar("canonicalName", { length: 512 }).notNull(),
@@ -332,11 +333,62 @@ export const operationalCatalogProducts = mysqlTable("operational_catalog_produc
   evotorCostPrice: decimal("evotorCostPrice", { precision: 18, scale: 2 }).default("0.00").notNull(),
   /** Internal management cost; never sent back to Evotor. */
   internalCostPrice: decimal("internalCostPrice", { precision: 18, scale: 2 }),
+  /** Controlled marking choice; product-level rather than store-level. */
+  markingCategory: mysqlEnum("markingCategory", ["none", "supplement", "seafood_caviar", "seafood_canned", "alcohol", "beer_marked", "beer_non_alcoholic", "soft_drinks", "water", "dairy"]).default("none").notNull(),
+  /** Manually confirmed barcodes, normalized as semicolon-separated text. */
+  manualBarcodes: text("manualBarcodes"),
+  /** A hidden product is excluded from future store requests, but never from history. */
+  isVisibleInRequests: boolean("isVisibleInRequests").default(true).notNull(),
+  /** Administrative future flag only: the present Evotor integration stays strictly read-only. */
+  isEvotorExportEnabled: boolean("isEvotorExportEnabled").default(false).notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   importedByAccountId: int("importedByAccountId").notNull(),
   importedAt: timestamp("importedAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => [unique("operational_catalog_store_evotor_product_uq").on(table.storeId, table.evotorProductId)]);
+
+/** Network-wide sale price classes. A store is assigned exactly one active class. */
+export const operationalPriceTypes = mysqlTable("operational_price_types", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 128 }).notNull(),
+  normalizedName: varchar("normalizedName", { length: 160 }).notNull(),
+  isDefault: boolean("isDefault").default(false).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [unique("operational_price_type_name_uq").on(table.normalizedName)]);
+
+/** Store equals warehouse in the operating model; the assignment changes only the sale-price projection. */
+export const operationalStorePriceTypes = mysqlTable("operational_store_price_types", {
+  id: int("id").autoincrement().primaryKey(),
+  storeId: int("storeId").notNull(),
+  priceTypeId: int("priceTypeId").notNull(),
+  assignedByAccountId: int("assignedByAccountId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [unique("operational_store_price_type_store_uq").on(table.storeId)]);
+
+/** A missing row intentionally means that the product has no stated sale price for the selected price type. */
+export const operationalProductSalePrices = mysqlTable("operational_product_sale_prices", {
+  id: int("id").autoincrement().primaryKey(),
+  productId: int("productId").notNull(),
+  priceTypeId: int("priceTypeId").notNull(),
+  salePrice: decimal("salePrice", { precision: 18, scale: 2 }).notNull(),
+  updatedByAccountId: int("updatedByAccountId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [unique("operational_product_sale_price_uq").on(table.productId, table.priceTypeId)]);
+
+/** Read-only external identifiers are linked manually to a global product; no name-based automatic merge is allowed. */
+export const operationalEvotorProductLinks = mysqlTable("operational_evotor_product_links", {
+  id: int("id").autoincrement().primaryKey(),
+  storeId: int("storeId").notNull(),
+  evotorProductId: varchar("evotorProductId", { length: 128 }).notNull(),
+  productId: int("productId").notNull(),
+  linkedByAccountId: int("linkedByAccountId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [unique("operational_evotor_product_link_uq").on(table.storeId, table.evotorProductId)]);
 
 /** A zero is valid: absence must never be represented by silently omitting a counted product. */
 export const operationalInventoryLines = mysqlTable("operational_inventory_lines", {
@@ -366,6 +418,10 @@ export const operationalStockMovements = mysqlTable("operational_stock_movements
 
 export type OperationalInventory = typeof operationalInventories.$inferSelect;
 export type OperationalCatalogProduct = typeof operationalCatalogProducts.$inferSelect;
+export type OperationalPriceType = typeof operationalPriceTypes.$inferSelect;
+export type OperationalStorePriceType = typeof operationalStorePriceTypes.$inferSelect;
+export type OperationalProductSalePrice = typeof operationalProductSalePrices.$inferSelect;
+export type OperationalEvotorProductLink = typeof operationalEvotorProductLinks.$inferSelect;
 export type OperationalInventoryLine = typeof operationalInventoryLines.$inferSelect;
 export type OperationalStockMovement = typeof operationalStockMovements.$inferSelect;
 
@@ -401,14 +457,27 @@ export const priceProductCharacteristics = mysqlTable("price_product_characteris
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => [unique("price_product_characteristic_uq").on(table.kind, table.normalizedValue)]);
 
-/** The internal code is the durable target for supplier aliases and later ERP integrations. */
+/** A comparison name unites deliberately selected supplier goods without replacing the goods themselves. */
+export const priceLinkGroups = mysqlTable("price_link_groups", {
+  id: int("id").autoincrement().primaryKey(),
+  linkCode: varchar("linkCode", { length: 4 }).notNull().unique(),
+  canonicalName: varchar("canonicalName", { length: 255 }).notNull(),
+  normalizedName: varchar("normalizedName", { length: 512 }).notNull().unique(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+/** The internal code is the durable identifier of one editable supplier good and later ERP integrations. */
 export const priceProducts = mysqlTable("price_products", {
   id: int("id").autoincrement().primaryKey(),
   internalCode: varchar("internalCode", { length: 64 }).notNull().unique(),
-  /** Human-facing link identifier: a letter plus 001–999; it never replaces the durable internal code. */
+  /** Deprecated legacy link code; retained until the group migration has been reconciled. */
   linkCode: varchar("linkCode", { length: 4 }).unique(),
+  /** Required after the additive migration; nullable only to permit lossless seeding of historic goods. */
+  linkGroupId: int("linkGroupId"),
   canonicalName: varchar("canonicalName", { length: 255 }).notNull(),
-  normalizedSignature: varchar("normalizedSignature", { length: 512 }).notNull().unique(),
+  normalizedSignature: varchar("normalizedSignature", { length: 512 }).notNull(),
   categoryId: int("categoryId"),
   category: varchar("category", { length: 160 }),
   variantCharacteristicId: int("variantCharacteristicId"),
@@ -496,6 +565,7 @@ export const priceSupplierAliases = mysqlTable("price_supplier_aliases", {
 export type PriceSupplier = typeof priceSuppliers.$inferSelect;
 export type PriceCategory = typeof priceCategories.$inferSelect;
 export type PriceProductCharacteristic = typeof priceProductCharacteristics.$inferSelect;
+export type PriceLinkGroup = typeof priceLinkGroups.$inferSelect;
 export type PriceProduct = typeof priceProducts.$inferSelect;
 export type PriceImport = typeof priceImports.$inferSelect;
 export type PriceImportRow = typeof priceImportRows.$inferSelect;

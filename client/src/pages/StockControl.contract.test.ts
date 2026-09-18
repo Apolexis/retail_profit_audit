@@ -23,6 +23,9 @@ describe("интерфейс операционных остатков", () => {
   it("не раскрывает в остатках продажи или себестоимость и помещает поиск справа", () => {
     expect(page).toContain("себестоимость здесь не выводятся");
     expect(css).toContain(".packet .stock-search > svg { position: absolute; right: 10px;");
-    expect(css).toContain('html[data-audit-theme="dark"] .packet .stock-rule-disclosure');
+    expect(page).toContain('className="data-table-wrap stock-table-wrap"');
+    expect(css).toContain('.packet .stock-table-wrap { overflow-x: auto; cursor: grab;');
+    expect(css).toContain('--stock-accent: #ff765f;');
+    expect(css).toContain('--stock-accent: #0a84ff;');
   });
 });
