@@ -27,11 +27,12 @@ describe("страницы продаж Эвотор", () => {
     expect(page).not.toContain('syncEvotorDocumentPage');
   });
 
-  it("сохраняет тематичные поверхности и карточки таблиц на узком экране", () => {
+  it("сохраняет тематичные поверхности и карточки таблиц на узком и среднем экране", () => {
     expect(css).toContain('background: #f7fbff');
     expect(css).toContain('background: #16101a');
     expect(css).toContain('.evotor-sales-table.data-table tbody tr');
     expect(css).toContain('content: attr(data-label)');
-    expect(css).toContain('max-width: 760px');
+    expect(css).toContain('max-width: 1024px');
+    expect(css).toContain('A compact tablet cannot usefully drag an analytical table');
   });
 });

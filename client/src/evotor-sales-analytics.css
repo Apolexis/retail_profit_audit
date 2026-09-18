@@ -32,7 +32,9 @@ html[data-audit-theme="dark"] .packet .evotor-sales-table tbody tr:nth-child(odd
 html[data-audit-theme="dark"] .packet .evotor-sales-table tbody tr:nth-child(even) { background: #19111b; }
 html[data-audit-theme="dark"] .packet .evotor-sales-table tbody td { border-color: #2b1b29; }
 
-@media (max-width: 760px) {
+/* A compact tablet cannot usefully drag an analytical table: preserve each
+   metric as a labeled card before the columns start competing for space. */
+@media (max-width: 1024px) {
   .packet .evotor-sales-store-picker summary { align-items: flex-start; }
   .packet .evotor-sales-chart-card .card-title,
   .packet .evotor-sales-table-card .card-title { gap: 12px; align-items: flex-start; }
