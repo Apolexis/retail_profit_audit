@@ -102,6 +102,8 @@ describe("интерфейс операционной инвентаризаци
 	  expect(page).toContain('data-label="Расхождение"');
 	  expect(css).toContain(".inventory-lines tbody tr:nth-child(even) { display: grid");
 	  expect(css).toContain("content: attr(data-label)");
+	  expect(css).toContain("@media (max-width: 1400px)");
+	  expect(css).toContain(".inventory-lines-wrap.data-table-wrap { overflow: visible !important; cursor: default !important;");
 	});
 
 	it("не смешивает каталог и себестоимость с ревизией", () => {

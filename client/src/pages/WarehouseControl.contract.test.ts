@@ -61,6 +61,8 @@ describe("warehouse control contract", () => {
 		expect(styles).toContain("content: attr(data-label)");
 		expect(styles).toContain("Settings rows stay inside the selected warehouse card");
 		expect(styles).toContain(".warehouse-settings-grid :is(.app-select-trigger, input)");
+		expect(styles).toContain(".warehouse-table.data-table { display: block; width: 100% !important; max-width: 100%; min-width: 0 !important; }");
+		expect(styles).toContain(".warehouse-settings-row { display: block; width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box;");
 	});
 
 	it("keeps summary, open settings and print categories within the approved blue/coral hierarchy", () => {

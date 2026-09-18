@@ -91,8 +91,10 @@ html[data-audit-theme="light"] .packet .stock-table.data-table tbody td { border
 .packet .stock-row-actions { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
 @media (max-width: 760px) { .packet .stock-row-actions { justify-content: flex-start; } }
 
-@media (max-width: 1200px) {
-  .packet .stock-table-wrap { overflow: visible; cursor: default; touch-action: pan-y; border: 0; border-radius: 0; background: transparent; }
+/* With the persistent navigation, a 1280px viewport has about 950px for this
+   nine-column register. Use readable cards before drag-scrolling is needed. */
+@media (max-width: 1400px) {
+  .packet .stock-table-wrap.data-table-wrap { overflow: visible !important; cursor: default !important; touch-action: pan-y; border: 0; border-radius: 0; background: transparent; }
   .packet .stock-table { display: block; min-width: 0; }
   .packet .stock-table thead { display: none; }
   .packet .stock-table tbody { display: grid; gap: 9px; }

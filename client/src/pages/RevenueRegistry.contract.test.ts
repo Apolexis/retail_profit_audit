@@ -40,7 +40,7 @@ describe("контракт страницы Выручка", () => {
     expect(styles).toContain('.packet .revenue-entry-card:not([open]) .revenue-entry-summary');
   });
 
-  it("показывает заполненные расходы в таблице Ритма, а не скрывает их в раскрытии", () => {
+	it("показывает заполненные расходы в таблице Ритма, а не скрывает их в раскрытии", () => {
     expect(page).toContain('const visibleExpenseFields = fields.filter');
     expect(page).toContain('visibleExpenseFields.map(field => <th className="numeric-column"');
     expect(page).toContain('visibleExpenseFields.map(field => <td className="numeric-column"');
@@ -49,8 +49,10 @@ describe("контракт страницы Выручка", () => {
     expect(page).toContain('className="table-total"');
     expect(page).not.toContain('className="revenue-details"');
     expect(styles).toContain('.packet .data-table-wrap.revenue-register-table-wrap { overflow-x: auto; overflow-y: hidden; cursor: grab; touch-action: pan-y;');
-    expect(styles).toContain('.packet .revenue-register-table.data-table tbody tr:nth-child(even) td { background: var(--revenue-table-zebra); }');
-  });
+	  expect(styles).toContain('.packet .revenue-register-table.data-table tbody tr:nth-child(even) td { background: var(--revenue-table-zebra); }');
+	  expect(styles).toContain('@media (max-width: 1400px)');
+	  expect(styles).toContain('.packet .data-table-wrap.revenue-register-table-wrap { overflow: visible !important; cursor: default !important;');
+	});
 
   it("раскрывает редактор при изменении записи из реестра", () => {
     expect(page).toContain('entryCardRef.current?.setAttribute("open", "");');

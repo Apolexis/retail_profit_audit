@@ -92,7 +92,9 @@ html[data-audit-theme="dark"] .packet .catalog-price-types,
 html[data-audit-theme="dark"] .packet .catalog-working-card { border-color: var(--catalog-line) !important; background: var(--catalog-card) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .025) !important; }
 html[data-audit-theme="dark"] .packet .catalog-price-types:hover,
 html[data-audit-theme="dark"] .packet .catalog-working-card:hover { border-color: var(--catalog-accent) !important; background: var(--catalog-card) !important; box-shadow: 0 0 0 1px var(--catalog-accent-faint), inset 0 1px 0 rgba(255, 255, 255, .025) !important; }
-@media (max-width: 1200px) {
+/* The sidebar leaves a 1280px viewport with roughly 950px of working width.
+   Switch before horizontal dragging becomes the only way to read the registry. */
+@media (max-width: 1400px) {
   .packet .catalog-manual-form { grid-template-columns: minmax(220px, 1fr) 100px 115px minmax(170px, .7fr); }
   .packet .catalog-manual-form > label:nth-of-type(5),
   .packet .catalog-manual-form > label:nth-of-type(6),
@@ -245,8 +247,8 @@ html[data-audit-theme="light"] .packet .catalog-table tbody tr:nth-child(odd) { 
 html[data-audit-theme="light"] .packet .catalog-table tbody tr:nth-child(even) { background: #fafcff !important; }
 html[data-audit-theme="light"] .packet .catalog-table tbody td { border-color: #e1efff !important; }
 
-@media (max-width: 1200px) {
-  .packet .catalog-table-wrap { overflow: visible; border: 0; border-radius: 0; background: transparent; touch-action: pan-y; }
+@media (max-width: 1400px) {
+  .packet .catalog-table-wrap.data-table-wrap { overflow: visible !important; cursor: default !important; border: 0; border-radius: 0; background: transparent; touch-action: pan-y; }
   .packet .catalog-table { display: block; min-width: 0; }
   .packet .catalog-table thead { display: none; }
   .packet .catalog-table tbody { display: grid; gap: 9px; }
@@ -267,7 +269,7 @@ html[data-audit-theme="light"] .packet .catalog-table tbody td { border-color: #
 }
 
 .packet .catalog-table-action-label { display: none; }
-@media (max-width: 1200px) {
+@media (max-width: 1400px) {
   .packet .catalog-table td:last-child .catalog-table-action { display: inline-flex; flex-direction: row; align-items: center; gap: 7px; padding-inline: 11px; }
   .packet .catalog-table-action-label { display: inline; }
 }

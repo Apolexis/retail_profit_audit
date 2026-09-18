@@ -96,7 +96,8 @@ describe("общий операционный справочник", () => {
 	});
 
 	it("перестраивает широкий справочник в карточки до планшетной ширины", () => {
-		expect(css).toContain("@media (max-width: 1200px) {\n  .packet .catalog-table-wrap");
+		expect(css).toContain("@media (max-width: 1400px) {\n  .packet .catalog-table-wrap.data-table-wrap");
+		expect(css).toContain("cursor: default !important");
 	});
 
 	it("оставляет действия списка компактными и доступными", () => {

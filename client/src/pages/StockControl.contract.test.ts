@@ -44,5 +44,7 @@ describe("интерфейс операционных остатков", () => {
 	  expect(page).toContain('data-label="Действие"');
 	  expect(css).toContain(".stock-table.data-table tbody tr:nth-child(even) { display: grid");
 	  expect(css).toContain("content: attr(data-label)");
+	  expect(css).toContain("@media (max-width: 1400px)");
+	  expect(css).toContain(".stock-table-wrap.data-table-wrap { overflow: visible !important; cursor: default !important;");
 	});
 });

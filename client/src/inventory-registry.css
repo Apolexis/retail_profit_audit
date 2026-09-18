@@ -203,8 +203,10 @@ html[data-audit-theme="dark"] .packet .packet-card.inventory-rule-disclosure:foc
   .packet .inventory-history-select b { grid-column: 1; grid-row: auto; justify-self: start; }
 }
 
-@media (max-width: 1024px) {
-  .packet .inventory-lines-wrap { overflow: visible; cursor: default; touch-action: pan-y; border: 0; border-radius: 0; background: transparent; }
+/* A live revision has editable quantities and must not require horizontal drag
+   inside the sidebar shell; switch the line table to labelled cards early. */
+@media (max-width: 1400px) {
+  .packet .inventory-lines-wrap.data-table-wrap { overflow: visible !important; cursor: default !important; touch-action: pan-y; border: 0; border-radius: 0; background: transparent; }
   .packet .inventory-lines { display: block; min-width: 0; }
   .packet .inventory-lines thead { display: none; }
   .packet .inventory-lines tbody { display: grid; gap: 9px; }
