@@ -3083,21 +3083,22 @@ html[data-audit-theme="dark"] .packet .comparison-chart-stack .card-title small 
   line-height: 1.35;
 }
 
-/* Прайс‑контроль: светлая тема использует iOS‑синий, темная — свой коралловый тематический акцент. */
-html[data-audit-theme="light"] .packet { --price-accent: #0a72d5; --price-bar: #9bbfea; --price-surface: #f7faff; --price-border: #c7d9ee; --price-muted: #426381; --price-ink: #142b43; }
-html[data-audit-theme="dark"] .packet { --price-accent: #ff856d; --price-bar: #85526a; --price-surface: #171923; --price-border: #593448; --price-muted: #b7adbb; --price-ink: #f6edf2; }
+/* Прайс‑контроль: рабочая карточка получает только тематическую рамку,
+   а поля — спокойную вложенную поверхность. Серый самостоятельный слой не используется. */
+html[data-audit-theme="light"] .packet { --price-accent: #0a84ff; --price-bar: #9bbfea; --price-card: #f7fbff; --price-surface: #ffffff; --price-border: #c7e2ff; --price-muted: #426381; --price-ink: #142b43; }
+html[data-audit-theme="dark"] .packet { --price-accent: #ff765f; --price-bar: #9d5a72; --price-card: #16101a; --price-surface: #110d14; --price-border: #3b2435; --price-muted: #c7bdcc; --price-ink: #ffe8ef; }
 .packet .price-lede { display: flex; align-items: stretch; justify-content: space-between; gap: 20px; }
 .packet .price-lede > div:first-child { min-width: 0; }
 .packet .price-scope { min-width: 156px; display: grid; align-content: center; gap: 5px; padding: 14px 17px; color: var(--price-ink); border: 1px solid var(--price-border); border-radius: 15px; background: var(--price-surface); }
 .packet .price-scope span, .packet .price-summary-grid span, .packet .price-detail-heading > div > span, .packet .price-winner > span, .packet .price-mapping-list article > div > span { color: var(--price-muted); font-size: 10px; font-weight: 750; letter-spacing: .13em; text-transform: uppercase; }
 .packet .price-scope strong { font-size: 15px; }
 .packet .price-summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 18px 0; }
-.packet .price-summary-grid article { display: grid; gap: 5px; min-width: 0; padding: 15px; border: 1px solid var(--price-border); border-radius: 15px; background: var(--price-surface); color: var(--price-ink); }
+.packet .price-summary-grid article { display: grid; gap: 5px; min-width: 0; padding: 15px; border: 1px solid var(--price-border); border-radius: 15px; background: var(--price-card); color: var(--price-ink); }
 .packet .price-summary-grid strong { color: var(--price-accent); font-size: clamp(24px, 3vw, 34px); line-height: 1; font-variant-numeric: tabular-nums; }
 .packet .price-summary-grid small { color: var(--price-muted); line-height: 1.32; }
-.packet .price-upload, .packet .price-comparison, .packet .price-mapping, .packet .price-history { border-color: var(--price-border); }
+.packet :is(.price-upload, .price-import-guide, .price-import-preview, .price-comparison, .price-mapping, .price-history, .price-directory, .price-aliases) { border-color: var(--price-border); background: var(--price-card) !important; box-shadow: none; }
 /* Импорт прайсов повторяет материальность основного Excel-импорта: одинаковая поверхность карточек и отдельная подложка зоны файла. */
-.packet .price-import-workbench > :is(.price-upload, .price-import-guide) { background: var(--card); border-color: var(--price-border) !important; }
+.packet .price-import-workbench > :is(.price-upload, .price-import-guide) { background: var(--price-card); border-color: var(--price-border) !important; }
 .packet .price-file-drop { background: radial-gradient(circle at 50% 0, color-mix(in srgb, var(--price-accent) 18%, transparent), transparent 58%), var(--price-surface); }
 .packet .price-upload-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: end; margin-top: 15px; }
 .packet .price-file-input { display: grid; gap: 6px; min-width: 0; }
@@ -3572,24 +3573,24 @@ html[data-audit-theme="dark"] .packet .price-preview select option { background:
 .price-select-content [data-slot="select-item"] svg { color: var(--price-menu-accent) !important; }
 html[data-audit-theme="light"] {
   --price-menu-surface: #ffffff;
-  --price-menu-border: #c7d9ee;
+  --price-menu-border: #c7e2ff;
   --price-menu-ink: #142b43;
-  --price-menu-accent: #0a72d5;
-  --price-menu-shadow: #0a72d5;
+  --price-menu-accent: #0a84ff;
+  --price-menu-shadow: #0a84ff;
 }
 html[data-audit-theme="dark"] {
-  --price-menu-surface: #171923;
-  --price-menu-border: #593448;
-  --price-menu-ink: #f6edf2;
-  --price-menu-accent: #ff856d;
+  --price-menu-surface: #110d14;
+  --price-menu-border: #3b2435;
+  --price-menu-ink: #ffe8ef;
+  --price-menu-accent: #ff765f;
   --price-menu-shadow: #06050a;
-  --app-select-surface: #171923;
-  --app-select-border: #593448;
-  --app-select-ink: #f6edf2;
-  --app-select-accent: #ff856d;
+  --app-select-surface: #110d14;
+  --app-select-border: #3b2435;
+  --app-select-ink: #ffe8ef;
+  --app-select-accent: #ff765f;
   --app-select-shadow: #06050a;
 }
-html[data-audit-theme="light"] { --app-select-surface: #ffffff; --app-select-border: #c7d9ee; --app-select-ink: #142b43; --app-select-accent: #0a72d5; --app-select-shadow: #0a72d5; }
+html[data-audit-theme="light"] { --app-select-surface: #ffffff; --app-select-border: #c7e2ff; --app-select-ink: #142b43; --app-select-accent: #0a84ff; --app-select-shadow: #0a84ff; }
 
 /* Единый эталон полей и тематичных списков: новые страницы наследуют его автоматически. */
 .packet .price-directory-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 14px 0 10px; }
@@ -3610,7 +3611,7 @@ html[data-audit-theme="light"] { --app-select-surface: #ffffff; --app-select-bor
 .packet .price-directory-tabs button:hover,
 .packet .price-directory-tabs button:focus-visible,
 .packet .price-directory-tabs button.active { transform: none !important; margin: 0 !important; }
-.packet :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), textarea, [data-slot="select-trigger"]) { min-height: 42px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-2); color: var(--text); box-shadow: none !important; }
+.packet :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), textarea, [data-slot="select-trigger"]) { min-height: 42px; border: 1px solid var(--app-select-border); border-radius: 11px; background: var(--app-select-surface); color: var(--app-select-ink); box-shadow: none !important; }
 .packet :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), [data-slot="select-trigger"]) { padding: 0 13px; }
 .packet textarea { min-height: 92px; padding: 11px 13px; resize: vertical; }
 .packet :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), textarea)::placeholder { color: var(--faint); opacity: 1; }
@@ -4037,6 +4038,18 @@ html[data-audit-theme="light"] .packet .price-preview-name-edit :is(input, texta
 .packet .price-preview-table > div.price-preview-new-row { grid-template-columns: 24px minmax(0, 1.55fr) minmax(220px, 1fr) minmax(138px, .7fr) minmax(138px, .7fr) 36px; }
 .packet .price-preview-table > div > :is(.price-preview-product, .price-preview-prices, .price-preview-product-link, .price-preview-category-select, [data-slot="select-trigger"]) { min-width: 0; max-width: 100%; }
 .packet .price-preview-product-link, .packet .price-preview-category-select { width: 100%; }
+/* A saved supplier title is evidence, not a decorative table label: never force it into one clipped line. */
+.packet .price-import-preview .price-preview-product > strong {
+  display: block;
+  overflow: visible;
+  color: var(--price-ink);
+  font-size: 12px;
+  line-height: 1.36;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  text-wrap: pretty;
+  white-space: normal;
+}
 @media (max-width: 980px) {
   .packet .price-preview-table > div.price-preview-new-row { grid-template-columns: 24px minmax(0, 1.4fr) minmax(210px, 1fr) minmax(132px, .7fr) minmax(132px, .7fr) 36px; }
 }
@@ -4048,6 +4061,17 @@ html[data-audit-theme="light"] .packet .price-preview-name-edit :is(input, texta
   .packet .price-preview-table { overflow: clip; touch-action: pan-y; }
   .packet .price-preview-table > div.price-preview-row,
   .packet .price-preview-table > div.price-preview-new-row { border-inline: 0; box-shadow: none; }
+}
+@media (min-width: 561px) and (max-width: 1120px) {
+  .packet .price-import-workbench.is-preview-ready .price-preview-actions .packet-link,
+  .packet .price-preview-bulk-actions .packet-link,
+  .packet .price-preview-create-category .packet-link {
+    min-height: 36px;
+    padding-inline: 9px;
+    font-size: 10px;
+    letter-spacing: -.012em;
+  }
+  .packet .price-import-preview .price-preview-product > strong { font-size: 12px; line-height: 1.4; }
 }
 .facts-loader .facts-fish-c .facts-fish-body { animation-delay: -1.35s !important; }
 .facts-loader .facts-fish-d .facts-fish-body { animation-delay: -.35s !important; }
@@ -4244,8 +4268,38 @@ html[data-audit-theme="light"] .packet .price-preview-offer-metadata input { bor
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-product-link { grid-column: 2; grid-row: 3; min-width: 0; }
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-category-select { grid-column: 2; grid-row: 4; min-width: 0; }
   .packet .price-import-workbench.is-preview-ready .price-preview-price-edit { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+
+  /* Сохраненная строка не должна сжимать длинное наименование до ширины цены.
+     Товар получает большую самостоятельную область, а параметры цены строятся справа. */
+  .packet .price-import-workbench.is-preview-ready .price-preview-table > div.price-preview-row {
+    grid-template-columns: minmax(0, 1.36fr) minmax(215px, .84fr);
+    grid-template-rows: auto auto;
+    gap: 12px 16px;
+    inline-size: 100%;
+    max-inline-size: 100%;
+    box-sizing: border-box;
+  }
+  .packet .price-import-workbench.is-preview-ready .price-preview-row .price-preview-product { grid-column: 1; grid-row: 1 / span 2; min-width: 0; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-row .price-preview-prices { grid-column: 2; grid-row: 1; min-width: 0; }
+  .packet .price-import-workbench.is-preview-ready .price-preview-row .price-preview-product-link { grid-column: 2; grid-row: 2; min-width: 0; }
 }
 @media (max-width: 760px) {
+  /* На телефоне каждая строка preview — самостоятельная вертикальная карточка.
+     Ни название, ни действия не требуют боковой прокрутки. */
+  .packet .price-import-workbench.is-preview-ready .price-preview-table > div.price-preview-row,
+  .packet .price-import-workbench.is-preview-ready .price-preview-table > div.price-preview-new-row {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    gap: 10px;
+    padding: 12px;
+  }
+  .packet .price-import-workbench.is-preview-ready .price-preview-row :is(.price-preview-product, .price-preview-prices, .price-preview-product-link),
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row :is(.price-preview-product, .price-preview-prices, .price-preview-product-link, .price-preview-category-select) {
+    grid-column: auto;
+    grid-row: auto;
+    min-width: 0;
+  }
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-selection-marker { grid-column: auto; grid-row: auto; }
   .packet .price-preview-offer-metadata,
   .packet .price-offer-meta-edit { grid-template-columns: minmax(0, 1fr); }
   .packet .price-preview-price-edit .price-preview-market-select { grid-column: 1 / -1; }
@@ -4423,6 +4477,22 @@ html[data-audit-theme="dark"] .password-input-toggle { color: #c7bdcc; }
 .price-select-content [data-slot="select-item"][data-state="checked"] { background: color-mix(in srgb, var(--price-menu-accent) 16%, var(--price-menu-surface)); color: var(--price-menu-accent); }
 @media (hover: hover) { .price-select-content [data-slot="select-item"]:hover:not(:disabled) { background: color-mix(in srgb, var(--price-menu-accent) 16%, var(--price-menu-surface)); color: var(--price-menu-accent); } }
 .price-select-content [data-slot="select-item"] svg { color: var(--price-menu-accent); }
+
+/* The base dashboard card rule is intentionally strong. Reassert the agreed
+   operating hierarchy here so price cards cannot fall back to a neutral gray
+   or unoutlined white panel after theme changes. */
+html[data-audit-theme] .packet .packet-card:is(.price-upload, .price-import-guide, .price-import-preview, .price-comparison, .price-mapping, .price-history, .price-directory, .price-aliases) {
+  background: var(--price-card) !important;
+  border-color: var(--price-border) !important;
+  box-shadow: none !important;
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-audit-theme] .packet .packet-card:is(.price-upload, .price-import-guide, .price-import-preview, .price-comparison, .price-mapping, .price-history, .price-directory, .price-aliases):hover {
+    border-color: var(--price-accent) !important;
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--price-accent) 16%, transparent) !important;
+    transform: none !important;
+  }
+}
 .price-select-content .free-scroll-select-search input { border-color: var(--price-menu-border); background: color-mix(in srgb, var(--price-menu-surface) 87%, var(--price-menu-ink)); color: var(--price-menu-ink); }
 .price-select-content .free-scroll-select-search input:focus-visible { border-color: var(--price-menu-accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--price-menu-accent) 22%, transparent); }
 .price-select-content .free-scroll-select-edge { color: var(--price-menu-accent); }

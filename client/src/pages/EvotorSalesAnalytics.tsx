@@ -138,5 +138,3 @@ export default function EvotorSalesAnalytics({ kind }: { kind: PageKind }) {
     </>}
   </AuditShell>;
 }
-
-export const __evotorSalesAnalyticsTestUtils = { groupedTimeline, seriesTimeline, salesValue, productValue };

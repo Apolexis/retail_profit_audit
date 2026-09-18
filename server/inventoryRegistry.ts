@@ -310,37 +310,49 @@ export async function syncOperationalEvotorDocumentPage(input: { storeId: number
   const page = await listEvotorDocumentsPreviewForOperationalStore({ storeId: input.storeId, cursor: sync.cursor ?? undefined });
   let insertedDocuments = 0;
   let insertedPositions = 0;
-  await forEachBoundedBatch(page.documents, 4, async document => {
-    const [existing] = await db
-      .select({ id: operationalEvotorDocuments.id })
+  const uniqueDocuments = Array.from(new Map(page.documents.map(document => [document.id, document])).values());
+  const existingIds = uniqueDocuments.length
+    ? new Set((await db
+      .select({ evotorDocumentId: operationalEvotorDocuments.evotorDocumentId })
       .from(operationalEvotorDocuments)
-      .where(and(eq(operationalEvotorDocuments.storeId, input.storeId), eq(operationalEvotorDocuments.evotorDocumentId, document.id)))
-      .limit(1);
-    if (existing) return;
-    const [inserted] = await db.insert(operationalEvotorDocuments).values({
+      .where(and(eq(operationalEvotorDocuments.storeId, input.storeId), inArray(operationalEvotorDocuments.evotorDocumentId, uniqueDocuments.map(document => document.id))))
+    ).map(row => row.evotorDocumentId))
+    : new Set<string>();
+  const newDocuments = uniqueDocuments.filter(document => !existingIds.has(document.id));
+
+  // Each batch becomes one document insert and one position insert. On a retry,
+  // the unique store/document key makes already persisted rows a safe no-op.
+  // This is intentionally far below the platform callback timeout even for a
+  // full cursor page; no raw response or fiscal payload is retained.
+  for (let start = 0; start < newDocuments.length; start += 20) {
+    const batch = newDocuments.slice(start, start + 20);
+    const inserted = await db.insert(operationalEvotorDocuments).values(batch.map(document => ({
       storeId: input.storeId,
       syncId: sync.id,
       evotorDocumentId: document.id,
       documentType: document.type,
       occurredAt: document.closedAt ?? document.createdAt,
       total: document.total === null ? null : document.total.toFixed(2),
-    }).$returningId();
-    insertedDocuments += 1;
-    const positions = document.positions.filter(position => position.productId || position.productName).map(position => ({
-      documentId: inserted.id,
-      evotorProductId: position.productId,
-      productName: position.productName,
-      quantity: position.quantity === null ? null : position.quantity.toFixed(3),
-      initialQuantity: position.initialQuantity === null ? null : position.initialQuantity.toFixed(3),
-      unit: position.unit,
-      settlementMethod: position.settlementMethod,
-      resultSum: position.resultSum === null ? null : position.resultSum.toFixed(2),
-    }));
-    if (positions.length) {
-      await db.insert(operationalEvotorDocumentPositions).values(positions);
-      insertedPositions += positions.length;
-    }
-  });
+    }))).$returningId();
+    const insertedIdByExternalId = new Map(batch.map((document, index) => [document.id, inserted[index]?.id]).filter((entry): entry is [string, number] => Number.isFinite(entry[1])));
+    const positions = batch.flatMap(document => {
+      const documentId = insertedIdByExternalId.get(document.id);
+      if (!documentId) return [];
+      return document.positions.filter(position => position.productId || position.productName).map(position => ({
+        documentId,
+        evotorProductId: position.productId,
+        productName: position.productName,
+        quantity: position.quantity === null ? null : position.quantity.toFixed(3),
+        initialQuantity: position.initialQuantity === null ? null : position.initialQuantity.toFixed(3),
+        unit: position.unit,
+        settlementMethod: position.settlementMethod,
+        resultSum: position.resultSum === null ? null : position.resultSum.toFixed(2),
+      }));
+    });
+    if (positions.length) await db.insert(operationalEvotorDocumentPositions).values(positions);
+    insertedDocuments += batch.length;
+    insertedPositions += positions.length;
+  }
   const completed = !page.nextCursor;
   await db.update(operationalEvotorDocumentSyncs).set({
     cursor: page.nextCursor,

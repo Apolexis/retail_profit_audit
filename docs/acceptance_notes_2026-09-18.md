@@ -77,3 +77,16 @@ Live desktop acceptance of `/catalog-control` confirmed the general catalog stil
 
 
 Live acceptance of the warehouse list after the surface correction confirmed 32 visible warehouses. In the dark theme the list card is `#16101a` and table heading `#1c1420`; after the standard theme toggle, the light page has the blue operational hierarchy while table rows remain near-white. The page has 0 px horizontal overflow outside its dedicated table structure. Open settings and request-print category cards now use the same warehouse surface tokens instead of generic grey panels.
+
+
+The isolated 375×812 screenshot runner was used for eight operating and price routes. It correctly reaches the compact login surface for each route but does not share the authenticated browser session, so it cannot be used to falsely claim visual acceptance of protected operating data. The compact login itself fits within the viewport with the iOS-like store switch and left-aligned icons. Protected-page mobile behavior remains covered by the explicit per-page responsive CSS/contract suite; final visual acceptance of authenticated tables must use a real signed-in narrow device session.
+
+
+The browser diagnostic view after the current dashboard and warehouse changes contains no console errors. The previous Vite transform messages were historical development output; current TypeScript verification and the live browser session are clean.
+
+
+В рамках приёмки компоновки прайс-контроля и «Управления магазинами» выровнены базовые поверхности интерактивных полей. На светлой теме рабочая карточка использует `#f7fbff` с контуром `#c7e2ff`, вложенные input/select — белую поверхность с тем же голубым контуром; в темной теме рабочая карточка — `#16101a`, вложенные input/select — `#110d14`, а контур — `#3b2435`. Коралловый `#ff765f` оставлен только для выбора, фокуса и hover, не как заливка таблиц или карточек.
+
+В живом desktop-preview на `/warehouse-control` подтверждены 32 склада, отсутствие горизонтального переполнения, активный mouse-drag на таблице и корректная тематическая иерархия. В light вычисленные значения: карточка и обертка таблицы `#f7fbff`, поля/селекты белые, все границы `#c7e2ff`; в dark: карточка/таблица `#16101a`, поля/селекты `#110d14`, границы `#3b2435`. В живом `/price-control` подтверждено отсутствие горизонтального переполнения и та же иерархия для основного блока сравнения.
+
+Для ширины 761–1120 px строки сохраненного preview прайса перестроены: название занимает независимую широкую левую область, а цены и связь — правую. До 760 px каждая строка становится вертикальной карточкой, поэтому длинное название, селекты и кнопки не сдавливают друг друга и не требуют боковой прокрутки. Основные подтверждающие действия могут занимать полную строку только на узком экране; вторичные controls остаются компактными.

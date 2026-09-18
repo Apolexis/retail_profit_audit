@@ -33,15 +33,33 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).not.toContain('type="date"');
   });
 
-  it("показывает весь сохраненный импорт с номерами и явным изменением связи строки", () => {
-    expect(page).toContain("price-saved-import-row");
-    expect(page).toContain("price-saved-import-number");
-    expect(page).toContain("Показано позиций:");
+	it("показывает весь сохраненный импорт с номерами и явным изменением связи строки", () => {
+		expect(page).toContain("price-saved-import-row");
+		expect(page).toContain("price-saved-import-number");
+		expect(page).toContain("Показано позиций:");
     expect(page).toContain("Выбрать имя связи");
     expect(page).toContain("Сохранить связь");
     expect(page).toContain("editingSavedImportRowId");
-    expect(styles).toContain(".packet .price-saved-import-row");
-  });
+		expect(styles).toContain(".packet .price-saved-import-row");
+	});
+
+	it("отдает название из сохраненного прайса свободному многострочному полю и сжимает действия на средней ширине", () => {
+		expect(styles).toContain(".price-import-preview .price-preview-product > strong");
+		expect(styles).toContain("overflow-wrap: anywhere;");
+		expect(styles).toContain("white-space: normal;");
+		expect(styles).toContain("@media (min-width: 561px) and (max-width: 1120px)");
+		expect(styles).toContain("letter-spacing: -.012em;");
+	});
+
+	it("держит тематическую карточку и читаемую область названия в preview на средней и узкой ширине", () => {
+		expect(styles).toContain("--price-card: #f7fbff");
+		expect(styles).toContain("--price-card: #16101a");
+		expect(styles).toContain(".price-preview-table > div.price-preview-row");
+		expect(styles).toContain("grid-template-columns: minmax(0, 1.36fr) minmax(215px, .84fr)");
+		expect(styles).toContain(".price-preview-row .price-preview-product { grid-column: 1; grid-row: 1 / span 2;");
+		expect(styles).toContain(".price-preview-table > div.price-preview-row,");
+		expect(styles).toContain("grid-template-columns: minmax(0, 1fr);");
+	});
 
   it("дает изменить категорию непосредственно у сохраненной импортированной строки", () => {
     expect(page).toContain("updateImportRowCategory");
@@ -264,7 +282,7 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain('className={preview ? "price-import-workbench is-preview-ready" : "price-import-workbench"}');
     expect(page).toContain('{!preview && <aside className="packet-card price-import-guide">');
     expect(styles).toContain(".packet .price-import-workbench.is-preview-ready");
-    expect(styles).toContain(".packet .price-import-workbench > :is(.price-upload, .price-import-guide) { background: var(--card); border-color: var(--price-border) !important; }");
+		expect(styles).toContain(".packet .price-import-workbench > :is(.price-upload, .price-import-guide) { background: var(--price-card); border-color: var(--price-border) !important; }");
     expect(styles).toContain(".packet .price-file-drop { background: radial-gradient(circle at 50% 0");
   });
 
@@ -577,9 +595,9 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain("--price-change-down");
   });
 
-  it("использует разные тематические акценты: iOS‑синий в светлой и коралловый в темной", () => {
-    expect(styles).toContain('html[data-audit-theme="light"] .packet { --price-accent: #0a72d5');
-    expect(styles).toContain('html[data-audit-theme="dark"] .packet { --price-accent: #ff856d');
+	it("использует разные тематические акценты: iOS‑синий в светлой и коралловый в темной", () => {
+		expect(styles).toContain('html[data-audit-theme="light"] .packet { --price-accent: #0a84ff');
+		expect(styles).toContain('html[data-audit-theme="dark"] .packet { --price-accent: #ff765f');
     expect(styles).toContain('html[data-audit-theme="light"] .packet .price-product-choice.active');
     expect(styles).toContain('html[data-audit-theme="dark"] .packet .price-product-choice.active');
   });
