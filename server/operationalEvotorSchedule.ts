@@ -1,5 +1,7 @@
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import {
+  operationalEvotorDocumentSyncs,
+  operationalEvotorProductLinks,
   operationalScheduledSyncJobs,
   operationalStoreMappings,
   stores,
@@ -15,16 +17,17 @@ import { createHeartbeatJob, updateHeartbeatJob } from "./_core/heartbeat";
 export type OperationalEvotorScheduledKind = "evotor_catalog" | "evotor_documents";
 
 const SYNC_JOBS: Record<OperationalEvotorScheduledKind, { name: string; cron: string; path: string; description: string }> = {
-  // 04:15 Moscow is 01:15 UTC during permanent UTC+3. One full catalog read per day
-  // avoids needless polling while still keeping quantities/categories current for morning work.
+  // One mapped store per call. A 15-minute rotation stays comfortably below the
+  // callback timeout even when a catalog has five pages, while covering the network
+  // overnight without large bursts against a shared Evotor account.
   evotor_catalog: {
-    name: "operational-evotor-catalog-nightly",
-    cron: "0 15 1 * * *",
+    name: "operational-evotor-catalog-rotation",
+    cron: "0 */15 * * * *",
     path: "/api/scheduled/operational-evotor-catalog",
-    description: "Ежедневное read-only обновление каталогов и остатков закрепленных складов Эвотор.",
+    description: "Read-only обновление каталога и остатка одного закрепленного склада Эвотор по очереди каждые 15 минут.",
   },
-  // Documents are cursor-paged once per mapped store. 15 minutes is deliberately
-  // conservative: it keeps 35 stores far below the service's account-level rate limit.
+  // Documents are cursor-paged one store at a time, so a slow external response
+  // cannot block the other scheduled work or exhaust the two-minute callback budget.
   evotor_documents: {
     name: "operational-evotor-documents-quarter-hour",
     cron: "0 */15 * * * *",
@@ -42,7 +45,41 @@ async function mappedActiveStoreIds(): Promise<number[]> {
     .innerJoin(operationalStoreMappings, eq(operationalStoreMappings.storeId, stores.id))
     .where(eq(stores.isHidden, false))
     .limit(200);
-  return rows.map(row => row.storeId);
+  return Array.from(new Set(rows.map(row => row.storeId)));
+}
+
+/** Select the least recently started mapped store, retaining a running cursor until it is complete. */
+async function nextMappedStoreId(kind: OperationalEvotorScheduledKind): Promise<number | null> {
+  const storeIds = await mappedActiveStoreIds();
+  if (!storeIds.length) return null;
+  if (kind === "evotor_catalog") {
+    const db = await getDb();
+    if (!db) throw new Error("База данных недоступна");
+    const links = await db
+      .select({ storeId: operationalEvotorProductLinks.storeId, updatedAt: operationalEvotorProductLinks.updatedAt })
+      .from(operationalEvotorProductLinks)
+      .where(inArray(operationalEvotorProductLinks.storeId, storeIds));
+    const lastReadByStore = new Map<number, number>();
+    for (const link of links) {
+      lastReadByStore.set(link.storeId, Math.max(lastReadByStore.get(link.storeId) ?? 0, link.updatedAt.getTime()));
+    }
+    return [...storeIds].sort((left, right) => (lastReadByStore.get(left) ?? 0) - (lastReadByStore.get(right) ?? 0))[0] ?? null;
+  }
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const syncs = await db
+    .select({ storeId: operationalEvotorDocumentSyncs.storeId, startedAt: operationalEvotorDocumentSyncs.startedAt, status: operationalEvotorDocumentSyncs.status })
+    .from(operationalEvotorDocumentSyncs)
+    .where(inArray(operationalEvotorDocumentSyncs.storeId, storeIds))
+    .orderBy(desc(operationalEvotorDocumentSyncs.startedAt))
+    .limit(1_000);
+  const running = syncs.find(sync => sync.status === "running" && storeIds.includes(sync.storeId));
+  if (running) return running.storeId;
+  const lastStartedByStore = new Map<number, number>();
+  for (const sync of syncs) {
+    if (!lastStartedByStore.has(sync.storeId)) lastStartedByStore.set(sync.storeId, sync.startedAt.getTime());
+  }
+  return [...storeIds].sort((left, right) => (lastStartedByStore.get(left) ?? 0) - (lastStartedByStore.get(right) ?? 0))[0] ?? null;
 }
 
 async function findJob(kind: OperationalEvotorScheduledKind) {
@@ -117,22 +154,17 @@ export async function runScheduledEvotorCatalog(taskUid: string) {
   const job = await assertExpectedCallback(taskUid, "evotor_catalog");
   await setJobState(job.id, { started: true, error: null });
   try {
-    const storeIds = await mappedActiveStoreIds();
-    let productCount = 0;
-    for (const storeId of storeIds) {
-      const result = await confirmOperationalCatalogFromEvotor({ storeId, actorId: null });
-      productCount += result.imported;
-      // Serial bounded requests minimize rate-limit pressure across the shared account.
-      await new Promise(resolve => setTimeout(resolve, 175));
-    }
+    const storeId = await nextMappedStoreId("evotor_catalog");
+    if (storeId === null) return { storeCount: 0, productCount: 0 };
+    const result = await confirmOperationalCatalogFromEvotor({ storeId, actorId: null });
     await setJobState(job.id, { completed: true, error: null });
     await recordChange({
       action: "operational_evotor.catalog_scheduled_sync",
       entityType: "operational_sync",
       entityId: "evotor_catalog",
-      afterState: { activeWarehouses: storeIds.length, catalogRowsRead: productCount, mode: "read_only" },
+      afterState: { warehouseCount: 1, catalogRowsRead: result.imported, mode: "read_only" },
     });
-    return { storeCount: storeIds.length, productCount };
+    return { storeCount: 1, productCount: result.imported };
   } catch (error) {
     const message = error instanceof Error ? error.message.slice(0, 512) : String(error).slice(0, 512);
     await setJobState(job.id, { error: message });
@@ -144,23 +176,17 @@ export async function runScheduledEvotorDocuments(taskUid: string) {
   const job = await assertExpectedCallback(taskUid, "evotor_documents");
   await setJobState(job.id, { started: true, error: null });
   try {
-    const storeIds = await mappedActiveStoreIds();
-    let documentsRead = 0;
-    let positionsRead = 0;
-    for (const storeId of storeIds) {
-      const result = await syncOperationalEvotorDocumentPage({ storeId, actorId: null });
-      documentsRead += result.readDocuments;
-      positionsRead += result.readPositions;
-      await new Promise(resolve => setTimeout(resolve, 175));
-    }
+    const storeId = await nextMappedStoreId("evotor_documents");
+    if (storeId === null) return { storeCount: 0, documentsRead: 0, positionsRead: 0 };
+    const result = await syncOperationalEvotorDocumentPage({ storeId, actorId: null });
     await setJobState(job.id, { completed: true, error: null });
     await recordChange({
       action: "operational_evotor.documents_scheduled_sync",
       entityType: "operational_sync",
       entityId: "evotor_documents",
-      afterState: { activeWarehouses: storeIds.length, documentsRead, positionsRead, mode: "read_only" },
+      afterState: { warehouseCount: 1, documentsRead: result.readDocuments, positionsRead: result.readPositions, mode: "read_only" },
     });
-    return { storeCount: storeIds.length, documentsRead, positionsRead };
+    return { storeCount: 1, documentsRead: result.readDocuments, positionsRead: result.readPositions };
   } catch (error) {
     const message = error instanceof Error ? error.message.slice(0, 512) : String(error).slice(0, 512);
     await setJobState(job.id, { error: message });

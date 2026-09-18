@@ -143,7 +143,7 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("hiddenCategoriesCount");
     expect(page).toContain("bulkAssignCategory");
     expect(page).toContain("Назначить категорию");
-    expect(page).toContain("Имена связей в категории ·");
+    expect(page).toContain("Товары в категории ·");
     expect(page).toContain("openProductEditor");
   });
 
@@ -205,6 +205,16 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("Сохранённых цен пока нет");
     expect(page).toContain("Без категории");
     expect(styles).toContain(".packet .price-link-products");
+  });
+
+  it("дает товару выбрать или создать имя связи, а группам — безопасное массовое скрытие", () => {
+    expect(page).toContain("Новое имя связи");
+    expect(page).toContain("linkGroupName: productDraft.linkGroupName.trim()");
+    expect(page).toContain("selectedDirectoryLinkGroupIds");
+    expect(page).toContain("bulkSetLinkGroupActive");
+    expect(page).toContain("Удалить пустые");
+    expect(page).toContain("Товары и история цен не будут затронуты.");
+    expect(styles).toContain(".packet .price-link-selection-marker");
   });
 
   it("создает редактируемые имена связей для ранее сохраненных несвязанных строк", () => {

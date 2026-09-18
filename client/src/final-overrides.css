@@ -4650,10 +4650,16 @@ html[data-audit-theme="dark"] .password-input-toggle { color: #c7bdcc; }
 /* Связи прайсов: один основной товар с раскрываемыми названиями поставщиков. */
 .packet .price-alias-list { display: grid; gap: 8px; }
 .packet .price-alias-list > .price-alias-group { display: grid; gap: 8px; padding: 11px; border: 1px solid var(--price-border); border-radius: 11px; background: var(--price-surface); }
-.packet .price-alias-group-heading { display: grid; min-width: 0; gap: 3px; }
+.packet .price-alias-group-heading { position: relative; display: grid; min-width: 0; gap: 3px; padding-right: 28px; }
 .packet .price-alias-group-heading > span { color: var(--price-accent); font: 800 9px/1.2 "IBM Plex Mono", monospace; letter-spacing: .05em; text-transform: uppercase; }
 .packet .price-alias-group-heading > strong { color: var(--price-ink); font-size: 13px; }
 .packet .price-alias-group-heading > small { color: var(--price-muted); font-size: 10px; line-height: 1.35; }
+.packet .price-link-selection-marker { position: absolute; top: 0; right: 0; display: inline-flex; width: 20px; height: 20px; align-items: center; justify-content: center; cursor: pointer; }
+.packet .price-link-selection-marker > input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.packet .price-link-selection-marker > span { display: inline-grid; width: 18px; height: 18px; place-items: center; border: 1px solid var(--price-border); border-radius: 5px; color: transparent; background: var(--price-surface); transition: border-color 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease), color 160ms var(--audit-hover-ease); }
+.packet .price-link-selection-marker > input:checked + span { border-color: var(--price-accent); background: var(--price-accent); color: var(--price-surface); }
+.packet .price-link-selection-marker > input:focus-visible + span { outline: 2px solid color-mix(in srgb, var(--price-accent) 38%, transparent); outline-offset: 2px; }
+.packet .price-link-bulk-actions { margin: 10px 0; }
 .packet .price-alias-group-members > summary { display: inline-flex; min-height: 29px; align-items: center; cursor: pointer; color: var(--price-muted); font: 750 10px/1.2 Manrope, Arial, sans-serif; list-style: none; }
 .packet .price-alias-group-members > summary::-webkit-details-marker { display: none; }
 .packet .price-alias-group-members > summary::before { content: "+"; display: inline-grid; width: 16px; height: 16px; place-items: center; margin-right: 5px; border: 1px solid var(--price-border); border-radius: 5px; color: var(--price-accent); font-size: 13px; }

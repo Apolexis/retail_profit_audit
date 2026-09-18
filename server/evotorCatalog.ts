@@ -157,7 +157,7 @@ function evotorHeaders() {
 async function fetchEvotorPage(path: string, cursor?: string): Promise<EvotorPage> {
   const url = new URL(path, EVOTOR_API_BASE_URL);
   if (cursor) url.searchParams.set("cursor", cursor);
-  const response = await fetch(url, { headers: evotorHeaders() });
+  const response = await fetch(url, { headers: evotorHeaders(), signal: AbortSignal.timeout(8_000) });
   if (!response.ok) throw new Error(`Эвотор не отдал preview каталога (HTTP ${response.status}).`);
   return response.json() as Promise<EvotorPage>;
 }
@@ -249,14 +249,23 @@ export async function getOperationalEvotorMapping(storeId: number) {
   return { storeId, internalStoreName: mapping.internalStoreName, evotorStoreName: mapping.evotorStoreName, terminalUuid: mapping.terminalUuid };
 }
 
-export async function listEvotorCatalogPreviewForOperationalStore(storeId: number) {
+/**
+ * A confirmed terminal identifier is available only server-side. Prefer it to a
+ * full /stores traversal so automated reads stay within the callback window.
+ */
+async function resolveMappedEvotorStore(storeId: number) {
   const mapping = await getOperationalEvotorMapping(storeId);
+  if (mapping.terminalUuid) {
+    return { mapping, evotorStore: { id: mapping.terminalUuid, name: mapping.evotorStoreName } };
+  }
   const evotorStores = await listEvotorCatalogStoresPreview();
-  const matched = mapping.terminalUuid
-    ? evotorStores.filter(store => store.id === mapping.terminalUuid)
-    : evotorStores.filter(store => normalizedStoreName(store.name) === normalizedStoreName(mapping.evotorStoreName));
+  const matched = evotorStores.filter(store => normalizedStoreName(store.name) === normalizedStoreName(mapping.evotorStoreName));
   if (matched.length !== 1) throw new Error(matched.length ? "Соответствие магазина Эвотор неоднозначно: требуется его ID." : "Магазин Эвотор из сохраненного соответствия не найден.");
-  const evotorStore = matched[0];
+  return { mapping, evotorStore: matched[0] };
+}
+
+export async function listEvotorCatalogPreviewForOperationalStore(storeId: number) {
+  const { mapping, evotorStore } = await resolveMappedEvotorStore(storeId);
   return {
     mapping: { storeId, internalStoreName: mapping.internalStoreName, evotorStoreName: evotorStore.name },
     products: await listEvotorCatalogPreview(evotorStore.id),
@@ -265,13 +274,8 @@ export async function listEvotorCatalogPreviewForOperationalStore(storeId: numbe
 
 /** Reads one cursor page only, so a human-triggered preview cannot fan out or mutate external data. */
 export async function listEvotorDocumentsPreviewForOperationalStore(input: { storeId: number; cursor?: string }) {
-  const mapping = await getOperationalEvotorMapping(input.storeId);
-  const evotorStores = await listEvotorCatalogStoresPreview();
-  const matched = mapping.terminalUuid
-    ? evotorStores.filter(store => store.id === mapping.terminalUuid)
-    : evotorStores.filter(store => normalizedStoreName(store.name) === normalizedStoreName(mapping.evotorStoreName));
-  if (matched.length !== 1) throw new Error(matched.length ? "Соответствие магазина Эвотор неоднозначно: требуется его ID." : "Магазин Эвотор из сохраненного соответствия не найден.");
-  const page = await fetchEvotorPage(`/stores/${encodeURIComponent(matched[0].id)}/documents`, input.cursor);
+  const { evotorStore } = await resolveMappedEvotorStore(input.storeId);
+  const page = await fetchEvotorPage(`/stores/${encodeURIComponent(evotorStore.id)}/documents`, input.cursor);
   return {
     storeId: input.storeId,
     documents: (page.items ?? []).map(normalizeEvotorDocumentPreview).filter((item): item is EvotorDocumentPreview => Boolean(item)),

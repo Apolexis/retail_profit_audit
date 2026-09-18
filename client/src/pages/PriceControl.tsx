@@ -118,6 +118,7 @@ type ProductDraft = {
   canonicalName: string;
   internalCode: string;
   linkGroupId: string;
+  linkGroupName: string;
   categoryId: string;
   variantCharacteristicId: string;
   sizeCharacteristicId: string;
@@ -513,6 +514,16 @@ export default function PriceControl({
     onSuccess: () => { invalidate(); toast.success("Товар добавлен в связь"); },
     onError: error => toast.error(error.message),
   });
+  const bulkSetLinkGroupActive = trpc.priceControl.bulkSetLinkGroupActive.useMutation({
+    onSuccess: result => {
+      invalidate();
+      setSelectedDirectoryLinkGroupIds([]);
+      toast.success(result.isActive ? "Имена связей показаны" : "Имена связей скрыты", {
+        description: `Обновлено имен связей: ${result.updated}.`,
+      });
+    },
+    onError: error => toast.error(error.message),
+  });
   const createCharacteristic = trpc.priceControl.createCharacteristic.useMutation({
     onSuccess: () => {
       invalidate();
@@ -746,6 +757,7 @@ export default function PriceControl({
     const productId = Number(raw);
     return Number.isInteger(productId) && productId > 0 ? productId : null;
   });
+  const [selectedLinkGroupId, setSelectedLinkGroupId] = useState<number | null>(null);
   const [selectedImportId, setSelectedImportId] = useState<number | null>(null);
   const [savedImportsSupplierFilter, setSavedImportsSupplierFilter] = useState("");
   const [savedImportsLimit, setSavedImportsLimit] = useState(8);
@@ -808,6 +820,7 @@ export default function PriceControl({
   const [selectedDirectoryProductIds, setSelectedDirectoryProductIds] = useState<
     number[]
   >([]);
+  const [selectedDirectoryLinkGroupIds, setSelectedDirectoryLinkGroupIds] = useState<number[]>([]);
   const [bulkCategoryId, setBulkCategoryId] = useState("");
   const [bulkOfferMarket, setBulkOfferMarket] = useState<"" | PriceMarket>("");
   const [supplierDraft, setSupplierDraft] = useState<SupplierDraft | null>(
@@ -935,6 +948,10 @@ export default function PriceControl({
   const selectedDirectoryProducts = catalogProducts.filter(product => selectedDirectoryProductIds.includes(product.id));
   const selectedDirectoryProductsHaveActive = selectedDirectoryProducts.some(product => product.isActive);
   const selectedDirectoryProductsHaveHidden = selectedDirectoryProducts.some(product => !product.isActive);
+  const selectedDirectoryLinkGroups = (overview.data?.linkGroups ?? []).filter(group => selectedDirectoryLinkGroupIds.includes(group.id));
+  const selectedDirectoryLinkGroupsHaveActive = selectedDirectoryLinkGroups.some(group => group.isActive);
+  const selectedDirectoryLinkGroupsHaveHidden = selectedDirectoryLinkGroups.some(group => !group.isActive);
+  const selectedDirectoryEmptyLinkGroups = selectedDirectoryLinkGroups.filter(group => group.products.length === 0);
   const categoryMembers = useMemo(() => {
     const members = new Map<number, typeof catalogProducts>();
     catalogProducts.forEach(product => {
@@ -954,19 +971,17 @@ export default function PriceControl({
   }, [overview.data?.aliases]);
   const filteredLinkGroups = useMemo(() => {
     const query = directoryLinkSearch.trim().toLocaleLowerCase("ru");
-    return linkGroups.filter(group =>
-      !query ||
-      [
+    return linkGroups.filter(group => {
+      const groupMatchesVisibility = visibilityFilter === "all" || (visibilityFilter === "active" ? group.isActive : !group.isActive);
+      const groupMatchesQuery = !query || [
         group.canonicalName,
         group.linkCode ?? "",
         ...group.products.flatMap(product => [product.canonicalName, product.internalCode, product.category ?? ""]),
         ...group.products.flatMap(product => (aliasesByProduct.get(product.id) ?? []).flatMap(alias => [alias.supplierName, alias.normalizedName, alias.packagingSignature ?? ""])),
-      ]
-        .join(" ")
-        .toLocaleLowerCase("ru")
-        .includes(query)
-    );
-  }, [linkGroups, aliasesByProduct, directoryLinkSearch]);
+      ].join(" ").toLocaleLowerCase("ru").includes(query);
+      return groupMatchesVisibility && groupMatchesQuery;
+    });
+  }, [linkGroups, aliasesByProduct, directoryLinkSearch, visibilityFilter]);
   const visibleLinkGroups = filteredLinkGroups.slice(0, directoryLinkLimit);
   const filteredUnmappedRows = useMemo(() => {
     const query = directoryLinkSearch.trim().toLocaleLowerCase("ru");
@@ -1115,7 +1130,8 @@ export default function PriceControl({
     }).sort((left, right) => left.product.canonicalName.localeCompare(right.product.canonicalName, "ru"));
   }, [filteredProductComparisons, linkGroups]);
   const selected =
-    filteredComparisons.find(item => item.product.id === selectedProductId || item.products.some(product => product.id === selectedProductId)) ??
+    filteredComparisons.find(item => item.product.id === selectedLinkGroupId) ??
+    filteredComparisons.find(item => item.products.some(product => product.id === selectedProductId)) ??
     filteredComparisons[0] ??
     null;
   const selectedPriceProduct = selected?.products.find(product => product.id === selectedProductId) ?? selected?.products[0] ?? null;
@@ -1519,6 +1535,7 @@ export default function PriceControl({
         canonicalName: productDraft.canonicalName.trim(),
         internalCode: productDraft.internalCode.trim(),
         ...(productDraft.linkGroupId ? { linkGroupId: Number(productDraft.linkGroupId) } : {}),
+        ...(productDraft.linkGroupName.trim() ? { linkGroupName: productDraft.linkGroupName.trim() } : {}),
         categoryId: Number(productDraft.categoryId) || null,
         variantCharacteristicId: productDraft.variantCharacteristicId ? Number(productDraft.variantCharacteristicId) : null,
         sizeCharacteristicId: productDraft.sizeCharacteristicId ? Number(productDraft.sizeCharacteristicId) : null,
@@ -1535,7 +1552,7 @@ export default function PriceControl({
           : {}),
         ...(Number(productDraft.linkGroupId)
           ? { linkGroupId: Number(productDraft.linkGroupId) }
-          : { linkGroupName: productDraft.canonicalName.trim() }),
+          : { linkGroupName: productDraft.linkGroupName.trim() || productDraft.canonicalName.trim() }),
         ...(Number(productDraft.categoryId)
           ? { categoryId: Number(productDraft.categoryId) }
           : {}),
@@ -1593,6 +1610,7 @@ export default function PriceControl({
       canonicalName: product.canonicalName,
       internalCode: product.internalCode,
       linkGroupId: String(product.linkGroupId ?? ""),
+      linkGroupName: "",
       categoryId: String(product.categoryId ?? ""),
       variantCharacteristicId: product.variantCharacteristicId ? String(product.variantCharacteristicId) : "",
       sizeCharacteristicId: product.sizeCharacteristicId ? String(product.sizeCharacteristicId) : "",
@@ -1634,6 +1652,13 @@ export default function PriceControl({
       current.includes(productId)
         ? current.filter(id => id !== productId)
         : [...current, productId]
+    );
+  };
+  const toggleDirectoryLinkGroup = (linkGroupId: number) => {
+    setSelectedDirectoryLinkGroupIds(current =>
+      current.includes(linkGroupId)
+        ? current.filter(id => id !== linkGroupId)
+        : [...current, linkGroupId]
     );
   };
   const togglePreviewRow = (rowIndex: number) => {
@@ -2002,6 +2027,7 @@ export default function PriceControl({
                   value={categoryFilter}
                   onValueChange={value => {
                     setCategoryFilter(value === "__all_categories" ? "" : value);
+                    setSelectedLinkGroupId(null);
                     setSelectedProductId(null);
                   }}
                   placeholder="Все категории"
@@ -2020,6 +2046,7 @@ export default function PriceControl({
                   value={characteristicFilter}
                   onValueChange={value => {
                     setCharacteristicFilter(value === "__all_characteristics" ? "" : value);
+                    setSelectedLinkGroupId(null);
                     setSelectedProductId(null);
                   }}
                   placeholder="Все характеристики"
@@ -2040,6 +2067,7 @@ export default function PriceControl({
                   value={supplierFilter}
                   onValueChange={value => {
                     setSupplierFilter(value === "__all_suppliers" ? "" : value);
+                    setSelectedLinkGroupId(null);
                     setSelectedProductId(null);
                   }}
                   placeholder="Все поставщики"
@@ -2060,6 +2088,7 @@ export default function PriceControl({
                   value={offerMarketFilter}
                   onValueChange={value => {
                     setOfferMarketFilter(value === "__all_markets" ? "" : value as "moscow" | "spb");
+                    setSelectedLinkGroupId(null);
                     setSelectedProductId(null);
                   }}
                   placeholder="Все города"
@@ -2076,6 +2105,7 @@ export default function PriceControl({
                   value={visibilityFilter}
                   onValueChange={value => {
                     setVisibilityFilter(value as VisibilityFilter);
+                    setSelectedLinkGroupId(null);
                     setSelectedProductId(null);
                   }}
                   placeholder="Без скрытых"
@@ -2131,7 +2161,11 @@ export default function PriceControl({
                           ? "price-product-choice active"
                           : "price-product-choice"
                       }
-                      onClick={() => setSelectedProductId(item.product.id)}
+                      onClick={() => {
+                        setSelectedLinkGroupId(item.product.id);
+                        setSelectedProductId(item.products[0]?.id ?? null);
+                        setComparisonManualOffer(null);
+                      }}
                     >
                       <span>
                         {item.product.linkGroupCode ?? item.product.linkCode ?? item.product.internalCode}
@@ -2158,7 +2192,7 @@ export default function PriceControl({
                         <h4>{selected.product.canonicalName}</h4>
                         <div className="price-link-product-chooser" aria-label="Товар в выбранной связи">
                           <span>Товар с предложениями и ценами</span>
-                          {selected.products.map(product => <button key={product.id} type="button" className={selectedPriceProduct?.id === product.id ? "active" : ""} onClick={() => setSelectedProductId(product.id)}>{product.canonicalName}</button>)}
+                          {selected.products.map(product => <button key={product.id} type="button" className={selectedPriceProduct?.id === product.id ? "active" : ""} onClick={() => { setSelectedProductId(product.id); setComparisonManualOffer(null); }}>{product.canonicalName}</button>)}
                         </div>
                         {canEdit && (
                           <button
@@ -3402,6 +3436,7 @@ export default function PriceControl({
                     canonicalName: "",
                     internalCode: "",
                     linkGroupId: "",
+                    linkGroupName: "",
                     categoryId: "",
                     variantCharacteristicId: "",
                     sizeCharacteristicId: "",
@@ -3574,14 +3609,24 @@ export default function PriceControl({
                   Имя связи <em>*</em>
                   <PriceSelect
                     value={productDraft.linkGroupId}
-                    onValueChange={value => setProductDraft({ ...productDraft, linkGroupId: value })}
+                    onValueChange={value => setProductDraft({ ...productDraft, linkGroupId: value, linkGroupName: "" })}
                     placeholder="Выберите имя связи"
-                    options={(overview.data?.linkGroups ?? []).filter(group => group.isActive).map(group => ({
+                    options={(overview.data?.linkGroups ?? []).filter(group => group.isActive || group.id === Number(productDraft.linkGroupId)).map(group => ({
                       value: String(group.id),
                       label: `${group.linkCode} · ${group.canonicalName}`,
                     }))}
                   />
-                  {!productDraft.linkGroupId && <small>Если не выбрать, при сохранении будет создана связь с именем товара.</small>}
+                  <small>Поиск находится внутри списка. Выберите существующее имя либо создайте новое ниже.</small>
+                </label>
+                <label>
+                  Новое имя связи
+                  <input
+                    value={productDraft.linkGroupName}
+                    onChange={event => setProductDraft({ ...productDraft, linkGroupId: "", linkGroupName: event.target.value })}
+                    placeholder="Например, Баррамунди ПСГ 400–600"
+                    maxLength={255}
+                  />
+                  <small>Новое имя создается вместе с товаром. История и названия товаров не заменяются.</small>
                 </label>
                 <label>
                   Категория
@@ -4085,9 +4130,9 @@ export default function PriceControl({
                               : "Скрыта из новых выборов"}
                           </span>
                           <strong>{category.name}</strong>
-                          {(categoryMembers.get(category.id) ?? []).length > 0 ? (
-                            <details className="price-category-members">
-                              <summary>Имена связей в категории · {(categoryMembers.get(category.id) ?? []).length}</summary>
+	                          {(categoryMembers.get(category.id) ?? []).length > 0 ? (
+	                            <details className="price-category-members">
+	                              <summary>Товары в категории · {(categoryMembers.get(category.id) ?? []).length}</summary>
                               <div>
                                 {(categoryMembers.get(category.id) ?? []).map(product => (
                                   <button
@@ -4101,7 +4146,7 @@ export default function PriceControl({
                                 ))}
                               </div>
                             </details>
-                          ) : <small>Имена связей пока не добавлены</small>}
+	                          ) : <small>Товары пока не добавлены</small>}
                         </div>
                         {canEdit && (
                           <div className="price-directory-actions">
@@ -4494,12 +4539,44 @@ export default function PriceControl({
             <section className="packet-card price-aliases">
               <div className="card-title"><div><span>СВЯЗИ</span><h3>Одно имя связи — несколько отдельных товаров</h3></div><Link2 size={21} /></div>
               <p className="packet-note">Товар хранит собственное название, категорию и цены. Имя связи — только общая группа для сравнения. Переименование связи не меняет товары и историю цен.</p>
+              {selectedDirectoryLinkGroupIds.length > 0 && (
+                <div className="price-bulk-actions price-link-bulk-actions">
+                  <span>Выбрано имен связей: {selectedDirectoryLinkGroupIds.length}</span>
+                  {selectedDirectoryLinkGroupsHaveActive && (
+                    <button type="button" className="packet-link compact subtle" disabled={bulkSetLinkGroupActive.isPending} onClick={() => bulkSetLinkGroupActive.mutate({ linkGroupIds: selectedDirectoryLinkGroupIds, isActive: false })}>
+                      <EyeOff size={14} />Скрыть выбранные
+                    </button>
+                  )}
+                  {selectedDirectoryLinkGroupsHaveHidden && (
+                    <button type="button" className="packet-link compact subtle" disabled={bulkSetLinkGroupActive.isPending} onClick={() => bulkSetLinkGroupActive.mutate({ linkGroupIds: selectedDirectoryLinkGroupIds, isActive: true })}>
+                      <Eye size={14} />Показать выбранные
+                    </button>
+                  )}
+                  {selectedDirectoryEmptyLinkGroups.length > 0 && (
+                    <button type="button" className="packet-link compact subtle-danger" disabled={deleteLinkGroup.isPending} onClick={async () => {
+                      const names = selectedDirectoryEmptyLinkGroups.map(group => `«${group.canonicalName}»`).join(", ");
+                      if (!window.confirm(`Удалить пустые имена связей: ${names}? Товары и история цен не будут затронуты.`)) return;
+                      await Promise.all(selectedDirectoryEmptyLinkGroups.map(group => deleteLinkGroup.mutateAsync({ id: group.id })));
+                      setSelectedDirectoryLinkGroupIds([]);
+                    }}>
+                      <Trash2 size={14} />Удалить пустые · {selectedDirectoryEmptyLinkGroups.length}
+                    </button>
+                  )}
+                  <button type="button" className="packet-link compact subtle" onClick={() => setSelectedDirectoryLinkGroupIds([])}>
+                    <X size={14} />Снять выбор
+                  </button>
+                </div>
+              )}
               {visibleLinkGroups.length ? <div className="price-alias-list">
-                {visibleLinkGroups.map(group => {
-                  const draft = newGroupProductDrafts[group.id] ?? { productIds: [] };
-                  return <article key={group.id} className="price-alias-group">
-                    <div className="price-alias-group-heading">
-                      <span>ИМЯ СВЯЗИ · {group.linkCode}</span><strong>{group.canonicalName}</strong>
+	                {visibleLinkGroups.map(group => {
+	                  const draft = newGroupProductDrafts[group.id] ?? { productIds: [] };
+	                  return <article key={group.id} className="price-alias-group">
+	                    <div className="price-alias-group-heading">
+	                      {canEdit && <label className="price-link-selection-marker" title={`Выбрать имя связи «${group.canonicalName}»`}>
+	                        <input type="checkbox" checked={selectedDirectoryLinkGroupIds.includes(group.id)} onChange={() => toggleDirectoryLinkGroup(group.id)} aria-label={`Выбрать имя связи «${group.canonicalName}»`} />
+	                        <span aria-hidden="true"><Check size={12} /></span>
+	                      </label>}
+	                      <span>ИМЯ СВЯЗИ · {group.linkCode}</span><strong>{group.canonicalName}</strong>
                       <small>Товаров в связи: {group.products.length}</small>
                       {editingLinkNameProductId === group.id ? <div className="price-link-name-editor"><input value={linkNameDrafts[group.id] ?? group.canonicalName} onChange={event => setLinkNameDrafts(current => ({ ...current, [group.id]: event.target.value }))} aria-label={`Изменить имя связи «${group.canonicalName}»`}/><button type="button" className="packet-link compact" disabled={updateLinkGroup.isPending} onClick={() => { const canonicalName = (linkNameDrafts[group.id] ?? group.canonicalName).trim(); if (canonicalName.length < 2) { toast.error("Имя связи должно содержать не менее двух символов."); return; } updateLinkGroup.mutate({ id: group.id, canonicalName }); setEditingLinkNameProductId(null); }}><Save size={13}/>Сохранить</button><button type="button" className="packet-link compact subtle" onClick={() => setEditingLinkNameProductId(null)}>Отменить</button></div> : <div className="price-link-name-actions"><button type="button" className="packet-link compact subtle" onClick={() => { setLinkNameDrafts(current => ({ ...current, [group.id]: group.canonicalName })); setEditingLinkNameProductId(group.id); }}><Pencil size={13}/>Изменить связь</button><button type="button" className="packet-link compact subtle" onClick={() => setNewGroupProductDrafts(current => ({ ...current, [group.id]: current[group.id] ?? { productIds: [] } }))}><Plus size={13}/>Добавить товары</button><button type="button" className="packet-link compact subtle" onClick={() => updateLinkGroup.mutate({ id: group.id, canonicalName: group.canonicalName, isActive: !group.isActive })}>{group.isActive ? <EyeOff size={13}/> : <Eye size={13}/>}{group.isActive ? "Скрыть" : "Показать"}</button>{group.products.length === 0 && <button type="button" className="packet-link compact subtle" disabled={deleteLinkGroup.isPending} onClick={() => { if (window.confirm(`Удалить имя связи «${group.canonicalName}»?`)) deleteLinkGroup.mutate({ id: group.id }); }}><Trash2 size={13}/>Удалить</button>}</div>}
                       {newGroupProductDrafts[group.id] && <form className="price-link-new-product" onSubmit={async event => { event.preventDefault(); if (!draft.productIds.length) return; await Promise.all(draft.productIds.map(productId => assignProductLinkGroup.mutateAsync({ productId: Number(productId), linkGroupId: group.id }))); setNewGroupProductDrafts(current => { const next = { ...current }; delete next[group.id]; return next; }); }}><PriceSelect value="" onValueChange={productId => setNewGroupProductDrafts(current => ({ ...current, [group.id]: { productIds: Array.from(new Set([...(current[group.id]?.productIds ?? []), productId])) } }))} placeholder="Найти и добавить товар" options={catalogProducts.filter(product => product.linkGroupId !== group.id && !draft.productIds.includes(String(product.id))).map(product => ({ value: String(product.id), label: `${product.canonicalName} · ${product.category ?? "Без категории"}` }))}/>{draft.productIds.length > 0 && <div className="price-link-picked-products">{draft.productIds.map(productId => { const product = catalogProducts.find(item => String(item.id) === productId); return <button type="button" key={productId} onClick={() => setNewGroupProductDrafts(current => ({ ...current, [group.id]: { productIds: (current[group.id]?.productIds ?? []).filter(item => item !== productId) } }))}>{product?.canonicalName ?? "Товар"}<X size={12}/></button>; })}</div>}<button className="packet-link compact" disabled={assignProductLinkGroup.isPending || !draft.productIds.length}><Plus size={13}/>Добавить выбранные</button><button type="button" className="packet-link compact subtle" onClick={() => setNewGroupProductDrafts(current => { const next = { ...current }; delete next[group.id]; return next; })}>Отменить</button></form>}

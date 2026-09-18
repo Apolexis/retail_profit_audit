@@ -1689,6 +1689,17 @@ export async function assignPriceProductLinkGroup(input: { productId: number; li
   return product;
 }
 
+/** Hiding a comparison group changes only its directory availability; goods and price history are retained. */
+export async function bulkSetPriceLinkGroupsActive(input: { linkGroupIds: number[]; isActive: boolean }) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const linkGroupIds = Array.from(new Set(input.linkGroupIds.filter(id => Number.isInteger(id) && id > 0)));
+  if (!linkGroupIds.length) throw new Error("Выберите хотя бы одно имя связи.");
+  const found = await db.select({ id: priceLinkGroups.id }).from(priceLinkGroups).where(inArray(priceLinkGroups.id, linkGroupIds));
+  if (found.length !== linkGroupIds.length) throw new Error("Одно из имен связи не найдено.");
+  await db.update(priceLinkGroups).set({ isActive: input.isActive }).where(inArray(priceLinkGroups.id, linkGroupIds));
+  return { updated: linkGroupIds.length, isActive: input.isActive };
+}
+
 export async function createPriceProduct(input: { canonicalName: string; internalCode?: string; linkGroupId?: number | null; linkGroupName?: string | null; categoryId?: number | null; category?: string | null; variantCharacteristicId?: number | null; sizeCharacteristicId?: number | null; placeContentsCharacteristicId?: number | null; variant?: string | null; sizeText?: string | null; placeContents?: string | null; baseUnit?: NormalizedUnit; defaultWeightGrams?: number | null; defaultVolumeMl?: number | null; isActive?: boolean }) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
   const canonicalName = text(input.canonicalName); const signature = productSignature(canonicalName);
@@ -1705,16 +1716,19 @@ export async function createPriceProduct(input: { canonicalName: string; interna
   return created!;
 }
 
-export async function updatePriceProduct(input: { id: number; canonicalName: string; internalCode: string; linkGroupId?: number; categoryId?: number | null; category?: string | null; variantCharacteristicId?: number | null; sizeCharacteristicId?: number | null; placeContentsCharacteristicId?: number | null; variant?: string | null; sizeText?: string | null; placeContents?: string | null; baseUnit?: NormalizedUnit; isActive?: boolean }) {
+export async function updatePriceProduct(input: { id: number; canonicalName: string; internalCode: string; linkGroupId?: number; linkGroupName?: string | null; categoryId?: number | null; category?: string | null; variantCharacteristicId?: number | null; sizeCharacteristicId?: number | null; placeContentsCharacteristicId?: number | null; variant?: string | null; sizeText?: string | null; placeContents?: string | null; baseUnit?: NormalizedUnit; isActive?: boolean }) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
   const canonicalName = text(input.canonicalName); const internalCode = text(input.internalCode).toUpperCase();
   if (canonicalName.length < 2 || internalCode.length < 3) throw new Error("Укажите эталонное название и внутренний код товара.");
   const signature = productSignature(canonicalName);
   const category = await getPriceCategory(input.categoryId);
-  const linkGroup = input.linkGroupId === undefined
-    ? null
-    : (await db.select({ id: priceLinkGroups.id, isActive: priceLinkGroups.isActive }).from(priceLinkGroups).where(eq(priceLinkGroups.id, input.linkGroupId)).limit(1))[0] ?? null;
-  if (input.linkGroupId !== undefined && (!linkGroup || !linkGroup.isActive)) throw new Error("Выберите активное имя связи.");
+  if (input.linkGroupId !== undefined && text(input.linkGroupName || "")) throw new Error("Выберите существующее имя связи или укажите одно новое.");
+  const linkGroup = input.linkGroupName !== undefined && text(input.linkGroupName)
+    ? await ensurePriceLinkGroup(db, text(input.linkGroupName), undefined)
+    : input.linkGroupId === undefined
+      ? null
+      : (await db.select({ id: priceLinkGroups.id, isActive: priceLinkGroups.isActive }).from(priceLinkGroups).where(eq(priceLinkGroups.id, input.linkGroupId)).limit(1))[0] ?? null;
+  if ((input.linkGroupId !== undefined || text(input.linkGroupName || "")) && (!linkGroup || !linkGroup.isActive)) throw new Error("Выберите активное имя связи.");
   const [codeConflict] = await db.select({ id: priceProducts.id }).from(priceProducts).where(eq(priceProducts.internalCode, internalCode)).limit(1);
   if (codeConflict && codeConflict.id !== input.id) throw new Error("Такой внутренний код уже используется другим товаром.");
   const [current] = await db.select({ variantCharacteristicId: priceProducts.variantCharacteristicId, sizeCharacteristicId: priceProducts.sizeCharacteristicId, placeContentsCharacteristicId: priceProducts.placeContentsCharacteristicId, variant: priceProducts.variant, sizeText: priceProducts.sizeText, placeContents: priceProducts.placeContents }).from(priceProducts).where(eq(priceProducts.id, input.id)).limit(1);
@@ -1728,7 +1742,7 @@ export async function updatePriceProduct(input: { id: number; canonicalName: str
   const placeContents = input.placeContentsCharacteristicId === undefined
     ? input.placeContents === undefined ? { id: current.placeContentsCharacteristicId, value: current.placeContents } : await ensurePriceProductCharacteristic("place_contents", input.placeContents)
     : await findPriceProductCharacteristic("place_contents", input.placeContentsCharacteristicId);
-  await db.update(priceProducts).set({ canonicalName, internalCode, normalizedSignature: signature, ...(input.linkGroupId === undefined ? {} : { linkGroupId: linkGroup!.id }), categoryId: category?.id ?? input.categoryId ?? null, category: category?.name ?? (text(input.category || "") || null), variantCharacteristicId: variant?.id ?? null, sizeCharacteristicId: size?.id ?? null, placeContentsCharacteristicId: placeContents?.id ?? null, variant: variant?.value ?? null, sizeText: size?.value ?? null, placeContents: placeContents?.value ?? null, baseUnit: input.baseUnit || "unknown", ...(input.isActive === undefined ? {} : { isActive: input.isActive }) }).where(eq(priceProducts.id, input.id));
+  await db.update(priceProducts).set({ canonicalName, internalCode, normalizedSignature: signature, ...((input.linkGroupId === undefined && !text(input.linkGroupName || "")) ? {} : { linkGroupId: linkGroup!.id }), categoryId: category?.id ?? input.categoryId ?? null, category: category?.name ?? (text(input.category || "") || null), variantCharacteristicId: variant?.id ?? null, sizeCharacteristicId: size?.id ?? null, placeContentsCharacteristicId: placeContents?.id ?? null, variant: variant?.value ?? null, sizeText: size?.value ?? null, placeContents: placeContents?.value ?? null, baseUnit: input.baseUnit || "unknown", ...(input.isActive === undefined ? {} : { isActive: input.isActive }) }).where(eq(priceProducts.id, input.id));
   const [product] = await db.select().from(priceProducts).where(eq(priceProducts.id, input.id)).limit(1);
   if (!product) throw new Error("Внутренний товар не найден.");
   return product;
