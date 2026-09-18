@@ -75,8 +75,9 @@ describe("контракт страницы Выручка", () => {
     expect(page).toContain('— {field.label}:');
     expect(styles).toContain('/* Print uses a separate sheet, never the interactive/sortable registry table. */');
     expect(styles).toContain('body > :not(#revenue-print-root) { display: none !important; }');
-    expect(styles).toContain('@page { size: A4 landscape; margin: 7mm; }');
-    expect(styles).toContain('html, body { background: transparent !important; }');
+    expect(styles).toContain('@page { size: A4 portrait; margin: 7mm; }');
+    expect(styles).toContain('html, body { background: #fff !important; color: #000 !important; }');
+    expect(styles).toContain('background: #fff !important; color: #000; box-shadow: none;');
     expect(styles).toContain('thead th:nth-child(3) { white-space: nowrap; }');
     expect(styles).toContain(':is(thead, tbody, tfoot) :is(th, td):last-child { background: #d8d8d8 !important;');
     expect(styles).toContain('font-family: Arial, sans-serif; font-size: 9pt;');

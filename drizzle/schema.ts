@@ -337,6 +337,9 @@ export const operationalCatalogProducts = mysqlTable("operational_catalog_produc
   internalCostPrice: decimal("internalCostPrice", { precision: 18, scale: 2 }),
   /** Controlled marking choice; product-level rather than store-level. */
   markingCategory: mysqlEnum("markingCategory", ["none", "supplement", "seafood_caviar", "seafood_canned", "alcohol", "beer_marked", "beer_non_alcoholic", "soft_drinks", "water", "dairy"]).default("none").notNull(),
+  /** Alcohol-specific data is required only when the controlled marking selection is alcohol. */
+  alcoholCode: varchar("alcoholCode", { length: 255 }),
+  alcoholStrengthPercent: decimal("alcoholStrengthPercent", { precision: 5, scale: 2 }),
   /** Manually confirmed barcodes, normalized as semicolon-separated text. */
   manualBarcodes: text("manualBarcodes"),
   /** A hidden product is excluded from future store requests, but never from history. */

@@ -11,6 +11,7 @@ describe("интерфейс операционных остатков", () => {
     expect(page).toContain("сохраняет отдельное неизменяемое движение");
     expect(page).toContain("Новая ревизия");
     expect(page).toContain("Ревизия");
+    expect(page).toContain('href={revisionHref(item)}');
     expect(page).toContain("trpc.inventoryRegistry.adjustStock.useMutation");
     expect(page).toContain("Изменить остаток");
     expect(page).toContain("Причина корректировки");

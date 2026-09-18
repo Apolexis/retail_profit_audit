@@ -5,12 +5,12 @@ import { AuditShell } from "@/components/AuditShell";
 import { ThemedSelect } from "@/components/ui/themed-select";
 import { normalizeDecimalInputText } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import "@/catalog-control.css";
 
 type CatalogUnit = "kg" | "l" | "piece";
 type MarkingCategory = "none" | "supplement" | "seafood_caviar" | "seafood_canned" | "alcohol" | "beer_marked" | "beer_non_alcoholic" | "soft_drinks" | "water" | "dairy";
-type CatalogProduct = { id: number; internalCode: string; canonicalName: string; evotorCategoryName?: string | null; barcodes?: unknown; baseUnit: CatalogUnit; vatRate: "VAT_10" | "VAT_22"; internalCostPrice?: string | null; markingCategory: MarkingCategory; manualBarcodes: string | null; isVisibleInRequests: boolean; isEvotorExportEnabled: boolean; isActive?: boolean };
+type CatalogProduct = { id: number; internalCode: string; canonicalName: string; evotorCategoryName?: string | null; barcodes?: unknown; baseUnit: CatalogUnit; vatRate: "VAT_10" | "VAT_22"; internalCostPrice?: string | null; markingCategory: MarkingCategory; alcoholCode?: string | null; alcoholStrengthPercent?: string | null; manualBarcodes: string | null; isVisibleInRequests: boolean; isEvotorExportEnabled: boolean; isActive?: boolean };
 type PriceType = { id: number; name: string; isDefault: boolean; isActive: boolean };
 type SalePrice = { productId: number; priceTypeId: number; salePrice: string };
 
@@ -31,6 +31,8 @@ export default function CatalogProductEditor({ productId }: { productId?: number
   const [marking, setMarking] = useState<MarkingCategory>("none");
   const [categoryName, setCategoryName] = useState("__none__");
   const [barcodes, setBarcodes] = useState("");
+  const [alcoholCode, setAlcoholCode] = useState("");
+  const [alcoholStrengthPercent, setAlcoholStrengthPercent] = useState("");
   const [visibleInRequests, setVisibleInRequests] = useState(true);
   const [evotorExportEnabled, setEvotorExportEnabled] = useState(false);
   const [internalCostPrice, setInternalCostPrice] = useState("");
@@ -45,8 +47,8 @@ export default function CatalogProductEditor({ productId }: { productId?: number
 
   useEffect(() => {
     if (!product) return;
-    setName(product.canonicalName); setUnit(product.baseUnit); setVatRate(product.vatRate); setMarking(product.markingCategory); setCategoryName(product.evotorCategoryName?.trim() || "__none__"); setBarcodes(product.manualBarcodes ?? ""); setVisibleInRequests(product.isVisibleInRequests); setEvotorExportEnabled(product.isEvotorExportEnabled); setInternalCostPrice(product.internalCostPrice ?? "");
-  }, [product]);
+    setName(product.canonicalName); setUnit(product.baseUnit); setVatRate(product.vatRate); setMarking(product.markingCategory); setCategoryName(product.evotorCategoryName?.trim() || "__none__"); setBarcodes(product.manualBarcodes || evotorBarcodes); setAlcoholCode(product.alcoholCode ?? ""); setAlcoholStrengthPercent(product.alcoholStrengthPercent ?? ""); setVisibleInRequests(product.isVisibleInRequests); setEvotorExportEnabled(product.isEvotorExportEnabled); setInternalCostPrice(product.internalCostPrice ?? "");
+  }, [product, evotorBarcodes]);
   useEffect(() => {
     if (!priceTypeId && activePriceTypes.length) setPriceTypeId(String(activePriceTypes.find(item => item.isDefault)?.id ?? activePriceTypes[0].id));
   }, [activePriceTypes, priceTypeId]);
@@ -68,10 +70,11 @@ export default function CatalogProductEditor({ productId }: { productId?: number
   const saveCard = async (event: React.FormEvent) => {
     event.preventDefault();
     const evotorCategoryName = categoryName === "__none__" ? null : categoryName;
-    if (productId) update.mutate({ id: productId, canonicalName: name, baseUnit: unit, vatRate, evotorCategoryName, markingCategory: marking, manualBarcodes: barcodes, isVisibleInRequests: visibleInRequests, isEvotorExportEnabled: evotorExportEnabled });
+    const alcohol = marking === "alcohol" ? { alcoholCode, alcoholStrengthPercent: alcoholStrengthPercent.trim() ? Number(alcoholStrengthPercent) : null } : { alcoholCode: null, alcoholStrengthPercent: null };
+    if (productId) update.mutate({ id: productId, canonicalName: name, baseUnit: unit, vatRate, evotorCategoryName, markingCategory: marking, ...alcohol, manualBarcodes: barcodes, isVisibleInRequests: visibleInRequests, isEvotorExportEnabled: evotorExportEnabled });
     else {
       try {
-        const created = await create.mutateAsync({ canonicalName: name, baseUnit: unit, vatRate, evotorCategoryName, markingCategory: marking, manualBarcodes: barcodes, isVisibleInRequests: visibleInRequests, isEvotorExportEnabled: evotorExportEnabled });
+        const created = await create.mutateAsync({ canonicalName: name, baseUnit: unit, vatRate, evotorCategoryName, markingCategory: marking, ...alcohol, manualBarcodes: barcodes, isVisibleInRequests: visibleInRequests, isEvotorExportEnabled: evotorExportEnabled });
         const value = salePrice.trim() ? Number(salePrice) : null;
         if (selectedPriceType && value !== null && Number.isFinite(value) && value >= 0) await setProductSalePrice.mutateAsync({ productId: created.id, priceTypeId: selectedPriceType.id, salePrice: value });
       } catch { /* mutation toast already communicates the failure */ }
@@ -91,13 +94,13 @@ export default function CatalogProductEditor({ productId }: { productId?: number
   };
 
   if (!me.isLoading && !isAdmin) return <AuditShell kicker="26 / НОМЕНКЛАТУРА" title="Номенклатура"><section className="empty-state"><Tag size={28}/><h2>Карточки номенклатуры доступны администратору</h2></section></AuditShell>;
-  if (productId && !products.isLoading && !product) return <AuditShell kicker="26 / НОМЕНКЛАТУРА" title="Номенклатура"><section className="empty-state"><Tag size={28}/><h2>Товар не найден</h2><button type="button" className="subtle-button" onClick={() => setLocation("/catalog-control")}><ArrowLeft size={15}/>К списку товаров</button></section></AuditShell>;
+  if (productId && !products.isLoading && !product) return <AuditShell kicker="26 / НОМЕНКЛАТУРА" title="Номенклатура"><section className="empty-state"><Tag size={28}/><h2>Товар не найден</h2><Link href="/catalog-control" className="subtle-button"><ArrowLeft size={15}/>К списку товаров</Link></section></AuditShell>;
 
   return <AuditShell kicker="26 / НОМЕНКЛАТУРА" title={productId ? "Карточка товара" : "Новый товар"}>
-    <section className="page-lede catalog-lede"><div><span>УПРАВЛЕНИЕ МАГАЗИНАМИ</span><h2>{productId ? "Редактирование товара" : "Добавление товара"}</h2><p>Карточка товара отделена от списка. Общая номенклатура не зависит от магазина; продажная цена задается по выбранному виду цены.</p></div><button type="button" className="subtle-button" onClick={() => setLocation("/catalog-control")}><ArrowLeft size={15}/>К списку</button></section>
+    <section className="page-lede catalog-lede"><div><span>УПРАВЛЕНИЕ МАГАЗИНАМИ</span><h2>{productId ? "Редактирование товара" : "Добавление товара"}</h2><p>Карточка товара отделена от списка. Общая номенклатура не зависит от магазина; продажная цена задается по выбранному виду цены.</p></div><Link href="/catalog-control" className="subtle-button"><ArrowLeft size={15}/>К списку</Link></section>
     <form className="packet-card catalog-editor-card" onSubmit={saveCard}>
       <div className="card-title"><div><span>ОСНОВНЫЕ ДАННЫЕ</span><h3>{productId ? product?.canonicalName : "Новая позиция"}</h3></div><div className="catalog-editor-title-actions"><button type="button" className={visibleInRequests ? "subtle-button catalog-visibility-button is-on" : "subtle-button catalog-visibility-button"} aria-pressed={visibleInRequests} onClick={() => setVisibleInRequests(value => !value)}>{visibleInRequests ? <Eye size={15}/> : <EyeOff size={15}/>}В заявках</button><button type="button" className="subtle-button catalog-visibility-button" disabled title="Обратная запись в Эвотор пока не подключена"><EyeOff size={15}/>Эвотор: не подключено</button><button className="packet-link" disabled={create.isPending || update.isPending}><Save size={16}/>{create.isPending || update.isPending ? "Сохраняем…" : "Сохранить"}</button></div></div>
-      <div className="catalog-editor-grid"><label>Название товара<input value={name} onChange={event => setName(event.target.value)} required maxLength={512}/></label><label>Категория<ThemedSelect value={categoryName} onChange={event => setCategoryName(event.target.value)}><option value="__none__">Без категории</option>{categoryOptions.map(item => <option value={item} key={item}>{item}</option>)}</ThemedSelect></label><label>Единица<ThemedSelect value={unit} onChange={event => setUnit(event.target.value as CatalogUnit)}><option value="kg">кг</option><option value="l">л</option><option value="piece">шт</option></ThemedSelect></label><label>НДС<ThemedSelect value={vatRate} onChange={event => setVatRate(event.target.value as "VAT_10" | "VAT_22")}><option value="VAT_10">НДС 10%</option><option value="VAT_22">НДС 22%</option></ThemedSelect></label><label>Маркировка<ThemedSelect value={marking} onChange={event => setMarking(event.target.value as MarkingCategory)}>{markingOptions.map(option => <option value={option.value} key={option.value}>{option.label}</option>)}</ThemedSelect></label>{productId && <div className="catalog-editor-readonly"><span>Штрихкоды Эвотор</span><strong>{evotorBarcodes || "Не переданы кассой"}</strong></div>}<label>Ручные штрихкоды <small>строго через ;</small><input value={barcodes} onChange={event => setBarcodes(event.target.value)} placeholder="1234567890123; 9876543210987"/></label></div>
+      <div className="catalog-editor-grid"><label>Название товара<input value={name} onChange={event => setName(event.target.value)} required maxLength={512}/></label><label>Категория<ThemedSelect value={categoryName} onChange={event => setCategoryName(event.target.value)}><option value="__none__">Без категории</option>{categoryOptions.map(item => <option value={item} key={item}>{item}</option>)}</ThemedSelect></label><label>Единица<ThemedSelect value={unit} onChange={event => setUnit(event.target.value as CatalogUnit)}><option value="kg">кг</option><option value="l">л</option><option value="piece">шт</option></ThemedSelect></label><label>НДС<ThemedSelect value={vatRate} onChange={event => setVatRate(event.target.value as "VAT_10" | "VAT_22")}><option value="VAT_10">НДС 10%</option><option value="VAT_22">НДС 22%</option></ThemedSelect></label><label>Маркировка<ThemedSelect value={marking} onChange={event => setMarking(event.target.value as MarkingCategory)}>{markingOptions.map(option => <option value={option.value} key={option.value}>{option.label}</option>)}</ThemedSelect></label><label className="catalog-editor-barcodes">Штрихкоды <small>Эвотор и ручные, строго через ;</small><input value={barcodes} onChange={event => setBarcodes(event.target.value)} placeholder="1234567890123; 9876543210987"/></label>{marking === "alcohol" && <><label>Алкокод<input value={alcoholCode} onChange={event => setAlcoholCode(event.target.value)} maxLength={255} placeholder="Код алкогольной продукции"/></label><label>Крепость, %<input data-decimal-input value={alcoholStrengthPercent} onChange={event => setAlcoholStrengthPercent(normalizeDecimalInputText(event.target.value).replace(/[^0-9.]/g, ""))} inputMode="decimal" placeholder="Например: 40"/></label></>}</div>
     </form>
     <section className="packet-card catalog-editor-card">
       <div className="card-title"><div><span>ЦЕНЫ ТОВАРА</span><h3>Внутренняя и продажная</h3></div></div>

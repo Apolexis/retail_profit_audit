@@ -253,6 +253,13 @@
       "when": 1789722947721,
       "tag": "0035_fresh_mandroid",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "5",
+      "when": 1789723914305,
+      "tag": "0036_fat_makkari",
+      "breakpoints": true
     }
   ]
 }

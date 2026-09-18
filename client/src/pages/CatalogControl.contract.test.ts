@@ -51,4 +51,18 @@ describe("общий операционный справочник", () => {
     expect(editor).toContain("Эвотор: не подключено");
     expect(editor).toContain("Обратная запись в Эвотор пока не подключена");
   });
+
+  it("объединяет штрихкоды в одном поле и раскрывает алкогольные поля только для алкоголя", () => {
+    expect(editor).toContain("Эвотор и ручные, строго через ;");
+    expect(editor).not.toContain("Штрихкоды Эвотор");
+    expect(editor).toContain('marking === "alcohol"');
+    expect(editor).toContain("Алкокод");
+    expect(editor).toContain("Крепость, %");
+  });
+
+  it("использует обычные ссылки для самостоятельных маршрутов номенклатуры", () => {
+    expect(page).toContain('href="/catalog-control/new"');
+    expect(page).toContain('href={`/catalog-control/${product.id}/edit`}');
+    expect(editor).toContain('href="/catalog-control"');
+  });
 });
