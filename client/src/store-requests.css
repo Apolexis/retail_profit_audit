@@ -1,0 +1,183 @@
+/* Store requests follow the established operating hierarchy: blue surfaces in light, neutral/coral contours in dark. */
+.packet {
+  --request-card: var(--surface);
+  --request-panel: var(--surface-2);
+  --request-field: var(--surface);
+  --request-line: var(--line);
+  --request-quiet-line: var(--line);
+  --request-accent: var(--packet-accent);
+  --request-accent-faint: var(--packet-accent-faint);
+}
+.packet .request-lede { margin-bottom: 0; }
+.packet .request-layout { display: grid; gap: 18px; }
+.packet :is(.request-create-card, .request-draft-card, .request-history, .request-print-config) { display: grid; gap: 16px; min-width: 0; border-color: var(--request-line); background: var(--request-card); box-shadow: none; }
+.packet .request-meta-grid { display: grid; grid-template-columns: repeat(2, minmax(190px, 1fr)); gap: 12px; }
+.packet .request-meta-grid > label,
+.packet .request-readonly,
+.packet .request-note,
+.packet .request-note-form > label,
+.packet .request-line-create > label,
+.packet .request-print-date { display: grid; gap: 6px; min-width: 0; color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.packet .request-readonly { align-content: center; min-height: 42px; padding: 9px 12px; border: 1px solid var(--request-line); border-radius: 11px; background: var(--request-field); }
+.packet .request-readonly strong { overflow: hidden; color: var(--ink); letter-spacing: normal; text-overflow: ellipsis; text-transform: none; white-space: nowrap; }
+.packet .request-note small,
+.packet .request-note-form small,
+.packet .request-line-create label > small { color: var(--faint); font-size: 10px; font-weight: 650; letter-spacing: normal; text-transform: none; }
+.packet :is(.request-note, .request-note-form) textarea { width: 100%; min-height: 70px; padding: 9px 11px; border: 1px solid var(--request-line); border-radius: 9px; background: var(--request-field); color: var(--ink); font: 650 12px/1.4 Manrope, Arial, sans-serif; letter-spacing: normal; outline: none; resize: vertical; text-transform: none; }
+.packet .request-create-actions { display: flex; justify-content: flex-end; }
+.packet .request-create-actions .packet-link,
+.packet .request-actions .packet-link { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 38px; margin: 0; white-space: nowrap; }
+.packet .request-actions { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+.packet .request-actions .subtle-button { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; margin: 0; white-space: nowrap; }
+.packet .request-status { display: inline-flex; align-items: center; min-height: 30px; padding: 0 10px; border: 1px solid var(--request-line); border-radius: 999px; font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .05em; text-transform: uppercase; }
+.packet .request-status.closed { border-color: var(--request-accent); color: var(--request-accent); }
+.packet .request-note-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: end; }
+.packet .request-note-form .subtle-button { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; margin: 0; }
+.packet .request-line-create { display: grid; grid-template-columns: minmax(300px, 1.6fr) minmax(125px, .45fr) minmax(200px, .85fr) auto; gap: 12px; align-items: end; padding: 14px; border: 1px solid var(--request-quiet-line); border-radius: 13px; background: var(--request-panel); }
+.packet .request-line-create :is(input, .free-scroll-select-trigger) { width: 100%; min-width: 0; min-height: 40px; border: 1px solid var(--request-line); border-radius: 9px; background: var(--request-field); color: var(--ink); font: 700 13px Manrope, Arial, sans-serif; outline: none; }
+.packet .request-line-create > label > input { padding: 0 10px; }
+.packet .request-quantity-input { position: relative; display: grid; align-items: center; }
+.packet .request-quantity-input input { padding: 0 38px 0 10px; }
+.packet .request-quantity-input small { position: absolute; right: 10px; color: var(--muted); font: 750 11px Manrope, Arial, sans-serif; letter-spacing: 0; pointer-events: none; text-transform: none; }
+.packet .request-line-create .packet-link { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; margin: 0; white-space: nowrap; }
+.packet .request-lines-wrap { overflow-x: auto; cursor: grab; scrollbar-width: none; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y; }
+.packet .request-lines-wrap::-webkit-scrollbar { display: none; }
+.packet .request-lines { min-width: 740px; }
+.packet .request-lines tbody tr:nth-child(even) { background: color-mix(in srgb, var(--request-panel) 72%, transparent); }
+.packet .request-lines td:last-child { white-space: nowrap; }
+.packet .request-inline-quantity { position: relative; display: grid; align-items: center; width: min(138px, 100%); }
+.packet .request-inline-quantity input,
+.packet .request-inline-note { width: 100%; min-width: 0; height: 34px; border: 1px solid var(--request-line); border-radius: 8px; background: var(--request-field); color: var(--ink); font: 700 12px Manrope, Arial, sans-serif; outline: none; }
+.packet .request-inline-quantity input { padding: 0 34px 0 9px; }
+.packet .request-inline-note { padding: 0 9px; }
+.packet .request-inline-quantity small { position: absolute; right: 9px; color: var(--muted); font-size: 11px; pointer-events: none; }
+.packet :is(.request-note textarea, .request-note-form textarea, .request-line-create input, .request-inline-quantity input, .request-inline-note):focus-visible { border-color: var(--request-accent); outline: 2px solid var(--request-accent); outline-offset: 1px; box-shadow: none; }
+.packet .request-empty-lines { display: flex; align-items: flex-start; gap: 11px; padding: 14px; border: 1px dashed var(--request-line); border-radius: 12px; color: var(--muted); }
+.packet .request-empty-lines svg { flex: 0 0 auto; color: var(--request-accent); }
+.packet .request-empty-lines div { display: grid; gap: 3px; }
+.packet .request-empty-lines strong { color: var(--ink); font-size: 13px; }
+.packet .request-empty-lines p { margin: 0; font-size: 12px; line-height: 1.4; }
+.packet .request-draft-danger { display: flex; justify-content: flex-end; }
+.packet .request-draft-danger .subtle-button { display: inline-flex; align-items: center; gap: 6px; margin: 0; }
+.packet .request-history { margin-top: 18px; }
+.packet .request-history-list { display: grid; gap: 7px; }
+.packet .request-history-list > article { display: grid; overflow: hidden; min-width: 0; border: 1px solid var(--request-line); border-radius: 10px; background: var(--request-field); transition: border-color 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease); }
+.packet .request-history-list > article:hover { border-color: var(--request-accent); box-shadow: inset 0 0 0 1px var(--request-accent-faint); }
+.packet .request-history-list > article.selected { border-color: var(--request-accent); }
+.packet .request-history-select { display: grid; grid-template-columns: minmax(78px, .45fr) minmax(180px, 1.1fr) minmax(160px, .9fr) auto; align-items: center; gap: 10px; width: 100%; min-width: 0; padding: 12px 13px; border: 0; background: transparent; color: var(--ink); text-align: left; }
+.packet .request-history-select span,
+.packet .request-history-select small { color: var(--muted); font-size: 11px; }
+.packet .request-history-select strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.packet .request-history-select b { justify-self: end; font-size: 11px; white-space: nowrap; }
+.packet .request-history-select b.draft { color: var(--request-accent); }
+.packet .request-history-select b.closed { color: var(--positive); }
+.packet .request-print-config { margin-top: 18px; }
+.packet .request-print-config > .card-title > svg { color: var(--request-accent); }
+.packet .request-print-date { width: min(100%, 310px); }
+.packet .request-print-selections { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.packet .request-print-selections fieldset { display: grid; gap: 8px; min-width: 0; padding: 11px; border: 1px solid var(--request-quiet-line); border-radius: 11px; background: var(--request-panel); }
+.packet .request-print-selections legend { padding: 0 4px; color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.packet .request-print-selections fieldset > div { display: grid; gap: 6px; }
+.packet .request-print-selections label { display: flex; align-items: flex-start; gap: 8px; min-width: 0; color: var(--ink); font-size: 12px; cursor: pointer; }
+.packet .request-print-selections input { accent-color: var(--request-accent); margin-top: 2px; }
+.packet .request-print-selections span { display: grid; min-width: 0; gap: 2px; }
+.packet .request-print-selections small { color: var(--muted); font-size: 10px; }
+.packet .request-print-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.packet .request-print-actions .packet-link { display: inline-flex; align-items: center; gap: 7px; min-height: 38px; margin: 0; }
+.packet .request-print-actions small { color: var(--muted); font-size: 11px; }
+
+html[data-audit-theme="light"] .packet {
+  --request-card: #f7fbff;
+  --request-panel: #edf6ff;
+  --request-field: #ffffff;
+  --request-line: #c7e2ff;
+  --request-quiet-line: #d8ebff;
+  --request-accent: #0a84ff;
+  --request-accent-faint: #eaf5ff;
+}
+html[data-audit-theme="dark"] .packet {
+  --request-card: #16101a;
+  --request-panel: #0e0a11;
+  --request-field: #17111b;
+  --request-line: #3b2435;
+  --request-quiet-line: #2a1c29;
+  --request-accent: #ff765f;
+  --request-accent-faint: rgba(255, 118, 95, .075);
+}
+html[data-audit-theme="light"] .packet :is(.request-create-card, .request-draft-card, .request-history, .request-print-config) { border-color: var(--request-line) !important; background: var(--request-card) !important; box-shadow: 0 8px 20px rgba(10, 94, 180, .06) !important; }
+html[data-audit-theme="dark"] .packet :is(.request-create-card, .request-draft-card, .request-history, .request-print-config) { border-color: var(--request-line) !important; background: var(--request-card) !important; box-shadow: inset 0 1px 0 rgba(255,255,255,.025) !important; }
+html[data-audit-theme="light"] .packet :is(.request-create-card, .request-draft-card, .request-history, .request-print-config):hover { border-color: var(--request-accent) !important; box-shadow: 0 0 0 1px rgba(10,132,255,.14), 0 10px 22px rgba(10,94,180,.08) !important; }
+html[data-audit-theme="dark"] .packet :is(.request-create-card, .request-draft-card, .request-history, .request-print-config):hover { border-color: var(--request-accent) !important; box-shadow: 0 0 0 1px rgba(255,118,95,.12), inset 0 1px 0 rgba(255,255,255,.025) !important; }
+html[data-audit-theme="light"] .packet .request-create-actions .packet-link,
+html[data-audit-theme="light"] .packet .request-actions .packet-link,
+html[data-audit-theme="light"] .packet .request-print-actions .packet-link { border-color: #0a84ff !important; background: #0a84ff !important; color: #fff !important; }
+html[data-audit-theme="dark"] .packet .request-create-actions .packet-link,
+html[data-audit-theme="dark"] .packet .request-actions .packet-link,
+html[data-audit-theme="dark"] .packet .request-print-actions .packet-link { border-color: var(--request-accent) !important; background: transparent !important; color: var(--request-accent) !important; }
+
+.store-request-print { display: none; }
+@media (max-width: 1160px) {
+  .packet .request-line-create { grid-template-columns: minmax(0, 1fr) minmax(130px, .42fr); }
+  .packet .request-line-create > label:first-child { grid-column: 1 / -1; }
+  .packet .request-line-create .packet-link { justify-self: start; }
+}
+@media (max-width: 1024px) {
+  .packet .request-lines-wrap { overflow: visible; cursor: default; touch-action: pan-y; border: 0; border-radius: 0; background: transparent; }
+  .packet .request-lines { display: block; min-width: 0; }
+  .packet .request-lines thead { display: none; }
+  .packet .request-lines tbody { display: grid; gap: 9px; }
+  .packet .request-lines tbody tr,
+  .packet .request-lines tbody tr:nth-child(even) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: hidden; border: 1px solid var(--request-line); border-radius: 11px; background: var(--request-card); }
+  .packet .request-lines td { display: grid; min-width: 0; min-height: 42px; align-content: center; gap: 3px; padding: 8px 10px; border: 0 !important; border-top: 1px solid var(--request-line) !important; text-align: left !important; white-space: normal; }
+  .packet .request-lines td::before { content: attr(data-label); color: var(--muted); font: 800 9px/1.15 Manrope, Arial, sans-serif; letter-spacing: .07em; text-transform: uppercase; }
+  .packet .request-lines td:first-child { grid-column: 1 / -1; border-top: 0 !important; }
+  .packet .request-lines td:first-child strong { overflow-wrap: anywhere; }
+  .packet .request-lines td:last-child:has(.subtle-button) { grid-column: 1 / -1; }
+  .packet .request-lines td:last-child .subtle-button { width: 100%; justify-content: center; }
+  .packet .request-inline-quantity { width: 100%; }
+}
+@media (max-width: 760px) {
+  .packet .request-meta-grid,
+  .packet .request-note-form,
+  .packet .request-line-create,
+  .packet .request-print-selections { grid-template-columns: 1fr; }
+  .packet .request-create-actions,
+  .packet .request-draft-danger { display: grid; }
+  .packet .request-create-actions .packet-link,
+  .packet .request-note-form .subtle-button,
+  .packet .request-draft-danger .subtle-button { width: 100%; justify-content: center; }
+  .packet .request-actions { width: 100%; justify-content: stretch; }
+  .packet .request-actions :is(.packet-link, .subtle-button) { flex: 1 1 150px; justify-content: center; }
+  .packet .request-line-create .packet-link { width: 100%; justify-content: center; }
+  .packet .request-history-select { grid-template-columns: minmax(0, 1fr) auto; gap: 3px 10px; }
+  .packet .request-history-select small { grid-column: 1; }
+  .packet .request-history-select b { grid-column: 2; grid-row: 1 / span 2; }
+}
+@media (max-width: 400px) {
+  .packet .request-history-select { grid-template-columns: 1fr; }
+  .packet .request-history-select b { grid-column: 1; grid-row: auto; justify-self: start; }
+}
+
+@media print {
+  @page { size: A4 portrait; margin: 12mm; }
+  html, body, #root { width: auto !important; min-height: 0 !important; background: #fff !important; color: #000 !important; }
+  /* Keep the shell ancestor rendered so the generated print projection remains reachable. */
+  .packet { display: block !important; width: auto !important; min-height: 0 !important; background: #fff !important; color: #000 !important; }
+  .packet > :not(.packet-main),
+  .packet-main > :not(.store-request-print) { display: none !important; }
+  .packet-main { display: block !important; width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; background: #fff !important; }
+  .store-request-print { display: block !important; width: 100%; background: #fff !important; color: #000 !important; font-family: Arial, sans-serif; }
+  .store-request-print-sheet { display: block; min-height: 260mm; break-after: page; page-break-after: always; }
+  .store-request-print-sheet:last-child { break-after: auto; page-break-after: auto; }
+  .store-request-print-sheet > header { display: grid; gap: 2mm; margin: 0 0 6mm; }
+  .store-request-print-sheet > header span { font: 900 9pt Arial Black, Arial, sans-serif; }
+  .store-request-print-sheet > header strong { font: 900 12pt Arial Black, Arial, sans-serif; }
+  .store-request-print-sheet > header small { font: 700 9pt Arial, sans-serif; }
+  .store-request-print-sheet section { margin: 0 0 8mm; break-inside: avoid; page-break-inside: avoid; }
+  .store-request-print-sheet h1 { margin: 0 0 3mm; font: 900 11pt Arial Black, Arial, sans-serif; }
+  .store-request-print-sheet table { width: 100%; border-collapse: collapse; font: 9pt Arial, sans-serif; }
+  .store-request-print-sheet th, .store-request-print-sheet td { padding: 2.2mm 2.5mm; border: 0.2mm solid #9b9b9b; vertical-align: top; text-align: left; }
+  .store-request-print-sheet th { font-family: Arial Black, Arial, sans-serif; }
+  .store-request-print-sheet th:first-child, .store-request-print-sheet td:first-child { width: 12mm; }
+  .store-request-print-sheet th:nth-child(3), .store-request-print-sheet td:nth-child(3) { width: 28mm; white-space: nowrap; }
+}

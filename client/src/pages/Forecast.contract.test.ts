@@ -37,4 +37,11 @@ describe("страница прогноза", () => {
   it("использует базовую сетку KPI с явными интервалами между карточками", () => {
     expect(page).toContain('className="packet-kpis forecast-kpis"');
   });
+
+  it("показывает чеки Эвотор только как отдельный read-only сигнал", () => {
+    expect(page).toContain("evotorSalesAnalytics.useQuery");
+    expect(page).toContain("ОПЕРАЦИОННЫЙ СИГНАЛ ЭВОТОР");
+    expect(page).toContain("не смешивает суммы чеков с P&L");
+    expect(page).toContain("не подставляется в финансовый прогноз другого периода");
+  });
 });

@@ -5,13 +5,20 @@
 .packet .evotor-sales-chart-card,
 .packet .evotor-sales-table-card { margin-bottom: 18px; }
 .packet .evotor-metrics-picker { margin: 0 0 16px; }
+.packet .evotor-sales-period { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 18px; padding: 16px 18px; }
+.packet .evotor-sales-period > div { min-width: 0; display: grid; gap: 4px; }
+.packet .evotor-sales-period span { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .12em; }
+.packet .evotor-sales-period strong { font-size: 16px; line-height: 1.25; }
+.packet .evotor-sales-period small { color: var(--muted); line-height: 1.45; }
+.packet .evotor-sales-period .date-range-control { flex: 0 1 340px; min-width: 220px; }
 .packet .evotor-sales-table-wrap { overflow-x: auto; cursor: grab; }
 .packet .evotor-sales-table-wrap:active { cursor: grabbing; }
 .packet .evotor-sales-table .numeric-column { text-align: right; font-variant-numeric: tabular-nums; }
 .packet .evotor-sales-table tbody td:first-child strong { display: block; max-width: 520px; }
 
 html[data-audit-theme="light"] .packet .packet-card.evotor-sales-chart-card,
-html[data-audit-theme="light"] .packet .packet-card.evotor-sales-table-card {
+html[data-audit-theme="light"] .packet .packet-card.evotor-sales-table-card,
+html[data-audit-theme="light"] .packet .packet-card.evotor-sales-period {
   background: #f7fbff;
   border-color: #c7e2ff;
 }
@@ -22,7 +29,8 @@ html[data-audit-theme="light"] .packet .evotor-sales-table tbody tr:nth-child(ev
 html[data-audit-theme="light"] .packet .evotor-sales-table tbody td { border-color: #e1efff; }
 
 html[data-audit-theme="dark"] .packet .packet-card.evotor-sales-chart-card,
-html[data-audit-theme="dark"] .packet .packet-card.evotor-sales-table-card {
+html[data-audit-theme="dark"] .packet .packet-card.evotor-sales-table-card,
+html[data-audit-theme="dark"] .packet .packet-card.evotor-sales-period {
   background: #16101a;
   border-color: #3a2031;
 }
@@ -35,6 +43,8 @@ html[data-audit-theme="dark"] .packet .evotor-sales-table tbody td { border-colo
 /* A compact tablet cannot usefully drag an analytical table: preserve each
    metric as a labeled card before the columns start competing for space. */
 @media (max-width: 1024px) {
+  .packet .evotor-sales-period { align-items: stretch; flex-direction: column; }
+  .packet .evotor-sales-period .date-range-control { width: 100%; min-width: 0; }
   .packet .evotor-sales-store-picker summary { align-items: flex-start; }
   .packet .evotor-sales-chart-card .card-title,
   .packet .evotor-sales-table-card .card-title { gap: 12px; align-items: flex-start; }

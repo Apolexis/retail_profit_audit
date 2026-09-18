@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateInventoryAdjustment, markingFromEvotorCategory, validateCountedQuantity, validateInventoryDate } from "./inventoryRegistry";
+import { calculateInventoryAdjustment, markingFromEvotorCategory, validateCountedQuantity, validateInventoryDate, validateStoreRequestQuantity } from "./inventoryRegistry";
 
 describe("операционная инвентаризация: контроль количества", () => {
   it("принимает вес с точностью до грамма и нулевой фактический остаток", () => {
@@ -37,6 +37,19 @@ describe("операционная инвентаризация: закрыти�
   it("определяет расхождение только как факт минус учет", () => {
     expect(calculateInventoryAdjustment(0, 6.5)).toBe(6.5);
     expect(calculateInventoryAdjustment(6.5, 0)).toBe(-6.5);
+  });
+});
+
+describe("заявки магазинов: количество", () => {
+  it("принимает только положительное количество с точностью до грамма", () => {
+    expect(validateStoreRequestQuantity(1)).toBe(1);
+    expect(validateStoreRequestQuantity(2.345)).toBe(2.345);
+  });
+
+  it("не подменяет отсутствие или отрицательное количество строкой заявки", () => {
+    expect(() => validateStoreRequestQuantity(0)).toThrow("больше нуля");
+    expect(() => validateStoreRequestQuantity(-0.1)).toThrow("больше нуля");
+    expect(() => validateStoreRequestQuantity(1.2345)).toThrow("трех знаков");
   });
 });
 

@@ -1,0 +1,37 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+
+const service = readFileSync(new URL("./inventoryRegistry.ts", import.meta.url), "utf8");
+const router = readFileSync(new URL("./routers/inventoryRegistry.ts", import.meta.url), "utf8");
+
+describe("заявки магазинов: серверный контракт", () => {
+  it("разрешает добавлять только активные товары, видимые в заявках", () => {
+    expect(service).toContain("eq(operationalCatalogProducts.isVisibleInRequests, true)");
+    expect(service).toContain("!product.isActive || !product.isVisibleInRequests");
+  });
+
+  it("не меняет закрытую заявку и хранит снимок строки", () => {
+    expect(service).toContain("Закрытую заявку нельзя изменять");
+    expect(service).toContain("catalogNumber: product.catalogNumber");
+    expect(service).toContain("productName: product.canonicalName");
+    expect(service).toContain("categoryName: product.categoryName");
+    expect(service).toContain("status: \"closed\"");
+  });
+
+  it("строит печать только из закрытых заявок, исключая скрытые магазины", () => {
+    expect(service).toContain("eq(operationalStoreRequests.status, \"closed\")");
+    expect(service).toContain("eq(stores.isHidden, false)");
+    expect(service).toContain("expandPrintCategoryNames(categoryGroup.id, allCategoryGroups, members)");
+  });
+
+  it("фиксирует каждую постоянную операцию существующим audit", () => {
+    for (const action of ["store_request.create", "store_request.line.upsert", "store_request.line.remove", "store_request.close", "store_request.draft.delete", "store_request.print"]) {
+      expect(router).toContain(action);
+    }
+    expect(router).toContain("recordChange");
+  });
+
+  it("не содержит внешней записи в Эвотор", () => {
+    expect(service).not.toMatch(/(?:POST|PUT|PATCH|DELETE)\s+https?:\/\/[^\n]*evotor/i);
+  });
+});

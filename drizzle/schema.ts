@@ -403,6 +403,8 @@ export const operationalPrintCategoryGroups = mysqlTable("operational_print_cate
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 128 }).notNull(),
   normalizedName: varchar("normalizedName", { length: 160 }).notNull(),
+  /** Per-store gives one sheet per store; grouped stores consolidate a category group on one sheet. */
+  printMode: mysqlEnum("printMode", ["per_store", "grouped_stores"]).default("per_store").notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   createdByAccountId: int("createdByAccountId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -533,6 +535,47 @@ export const operationalStockMovements = mysqlTable("operational_stock_movements
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, table => [unique("operational_stock_movement_inventory_product_uq").on(table.inventoryId, table.productId)]);
 
+/**
+ * A request is an operational order draft for exactly one warehouse.  A nullable
+ * draft key permits one open request per store while retaining arbitrarily many
+ * immutable closed requests for the same business date.
+ */
+export const operationalStoreRequests = mysqlTable("operational_store_requests", {
+  id: int("id").autoincrement().primaryKey(),
+  requestNumber: int("requestNumber").notNull().unique(),
+  storeId: int("storeId").notNull(),
+  storeName: varchar("storeName", { length: 128 }).notNull(),
+  businessDate: varchar("businessDate", { length: 10 }).notNull(),
+  status: mysqlEnum("status", ["draft", "closed"]).default("draft").notNull(),
+  /** `draft:<storeId>` while open; null after closing preserves the unique draft invariant. */
+  draftStoreKey: varchar("draftStoreKey", { length: 64 }).unique(),
+  note: text("note"),
+  createdByAccountId: int("createdByAccountId").notNull(),
+  closedByAccountId: int("closedByAccountId"),
+  closedAt: timestamp("closedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+/**
+ * Product data is snapshotted with the request line so a closed print remains
+ * reproducible even when the common catalogue changes later.  Costs are
+ * intentionally absent from the operating request contour.
+ */
+export const operationalStoreRequestLines = mysqlTable("operational_store_request_lines", {
+  id: int("id").autoincrement().primaryKey(),
+  requestId: int("requestId").notNull(),
+  productId: int("productId").notNull(),
+  catalogNumber: int("catalogNumber").notNull(),
+  productName: varchar("productName", { length: 512 }).notNull(),
+  categoryName: varchar("categoryName", { length: 512 }),
+  requestedQuantity: decimal("requestedQuantity", { precision: 16, scale: 3 }).notNull(),
+  unit: mysqlEnum("unit", ["kg", "l", "piece"]).notNull(),
+  note: varchar("note", { length: 512 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [unique("operational_store_request_line_product_uq").on(table.requestId, table.productId)]);
+
 export type OperationalInventory = typeof operationalInventories.$inferSelect;
 export type OperationalCatalogProduct = typeof operationalCatalogProducts.$inferSelect;
 export type OperationalPriceType = typeof operationalPriceTypes.$inferSelect;
@@ -544,6 +587,8 @@ export type OperationalEvotorDocument = typeof operationalEvotorDocuments.$infer
 export type OperationalEvotorDocumentPosition = typeof operationalEvotorDocumentPositions.$inferSelect;
 export type OperationalInventoryLine = typeof operationalInventoryLines.$inferSelect;
 export type OperationalStockMovement = typeof operationalStockMovements.$inferSelect;
+export type OperationalStoreRequest = typeof operationalStoreRequests.$inferSelect;
+export type OperationalStoreRequestLine = typeof operationalStoreRequestLines.$inferSelect;
 
 /** Supplier catalog is deliberately isolated from financial facts and financial workbook imports. */
 export const priceSuppliers = mysqlTable("price_suppliers", {

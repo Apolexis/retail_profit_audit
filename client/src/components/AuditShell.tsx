@@ -18,9 +18,9 @@ type NavGroup = { title?: string; items: readonly NavItem[] };
 type NavSection = { title: string; groups: readonly NavGroup[] };
 
 const navSections: readonly NavSection[] = [
-  { title: "УПРАВЛЕНИЕ МАГАЗИНАМИ", groups: [{ items: [["/revenue", "23", "Выручка", "revenue"], ["/stock-control", "24", "Остатки", "operations"], ["/inventory-control", "25", "Инвентаризации", "operations"], ["/catalog-control", "26", "Номенклатура", true], ["/warehouse-control", "27", "Склады", true], ["/evotor-sales/metrics", "28", "Показатели Эвотор", true], ["/evotor-sales/products", "29", "Проданные товары", true]] }] },
+  { title: "УПРАВЛЕНИЕ МАГАЗИНАМИ", groups: [{ items: [["/revenue", "23", "Выручка", "revenue"], ["/stock-control", "24", "Остатки", "operations"], ["/inventory-control", "25", "Инвентаризации", "operations"], ["/catalog-control", "26", "Номенклатура", true], ["/warehouse-control", "27", "Склады", true], ["/requests", "30", "Заявки", "operations"]] }] },
   { title: "АНАЛИЗ МАГАЗИНОВ", groups: [
-    { title: "АНАЛИТИКА", items: [["/", "00", "Сводка", false], ["/months", "01", "Месяцы", false], ["/pricing", "02", "Цены", false], ["/expenses", "03", "Расходы", false], ["/inventory", "04", "Остатки", false], ["/stores", "05", "Магазины", false], ["/compare", "06", "Сравнить", false]] },
+    { title: "АНАЛИТИКА", items: [["/", "00", "Сводка", false], ["/months", "01", "Месяцы", false], ["/pricing", "02", "Цены", false], ["/expenses", "03", "Расходы", false], ["/inventory", "04", "Остатки", false], ["/stores", "05", "Магазины", false], ["/compare", "06", "Сравнить", false], ["/evotor-sales/metrics", "28", "Показатели Эвотор", true], ["/evotor-sales/products", "29", "Проданные товары", true]] },
     { title: "РЕШЕНИЯ", items: [["/control", "07", "Динамика", false], ["/cadence", "08", "Ритм", false], ["/portfolio", "09", "Портфель", false], ["/pilot", "10", "Пилот", false], ["/forecast", "19", "Прогноз", false], ["/planfact", "11", "План‑факт", false]] },
     { title: "УПРАВЛЕНИЕ", items: [["/import", "12", "Импорт", true], ["/manage", "13", "База", true]] },
   ] },
@@ -40,6 +40,7 @@ recommendations["26"]={title:"Номенклатура: только через 
 recommendations["27"]={title:"Склады: назначайте цену, а не дублируйте товар",text:"У магазина есть назначенный вид продажной цены, а товарный справочник остается единым для сети. Связь с Эвотором остается только для чтения.",action:"Назначьте активный вид цены складу, затем заполните цены товаров в общей номенклатуре."};
 recommendations["28"]={title:"Показатели Эвотор: сначала источник",text:"Экран показывает только уже нормализованные read-only чеки Эвотор. Он не дополняет и не заменяет финансовый P&L из исходной книги.",action:"Выберите общий срез или конкретные магазины, затем сравните сумму, число и средний чек по времени."};
 recommendations["29"]={title:"Проданные товары: от динамики к составу",text:"График показывает ритм товарного потока, а таблица под ним — состав проданных строк за выбранный период. Внутренняя себестоимость сюда не попадает.",action:"Сначала оцените общую динамику, затем найдите товарные позиции с наибольшей суммой и количеством."};
+recommendations["30"]={title:"Заявки: сначала потребность, затем печать",text:"Черновик помогает магазину собрать потребность без изменения остатков. После закрытия строки становятся снимком для печатных групп.",action:"Добавьте товары и количество, передайте черновик руководителю, затем распечатайте закрытые заявки по группе и категории."};
 
 export function AuditShell({title,kicker,children}:{title:string;kicker:string;children:ReactNode}){
   const [location,setLocation]=useLocation();
@@ -119,7 +120,7 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
   const matches=storeSearch.trim()?((availableStores.data??[]).filter(store=>store.name.toLowerCase().includes(storeSearch.trim().toLowerCase())).slice(0,6)):[];
   const chooseStore=(store:string)=>{setSelectedStore(store);setStoreSearch("");closeMenu();setLocation("/stores")};
   const guidance=recommendations[kicker.slice(0,2)]??recommendations["00"];
-  const analyticsSection=!['12','13','14','15','16','17','18','20','21','22','23','24','25','26','27','28','29'].includes(kicker.slice(0,2));
+  const analyticsSection=!['12','13','14','15','16','17','18','20','21','22','23','24','25','26','27','28','29','30'].includes(kicker.slice(0,2));
   const unread=notificationSummary.data?.unread??0;
   const routeIsActive=(href:string)=>href===location||(href==="/catalog-control"&&location.startsWith("/catalog-control/"));
   const sectionIsActive=(groups:readonly NavGroup[])=>groups.some(group=>group.items.some(([href])=>routeIsActive(href)));

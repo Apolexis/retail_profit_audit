@@ -1,9 +1,10 @@
 import { BarChart3, Boxes, ReceiptText, ShoppingBasket } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AuditShell } from "@/components/AuditShell";
 import { MetricLineChart, StoreSeriesModeToggle } from "@/components/AuditCharts";
+import { DateRangeControl } from "@/components/DateRangeControl";
 import { FactsLoader } from "@/components/OceanLoader";
-import { useAudit } from "@/contexts/AuditContext";
+import { useAudit, type DateRangeValue } from "@/contexts/AuditContext";
 import { trpc } from "@/lib/trpc";
 import "@/evotor-sales-analytics.css";
 
@@ -36,12 +37,19 @@ type AnalyticsData = {
   timeline: TimelineRow[];
   products: ProductRow[];
   summary: { checks: number; amount: number; positions: number; positionAmount: number; quantity: number };
+  coverage: { from: string | null; to: string | null };
 };
 
 const granularityLabels: Record<Granularity, string> = { month: "Месяцы", week: "Недели", day: "Дни", hour: "По времени" };
 const moneyText = (value: number) => `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 2 }).format(value)} ₽`;
 const numberText = (value: number) => new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 3 }).format(value);
 const compactDate = (value: string) => value.charAt(0).toLocaleUpperCase("ru-RU") + value.slice(1);
+const shiftIsoDate = (value: string, days: number) => {
+  const date = new Date(`${value}T12:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+};
+const rangeText = (value: DateRangeValue) => `${new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${value.from}T12:00:00Z`))} — ${new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${value.to}T12:00:00Z`))}`;
 
 function salesValue(row: TimelineRow, metric: SalesMetric) {
   if (metric === "checks") return row.checks;
@@ -87,23 +95,31 @@ function seriesTimeline(rows: TimelineRow[], metric: SalesMetric | ProductMetric
 }
 
 export default function EvotorSalesAnalytics({ kind }: { kind: PageKind }) {
-  const { range, rangeLabel, theme } = useAudit();
+  const { range, theme } = useAudit();
   const stores = trpc.audit.stores.useQuery(undefined, { retry: false });
   const [granularity, setGranularity] = useState<Granularity>("week");
   const [selectedStores, setSelectedStores] = useState<number[]>([]);
   const [showStoreSeries, setShowStoreSeries] = useState(false);
   const [salesMetric, setSalesMetric] = useState<SalesMetric>("amount");
   const [productMetric, setProductMetric] = useState<ProductMetric>("amount");
+  const [salesRange, setSalesRange] = useState<DateRangeValue | null>(null);
+  const didChooseLoadedRange = useRef(false);
   const visibleStores = useMemo(() => (stores.data ?? []).filter(store => !store.isHidden), [stores.data]);
   const allStoresSelected = selectedStores.length === 0;
+  const effectiveRange = salesRange ?? range;
   const queryInput = useMemo(() => ({
-    from: range.from,
-    to: range.to,
+    from: effectiveRange.from,
+    to: effectiveRange.to,
     granularity,
     storeIds: allStoresSelected ? undefined : selectedStores,
-  }), [allStoresSelected, granularity, range.from, range.to, selectedStores]);
+  }), [allStoresSelected, effectiveRange.from, effectiveRange.to, granularity, selectedStores]);
   const query = trpc.inventoryRegistry.evotorSalesAnalytics.useQuery(queryInput, { retry: false });
   const data = query.data as AnalyticsData | undefined;
+  useEffect(() => {
+    if (didChooseLoadedRange.current || !data?.coverage.to || data.summary.checks > 0) return;
+    didChooseLoadedRange.current = true;
+    setSalesRange({ from: shiftIsoDate(data.coverage.to, -29), to: data.coverage.to });
+  }, [data?.coverage.to, data?.summary.checks]);
   const activeMetric = kind === "metrics" ? salesMetric : productMetric;
   const chartData = useMemo(() => groupedTimeline(data?.timeline ?? [], activeMetric, kind), [activeMetric, data?.timeline, kind]);
   const allowStoreSeries = (data?.stores.length ?? 0) > 1;
@@ -117,6 +133,7 @@ export default function EvotorSalesAnalytics({ kind }: { kind: PageKind }) {
   const uniqueStoreCount = new Set((data?.timeline ?? []).map(row => row.storeId)).size;
   const productRows = data?.products ?? [];
   const noData = !query.isLoading && !query.isError && data && data.summary.checks === 0;
+  const coverageText = data?.coverage.from && data.coverage.to ? rangeText({ from: data.coverage.from, to: data.coverage.to }) : null;
   const toggleStore = (id: number) => setSelectedStores(current => current.includes(id) ? current.filter(value => value !== id) : [...current, id]);
   const chartDetail = kind === "metrics"
     ? ({ amount: "Сумма чеков", checks: "Количество чеков", average: "Средний чек" } as Record<SalesMetric, string>)[salesMetric]
@@ -125,12 +142,14 @@ export default function EvotorSalesAnalytics({ kind }: { kind: PageKind }) {
   const kicker = kind === "metrics" ? "28 / ПОКАЗАТЕЛИ ЭВОТОР" : "29 / ПРОДАННЫЕ ТОВАРЫ";
 
   return <AuditShell kicker={kicker} title={title}>
-    <section className="page-lede evotor-sales-lede"><div><span>УПРАВЛЕНИЕ МАГАЗИНАМИ</span><h2>{kind === "metrics" ? "Чеки Эвотор: динамика показателей" : "Товары из чеков Эвотор"}</h2><p>{kind === "metrics" ? "Суммы, число чеков и средний чек строятся по уже нормализованным read-only документам Эвотор. Этот экран не является финансовым P&L и не меняет финансовые факты." : "Количество и сумма позиции строятся по сохраненным товарным строкам чеков Эвотор. Номенклатура, себестоимость и цены в этом экране не изменяются."}</p></div></section>
+    <section className="page-lede evotor-sales-lede"><div><span>АНАЛИЗ МАГАЗИНОВ · ЭВОТОР</span><h2>{kind === "metrics" ? "Чеки Эвотор: динамика показателей" : "Товары из чеков Эвотор"}</h2><p>{kind === "metrics" ? "Суммы, число чеков и средний чек строятся по уже нормализованным read-only документам Эвотор. Этот экран не является финансовым P&L и не меняет финансовые факты." : "Количество и сумма позиции строятся по сохраненным товарным строкам чеков Эвотор. Номенклатура, себестоимость и цены в этом экране не изменяются."}</p></div></section>
+
+    <section className="packet-card evotor-sales-period"><div><span>ПЕРИОД ДОКУМЕНТОВ ЭВОТОР</span><strong>{rangeText(effectiveRange)}</strong><small>{coverageText ? `В загруженной витрине: ${coverageText}` : "Диапазон станет доступен после первой read-only загрузки чеков."}</small></div><DateRangeControl value={effectiveRange} onChange={value => { didChooseLoadedRange.current = true; setSalesRange(value); }} title="ПЕРИОД ЧЕКОВ ЭВОТОР" ariaLabel="Изменить период чеков Эвотор" /></section>
 
     <details className="cadence-store-picker evotor-sales-store-picker"><summary><span>Магазины для среза</span><b>{scope}</b><small>выбрать</small></summary><div><p>Выберите один или несколько магазинов либо оставьте общий срез всей сети. При включении «Каждый магазин» на графике и в таблице появится отдельный ряд для каждой выбранной точки.</p><button type="button" aria-pressed={allStoresSelected} onClick={() => setSelectedStores([])} className={allStoresSelected ? "cadence-metric-chip active" : "cadence-metric-chip"}>Все магазины</button>{visibleStores.map(store => <button type="button" key={store.id} aria-pressed={selectedStores.includes(store.id)} onClick={() => toggleStore(store.id)} className={selectedStores.includes(store.id) ? "cadence-metric-chip active" : "cadence-metric-chip"}>{store.name}</button>)}</div></details>
 
-    {query.isLoading ? <FactsLoader /> : query.isError ? <section className="empty-state live-empty"><ReceiptText size={30}/><h2>Показатели чеков недоступны</h2><p>{query.error.message}</p></section> : noData ? <section className="empty-state live-empty"><ReceiptText size={30}/><h2>В выбранном срезе нет нормализованных чеков</h2><p>Здесь появятся результаты после автоматической read-only загрузки чеков Эвотор. Ручной импорт и запись в Эвотор на этом экране недоступны.</p></section> : data && <>
-      {kind === "metrics" ? <section className="packet-kpis equal evotor-sales-kpis"><article className="packet-kpi cadence-primary-kpi"><span>Сумма чеков · {scope}</span><strong>{moneyText(data.summary.amount)}</strong><small>{rangeLabel} · по документам Эвотор</small></article><article className="packet-kpi"><span>Чеки</span><strong>{numberText(data.summary.checks)}</strong><small>сумма берется как отдал Эвотор</small></article><article className="packet-kpi"><span>Средний чек</span><strong>{moneyText(data.summary.checks ? data.summary.amount / data.summary.checks : 0)}</strong><small>сумма чеков / число чеков</small></article><article className="packet-kpi"><span>Магазины с чеками</span><strong>{numberText(uniqueStoreCount)}</strong><small>из {data.stores.length} в выбранном срезе</small></article></section> : <section className="packet-kpis equal evotor-sales-kpis"><article className="packet-kpi cadence-primary-kpi"><span>Сумма товарных строк · {scope}</span><strong>{moneyText(data.summary.positionAmount)}</strong><small>{rangeLabel} · по строкам чеков</small></article><article className="packet-kpi"><span>Продано</span><strong>{numberText(data.summary.quantity)}</strong><small>сумма количества в строках</small></article><article className="packet-kpi"><span>Товарных строк</span><strong>{numberText(data.summary.positions)}</strong><small>в загруженных чеках</small></article><article className="packet-kpi"><span>Уникальных товаров</span><strong>{numberText(productRows.length)}</strong><small>по названию и единице Эвотор</small></article></section>}
+    {query.isLoading ? <FactsLoader /> : query.isError ? <section className="empty-state live-empty"><ReceiptText size={30}/><h2>Показатели чеков недоступны</h2><p>{query.error.message}</p></section> : noData ? <section className="empty-state live-empty"><ReceiptText size={30}/><h2>В выбранном срезе нет нормализованных чеков</h2><p>{coverageText ? `Витрина чеков уже содержит период ${coverageText}; выберите дату внутри этого диапазона.` : "Здесь появятся результаты после автоматической read-only загрузки чеков Эвотор."} Ручной импорт и запись в Эвотор на этом экране недоступны.</p></section> : data && <>
+      {kind === "metrics" ? <section className="packet-kpis equal evotor-sales-kpis"><article className="packet-kpi cadence-primary-kpi"><span>Сумма чеков · {scope}</span><strong>{moneyText(data.summary.amount)}</strong><small>{rangeText(effectiveRange)} · по документам Эвотор</small></article><article className="packet-kpi"><span>Чеки</span><strong>{numberText(data.summary.checks)}</strong><small>сумма берется как отдал Эвотор</small></article><article className="packet-kpi"><span>Средний чек</span><strong>{moneyText(data.summary.checks ? data.summary.amount / data.summary.checks : 0)}</strong><small>сумма чеков / число чеков</small></article><article className="packet-kpi"><span>Магазины с чеками</span><strong>{numberText(uniqueStoreCount)}</strong><small>из {data.stores.length} в выбранном срезе</small></article></section> : <section className="packet-kpis equal evotor-sales-kpis"><article className="packet-kpi cadence-primary-kpi"><span>Сумма товарных строк · {scope}</span><strong>{moneyText(data.summary.positionAmount)}</strong><small>{rangeText(effectiveRange)} · по строкам чеков</small></article><article className="packet-kpi"><span>Продано</span><strong>{numberText(data.summary.quantity)}</strong><small>сумма количества в строках</small></article><article className="packet-kpi"><span>Товарных строк</span><strong>{numberText(data.summary.positions)}</strong><small>в загруженных чеках</small></article><article className="packet-kpi"><span>Уникальных товаров</span><strong>{numberText(productRows.length)}</strong><small>по названию и единице Эвотор</small></article></section>}
 
       <section className="packet-card evotor-sales-chart-card"><div className="card-title"><div><span>ДИНАМИКА ЧЕКОВ · {scope}</span><h3>{granularityLabels[granularity]} · {perStoreData ? `${chartDetail}: каждый магазин отдельно` : chartDetail}</h3></div><div className="chart-controls"><div className="chart-view-control" aria-label="Детализация показателей Эвотор">{(["month", "week", "day", "hour"] as Granularity[]).map(level => <button type="button" key={level} className={granularity === level ? "chart-view-button active" : "chart-view-button"} onClick={() => setGranularity(level)}>{granularityLabels[level]}</button>)}</div>{allowStoreSeries && <StoreSeriesModeToggle active={showStoreSeries} onChange={() => setShowStoreSeries(current => !current)} />}</div></div><div className="cadence-metrics-picker evotor-metrics-picker"><div className="cadence-picker-heading"><span>Показатель графика</span><small>один показатель за раз</small></div><div>{kind === "metrics" ? (["amount", "checks", "average"] as SalesMetric[]).map(metric => <button key={metric} type="button" aria-pressed={salesMetric === metric} onClick={() => { setSalesMetric(metric); setShowStoreSeries(false); }} className={salesMetric === metric ? "cadence-metric-chip active" : "cadence-metric-chip"}>{({ amount: "Сумма чеков", checks: "Чеки", average: "Средний чек" } as Record<SalesMetric, string>)[metric]}</button>) : (["amount", "quantity", "positions"] as ProductMetric[]).map(metric => <button key={metric} type="button" aria-pressed={productMetric === metric} onClick={() => { setProductMetric(metric); setShowStoreSeries(false); }} className={productMetric === metric ? "cadence-metric-chip active" : "cadence-metric-chip"}>{({ amount: "Сумма товаров", quantity: "Количество", positions: "Строки чеков" } as Record<ProductMetric, string>)[metric]}</button>)}</div></div><MetricLineChart data={perStoreData ?? chartData} lines={chartLines} displayMode={activeMetric === "amount" || activeMetric === "average" ? "amount" : "number"} chartTitle={`${title}: ${chartDetail}`}/><p className="packet-note"><BarChart3 size={15}/> {perStoreData ? "Каждый выбранный магазин показан отдельным рядом. Отключите «Каждый магазин», чтобы увидеть их общий результат." : "В общем срезе значения магазинов суммируются до построения графика. Таблица непосредственно ниже повторяет его интервалы."}</p></section>
 

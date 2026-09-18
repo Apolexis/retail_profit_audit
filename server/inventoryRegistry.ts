@@ -17,6 +17,8 @@ import {
   operationalStockMovements,
   operationalStoreMappings,
   operationalStorePriceTypes,
+  operationalStoreRequestLines,
+  operationalStoreRequests,
   operationalWarehouseSettings,
   stores,
 } from "../drizzle/schema";
@@ -300,6 +302,277 @@ export async function listOperationalStock(input: { storeIds?: number[] | null; 
   };
 }
 
+export type StoreRequestStatus = "draft" | "closed";
+export type PrintCategoryMode = "per_store" | "grouped_stores";
+
+export const validateStoreRequestQuantity = (value: number) => {
+  if (!Number.isFinite(value) || value <= 0 || value > 1_000_000 || Math.round(value * 1_000) !== value * 1_000) {
+    throw new Error("Количество в заявке должно быть больше нуля и содержать не более трех знаков после точки.");
+  }
+  return Math.round(value * 1_000) / 1_000;
+};
+
+async function nextStoreRequestNumber() {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const [last] = await db.select({ requestNumber: operationalStoreRequests.requestNumber }).from(operationalStoreRequests).orderBy(desc(operationalStoreRequests.requestNumber)).limit(1);
+  return (last?.requestNumber ?? 0) + 1;
+}
+
+function requestHeaderState(row: typeof operationalStoreRequests.$inferSelect) {
+  return {
+    id: row.id,
+    requestNumber: row.requestNumber,
+    storeId: row.storeId,
+    storeName: row.storeName,
+    businessDate: row.businessDate,
+    status: row.status,
+    note: row.note,
+    createdByAccountId: row.createdByAccountId,
+    closedByAccountId: row.closedByAccountId,
+    closedAt: row.closedAt,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+async function requireStoreRequest(requestId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const [request] = await db.select().from(operationalStoreRequests).where(eq(operationalStoreRequests.id, requestId)).limit(1);
+  if (!request) throw new Error("Заявка магазина не найдена.");
+  return request;
+}
+
+async function requireDraftStoreRequest(requestId: number) {
+  const request = await requireStoreRequest(requestId);
+  if (request.status !== "draft") throw new Error("Закрытую заявку нельзя изменять.");
+  return request;
+}
+
+export async function listOperationalStoreRequestProducts(input: { storeId: number }) {
+  const db = await getDb();
+  if (!db) return [];
+  const [store] = await db.select({ id: stores.id, isHidden: stores.isHidden }).from(stores).where(eq(stores.id, input.storeId)).limit(1);
+  if (!store || store.isHidden) throw new Error("Рабочий склад не найден.");
+  const rows = await db
+    .select({
+      id: operationalCatalogProducts.id,
+      catalogNumber: operationalCatalogProducts.catalogNumber,
+      canonicalName: operationalCatalogProducts.canonicalName,
+      categoryName: operationalCatalogProducts.evotorCategoryName,
+      baseUnit: operationalCatalogProducts.baseUnit,
+    })
+    .from(operationalCatalogProducts)
+    .where(and(eq(operationalCatalogProducts.isActive, true), eq(operationalCatalogProducts.isVisibleInRequests, true)))
+    .orderBy(operationalCatalogProducts.catalogNumber)
+    .limit(2_000);
+  return rows.filter(row => row.baseUnit === "kg" || row.baseUnit === "l" || row.baseUnit === "piece");
+}
+
+export async function listOperationalStoreRequests(input: { storeIds?: number[] | null; storeId?: number; status?: StoreRequestStatus; limit?: number }) {
+  const db = await getDb();
+  if (!db || (Array.isArray(input.storeIds) && !input.storeIds.length)) return [];
+  const conditions = [
+    input.storeId ? eq(operationalStoreRequests.storeId, input.storeId) : undefined,
+    Array.isArray(input.storeIds) ? inArray(operationalStoreRequests.storeId, input.storeIds) : undefined,
+    input.status ? eq(operationalStoreRequests.status, input.status) : undefined,
+  ].filter(Boolean);
+  const requests = await db.select().from(operationalStoreRequests).where(and(...conditions)).orderBy(desc(operationalStoreRequests.updatedAt), desc(operationalStoreRequests.id)).limit(Math.min(Math.max(input.limit ?? 30, 1), 100));
+  if (!requests.length) return [];
+  const requestIds = requests.map(request => request.id);
+  const lines = await db.select({ requestId: operationalStoreRequestLines.requestId }).from(operationalStoreRequestLines).where(inArray(operationalStoreRequestLines.requestId, requestIds));
+  const counts = new Map<number, number>();
+  for (const line of lines) counts.set(line.requestId, (counts.get(line.requestId) ?? 0) + 1);
+  return requests.map(request => ({ ...requestHeaderState(request), lineCount: counts.get(request.id) ?? 0 }));
+}
+
+export async function getOperationalStoreRequestDetail(requestId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const request = await requireStoreRequest(requestId);
+  const lines = await db
+    .select()
+    .from(operationalStoreRequestLines)
+    .where(eq(operationalStoreRequestLines.requestId, requestId))
+    .orderBy(operationalStoreRequestLines.categoryName, operationalStoreRequestLines.catalogNumber)
+    .limit(2_000);
+  return { ...requestHeaderState(request), lines: lines.map(line => ({ ...line, requestedQuantity: Number(line.requestedQuantity) })) };
+}
+
+export async function createOperationalStoreRequest(input: { storeId: number; businessDate: string; note?: string; createdByAccountId: number }) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const businessDate = validateInventoryDate(input.businessDate);
+  const [store] = await db.select({ id: stores.id, name: stores.name, isHidden: stores.isHidden }).from(stores).where(eq(stores.id, input.storeId)).limit(1);
+  if (!store || store.isHidden) throw new Error("Рабочий склад не найден.");
+  const draftStoreKey = `draft:${store.id}`;
+  const [existing] = await db.select().from(operationalStoreRequests).where(eq(operationalStoreRequests.draftStoreKey, draftStoreKey)).limit(1);
+  if (existing) return { created: false, request: existing };
+  const note = normalizedText(input.note ?? "").slice(0, 4_000) || null;
+  try {
+    const [inserted] = await db.insert(operationalStoreRequests).values({
+      requestNumber: await nextStoreRequestNumber(),
+      storeId: store.id,
+      storeName: store.name,
+      businessDate,
+      draftStoreKey,
+      note,
+      createdByAccountId: input.createdByAccountId,
+    }).$returningId();
+    const request = await requireStoreRequest(inserted.id);
+    return { created: true, request };
+  } catch (error) {
+    const [concurrentDraft] = await db.select().from(operationalStoreRequests).where(eq(operationalStoreRequests.draftStoreKey, draftStoreKey)).limit(1);
+    if (concurrentDraft) return { created: false, request: concurrentDraft };
+    throw error;
+  }
+}
+
+export async function updateOperationalStoreRequestNote(input: { requestId: number; note: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const before = await requireDraftStoreRequest(input.requestId);
+  const note = normalizedText(input.note).slice(0, 4_000) || null;
+  await db.update(operationalStoreRequests).set({ note }).where(eq(operationalStoreRequests.id, input.requestId));
+  const after = await requireStoreRequest(input.requestId);
+  return { before, after };
+}
+
+export async function upsertOperationalStoreRequestLine(input: { requestId: number; productId: number; requestedQuantity: number; note?: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  await requireDraftStoreRequest(input.requestId);
+  const [product] = await db
+    .select({
+      id: operationalCatalogProducts.id,
+      catalogNumber: operationalCatalogProducts.catalogNumber,
+      canonicalName: operationalCatalogProducts.canonicalName,
+      categoryName: operationalCatalogProducts.evotorCategoryName,
+      baseUnit: operationalCatalogProducts.baseUnit,
+      isActive: operationalCatalogProducts.isActive,
+      isVisibleInRequests: operationalCatalogProducts.isVisibleInRequests,
+    })
+    .from(operationalCatalogProducts)
+    .where(eq(operationalCatalogProducts.id, input.productId))
+    .limit(1);
+  if (!product || !product.isActive || !product.isVisibleInRequests) throw new Error("Товар недоступен для заявки.");
+  if (product.baseUnit !== "kg" && product.baseUnit !== "l" && product.baseUnit !== "piece") throw new Error("Для товара не задана рабочая единица.");
+  const [before] = await db.select().from(operationalStoreRequestLines).where(and(eq(operationalStoreRequestLines.requestId, input.requestId), eq(operationalStoreRequestLines.productId, input.productId))).limit(1);
+  const requestedQuantity = validateStoreRequestQuantity(input.requestedQuantity);
+  const note = normalizedText(input.note ?? "").slice(0, 512) || null;
+  const values = {
+    requestId: input.requestId,
+    productId: product.id,
+    catalogNumber: product.catalogNumber,
+    productName: product.canonicalName,
+    categoryName: product.categoryName,
+    requestedQuantity: requestedQuantity.toFixed(3),
+    unit: product.baseUnit,
+    note,
+  };
+  if (before) {
+    await db.update(operationalStoreRequestLines).set(values).where(eq(operationalStoreRequestLines.id, before.id));
+  } else {
+    await db.insert(operationalStoreRequestLines).values(values);
+  }
+  const [after] = await db.select().from(operationalStoreRequestLines).where(and(eq(operationalStoreRequestLines.requestId, input.requestId), eq(operationalStoreRequestLines.productId, input.productId))).limit(1);
+  return { before: before ?? null, after: after!, product };
+}
+
+export async function removeOperationalStoreRequestLine(input: { requestId: number; productId: number }) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  await requireDraftStoreRequest(input.requestId);
+  const [before] = await db.select().from(operationalStoreRequestLines).where(and(eq(operationalStoreRequestLines.requestId, input.requestId), eq(operationalStoreRequestLines.productId, input.productId))).limit(1);
+  if (!before) throw new Error("Строка заявки не найдена.");
+  await db.delete(operationalStoreRequestLines).where(eq(operationalStoreRequestLines.id, before.id));
+  return before;
+}
+
+export async function closeOperationalStoreRequest(input: { requestId: number; closedByAccountId: number }) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const before = await requireDraftStoreRequest(input.requestId);
+  const lines = await db.select({ id: operationalStoreRequestLines.id }).from(operationalStoreRequestLines).where(eq(operationalStoreRequestLines.requestId, input.requestId)).limit(2_000);
+  if (!lines.length) throw new Error("Добавьте хотя бы одну позицию перед закрытием заявки.");
+  await db.update(operationalStoreRequests).set({ status: "closed", draftStoreKey: null, closedByAccountId: input.closedByAccountId, closedAt: new Date() }).where(eq(operationalStoreRequests.id, input.requestId));
+  const after = await requireStoreRequest(input.requestId);
+  return { before, after, lineCount: lines.length };
+}
+
+export async function deleteOperationalStoreRequestDraft(requestId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const before = await requireDraftStoreRequest(requestId);
+  const lines = await db.select({ id: operationalStoreRequestLines.id }).from(operationalStoreRequestLines).where(eq(operationalStoreRequestLines.requestId, requestId)).limit(2_000);
+  await db.transaction(async tx => {
+    await tx.delete(operationalStoreRequestLines).where(eq(operationalStoreRequestLines.requestId, requestId));
+    await tx.delete(operationalStoreRequests).where(eq(operationalStoreRequests.id, requestId));
+  });
+  return { before, lineCount: lines.length };
+}
+
+function expandPrintCategoryNames(groupId: number, groups: Array<typeof operationalPrintCategoryGroups.$inferSelect>, members: Array<typeof operationalPrintCategoryGroupMembers.$inferSelect>) {
+  const byId = new Map(groups.map(group => [group.id, group]));
+  const categories = new Set<string>();
+  const visited = new Set<number>();
+  const visit = (id: number) => {
+    if (visited.has(id)) return;
+    visited.add(id);
+    for (const member of members.filter(candidate => candidate.groupId === id)) {
+      if (member.memberType === "catalog_category" && member.catalogCategory) categories.add(member.catalogCategory);
+      if (member.memberType === "category_group" && member.childGroupId && byId.has(member.childGroupId)) visit(member.childGroupId);
+    }
+  };
+  visit(groupId);
+  return categories;
+}
+
+/** Builds a reproducible, read-only print projection from closed request snapshots. */
+export async function getOperationalStoreRequestPrintProjection(input: { businessDate: string; printGroupIds?: number[]; printCategoryGroupIds: number[] }) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const businessDate = validateInventoryDate(input.businessDate);
+  const categoryGroupIds = Array.from(new Set(input.printCategoryGroupIds)).filter(Number.isInteger);
+  if (!categoryGroupIds.length) throw new Error("Выберите хотя бы одну категорию печати.");
+  const [allPrintGroups, allCategoryGroups, members] = await Promise.all([
+    db.select().from(operationalPrintGroups).where(eq(operationalPrintGroups.isActive, true)).orderBy(operationalPrintGroups.name).limit(100),
+    db.select().from(operationalPrintCategoryGroups).orderBy(operationalPrintCategoryGroups.name).limit(200),
+    db.select().from(operationalPrintCategoryGroupMembers).limit(2_000),
+  ]);
+  const categoryGroups = allCategoryGroups.filter(group => categoryGroupIds.includes(group.id));
+  if (categoryGroups.length !== categoryGroupIds.length) throw new Error("Одна из выбранных категорий печати недоступна.");
+  const chosenPrintGroups = input.printGroupIds?.length ? allPrintGroups.filter(group => input.printGroupIds!.includes(group.id)) : allPrintGroups;
+  if (!chosenPrintGroups.length) throw new Error("Нет активных групп магазинов для печати.");
+  const settings = await db.select({ storeId: operationalWarehouseSettings.storeId, printGroupId: operationalWarehouseSettings.printGroupId }).from(operationalWarehouseSettings).where(inArray(operationalWarehouseSettings.printGroupId, chosenPrintGroups.map(group => group.id)));
+  const groupByStore = new Map(settings.filter(setting => setting.printGroupId !== null).map(setting => [setting.storeId, setting.printGroupId!]));
+  const storeIds = Array.from(groupByStore.keys());
+  const [visibleStores, requests] = storeIds.length ? await Promise.all([
+    db.select({ id: stores.id, name: stores.name }).from(stores).where(and(inArray(stores.id, storeIds), eq(stores.isHidden, false))).orderBy(stores.name),
+    db.select().from(operationalStoreRequests).where(and(inArray(operationalStoreRequests.storeId, storeIds), eq(operationalStoreRequests.businessDate, businessDate), eq(operationalStoreRequests.status, "closed"))).orderBy(operationalStoreRequests.storeName, operationalStoreRequests.id).limit(2_000),
+  ]) : [[], [] as Array<typeof operationalStoreRequests.$inferSelect>];
+  const requestIds = requests.map(request => request.id);
+  const lines = requestIds.length ? await db.select().from(operationalStoreRequestLines).where(inArray(operationalStoreRequestLines.requestId, requestIds)).orderBy(operationalStoreRequestLines.catalogNumber).limit(20_000) : [];
+  const requestById = new Map(requests.map(request => [request.id, request]));
+  const requestsByStore = new Map<number, typeof requests>();
+  for (const request of requests) requestsByStore.set(request.storeId, [...(requestsByStore.get(request.storeId) ?? []), request]);
+  const linesByRequest = new Map<number, typeof lines>();
+  for (const line of lines) linesByRequest.set(line.requestId, [...(linesByRequest.get(line.requestId) ?? []), line]);
+  const activeStoreIds = new Set(visibleStores.map(store => store.id));
+  const sheets = chosenPrintGroups.flatMap(storeGroup => categoryGroups.flatMap(categoryGroup => {
+    const allowedCategories = expandPrintCategoryNames(categoryGroup.id, allCategoryGroups, members);
+    const storesInGroup = visibleStores.filter(store => activeStoreIds.has(store.id) && groupByStore.get(store.id) === storeGroup.id).map(store => {
+      const rows = (requestsByStore.get(store.id) ?? []).flatMap(request => (linesByRequest.get(request.id) ?? []).filter(line => line.categoryName !== null && allowedCategories.has(line.categoryName)).map(line => ({ ...line, requestNumber: request.requestNumber, requestNote: request.note })));
+      return { storeId: store.id, storeName: store.name, lines: rows };
+    }).filter(store => store.lines.length);
+    if (!storesInGroup.length) return [];
+    if (categoryGroup.printMode === "grouped_stores") return [{ id: `${storeGroup.id}:${categoryGroup.id}:grouped`, storeGroupName: storeGroup.name, categoryGroupName: categoryGroup.name, printMode: categoryGroup.printMode, stores: storesInGroup }];
+    return storesInGroup.map(store => ({ id: `${storeGroup.id}:${categoryGroup.id}:${store.storeId}`, storeGroupName: storeGroup.name, categoryGroupName: categoryGroup.name, printMode: categoryGroup.printMode, stores: [store] }));
+  }));
+  return { businessDate, sheets, totalRequests: requestById.size, totalLines: lines.length };
+}
+
 /**
  * Imports exactly one cursor page on each call. This keeps the external request bounded,
  * retains no raw or fiscal payload and never writes back to Evotor.
@@ -436,10 +709,13 @@ export async function listOperationalEvotorSalesAnalytics(input: {
     .orderBy(stores.name);
   const requestedStoreIds = input.storeIds?.length ? new Set(input.storeIds) : null;
   const scopedStores = requestedStoreIds ? allVisibleStores.filter(store => requestedStoreIds.has(store.id)) : allVisibleStores;
-  if (!scopedStores.length) return { stores: [], timeline: [], products: [], summary: { checks: 0, amount: 0, positions: 0, positionAmount: 0, quantity: 0 } };
+  if (!scopedStores.length) return { stores: [], timeline: [], products: [], summary: { checks: 0, amount: 0, positions: 0, positionAmount: 0, quantity: 0 }, coverage: { from: null, to: null } };
   const storeIds = scopedStores.map(store => store.id);
   const storeNameById = new Map(scopedStores.map(store => [store.id, store.name]));
-  const documents = await db
+  const [firstDocument, lastDocument, documents] = await Promise.all([
+    db.select({ occurredAt: operationalEvotorDocuments.occurredAt }).from(operationalEvotorDocuments).where(and(inArray(operationalEvotorDocuments.storeId, storeIds), isNotNull(operationalEvotorDocuments.occurredAt))).orderBy(operationalEvotorDocuments.occurredAt).limit(1),
+    db.select({ occurredAt: operationalEvotorDocuments.occurredAt }).from(operationalEvotorDocuments).where(and(inArray(operationalEvotorDocuments.storeId, storeIds), isNotNull(operationalEvotorDocuments.occurredAt))).orderBy(desc(operationalEvotorDocuments.occurredAt)).limit(1),
+    db
     .select({
       id: operationalEvotorDocuments.id,
       storeId: operationalEvotorDocuments.storeId,
@@ -452,7 +728,12 @@ export async function listOperationalEvotorSalesAnalytics(input: {
       isNotNull(operationalEvotorDocuments.occurredAt),
       gte(operationalEvotorDocuments.occurredAt, `${input.from}T00:00:00`),
       lte(operationalEvotorDocuments.occurredAt, `${input.to}T23:59:59.999`),
-    ));
+    )),
+  ]);
+  const coverage = {
+    from: firstDocument[0]?.occurredAt?.slice(0, 10) ?? null,
+    to: lastDocument[0]?.occurredAt?.slice(0, 10) ?? null,
+  };
   const timelineMap = new Map<string, { key: string; label: string; storeId: number; storeName: string; checks: number; amount: number; positions: number; positionAmount: number; quantity: number }>();
   const documentById = new Map<number, { storeId: number; storeName: string; timelineKey: string }>();
   let checks = 0;
@@ -507,6 +788,7 @@ export async function listOperationalEvotorSalesAnalytics(input: {
     timeline: Array.from(timelineMap.values()).map(row => ({ ...row, amount: Math.round(row.amount * 100) / 100, positionAmount: Math.round(row.positionAmount * 100) / 100, quantity: Math.round(row.quantity * 1_000) / 1_000 })).sort((left, right) => left.key.localeCompare(right.key) || left.storeName.localeCompare(right.storeName, "ru")),
     products: Array.from(productMap.values()).map(product => ({ productName: product.productName, unit: product.unit, amount: Math.round(product.amount * 100) / 100, quantity: Math.round(product.quantity * 1_000) / 1_000, positions: product.positions, stores: product.stores.size })).sort((left, right) => right.amount - left.amount || left.productName.localeCompare(right.productName, "ru")),
     summary: { checks, amount: Math.round(amount * 100) / 100, positions: positions.length, positionAmount: Math.round(positionAmount * 100) / 100, quantity: Math.round(quantity * 1_000) / 1_000 },
+    coverage,
   };
 }
 
@@ -726,7 +1008,7 @@ export async function listOperationalPrintCategoryGroups() {
   return groups.map(group => ({ ...group, members: members.filter(member => member.groupId === group.id).map(member => ({ id: member.id, memberType: member.memberType, catalogCategory: member.catalogCategory, childGroupId: member.childGroupId, childGroupName: member.childGroupId ? names.get(member.childGroupId) ?? null : null })) }));
 }
 
-export async function createOperationalPrintCategoryGroup(input: { name: string; actorId: number }) {
+export async function createOperationalPrintCategoryGroup(input: { name: string; actorId: number; printMode?: PrintCategoryMode }) {
   const db = await getDb();
   if (!db) throw new Error("База данных недоступна");
   const name = normalizedText(input.name);
@@ -734,13 +1016,13 @@ export async function createOperationalPrintCategoryGroup(input: { name: string;
   const normalizedName = normalizedKey(name);
   const [existing] = await db.select().from(operationalPrintCategoryGroups).where(eq(operationalPrintCategoryGroups.normalizedName, normalizedName)).limit(1);
   if (existing) throw new Error("Такая категория печати уже существует.");
-  await db.insert(operationalPrintCategoryGroups).values({ name, normalizedName, createdByAccountId: input.actorId });
+  await db.insert(operationalPrintCategoryGroups).values({ name, normalizedName, printMode: input.printMode ?? "per_store", createdByAccountId: input.actorId });
   const [after] = await db.select().from(operationalPrintCategoryGroups).where(eq(operationalPrintCategoryGroups.normalizedName, normalizedName)).limit(1);
   return after!;
 }
 
 /** Print-category groups are user-managed configuration, separate from immutable order history. */
-export async function updateOperationalPrintCategoryGroup(input: { id: number; name: string }) {
+export async function updateOperationalPrintCategoryGroup(input: { id: number; name: string; printMode: PrintCategoryMode }) {
   const db = await getDb();
   if (!db) throw new Error("База данных недоступна");
   const [before] = await db.select().from(operationalPrintCategoryGroups).where(eq(operationalPrintCategoryGroups.id, input.id)).limit(1);
@@ -750,7 +1032,7 @@ export async function updateOperationalPrintCategoryGroup(input: { id: number; n
   const normalizedName = normalizedKey(name);
   const [sameName] = await db.select().from(operationalPrintCategoryGroups).where(and(eq(operationalPrintCategoryGroups.normalizedName, normalizedName), ne(operationalPrintCategoryGroups.id, input.id))).limit(1);
   if (sameName) throw new Error("Такая категория печати уже существует.");
-  await db.update(operationalPrintCategoryGroups).set({ name, normalizedName }).where(eq(operationalPrintCategoryGroups.id, input.id));
+  await db.update(operationalPrintCategoryGroups).set({ name, normalizedName, printMode: input.printMode }).where(eq(operationalPrintCategoryGroups.id, input.id));
   const [after] = await db.select().from(operationalPrintCategoryGroups).where(eq(operationalPrintCategoryGroups.id, input.id)).limit(1);
   return { before, after: after! };
 }

@@ -27,6 +27,14 @@ describe("страницы продаж Эвотор", () => {
     expect(page).not.toContain('syncEvotorDocumentPage');
   });
 
+  it("явно выбирает загруженный диапазон документов, а не заменяет пустой период нулями", () => {
+    expect(page).toContain('DateRangeControl');
+    expect(page).toContain('ПЕРИОД ДОКУМЕНТОВ ЭВОТОР');
+    expect(page).toContain('data?.coverage.to');
+    expect(page).toContain('setSalesRange({ from: shiftIsoDate(data.coverage.to, -29), to: data.coverage.to })');
+    expect(page).toContain('выберите дату внутри этого диапазона');
+  });
+
   it("сохраняет тематичные поверхности и карточки таблиц на узком и среднем экране", () => {
     expect(css).toContain('background: #f7fbff');
     expect(css).toContain('background: #16101a');
@@ -34,5 +42,6 @@ describe("страницы продаж Эвотор", () => {
     expect(css).toContain('content: attr(data-label)');
     expect(css).toContain('max-width: 1024px');
     expect(css).toContain('A compact tablet cannot usefully drag an analytical table');
+    expect(css).toContain('.evotor-sales-period');
   });
 });

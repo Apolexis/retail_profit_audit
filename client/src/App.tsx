@@ -39,6 +39,7 @@ import CatalogControl from "./pages/CatalogControl";
 import CatalogProductEditor from "./pages/CatalogProductEditor";
 import WarehouseControl from "./pages/WarehouseControl";
 import EvotorSalesAnalytics from "./pages/EvotorSalesAnalytics";
+import StoreRequests from "./pages/StoreRequests";
 import { trpc } from "./lib/trpc";
 import "./access.css";
 import "./theme-refresh.css";
@@ -78,6 +79,7 @@ function Router() {
       <Route path="/catalog-control/:id/edit">{params => <CatalogProductEditor productId={Number(params.id)} />}</Route>
       <Route path="/catalog-control" component={CatalogControl} />
       <Route path="/warehouse-control" component={WarehouseControl} />
+      <Route path="/requests" component={StoreRequests} />
       <Route path="/evotor-sales/metrics"><EvotorSalesAnalytics kind="metrics" /></Route>
       <Route path="/evotor-sales/products"><EvotorSalesAnalytics kind="products" /></Route>
       <Route path="/import" component={ImportData} />
@@ -130,8 +132,8 @@ function AdminSignalOnLogin() {
   return null;
 }
 
-const sellerPaths = new Set(["/revenue", "/stock-control", "/inventory-control", "/profile"]);
-const managerPaths = new Set(["/stock-control", "/inventory-control", "/profile"]);
+const sellerPaths = new Set(["/revenue", "/stock-control", "/inventory-control", "/requests", "/profile"]);
+const managerPaths = new Set(["/stock-control", "/inventory-control", "/requests", "/profile"]);
 
 function SellerRouteGate({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
