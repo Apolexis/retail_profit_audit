@@ -105,4 +105,10 @@ describe("общий операционный справочник", () => {
 		expect(page).toContain('<ArrowDown size={14}/>Показать еще');
 		expect(css).toContain(".packet .catalog-table-action { width: 32px;");
 	});
+
+	it("сохраняет весовой код fraction, но отображает его как килограммы", () => {
+		expect(editor).toContain('<option value="fraction">кг</option>');
+		expect(page).toContain('fraction: "кг"');
+		expect(editor).not.toContain('<option value="kg">кг</option>');
+	});
 });

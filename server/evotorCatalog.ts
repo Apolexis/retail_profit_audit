@@ -154,9 +154,18 @@ function evotorHeaders() {
   };
 }
 
-async function fetchEvotorPage(path: string, cursor?: string): Promise<EvotorPage> {
+type EvotorDocumentWindow = { since?: string; until?: string };
+
+async function fetchEvotorPage(path: string, cursor?: string, documentWindow?: EvotorDocumentWindow): Promise<EvotorPage> {
   const url = new URL(path, EVOTOR_API_BASE_URL);
-  if (cursor) url.searchParams.set("cursor", cursor);
+  if (cursor) {
+    url.searchParams.set("cursor", cursor);
+  } else if (documentWindow?.since || documentWindow?.until) {
+    // Cloud API V2 accepts the initial document window as Unix milliseconds.
+    // Subsequent calls deliberately use only the opaque cursor returned by it.
+    if (documentWindow.since) url.searchParams.set("since", String(new Date(`${documentWindow.since}T00:00:00+03:00`).getTime()));
+    if (documentWindow.until) url.searchParams.set("until", String(new Date(`${documentWindow.until}T23:59:59.999+03:00`).getTime()));
+  }
   const response = await fetch(url, { headers: evotorHeaders(), signal: AbortSignal.timeout(8_000) });
   if (!response.ok) throw new Error(`Эвотор не отдал preview каталога (HTTP ${response.status}).`);
   return response.json() as Promise<EvotorPage>;
@@ -273,9 +282,13 @@ export async function listEvotorCatalogPreviewForOperationalStore(storeId: numbe
 }
 
 /** Reads one cursor page only, so a human-triggered preview cannot fan out or mutate external data. */
-export async function listEvotorDocumentsPreviewForOperationalStore(input: { storeId: number; cursor?: string }) {
+export async function listEvotorDocumentsPreviewForOperationalStore(input: { storeId: number; cursor?: string; since?: string; until?: string }) {
   const { evotorStore } = await resolveMappedEvotorStore(input.storeId);
-  const page = await fetchEvotorPage(`/stores/${encodeURIComponent(evotorStore.id)}/documents`, input.cursor);
+  const page = await fetchEvotorPage(
+    `/stores/${encodeURIComponent(evotorStore.id)}/documents`,
+    input.cursor,
+    input.cursor ? undefined : { since: input.since, until: input.until },
+  );
   return {
     storeId: input.storeId,
     documents: (page.items ?? []).map(normalizeEvotorDocumentPreview).filter((item): item is EvotorDocumentPreview => Boolean(item)),

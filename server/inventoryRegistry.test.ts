@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateInventoryAdjustment, markingFromEvotorCategory, validateCountedQuantity, validateInventoryDate, validateStoreRequestQuantity } from "./inventoryRegistry";
+import { calculateInventoryAdjustment, catalogUnitFromEvotor, inventoryUnitFromCatalogUnit, markingFromEvotorCategory, validateCountedQuantity, validateInventoryDate, validateStoreRequestQuantity } from "./inventoryRegistry";
 
 describe("операционная инвентаризация: контроль количества", () => {
   it("принимает вес с точностью до грамма и нулевой фактический остаток", () => {
@@ -67,5 +67,14 @@ describe("Эвотор V2: типы маркировки", () => {
     expect(markingFromEvotorCategory({ name: "Вино", categoryName: null, type: "ALCOHOL_NOT_MARKED" })).toBe("alcohol");
     expect(markingFromEvotorCategory({ name: "Пиво", categoryName: null, type: "NORMAL" })).toBe("none");
     expect(markingFromEvotorCategory({ name: "Пиво", categoryName: null, type: "UNRECOGNIZED_SOURCE_TYPE" })).toBe("none");
+  });
+});
+
+describe("Эвотор V2: весовая единица", () => {
+  it("сохраняет код fraction внутри каталога и выводит его в инвентаризации как килограммы", () => {
+    expect(catalogUnitFromEvotor("дроб")).toBe("fraction");
+    expect(catalogUnitFromEvotor("кг")).toBe("fraction");
+    expect(catalogUnitFromEvotor("fraction")).toBe("fraction");
+    expect(inventoryUnitFromCatalogUnit("fraction")).toBe("kg");
   });
 });

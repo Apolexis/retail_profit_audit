@@ -8,13 +8,13 @@ import { ThemedSelect } from "@/components/ui/themed-select";
 import { trpc } from "@/lib/trpc";
 import "@/catalog-control.css";
 
-type CatalogUnit = "kg" | "l" | "piece" | "unknown";
+type CatalogUnit = "fraction" | "l" | "piece" | "unknown";
 type MarkingCategory = "none" | "supplement" | "seafood_caviar" | "seafood_canned" | "alcohol" | "beer_marked" | "beer_non_alcoholic" | "soft_drinks" | "water" | "dairy";
 type CatalogProduct = { id: number; internalCode: string; canonicalName: string; evotorCategoryName?: string | null; barcodes?: unknown; baseUnit: CatalogUnit; vatRate: "VAT_10" | "VAT_22"; markingCategory: MarkingCategory; manualBarcodes: string | null; isVisibleInRequests: boolean; isEvotorExportEnabled: boolean; isActive?: boolean };
 type PriceType = { id: number; name: string; isDefault: boolean; isActive: boolean };
 type SalePrice = { productId: number; priceTypeId: number; salePrice: string | number };
 
-const unitLabel: Record<CatalogUnit, string> = { kg: "кг", l: "л", piece: "шт", unknown: "Уточнить" };
+const unitLabel: Record<CatalogUnit, string> = { fraction: "кг", l: "л", piece: "шт", unknown: "Уточнить" };
 const markingLabel: Record<MarkingCategory, string> = { none: "Нет", supplement: "БАД", seafood_caviar: "Морепродукты · икра", seafood_canned: "Морепродукты · консервы", alcohol: "Алкоголь", beer_marked: "Маркированное пиво", beer_non_alcoholic: "Безалкогольное пиво", soft_drinks: "Соковая продукция и безалкогольные напитки", water: "Бутилированная питьевая вода", dairy: "Молоко и молочная продукция" };
 const sourceBarcodes = (value: unknown) => Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && Boolean(item.trim())).join("; ") : "";
 const moneyText = (value: string | number | undefined) => value === undefined ? "—" : `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 2 }).format(Number(value))} ₽`;

@@ -12,7 +12,7 @@ import {
   confirmOperationalCatalogFromEvotor,
   syncOperationalEvotorDocumentPage,
 } from "./inventoryRegistry";
-import { createHeartbeatJob, updateHeartbeatJob } from "./_core/heartbeat";
+import { createHeartbeatJob } from "./_core/heartbeat";
 
 export type OperationalEvotorScheduledKind = "evotor_catalog" | "evotor_documents";
 
@@ -104,13 +104,9 @@ export async function ensureOperationalEvotorSchedules(): Promise<void> {
     const definition = SYNC_JOBS[kind];
     const existing = await findJob(kind);
     if (existing?.scheduleCronTaskUid) {
-      await updateHeartbeatJob(existing.scheduleCronTaskUid, {
-        cron: definition.cron,
-        path: definition.path,
-        method: "POST",
-        description: definition.description,
-        enable: existing.isActive,
-      }, "");
+      // The platform scheduler is persistent. It was verified in production
+      // with the declared 15/10-minute cadence, so restarting the HTTP process
+      // must not issue a mutable remote update on every hot reload/deployment.
       continue;
     }
     const created = await createHeartbeatJob({

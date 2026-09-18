@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { __evotorSalesTestUtils } from "./inventoryRegistry";
+import { __evotorSalesTestUtils, EVOTOR_DOCUMENT_RETENTION_START } from "./inventoryRegistry";
 
 const router = readFileSync(new URL("./routers/inventoryRegistry.ts", import.meta.url), "utf8");
 const service = readFileSync(new URL("./inventoryRegistry.ts", import.meta.url), "utf8");
@@ -21,5 +21,12 @@ describe("read-only показатели продаж Эвотор", () => {
     expect(service).toContain("operationalEvotorDocuments");
     expect(service).toContain("operationalEvotorDocumentPositions");
     expect(service).toContain("This does\n * not query Evotor");
+  });
+
+  it("не принимает в нормализованную витрину чеки до 2025 года", () => {
+    expect(EVOTOR_DOCUMENT_RETENTION_START).toBe("2025-01-01");
+    expect(service).toContain("filter(isRetainedEvotorDocument)");
+    expect(service).toContain("businessDate >= EVOTOR_DOCUMENT_RETENTION_START");
+    expect(service).toContain("input.from < EVOTOR_DOCUMENT_RETENTION_START");
   });
 });

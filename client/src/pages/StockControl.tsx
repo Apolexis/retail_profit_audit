@@ -6,7 +6,7 @@ import { ThemedSelect } from "@/components/ui/themed-select";
 import { trpc } from "@/lib/trpc";
 import "@/stock-control.css";
 
-type StockUnit = "kg" | "l" | "piece";
+type StockUnit = "fraction" | "l" | "piece" | "unknown";
 type StockItem = {
   productId: number;
   storeId: number;
@@ -14,7 +14,7 @@ type StockItem = {
   internalCode: string;
   canonicalName: string;
   category: string | null;
-  baseUnit: StockUnit | "unknown";
+  baseUnit: StockUnit;
   vatRate: "VAT_10" | "VAT_22";
   accountingQuantity: number | null;
   salePrice: number | null;
@@ -24,7 +24,7 @@ type StockItem = {
 
 type StockResult = { items: StockItem[]; total: number };
 
-const unitLabel: Record<StockUnit | "unknown", string> = { kg: "кг", l: "л", piece: "шт", unknown: "—" };
+const unitLabel: Record<StockUnit, string> = { fraction: "кг", l: "л", piece: "шт", unknown: "—" };
 const quantityText = (value: number) => String(Math.round(value * 1_000) / 1_000);
 const moneyText = (value: number | null) => value === null ? "—" : `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 2 }).format(value)} ₽`;
 const displayMoscowDate = (value: Date | string | null) => value ? new Intl.DateTimeFormat("ru-RU", { timeZone: "Europe/Moscow", day: "2-digit", month: "short", year: "numeric" }).format(new Date(value)) : "";

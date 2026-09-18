@@ -31,4 +31,12 @@ describe("планировщик read-only синхронизации Эвото
 		expect(registry).toContain("await db.insert(operationalEvotorDocumentPositions).values(positions)");
 		expect(registry).toContain("await forEachBoundedBatch(preview.products, 12");
 	});
+
+	it("начинает новую серию документов с 2025 года и продолжает ее только opaque cursor", () => {
+		expect(registry).toContain("requestedFrom: EVOTOR_DOCUMENT_RETENTION_START");
+		expect(registry).toContain("requestedTo: moscowBusinessDate()");
+		expect(registry).toContain("Серия перезапущена с границы хранения 2025-01-01.");
+		expect(registry).toContain("since: sync.cursor ? undefined : sync.requestedFrom");
+		expect(registry).toContain("until: sync.cursor ? undefined : sync.requestedTo");
+	});
 });

@@ -5,6 +5,12 @@ const page = readFileSync(new URL("./StoreRequests.tsx", import.meta.url), "utf8
 const styles = readFileSync(new URL("../store-requests.css", import.meta.url), "utf8");
 
 describe("заявки магазинов: экран", () => {
+  it("предлагает только точки, разрешенные текущему пользователю", () => {
+    expect(page).toContain("inventoryRegistry.requestStores.useQuery");
+    expect(page).toContain("const accessibleStores = stores.data ?? []");
+    expect(page).not.toContain("trpc.audit.stores.useQuery");
+  });
+
   it("использует общий видимый справочник и не выводит себестоимость", () => {
     expect(page).toContain("requestProducts");
     expect(page).toContain("Выберите товар из общего справочника");

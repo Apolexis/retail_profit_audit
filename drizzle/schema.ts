@@ -330,7 +330,8 @@ export const operationalCatalogProducts = mysqlTable("operational_catalog_produc
   barcodes: json("barcodes"),
   /** Read-only category name resolved from Evotor's product-group hierarchy. */
   evotorCategoryName: varchar("evotorCategoryName", { length: 512 }),
-  baseUnit: mysqlEnum("baseUnit", ["kg", "l", "piece", "unknown"]).default("unknown").notNull(),
+  /** `fraction` is the Evotor weight code and is rendered as «кг» in every user-facing view. */
+  baseUnit: mysqlEnum("baseUnit", ["fraction", "l", "piece", "unknown"]).default("unknown").notNull(),
   /** Network works only with VAT. The default for a manually added item is 10%. */
   vatRate: mysqlEnum("vatRate", ["VAT_10", "VAT_22"]).default("VAT_10").notNull(),
   /** Read-only Evotor cost; 0 means not supplied and can remain visually hidden. */
@@ -456,6 +457,9 @@ export const operationalEvotorDocumentSyncs = mysqlTable("operational_evotor_doc
   storeId: int("storeId").notNull(),
   status: mysqlEnum("status", ["running", "completed", "failed"]).default("running").notNull(),
   cursor: varchar("cursor", { length: 512 }),
+  /** The fixed first-page window. Cursor calls continue this exact bounded series. */
+  requestedFrom: varchar("requestedFrom", { length: 10 }),
+  requestedTo: varchar("requestedTo", { length: 10 }),
   documentsRead: int("documentsRead").default(0).notNull(),
   positionsRead: int("positionsRead").default(0).notNull(),
   /** Null means a scheduled system read; interactive imports retain their actor. */

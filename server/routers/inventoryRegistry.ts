@@ -29,6 +29,7 @@ import {
   listOperationalPrintGroups,
   listOperationalSalePrices,
   listOperationalStoreRequestProducts,
+  listOperationalStoreRequestStores,
   listOperationalStoreRequests,
   listOperationalEvotorStoreChoices,
   listOperationalWarehouses,
@@ -59,7 +60,8 @@ import { recordChange } from "../localAuth";
 import { protectedProcedure, router } from "../_core/trpc";
 
 const dateInput = z.string().regex(/^20\d{2}-\d{2}-\d{2}$/, "Выберите дату в формате ГГГГ-ММ-ДД");
-const inventoryUnit = z.enum(["kg", "l", "piece"]);
+/** The UI labels `fraction` as «кг» while the stored catalog code remains compatible with Evotor. */
+const inventoryUnit = z.enum(["fraction", "l", "piece"]);
 const markingCategory = z.enum(["none", "supplement", "seafood_caviar", "seafood_canned", "alcohol", "beer_marked", "beer_non_alcoholic", "soft_drinks", "water", "dairy"]);
 
 async function localActor(openId: string | null | undefined) {
@@ -310,6 +312,11 @@ export const inventoryRegistryRouter = router({
     if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Показатели чеков Эвотор доступны только администратору." });
     if (input.from > input.to) throw new TRPCError({ code: "BAD_REQUEST", message: "Дата начала не может быть позже даты окончания." });
     return listOperationalEvotorSalesAnalytics(input);
+  }),
+  requestStores: protectedProcedure.query(async ({ ctx }) => {
+    const actor = await localActor(ctx.user.openId);
+    const storeIds = actor.role === "admin" ? null : await getAccessibleStoreIds(ctx.user.openId);
+    return listOperationalStoreRequestStores({ storeIds });
   }),
   requestProducts: protectedProcedure.input(z.object({ storeId: z.number().int().positive() })).query(async ({ ctx, input }) => {
     await requireInventoryStoreAccess(ctx.user.openId, input.storeId, "view");

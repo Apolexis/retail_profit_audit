@@ -52,7 +52,7 @@ describe("интерфейс операционной инвентаризаци
     expect(page).toContain("accountingQuantity");
     expect(css).toContain('.packet .inventory-accounting-readout');
     expect(page).toContain('className="inventory-quantity-input"');
-    expect(page).toContain('{selectedProduct ? unitLabel[selectedProduct.baseUnit] : "Ед."}');
+    expect(page).toContain('{selectedProduct ? catalogUnitLabel[selectedProduct.baseUnit] : "Ед."}');
     expect(css).toContain('.packet .inventory-quantity-input small { position: absolute; right: 10px;');
   });
 

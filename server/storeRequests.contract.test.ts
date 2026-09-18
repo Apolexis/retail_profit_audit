@@ -5,6 +5,13 @@ const service = readFileSync(new URL("./inventoryRegistry.ts", import.meta.url),
 const router = readFileSync(new URL("./routers/inventoryRegistry.ts", import.meta.url), "utf8");
 
 describe("заявки магазинов: серверный контракт", () => {
+  it("отдает селектор склада только в пределах назначенного доступа", () => {
+    expect(router).toContain("requestStores: protectedProcedure.query");
+    expect(router).toContain("listOperationalStoreRequestStores({ storeIds })");
+    expect(service).toContain("listOperationalStoreRequestStores");
+    expect(service).toContain("eq(stores.isHidden, false)");
+  });
+
   it("разрешает добавлять только активные товары, видимые в заявках", () => {
     expect(service).toContain("eq(operationalCatalogProducts.isVisibleInRequests, true)");
     expect(service).toContain("!product.isActive || !product.isVisibleInRequests");
