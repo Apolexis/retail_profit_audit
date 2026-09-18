@@ -24,7 +24,7 @@ const navSections: readonly NavSection[] = [
     { title: "УПРАВЛЕНИЕ", items: [["/import", "12", "Импорт", true], ["/manage", "13", "База", true]] },
   ] },
   { title: "ПРАЙС‑КОНТРОЛЬ", groups: [{ items: [["/price-control", "20", "Сравнение", "price"], ["/price-control/import", "21", "Импорт прайсов", "price"], ["/price-control/directory", "22", "Справочник", "price"]] }] },
-  { title: "УПРАВЛЕНИЕ МАГАЗИНАМИ", groups: [{ items: [["/revenue", "23", "Выручка", "revenue"], ["/inventory-control", "24", "Инвентаризации", "operations"]] }] },
+  { title: "УПРАВЛЕНИЕ МАГАЗИНАМИ", groups: [{ items: [["/revenue", "23", "Выручка", "revenue"], ["/stock-control", "24", "Остатки", "operations"], ["/inventory-control", "25", "Инвентаризации", "operations"], ["/catalog-control", "26", "Номенклатура", true]] }] },
   { title: "УПРАВЛЕНИЕ", groups: [{ items: [["/notifications", "17", "Сигналы", false], ["/reports", "18", "Отчеты", true], ["/access", "15", "Доступ", true], ["/history", "16", "Журнал", true]] }] },
 ];
 const profileItem=["/profile","14","Профиль",false] as const;
@@ -34,7 +34,9 @@ recommendations["11"]={title:"План‑факт: управляйте ожид
 recommendations["19"]={title:"Прогноз: сначала проверьте основу",text:"Прогноз масштабирует сезонность только по завершенным фактическим месяцам. Отсутствующие факты не заменяются усреднением.",action:"Сопоставьте ожидаемый месяц с планом, закупками и будущими операционными изменениями."};
 recommendations["20"]={title:"Прайс‑контроль: сравнивайте сопоставимое",text:"Низкая цена полезна только при одинаковом товаре, фасовке и условиях. Сначала подтвердите связь поставщика с внутренним товаром, затем выбирайте лучшее предложение.",action:"Проверьте строки на сопоставление и закрепите только подтвержденные соответствия поставщиков."};
 recommendations["23"]={title:"Выручка: передавайте фактический день",text:"Наличные расходы должны быть разнесены по строкам. Пояснение обязательно для нецелевых трат, но не требуется для зарплаты, премии, отпускных и коммунальных платежей. Это операционный реестр, который не заменяет финансовый факт и не меняет P&L.",action:"Перед передачей проверьте итог и пояснения к тем расходам, для которых они нужны."};
-recommendations["24"]={title:"Инвентаризация: сначала подтверждайте физический факт",text:"Пересчет фиксирует то, что реально есть в магазине. До закрытия строки можно исправить; после закрытия корректировка остается отдельным неизменяемым движением.",action:"Откройте пересчет по своей точке, внесите только посчитанные позиции и передайте черновик руководителю на закрытие."};
+recommendations["24"]={title:"Остатки: точность важнее видимости",text:"Учетный остаток существует только после закрытого пересчета или подтвержденного движения. Значение «Не посчитан» нельзя подменять нулем.",action:"Выберите точку или товар, затем перейдите к ревизии только для реально посчитанной позиции."};
+recommendations["25"]={title:"Инвентаризация: сначала подтверждайте физический факт",text:"Пересчет фиксирует то, что реально есть в магазине. До закрытия строки можно исправить; после закрытия корректировка остается отдельным неизменяемым движением.",action:"Откройте пересчет по своей точке, внесите только посчитанные позиции и передайте черновик руководителю на закрытие."};
+recommendations["26"]={title:"Номенклатура: только через рабочий справочник",text:"Каталог Эвотор читается только для сопоставленной точки. Ручные позиции и внутренняя себестоимость остаются внутри операционного контура и не отправляются в кассу.",action:"Сначала выберите точку и проверьте ее каталог, затем подтверждайте или корректируйте рабочую номенклатуру."};
 
 export function AuditShell({title,kicker,children}:{title:string;kicker:string;children:ReactNode}){
   const [location,setLocation]=useLocation();
@@ -114,7 +116,7 @@ export function AuditShell({title,kicker,children}:{title:string;kicker:string;c
   const matches=storeSearch.trim()?((availableStores.data??[]).filter(store=>store.name.toLowerCase().includes(storeSearch.trim().toLowerCase())).slice(0,6)):[];
   const chooseStore=(store:string)=>{setSelectedStore(store);setStoreSearch("");closeMenu();setLocation("/stores")};
   const guidance=recommendations[kicker.slice(0,2)]??recommendations["00"];
-  const analyticsSection=!['12','13','14','15','16','17','18','20','21','22','23','24'].includes(kicker.slice(0,2));
+  const analyticsSection=!['12','13','14','15','16','17','18','20','21','22','23','24','25','26'].includes(kicker.slice(0,2));
   const unread=notificationSummary.data?.unread??0;
   const sectionIsActive=(groups:readonly NavGroup[])=>groups.some(group=>group.items.some(([href])=>href===location));
   const sectionIsOpen=(section:NavSection)=>Object.hasOwn(expandedSections,section.title)?Boolean(expandedSections[section.title]):sectionIsActive(section.groups);

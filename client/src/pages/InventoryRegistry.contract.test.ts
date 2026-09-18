@@ -6,8 +6,8 @@ const css = readFileSync(new URL("../inventory-registry.css", import.meta.url), 
 
 describe("интерфейс операционной инвентаризации", () => {
   it("не переиспользует старую финансовую страницу остатков", () => {
-    expect(page).toContain("Учет остатков и инвентаризация");
-    expect(page).toContain("продажные цены магазинов и себестоимость в этот экран не подмешиваются");
+    expect(page).toContain("Инвентаризация магазина");
+    expect(page).toContain("Номенклатура, остатки и себестоимость ведутся на отдельных страницах");
     expect(page).toContain("trpc.inventoryRegistry");
     expect(page).not.toContain("trpc.audit.metrics");
   });
@@ -24,8 +24,16 @@ describe("интерфейс операционной инвентаризаци
     expect(page).toContain("Проверить и закрыть");
   });
 
+  it("позволяет удалить только незакрытый черновик без изменения остатка", () => {
+    expect(page).toContain("trpc.inventoryRegistry.deleteDraft");
+    expect(page).toContain("Удалить черновик");
+    expect(page).toContain("Учетные остатки не изменятся");
+    expect(page).toContain('active.status === "draft"');
+    expect(css).toContain(".packet .inventory-draft-actions");
+  });
+
   it("разделяет учетный остаток, физический факт и расхождение", () => {
-    expect(page).toContain("Учет остатков и инвентаризация");
+    expect(page).toContain("Инвентаризация магазина");
     expect(page).toContain("Учетный остаток и факт — разные значения");
     expect(page).toContain("Учетный остаток");
     expect(page).toContain("Расхождение");
@@ -45,22 +53,10 @@ describe("интерфейс операционной инвентаризаци
     expect(css).toContain(".packet .inventory-line-create { grid-template-columns: 1fr; }");
   });
 
-  it("показывает каталог только по назначенному соответствию и подтверждает его во внутренний справочник", () => {
-    expect(page).toContain("ЭВОТОР · READ-ONLY PREVIEW");
-    expect(page).toContain("Номенклатура кассы без сохранения");
-    expect(page).toContain("trpc.evotorCatalog.mappingForStore");
-    expect(page).toContain("trpc.evotorCatalog.previewForStore");
-    expect(page).toContain("Произвольно выбрать другой магазин нельзя");
-    expect(page).toContain("confirmEvotorCatalog.mutate");
-    expect(page).toContain("НДС 10%");
-    expect(page).toContain("Показать еще");
-    expect(css).toContain(".packet .evotor-catalog-list > article");
-  });
-
-  it("дает администратору отдельную внутреннюю себестоимость без записи обратно в Эвотор", () => {
-    expect(page).toContain("ВНУТРЕННЯЯ СЕБЕСТОИМОСТЬ");
-    expect(page).toContain("trpc.inventoryRegistry.updateInternalCost");
-    expect(page).toContain("Себестоимость Эвотор» остается нулевой и скрытой");
-    expect(css).toContain(".packet .inventory-cost-list");
+  it("не смешивает каталог и себестоимость с ревизией", () => {
+    expect(page).not.toContain("ЭВОТОР · READ-ONLY PREVIEW");
+    expect(page).not.toContain("ВНУТРЕННЯЯ СЕБЕСТОИМОСТЬ");
+    expect(page).not.toContain("confirmEvotorCatalog.mutate");
+    expect(page).not.toContain("updateInternalCost");
   });
 });

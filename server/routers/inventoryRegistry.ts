@@ -2,15 +2,20 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getAccessibleStoreIds, getCurrentLocalAccount, hasStoreAccess } from "../accessControl";
 import {
+  archiveOperationalCatalogProduct,
   closeInventory,
   confirmOperationalCatalogFromEvotor,
+  createOperationalCatalogProduct,
   createInventoryDraft,
+  deleteInventoryDraft,
   getInventoryAuditState,
   getInventoryDetail,
   listInventoryProducts,
+  listOperationalStock,
   listStoreInventories,
   removeInventoryLine,
   updateInventoryNote,
+  updateOperationalCatalogProduct,
   updateOperationalCatalogCost,
   upsertInventoryLine,
 } from "../inventoryRegistry";
@@ -62,13 +67,40 @@ export const inventoryRegistryRouter = router({
     await recordChange({ actorId: actor.id, action: "operational_catalog.internal_cost.update", entityType: "operational_catalog_product", entityId: String(input.id), beforeState: { product: result.before.canonicalName, evotorCostPrice: result.before.evotorCostPrice, internalCostPrice: result.before.internalCostPrice }, afterState: { product: result.after.canonicalName, evotorCostPrice: result.after.evotorCostPrice, internalCostPrice: result.after.internalCostPrice } });
     return result;
   }),
+  createCatalogProduct: protectedProcedure.input(z.object({ storeId: z.number().int().positive(), canonicalName: z.string().trim().min(1).max(512), baseUnit: inventoryUnit, vatRate: z.enum(["VAT_10", "VAT_22"]).optional(), internalCostPrice: z.number().finite().min(0).max(10_000_000).nullable().optional() })).mutation(async ({ ctx, input }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Добавлять номенклатуру может только администратор." });
+    const after = await createOperationalCatalogProduct({ ...input, actorId: actor.id });
+    await recordChange({ actorId: actor.id, action: "operational_catalog.manual.create", entityType: "operational_catalog_product", entityId: String(after.id), afterState: { storeId: after.storeId, product: after.canonicalName, unit: after.baseUnit, vatRate: after.vatRate, internalCostPrice: after.internalCostPrice } });
+    return after;
+  }),
+  updateCatalogProduct: protectedProcedure.input(z.object({ id: z.number().int().positive(), canonicalName: z.string().trim().min(1).max(512), baseUnit: inventoryUnit, vatRate: z.enum(["VAT_10", "VAT_22"]) })).mutation(async ({ ctx, input }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Изменять номенклатуру может только администратор." });
+    const result = await updateOperationalCatalogProduct(input);
+    await recordChange({ actorId: actor.id, action: "operational_catalog.update", entityType: "operational_catalog_product", entityId: String(input.id), beforeState: { product: result.before.canonicalName, unit: result.before.baseUnit, vatRate: result.before.vatRate }, afterState: { product: result.after.canonicalName, unit: result.after.baseUnit, vatRate: result.after.vatRate } });
+    return result;
+  }),
+  archiveCatalogProduct: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Скрывать номенклатуру может только администратор." });
+    const result = await archiveOperationalCatalogProduct(input.id);
+    await recordChange({ actorId: actor.id, action: "operational_catalog.archive", entityType: "operational_catalog_product", entityId: String(input.id), beforeState: { product: result.before.canonicalName, isActive: result.before.isActive }, afterState: { product: result.after.canonicalName, isActive: result.after.isActive } });
+    return result;
+  }),
   products: protectedProcedure.input(z.object({ storeId: z.number().int().positive().optional() }).optional()).query(async ({ ctx, input }) => {
     const actor = await localActor(ctx.user.openId);
     if (input?.storeId) await requireInventoryStoreAccess(ctx.user.openId, input.storeId, "view");
-    const products = await listInventoryProducts({ storeId: input?.storeId, includeAccounting: actor.role !== "seller" && Boolean(input?.storeId) });
+    const products = await listInventoryProducts({ storeId: input?.storeId, includeAccounting: actor.role !== "seller" && Boolean(input?.storeId), includeInactive: actor.role === "admin" });
     return actor.role === "admin"
       ? products
       : products.map(({ evotorCostPrice: _evotorCostPrice, internalCostPrice: _internalCostPrice, ...product }) => product);
+  }),
+  stock: protectedProcedure.input(z.object({ storeId: z.number().int().positive().optional(), query: z.string().max(160).optional(), offset: z.number().int().min(0).optional(), limit: z.number().int().min(1).max(100).optional() }).optional()).query(async ({ ctx, input }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (input?.storeId) await requireInventoryStoreAccess(ctx.user.openId, input.storeId, "view");
+    const storeIds = actor.role === "admin" ? null : await getAccessibleStoreIds(ctx.user.openId);
+    return listOperationalStock({ ...input, storeIds, storeId: input?.storeId, limit: input?.limit ?? 50 });
   }),
   list: protectedProcedure.input(z.object({ storeId: z.number().int().positive().optional(), limit: z.number().int().min(1).max(30).optional() }).optional()).query(async ({ ctx, input }) => {
     const actor = await localActor(ctx.user.openId);
@@ -85,6 +117,19 @@ export const inventoryRegistryRouter = router({
     const result = await createInventoryDraft({ ...input, createdByAccountId: actor.id });
     if (result.created) await recordChange({ actorId: actor.id, action: "inventory.create", entityType: "operational_inventory", entityId: String(result.inventory.id), afterState: await getInventoryAuditState(result.inventory.id) });
     return { ...result, detail: await getInventoryDetail(result.inventory.id) };
+  }),
+  deleteDraft: protectedProcedure.input(z.object({ inventoryId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+    const { actor, detail } = await detailWithPermission(ctx.user.openId, input.inventoryId, "edit");
+    const result = await deleteInventoryDraft(input.inventoryId);
+    await recordChange({
+      actorId: actor.id,
+      action: "inventory.draft.delete",
+      entityType: "operational_inventory",
+      entityId: String(input.inventoryId),
+      beforeState: { ...result.before, storeName: detail.storeName, lineCount: result.lineCount },
+      afterState: { deleted: true },
+    });
+    return result;
   }),
   updateNote: protectedProcedure.input(z.object({ inventoryId: z.number().int().positive(), note: z.string().max(1_000) })).mutation(async ({ ctx, input }) => {
     const { actor } = await detailWithPermission(ctx.user.openId, input.inventoryId, "edit");

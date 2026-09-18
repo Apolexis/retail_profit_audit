@@ -1,0 +1,47 @@
+/* Dedicated operational stock view: a table for navigation, a revision for changes. */
+.packet .stock-lede { margin-bottom: 0; }
+.packet .stock-rule-disclosure { display: grid; gap: 0; margin: 18px 0; }
+.packet .stock-rule-disclosure > summary { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: baseline; cursor: pointer; list-style: none; }
+.packet .stock-rule-disclosure > summary::-webkit-details-marker { display: none; }
+.packet .stock-rule-disclosure > summary > span { color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .08em; }
+.packet .stock-rule-disclosure > summary > strong { min-width: 0; color: var(--ink); font-size: 14px; }
+.packet .stock-rule-disclosure > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 24px; padding-top: 14px; }
+.packet .stock-rule-disclosure p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.55; }
+.packet .stock-table-card { display: grid; gap: 14px; }
+.packet .stock-controls { display: grid; grid-template-columns: minmax(210px, .7fr) minmax(260px, 1.3fr); gap: 12px; }
+.packet .stock-controls > label { display: grid; gap: 6px; min-width: 0; color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.packet .stock-search { position: relative; display: grid; align-items: center; }
+.packet .stock-search > svg { position: absolute; right: 10px; color: var(--faint); pointer-events: none; }
+.packet .stock-search input { width: 100%; min-width: 0; height: 40px; padding: 0 31px 0 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); color: var(--ink); font: 700 13px Manrope, Arial, sans-serif; outline: none; }
+.packet .stock-search input:focus-visible { border-color: var(--packet-accent); box-shadow: 0 0 0 2px var(--packet-accent-faint); }
+.packet .stock-summary { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 12px; color: var(--muted); font-size: 12px; }
+.packet .stock-summary strong { color: var(--ink); font-size: 13px; }
+.packet .stock-table-wrap { overflow-x: auto; }
+.packet .stock-table { min-width: 820px; }
+.packet .stock-table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--surface-2) 72%, transparent); }
+.packet .stock-table td small { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+.packet .stock-table td:nth-child(1) { min-width: 116px; }
+.packet .stock-table td:nth-child(2) { min-width: 260px; }
+.packet .stock-table td:nth-child(3) { white-space: nowrap; }
+.packet .stock-quantity { color: var(--ink); font-weight: 800; white-space: nowrap; }
+.packet .stock-not-counted { color: var(--muted); font-style: italic; white-space: nowrap; }
+.packet .stock-revision-action { display: inline-flex; min-height: 34px; margin: 0; padding: 6px 9px; white-space: nowrap; }
+.packet .stock-more { justify-self: start; min-height: 36px; margin: 0; }
+html[data-audit-theme="dark"] .packet .stock-rule-disclosure,
+html[data-audit-theme="dark"] .packet .stock-table-card { border-color: #64394d; background: radial-gradient(circle at 92% 0, rgba(255,118,95,.07), transparent 34%), linear-gradient(145deg,#191019,#101216); box-shadow: none; }
+html[data-audit-theme="dark"] .packet .stock-table tbody tr:nth-child(even) { background: rgba(255,118,95,.035); }
+html[data-audit-theme="dark"] .packet .stock-search input { border-color: #63394b; background: #100d13; color: #fff0f4; }
+html[data-audit-theme="dark"] .packet .stock-search input:focus-visible { border-color: #ff765f; box-shadow: 0 0 0 2px rgba(255,118,95,.18); }
+html[data-audit-theme="light"] .packet .stock-rule-disclosure,
+html[data-audit-theme="light"] .packet .stock-table-card { border-color: #dcc7cd; background: radial-gradient(circle at 92% 0, rgba(214,65,70,.08), transparent 34%), linear-gradient(145deg,#fffdfb,#f8f5f4); box-shadow: none; }
+html[data-audit-theme="light"] .packet .stock-search input { border-color: #d9cbd0; background: #fff; color: #252025; }
+html[data-audit-theme="light"] .packet .stock-search input:focus-visible { border-color: #d64146; box-shadow: 0 0 0 2px rgba(214,65,70,.14); }
+@media (max-width: 760px) {
+  .packet .stock-rule-disclosure > div,
+  .packet .stock-controls { grid-template-columns: 1fr; }
+  .packet .stock-table-card .card-title { gap: 12px; }
+  .packet .stock-table-card .card-title .subtle-button { width: 100%; justify-content: center; }
+}
+@media (max-width: 400px) {
+  .packet .stock-rule-disclosure > summary { grid-template-columns: 1fr; gap: 4px; }
+}

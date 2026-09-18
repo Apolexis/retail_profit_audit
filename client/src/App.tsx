@@ -34,6 +34,8 @@ import Forecast from "./pages/Forecast";
 import PriceControl from "./pages/PriceControl";
 import RevenueRegistry from "./pages/RevenueRegistry";
 import InventoryRegistry from "./pages/InventoryRegistry";
+import StockControl from "./pages/StockControl";
+import CatalogControl from "./pages/CatalogControl";
 import { trpc } from "./lib/trpc";
 import "./access.css";
 import "./theme-refresh.css";
@@ -67,7 +69,9 @@ function Router() {
         <PriceControl />
       </Route>
       <Route path="/revenue" component={RevenueRegistry} />
+      <Route path="/stock-control" component={StockControl} />
       <Route path="/inventory-control" component={InventoryRegistry} />
+      <Route path="/catalog-control" component={CatalogControl} />
       <Route path="/import" component={ImportData} />
       <Route path="/manage" component={ManageData} />
       <Route path="/profile" component={Profile} />
@@ -118,8 +122,8 @@ function AdminSignalOnLogin() {
   return null;
 }
 
-const sellerPaths = new Set(["/revenue", "/inventory-control", "/profile"]);
-const managerPaths = new Set(["/inventory-control", "/profile"]);
+const sellerPaths = new Set(["/revenue", "/stock-control", "/inventory-control", "/profile"]);
+const managerPaths = new Set(["/stock-control", "/inventory-control", "/profile"]);
 
 function SellerRouteGate({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();

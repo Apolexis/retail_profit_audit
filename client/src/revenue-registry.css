@@ -131,3 +131,114 @@
   .packet .revenue-print-comments h4 { margin: 0; font-size: 11px; }
   .packet .revenue-print-comments p { display: grid; grid-template-columns: minmax(180px, .8fr) minmax(0, 1.2fr); gap: 10px; margin: 0; font-size: 10px; line-height: 1.35; }
 }
+
+/* «Выручка» использует ту же двухслойную форму, что «Сигналы»: темная сливовая поверхность, вложенные карточки без белых/серых контуров. */
+html[data-audit-theme="dark"] .packet .revenue-entry-card {
+  border-color: #64394d;
+  background: radial-gradient(circle at 92% 0, rgba(255,118,95,.11), transparent 34%), linear-gradient(145deg,#191019,#101216);
+  box-shadow: none;
+}
+html[data-audit-theme="dark"] .packet .revenue-field-section {
+  border-color: #553345;
+  background: linear-gradient(145deg,#1c1119,#151018);
+}
+html[data-audit-theme="dark"] .packet .revenue-amount {
+  border-color: #553345;
+  background: #1c1119;
+}
+html[data-audit-theme="dark"] .packet .revenue-amount:hover,
+html[data-audit-theme="dark"] .packet .revenue-amount:focus-within {
+  border-color: #a9516a;
+  background: #21131b;
+  box-shadow: none;
+}
+html[data-audit-theme="dark"] .packet .revenue-amount > span { color: #bfa9b3; }
+html[data-audit-theme="dark"] .packet .revenue-amount input,
+html[data-audit-theme="dark"] .packet .revenue-amount textarea,
+html[data-audit-theme="dark"] .packet .revenue-correction-reason textarea {
+  border-color: #63394b;
+  background: #100d13;
+  color: #fff0f4;
+}
+html[data-audit-theme="dark"] .packet .revenue-amount input:focus-visible,
+html[data-audit-theme="dark"] .packet .revenue-amount textarea:focus-visible,
+html[data-audit-theme="dark"] .packet .revenue-correction-reason textarea:focus-visible {
+  border-color: #ff765f;
+  box-shadow: 0 0 0 2px rgba(255,118,95,.18);
+}
+html[data-audit-theme="dark"] .packet .revenue-total {
+  border-color: #704052;
+  background: #181119;
+}
+html[data-audit-theme="dark"] .packet .revenue-total > span { color: #fff1f5; }
+html[data-audit-theme="dark"] .packet .revenue-total > strong { color: #ffb8c7; }
+
+html[data-audit-theme="light"] .packet .revenue-entry-card {
+  border-color: #dcc7cd;
+  background: radial-gradient(circle at 92% 0, rgba(214,65,70,.08), transparent 34%), linear-gradient(145deg,#fffdfb,#f8f5f4);
+  box-shadow: none;
+}
+html[data-audit-theme="light"] .packet .revenue-field-section {
+  border-color: #e2d7da;
+  background: #fff;
+}
+html[data-audit-theme="light"] .packet .revenue-amount {
+  border-color: #e2d7da;
+  background: #fff;
+}
+html[data-audit-theme="light"] .packet .revenue-amount:hover,
+html[data-audit-theme="light"] .packet .revenue-amount:focus-within {
+  border-color: #d55b63;
+  background: #fffafb;
+  box-shadow: 0 0 0 2px rgba(213,91,99,.12);
+}
+html[data-audit-theme="light"] .packet .revenue-amount > span { color: #6a5f65; }
+html[data-audit-theme="light"] .packet .revenue-amount input,
+html[data-audit-theme="light"] .packet .revenue-amount textarea,
+html[data-audit-theme="light"] .packet .revenue-correction-reason textarea {
+  border-color: #d9cbd0;
+  background: #fff;
+  color: #252025;
+}
+html[data-audit-theme="light"] .packet .revenue-amount input:focus-visible,
+html[data-audit-theme="light"] .packet .revenue-amount textarea:focus-visible,
+html[data-audit-theme="light"] .packet .revenue-correction-reason textarea:focus-visible {
+  border-color: #d64146;
+  box-shadow: 0 0 0 2px rgba(214,65,70,.14);
+}
+html[data-audit-theme="light"] .packet .revenue-total {
+  border-color: #edb9c1;
+  background: #fff8f8;
+}
+html[data-audit-theme="light"] .packet .revenue-total > span { color: #272127; }
+html[data-audit-theme="light"] .packet .revenue-total > strong { color: #a53d4c; }
+
+/* Global control defaults are intentionally neutral-blue. Within this form the last override keeps every editable control in the revenue palette. */
+html[data-audit-theme="dark"] .packet .revenue-entry-card .revenue-amount :is(input, textarea),
+html[data-audit-theme="dark"] .packet .revenue-entry-card .revenue-correction-reason textarea,
+html[data-audit-theme="dark"] .packet .revenue-entry-card .app-select-trigger[data-slot="select-trigger"] {
+  border-color: #63394b !important;
+  background: #100d13 !important;
+  color: #fff0f4 !important;
+  box-shadow: none !important;
+}
+html[data-audit-theme="dark"] .packet .revenue-entry-card .revenue-amount :is(input, textarea):focus-visible,
+html[data-audit-theme="dark"] .packet .revenue-entry-card .revenue-correction-reason textarea:focus-visible,
+html[data-audit-theme="dark"] .packet .revenue-entry-card .app-select-trigger[data-slot="select-trigger"]:focus-visible {
+  border-color: #ff765f !important;
+  box-shadow: 0 0 0 2px rgba(255,118,95,.18) !important;
+}
+html[data-audit-theme="light"] .packet .revenue-entry-card .revenue-amount :is(input, textarea),
+html[data-audit-theme="light"] .packet .revenue-entry-card .revenue-correction-reason textarea,
+html[data-audit-theme="light"] .packet .revenue-entry-card .app-select-trigger[data-slot="select-trigger"] {
+  border-color: #d9cbd0 !important;
+  background: #fff !important;
+  color: #252025 !important;
+  box-shadow: none !important;
+}
+html[data-audit-theme="light"] .packet .revenue-entry-card .revenue-amount :is(input, textarea):focus-visible,
+html[data-audit-theme="light"] .packet .revenue-entry-card .revenue-correction-reason textarea:focus-visible,
+html[data-audit-theme="light"] .packet .revenue-entry-card .app-select-trigger[data-slot="select-trigger"]:focus-visible {
+  border-color: #d64146 !important;
+  box-shadow: 0 0 0 2px rgba(214,65,70,.14) !important;
+}

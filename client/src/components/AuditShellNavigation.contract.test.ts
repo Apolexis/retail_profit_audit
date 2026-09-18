@@ -17,6 +17,7 @@ describe("AuditShell navigation contract",()=>{
     expect(shell).toContain('["/reports", "18", "Отчеты", true]');
     expect(shell).toContain('["/import", "12", "Импорт", true]');
     expect(shell).toContain('["/manage", "13", "База", true]');
+    expect(shell).toContain('["/catalog-control", "26", "Номенклатура", true]');
     expect(shell).toContain('className="nav-subsection"');
     expect(shell).toContain('className="nav-drawer-subsection"');
     expect(shell).toContain('const profileItem=["/profile","14","Профиль",false]');

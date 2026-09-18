@@ -64,11 +64,21 @@ describe("контракт страницы Выручка", () => {
   });
 
   it("собирает ежедневную передачу в раскрываемую форму с отдельными блоками оплат и расходов", () => {
-    expect(page).toContain('className="packet-card revenue-entry-card" open');
+    expect(page).toContain('className="packet-card revenue-entry-card"');
+    expect(page).not.toContain('className="packet-card revenue-entry-card" open');
     expect(page).toContain('className="revenue-entry-summary"');
     expect(page).toContain('ОПЛАТЫ');
     expect(page).toContain('НАЛИЧНЫЕ РАСХОДЫ');
     expect(styles).toContain('.packet .revenue-entry-card:not([open]) .revenue-entry-summary');
     expect(styles).toContain('.packet .revenue-field-section');
+  });
+
+  it("повторяет палитру карточек «Сигналов» в обеих темах", () => {
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet .revenue-entry-card');
+    expect(styles).toContain('linear-gradient(145deg,#191019,#101216)');
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet .revenue-amount');
+    expect(styles).toContain('border-color: #553345;');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .revenue-entry-card');
+    expect(styles).toContain('background: #fff;');
   });
 });

@@ -1,0 +1,86 @@
+/* Nomenclature stays a separate editor: the inventory screen only counts stock. */
+.packet .catalog-lede { margin-bottom: 18px; }
+.packet .catalog-store-card { display: grid; grid-template-columns: minmax(240px, .8fr) minmax(260px, 1.2fr); gap: 14px; align-items: end; margin-bottom: 18px; }
+.packet .catalog-store-card > label,
+.packet .catalog-preview-card > label,
+.packet .catalog-working-card > label { display: grid; gap: 6px; color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.packet .catalog-mapping { display: grid; gap: 3px; min-height: 40px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); }
+.packet .catalog-mapping span { color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .07em; text-transform: uppercase; }
+.packet .catalog-mapping strong { color: var(--ink); font-size: 13px; }
+.packet .catalog-preview-card,
+.packet .catalog-working-card { display: grid; gap: 13px; margin-bottom: 18px; }
+.packet .catalog-search { position: relative; display: grid; align-items: center; }
+.packet .catalog-search > svg { position: absolute; right: 10px; color: var(--faint); pointer-events: none; }
+.packet .catalog-search input,
+.packet .catalog-manual-form input,
+.packet .catalog-edit-form input,
+.packet .catalog-cost input { width: 100%; min-width: 0; height: 40px; padding: 0 31px 0 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); color: var(--ink); font: 700 13px Manrope, Arial, sans-serif; outline: none; }
+.packet .catalog-manual-form input,
+.packet .catalog-edit-form input { padding-right: 10px; }
+.packet .catalog-search input:focus-visible,
+.packet .catalog-manual-form input:focus-visible,
+.packet .catalog-edit-form input:focus-visible,
+.packet .catalog-cost input:focus-visible { border-color: var(--packet-accent); box-shadow: 0 0 0 2px var(--packet-accent-faint); }
+.packet .catalog-preview-summary { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; color: var(--muted); font-size: 12px; }
+.packet .catalog-preview-summary strong { color: var(--ink); font-size: 13px; }
+.packet .catalog-preview-list { display: grid; max-height: 300px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; }
+.packet .catalog-preview-list article { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.packet .catalog-preview-list article:last-child { border-bottom: 0; }
+.packet .catalog-preview-list article:nth-child(even) { background: color-mix(in srgb, var(--surface-2) 65%, transparent); }
+.packet .catalog-preview-list span { color: var(--muted); font: 800 11px ui-monospace, monospace; }
+.packet .catalog-preview-list strong,
+.packet .catalog-product-name strong { display: block; color: var(--ink); font-size: 13px; line-height: 1.36; }
+.packet .catalog-preview-list small,
+.packet .catalog-product-name small { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; line-height: 1.35; }
+.packet .catalog-preview-list > article > small { align-self: center; white-space: nowrap; }
+.packet .catalog-manual-form { display: grid; grid-template-columns: minmax(220px, 1.5fr) minmax(105px, .5fr) minmax(120px, .55fr) auto; align-items: end; gap: 10px; padding: 13px; border: 1px dashed var(--line); border-radius: 10px; background: var(--surface-2); }
+.packet .catalog-manual-form > label,
+.packet .catalog-edit-form > label { display: grid; gap: 6px; color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+.packet .catalog-manual-form .packet-link { min-height: 40px; margin: 0; }
+.packet .catalog-working-list { display: grid; gap: 8px; }
+.packet .catalog-working-list > article { display: grid; grid-template-columns: minmax(240px, 1.35fr) minmax(150px, .65fr) auto; gap: 12px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.packet .catalog-working-list > article.is-archived { opacity: .6; }
+.packet .catalog-cost { position: relative; display: grid; gap: 5px; color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+.packet .catalog-cost input { padding-right: 27px; }
+.packet .catalog-cost > span { position: absolute; right: 9px; bottom: 11px; color: var(--muted); font-size: 12px; letter-spacing: 0; text-transform: none; }
+.packet .catalog-product-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.packet .catalog-product-actions .subtle-button { min-height: 32px; margin: 0; padding: 5px 8px; font-size: 11px; }
+.packet .catalog-edit-form { display: grid; grid-template-columns: minmax(210px, 1.3fr) minmax(95px, .45fr) minmax(115px, .5fr) auto auto; gap: 10px; align-items: end; width: 100%; }
+.packet .catalog-edit-form .packet-link,
+.packet .catalog-edit-form .subtle-button { min-height: 40px; margin: 0; }
+html[data-audit-theme="dark"] .packet .catalog-store-card,
+html[data-audit-theme="dark"] .packet .catalog-preview-card,
+html[data-audit-theme="dark"] .packet .catalog-working-card { border-color: #64394d; background: radial-gradient(circle at 92% 0, rgba(255,118,95,.07), transparent 34%), linear-gradient(145deg,#191019,#101216); box-shadow: none; }
+html[data-audit-theme="dark"] .packet .catalog-mapping,
+html[data-audit-theme="dark"] .packet .catalog-manual-form,
+html[data-audit-theme="dark"] .packet .catalog-search input,
+html[data-audit-theme="dark"] .packet .catalog-manual-form input,
+html[data-audit-theme="dark"] .packet .catalog-edit-form input,
+html[data-audit-theme="dark"] .packet .catalog-cost input { border-color: #63394b; background: #100d13; color: #fff0f4; }
+html[data-audit-theme="dark"] .packet .catalog-preview-list,
+html[data-audit-theme="dark"] .packet .catalog-preview-list article,
+html[data-audit-theme="dark"] .packet .catalog-working-list > article { border-color: #573344; background: #100d13; }
+html[data-audit-theme="dark"] .packet .catalog-preview-list article:nth-child(even) { background: rgba(255,118,95,.035); }
+html[data-audit-theme="dark"] .packet .catalog-search input:focus-visible,
+html[data-audit-theme="dark"] .packet .catalog-manual-form input:focus-visible,
+html[data-audit-theme="dark"] .packet .catalog-edit-form input:focus-visible,
+html[data-audit-theme="dark"] .packet .catalog-cost input:focus-visible { border-color: #ff765f; box-shadow: 0 0 0 2px rgba(255,118,95,.18); }
+@media (max-width: 900px) {
+  .packet .catalog-manual-form,
+  .packet .catalog-edit-form { grid-template-columns: minmax(160px, 1fr) 110px 126px; }
+  .packet .catalog-manual-form .packet-link,
+  .packet .catalog-edit-form .packet-link,
+  .packet .catalog-edit-form .subtle-button { grid-column: auto; }
+}
+@media (max-width: 680px) {
+  .packet .catalog-store-card,
+  .packet .catalog-working-list > article,
+  .packet .catalog-manual-form,
+  .packet .catalog-edit-form { grid-template-columns: 1fr; }
+  .packet .catalog-product-actions { justify-content: flex-start; }
+  .packet .catalog-preview-list article { grid-template-columns: 30px minmax(0, 1fr); }
+  .packet .catalog-preview-list > article > small { grid-column: 2; justify-self: start; }
+  .packet .catalog-manual-form .packet-link,
+  .packet .catalog-edit-form .packet-link,
+  .packet .catalog-edit-form .subtle-button { width: 100%; justify-content: center; }
+}

@@ -131,3 +131,10 @@ html[data-audit-theme="dark"] .packet .evotor-catalog-list > article { border-co
 .packet .inventory-cost-list label span { position: absolute; right: 9px; bottom: 9px; color: var(--muted); font-size: 12px; letter-spacing: 0; text-transform: none; }
 .packet .inventory-cost-list .subtle-button { min-height: 34px; margin: 0; }
 @media (max-width: 680px) { .packet .inventory-cost-list article { grid-template-columns: 1fr; gap: 9px; } .packet .inventory-cost-list .subtle-button { width: 100%; justify-content: center; } }
+
+.packet .inventory-draft-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.packet .inventory-draft-actions .subtle-button { margin: 0; }
+@media (max-width: 560px) {
+  .packet .inventory-draft-actions { width: 100%; justify-content: stretch; }
+  .packet .inventory-draft-actions .subtle-button { flex: 1 1 140px; justify-content: center; }
+}
