@@ -265,3 +265,9 @@ html[data-audit-theme="light"] .packet .catalog-table tbody td { border-color: #
   .packet .catalog-table td:last-child :is(.subtle-button, .packet-link) { width: 100%; min-height: 36px; justify-content: center; }
   .packet .catalog-table-money { min-width: 0; text-align: left; }
 }
+
+.packet .catalog-table-action-label { display: none; }
+@media (max-width: 1200px) {
+  .packet .catalog-table td:last-child .catalog-table-action { display: inline-flex; flex-direction: row; align-items: center; gap: 7px; padding-inline: 11px; }
+  .packet .catalog-table-action-label { display: inline; }
+}

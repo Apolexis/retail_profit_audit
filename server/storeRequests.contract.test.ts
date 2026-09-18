@@ -12,9 +12,11 @@ describe("заявки магазинов: серверный контракт",
     expect(service).toContain("eq(stores.isHidden, false)");
   });
 
-  it("разрешает добавлять только активные товары, видимые в заявках", () => {
+  it("скрывает неактивные и невидимые товары от магазина, оставляя администратору контроль", () => {
     expect(service).toContain("eq(operationalCatalogProducts.isVisibleInRequests, true)");
-    expect(service).toContain("!product.isActive || !product.isVisibleInRequests");
+    expect(service).toContain("input.includeHidden ? undefined");
+    expect(service).toContain("!product.isVisibleInRequests && !input.allowHidden");
+    expect(router).toContain("includeHidden: actor.role === \"admin\"");
   });
 
   it("не меняет закрытую заявку и хранит снимок строки", () => {

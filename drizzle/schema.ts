@@ -569,9 +569,12 @@ export const operationalStoreRequests = mysqlTable("operational_store_requests",
 export const operationalStoreRequestLines = mysqlTable("operational_store_request_lines", {
   id: int("id").autoincrement().primaryKey(),
   requestId: int("requestId").notNull(),
-  productId: int("productId").notNull(),
+  /** Null only for a one-off line added to an order before its catalog card exists. */
+  productId: int("productId"),
   catalogNumber: int("catalogNumber").notNull(),
   productName: varchar("productName", { length: 512 }).notNull(),
+  /** A request-only product name; it never creates or changes the common catalog. */
+  manualProductName: varchar("manualProductName", { length: 512 }),
   categoryName: varchar("categoryName", { length: 512 }),
   requestedQuantity: decimal("requestedQuantity", { precision: 16, scale: 3 }).notNull(),
   unit: mysqlEnum("unit", ["kg", "l", "piece"]).notNull(),

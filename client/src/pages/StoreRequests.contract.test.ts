@@ -11,19 +11,26 @@ describe("заявки магазинов: экран", () => {
     expect(page).not.toContain("trpc.audit.stores.useQuery");
   });
 
-  it("использует общий видимый справочник и не выводит себестоимость", () => {
+  it("использует общий справочник по раскрываемым категориям и не выводит себестоимость", () => {
     expect(page).toContain("requestProducts");
-    expect(page).toContain("Выберите товар из общего справочника");
+    expect(page).toContain("request-category-trigger");
+    expect(page).toContain("Поиск товара");
+    expect(page).toContain("request-product-row");
+    expect(page).toContain("видно только администратору");
     expect(page).not.toContain("internalCostPrice");
     expect(page).not.toContain("evotorCostPrice");
   });
 
-  it("сохраняет изменения факта в строке и закрывает только непустой черновик", () => {
-    expect(page).toContain("saveChangedLines");
+	it("меняет количество прямо в строке и закрывает только непустой черновик", () => {
     expect(page).toContain("upsertRequestLine");
     expect(page).toContain("removeRequestLine");
+    expect(page).toContain("changeProductQuantity");
+    expect(page).toContain("request-quantity-stepper");
+    expect(page).toContain("addRequestManualLine");
     expect(page).toContain("!active.lines.length");
-    expect(page).toContain("Готово к печати");
+		expect(page).toContain("Готово к печати");
+		expect(page).toContain("function orderSignal");
+		expect(page).toContain("остаток: {stockLabel[product.stockState]}");
   });
 
   it("предусматривает админскую печать закрытых заявок по группам", () => {
@@ -35,11 +42,12 @@ describe("заявки магазинов: экран", () => {
 });
 
 describe("заявки магазинов: адаптивность и печать", () => {
-  it("перестраивает строки в карточки на средней ширине без горизонтального скролла", () => {
+  it("компактно перестраивает категории и строки на средней ширине", () => {
     expect(styles).toContain("@media (max-width: 1024px)");
     expect(styles).toContain(".request-lines tbody tr");
     expect(styles).toContain("grid-template-columns: repeat(2, minmax(0, 1fr))");
     expect(styles).toContain("overflow: visible");
+    expect(styles).toContain(".request-product-row{grid-template-columns:1fr;");
   });
 
   it("использует A4 portrait с отдельными листами для сформированной подборки", () => {
@@ -48,9 +56,11 @@ describe("заявки магазинов: адаптивность и печа�
     expect(styles).toContain("break-after: page");
   });
 
-  it("сохраняет тематическую иерархию полей и контуров", () => {
+	it("сохраняет тематическую иерархию полей и контуров", () => {
     expect(styles).toContain("--request-accent: #0a84ff");
     expect(styles).toContain("--request-accent: #ff765f");
-    expect(styles).toContain(".request-history-list > article:hover");
-  });
+		expect(styles).toContain(".request-history-list > article:hover");
+		expect(styles).toContain("border-color:var(--request-line)");
+		expect(styles).toContain("Reuse the Rhythm outline button");
+	});
 });

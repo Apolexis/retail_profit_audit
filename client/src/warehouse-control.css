@@ -168,3 +168,18 @@ html[data-audit-theme="dark"] .packet .warehouse-table.data-table tbody td { bor
   .packet .warehouse-settings-actions { display: grid; grid-template-columns: 1fr; }
   .packet .warehouse-settings-actions .subtle-button { width: 100%; justify-content: center; }
 }
+
+/* Settings rows stay inside the selected warehouse card at tablet widths. */
+.packet .warehouse-settings-grid :is(.app-select-trigger, input) { width: 100%; min-width: 0; min-height: 40px; box-sizing: border-box; }
+.packet .warehouse-settings-grid .app-select-trigger { justify-content: space-between; }
+@media (max-width: 1400px) {
+  .packet .warehouse-settings-row > td { overflow: hidden; }
+  .packet .warehouse-settings-grid { min-width: 0; }
+  .packet .warehouse-settings-grid > label { min-width: 0; }
+  .packet .warehouse-settings-actions .subtle-button { min-width: 0; }
+}
+@media (max-width: 560px) {
+  .packet .warehouse-settings-grid { padding: 11px; }
+  .packet .warehouse-settings-actions { gap: 8px; }
+  .packet .warehouse-settings-note { overflow-wrap: anywhere; }
+}

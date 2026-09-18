@@ -102,8 +102,10 @@ describe("общий операционный справочник", () => {
 	it("оставляет действия списка компактными и доступными", () => {
 		expect(page).toContain('className="subtle-button catalog-table-action"');
 		expect(page).toContain('aria-label={`Изменить товар: ${product.canonicalName}`}');
+		expect(page).toContain('className="catalog-table-action-label">Изменить');
 		expect(page).toContain('<ArrowDown size={14}/>Показать еще');
 		expect(css).toContain(".packet .catalog-table-action { width: 32px;");
+		expect(css).toContain(".packet .catalog-table-action-label { display: none; }");
 	});
 
 	it("сохраняет весовой код fraction, но отображает его как килограммы", () => {

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getAccessibleStoreIds, getCurrentLocalAccount, hasStoreAccess } from "../accessControl";
 import {
   archiveOperationalCatalogProduct,
+  addOperationalStoreRequestManualLine,
   closeInventory,
   closeOperationalStoreRequest,
   createOperationalPrintGroup,
@@ -63,6 +64,11 @@ const dateInput = z.string().regex(/^20\d{2}-\d{2}-\d{2}$/, "Выберите д
 /** The UI labels `fraction` as «кг» while the stored catalog code remains compatible with Evotor. */
 const inventoryUnit = z.enum(["fraction", "l", "piece"]);
 const markingCategory = z.enum(["none", "supplement", "seafood_caviar", "seafood_canned", "alcohol", "beer_marked", "beer_non_alcoholic", "soft_drinks", "water", "dairy"]);
+const moscowToday = () => {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Moscow", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+  const value = (type: string) => parts.find(part => part.type === type)?.value ?? "";
+  return `${value("year")}-${value("month")}-${value("day")}`;
+};
 
 async function localActor(openId: string | null | undefined) {
   const actor = await getCurrentLocalAccount(openId);
@@ -319,8 +325,8 @@ export const inventoryRegistryRouter = router({
     return listOperationalStoreRequestStores({ storeIds });
   }),
   requestProducts: protectedProcedure.input(z.object({ storeId: z.number().int().positive() })).query(async ({ ctx, input }) => {
-    await requireInventoryStoreAccess(ctx.user.openId, input.storeId, "view");
-    return listOperationalStoreRequestProducts(input);
+    const actor = await requireInventoryStoreAccess(ctx.user.openId, input.storeId, "view");
+    return listOperationalStoreRequestProducts({ ...input, includeHidden: actor.role === "admin" });
   }),
   requestList: protectedProcedure.input(z.object({ storeId: z.number().int().positive().optional(), status: z.enum(["draft", "closed"]).optional(), limit: z.number().int().min(1).max(100).optional() }).optional()).query(async ({ ctx, input }) => {
     const actor = await localActor(ctx.user.openId);
@@ -334,6 +340,9 @@ export const inventoryRegistryRouter = router({
   }),
   createRequest: protectedProcedure.input(z.object({ storeId: z.number().int().positive(), businessDate: dateInput, note: z.string().max(4_000).optional() })).mutation(async ({ ctx, input }) => {
     const actor = await requireInventoryStoreAccess(ctx.user.openId, input.storeId, "edit");
+    if (actor.role !== "admin" && input.businessDate !== moscowToday()) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Магазин может создавать заявку только на текущую дату." });
+    }
     const result = await createOperationalStoreRequest({ ...input, createdByAccountId: actor.id });
     if (result.created) await recordChange({ actorId: actor.id, action: "store_request.create", entityType: "operational_store_request", entityId: String(result.request.id), afterState: { requestNumber: result.request.requestNumber, storeName: result.request.storeName, businessDate: result.request.businessDate, status: result.request.status } });
     return { created: result.created, request: await getOperationalStoreRequestDetail(result.request.id) };
@@ -346,14 +355,20 @@ export const inventoryRegistryRouter = router({
   }),
   upsertRequestLine: protectedProcedure.input(z.object({ requestId: z.number().int().positive(), productId: z.number().int().positive(), requestedQuantity: z.number().finite().positive().max(1_000_000), note: z.string().max(512).optional() })).mutation(async ({ ctx, input }) => {
     const { actor } = await storeRequestDetailWithPermission(ctx.user.openId, input.requestId, "edit");
-    const result = await upsertOperationalStoreRequestLine(input);
+    const result = await upsertOperationalStoreRequestLine({ ...input, allowHidden: actor.role === "admin" });
     await recordChange({ actorId: actor.id, action: "store_request.line.upsert", entityType: "operational_store_request_line", entityId: `${input.requestId}:${input.productId}`, beforeState: result.before ? { quantity: result.before.requestedQuantity, note: result.before.note } : null, afterState: { product: result.product.canonicalName, catalogNumber: result.product.catalogNumber, quantity: result.after.requestedQuantity, unit: result.after.unit, note: result.after.note } });
     return result;
   }),
-  removeRequestLine: protectedProcedure.input(z.object({ requestId: z.number().int().positive(), productId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+  addRequestManualLine: protectedProcedure.input(z.object({ requestId: z.number().int().positive(), productName: z.string().trim().min(2).max(512), requestedQuantity: z.number().finite().positive().max(1_000_000), unit: z.enum(["kg", "l", "piece"]), note: z.string().max(512).optional() })).mutation(async ({ ctx, input }) => {
     const { actor } = await storeRequestDetailWithPermission(ctx.user.openId, input.requestId, "edit");
+    const after = await addOperationalStoreRequestManualLine(input);
+    await recordChange({ actorId: actor.id, action: "store_request.line.manual_add", entityType: "operational_store_request_line", entityId: String(after.id), afterState: { product: after.productName, manual: true, quantity: after.requestedQuantity, unit: after.unit, note: after.note } });
+    return after;
+  }),
+  removeRequestLine: protectedProcedure.input(z.object({ requestId: z.number().int().positive(), productId: z.number().int().positive().optional(), lineId: z.number().int().positive().optional() }).refine(input => Boolean(input.productId || input.lineId), "Укажите строку заявки для удаления.")).mutation(async ({ ctx, input }) => {
+    const { actor, detail } = await storeRequestDetailWithPermission(ctx.user.openId, input.requestId, "edit");
     const before = await removeOperationalStoreRequestLine(input);
-    await recordChange({ actorId: actor.id, action: "store_request.line.remove", entityType: "operational_store_request_line", entityId: `${input.requestId}:${input.productId}`, beforeState: { catalogNumber: before.catalogNumber, product: before.productName, quantity: before.requestedQuantity, unit: before.unit, note: before.note }, afterState: { deleted: true } });
+    await recordChange({ actorId: actor.id, action: "store_request.line.remove", entityType: "operational_store_request_line", entityId: String(before.id), beforeState: { requestId: input.requestId, catalogNumber: before.catalogNumber || null, product: before.productName, manual: Boolean(before.manualProductName), quantity: before.requestedQuantity, unit: before.unit, note: before.note }, afterState: { deleted: true } });
     return before;
   }),
   closeRequest: protectedProcedure.input(z.object({ requestId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {

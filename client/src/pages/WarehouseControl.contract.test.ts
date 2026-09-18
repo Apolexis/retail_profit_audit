@@ -17,6 +17,8 @@ describe("warehouse control contract", () => {
 	it("keeps Evotor read-only and omits addresses", () => {
 	  expect(page).toContain("READ‑ONLY ЭВОТОР");
 	  expect(page).toContain("Адреса и технические идентификаторы в интерфейсе не показываются");
+	  expect(page).toContain("safeEvotorStoreLabel");
+	  expect(page).toContain("Cloud preview can append a street address");
 	  expect(page).toContain("Запись в Эвотор исключена");
 	  expect(page).toContain("Автоматическая read-only синхронизация");
 	  expect(page).toContain("каждые 15 минут");
@@ -57,6 +59,8 @@ describe("warehouse control contract", () => {
 		expect(page).toContain('data-label="Действие"');
 		expect(styles).toContain(".warehouse-table tbody > tr:not(.warehouse-settings-row)");
 		expect(styles).toContain("content: attr(data-label)");
+		expect(styles).toContain("Settings rows stay inside the selected warehouse card");
+		expect(styles).toContain(".warehouse-settings-grid :is(.app-select-trigger, input)");
 	});
 
 	it("keeps summary, open settings and print categories within the approved blue/coral hierarchy", () => {

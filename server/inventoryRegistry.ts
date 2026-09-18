@@ -371,7 +371,13 @@ async function requireDraftStoreRequest(requestId: number) {
   return request;
 }
 
-export async function listOperationalStoreRequestProducts(input: { storeId: number }) {
+/**
+ * Request preparation intentionally returns operating, not financial, facts.
+ * A store sees a qualitative current-stock state and the demand observed in
+ * the last seven calendar days. Exact snapshot quantities, prices and costs
+ * never reach this projection.
+ */
+export async function listOperationalStoreRequestProducts(input: { storeId: number; includeHidden?: boolean }) {
   const db = await getDb();
   if (!db) return [];
   const [store] = await db.select({ id: stores.id, isHidden: stores.isHidden }).from(stores).where(eq(stores.id, input.storeId)).limit(1);
@@ -383,12 +389,79 @@ export async function listOperationalStoreRequestProducts(input: { storeId: numb
       canonicalName: operationalCatalogProducts.canonicalName,
       categoryName: operationalCatalogProducts.evotorCategoryName,
       baseUnit: operationalCatalogProducts.baseUnit,
+      isVisibleInRequests: operationalCatalogProducts.isVisibleInRequests,
     })
     .from(operationalCatalogProducts)
-    .where(and(eq(operationalCatalogProducts.isActive, true), eq(operationalCatalogProducts.isVisibleInRequests, true)))
+    .where(and(
+      eq(operationalCatalogProducts.isActive, true),
+      input.includeHidden ? undefined : eq(operationalCatalogProducts.isVisibleInRequests, true),
+    ))
     .orderBy(operationalCatalogProducts.catalogNumber)
     .limit(2_000);
-  return rows.filter(row => row.baseUnit === "fraction" || row.baseUnit === "l" || row.baseUnit === "piece");
+  const products = rows.filter(row => row.baseUnit === "fraction" || row.baseUnit === "l" || row.baseUnit === "piece");
+  if (!products.length) return [];
+
+  const productIds = products.map(product => product.id);
+  const [accounting, links] = await Promise.all([
+    getInventoryAccountingQuantities(input.storeId, productIds),
+    db.select({ productId: operationalEvotorProductLinks.productId, evotorProductId: operationalEvotorProductLinks.evotorProductId })
+      .from(operationalEvotorProductLinks)
+      .where(and(eq(operationalEvotorProductLinks.storeId, input.storeId), inArray(operationalEvotorProductLinks.productId, productIds))),
+  ]);
+  const productIdByEvotorId = new Map(links.map(link => [link.evotorProductId, link.productId]));
+  const sevenDaysAgo = new Date(Date.now() - 6 * 24 * 60 * 60 * 1_000).toISOString().slice(0, 10);
+  const documents = await db
+    .select({ id: operationalEvotorDocuments.id })
+    .from(operationalEvotorDocuments)
+    .where(and(
+      eq(operationalEvotorDocuments.storeId, input.storeId),
+      eq(operationalEvotorDocuments.documentType, "SELL"),
+      isNotNull(operationalEvotorDocuments.occurredAt),
+      gte(operationalEvotorDocuments.occurredAt, `${sevenDaysAgo}T00:00:00`),
+    ))
+    .limit(20_000);
+  const documentIds = documents.map(document => document.id);
+  const weeklySoldByProduct = new Map<number, number>();
+  for (let start = 0; start < documentIds.length; start += 500) {
+    const positions = await db
+      .select({ evotorProductId: operationalEvotorDocumentPositions.evotorProductId, quantity: operationalEvotorDocumentPositions.quantity })
+      .from(operationalEvotorDocumentPositions)
+      .where(inArray(operationalEvotorDocumentPositions.documentId, documentIds.slice(start, start + 500)));
+    for (const position of positions) {
+      const productId = position.evotorProductId ? productIdByEvotorId.get(position.evotorProductId) : undefined;
+      if (!productId) continue;
+      const quantity = Math.max(0, Number(position.quantity ?? 0));
+      weeklySoldByProduct.set(productId, (weeklySoldByProduct.get(productId) ?? 0) + quantity);
+    }
+  }
+
+  return products.map(product => {
+    const quantity = accounting.get(product.id);
+    const weeklySold = Math.round((weeklySoldByProduct.get(product.id) ?? 0) * 1_000) / 1_000;
+    const dailySold = weeklySold > 0 ? Math.round((weeklySold / 7) * 1_000) / 1_000 : null;
+    // The large source sentinel remains visible in stock control, but it does
+    // not create a meaningless multi-year recommendation in a request.
+    const daysCover = quantity !== undefined && dailySold && quantity < 100_000
+      ? Math.max(0, Math.round(quantity / dailySold))
+      : null;
+    const stockState = quantity === undefined
+      ? "unknown"
+      : daysCover !== null
+        ? daysCover <= 3 ? "low" : daysCover <= 10 ? "sufficient" : "high"
+        : quantity <= 0 ? "low" : "high";
+    return {
+      ...product,
+      weeklySold,
+      dailySold,
+      daysCover,
+      stockState,
+      recommendation: daysCover !== null && daysCover <= 3
+        ? "order_soon"
+        : dailySold === null
+          ? "no_recent_sales"
+          : "normal",
+    };
+  });
 }
 
 /** Safe store projection for requests. The caller's access scope is resolved in the router. */
@@ -475,7 +548,7 @@ export async function updateOperationalStoreRequestNote(input: { requestId: numb
   return { before, after };
 }
 
-export async function upsertOperationalStoreRequestLine(input: { requestId: number; productId: number; requestedQuantity: number; note?: string }) {
+export async function upsertOperationalStoreRequestLine(input: { requestId: number; productId: number; requestedQuantity: number; note?: string; allowHidden?: boolean }) {
   const db = await getDb();
   if (!db) throw new Error("База данных недоступна");
   await requireDraftStoreRequest(input.requestId);
@@ -492,7 +565,7 @@ export async function upsertOperationalStoreRequestLine(input: { requestId: numb
     .from(operationalCatalogProducts)
     .where(eq(operationalCatalogProducts.id, input.productId))
     .limit(1);
-  if (!product || !product.isActive || !product.isVisibleInRequests) throw new Error("Товар недоступен для заявки.");
+  if (!product || !product.isActive || (!product.isVisibleInRequests && !input.allowHidden)) throw new Error("Товар недоступен для заявки.");
   if (product.baseUnit !== "fraction" && product.baseUnit !== "l" && product.baseUnit !== "piece") throw new Error("Для товара не задана рабочая единица.");
   const [before] = await db.select().from(operationalStoreRequestLines).where(and(eq(operationalStoreRequestLines.requestId, input.requestId), eq(operationalStoreRequestLines.productId, input.productId))).limit(1);
   const requestedQuantity = validateStoreRequestQuantity(input.requestedQuantity);
@@ -516,11 +589,45 @@ export async function upsertOperationalStoreRequestLine(input: { requestId: numb
   return { before: before ?? null, after: after!, product };
 }
 
-export async function removeOperationalStoreRequestLine(input: { requestId: number; productId: number }) {
+/**
+ * A missing assortment item may be noted by a store without turning a free-text
+ * request into a new catalog record. Such a line is intentionally print-only
+ * and has no route into Evotor.
+ */
+export async function addOperationalStoreRequestManualLine(input: { requestId: number; productName: string; requestedQuantity: number; unit: InventoryUnit; note?: string }) {
   const db = await getDb();
   if (!db) throw new Error("База данных недоступна");
   await requireDraftStoreRequest(input.requestId);
-  const [before] = await db.select().from(operationalStoreRequestLines).where(and(eq(operationalStoreRequestLines.requestId, input.requestId), eq(operationalStoreRequestLines.productId, input.productId))).limit(1);
+  const productName = normalizedText(input.productName);
+  if (productName.length < 2 || productName.length > 512) throw new Error("Укажите название товара от 2 до 512 символов.");
+  const requestedQuantity = validateStoreRequestQuantity(input.requestedQuantity);
+  const note = normalizedText(input.note ?? "").slice(0, 512) || null;
+  const [inserted] = await db.insert(operationalStoreRequestLines).values({
+    requestId: input.requestId,
+    productId: null,
+    catalogNumber: 0,
+    productName,
+    manualProductName: productName,
+    categoryName: "Не найдено в справочнике",
+    requestedQuantity: requestedQuantity.toFixed(3),
+    unit: input.unit,
+    note,
+  }).$returningId();
+  const [after] = await db.select().from(operationalStoreRequestLines).where(eq(operationalStoreRequestLines.id, inserted.id)).limit(1);
+  return after!;
+}
+
+export async function removeOperationalStoreRequestLine(input: { requestId: number; productId?: number; lineId?: number }) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  await requireDraftStoreRequest(input.requestId);
+  const condition = input.lineId
+    ? and(eq(operationalStoreRequestLines.requestId, input.requestId), eq(operationalStoreRequestLines.id, input.lineId))
+    : input.productId
+      ? and(eq(operationalStoreRequestLines.requestId, input.requestId), eq(operationalStoreRequestLines.productId, input.productId))
+      : undefined;
+  if (!condition) throw new Error("Укажите строку заявки для удаления.");
+  const [before] = await db.select().from(operationalStoreRequestLines).where(condition).limit(1);
   if (!before) throw new Error("Строка заявки не найдена.");
   await db.delete(operationalStoreRequestLines).where(eq(operationalStoreRequestLines.id, before.id));
   return before;

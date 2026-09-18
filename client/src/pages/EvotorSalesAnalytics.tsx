@@ -125,7 +125,7 @@ export default function EvotorSalesAnalytics({ kind }: { kind: PageKind }) {
     ? seriesTimeline(data?.timeline ?? [], activeMetric, kind, data?.stores ?? [])
     : null, [activeMetric, allowStoreSeries, data?.stores, data?.timeline, kind, showStoreSeries]);
   const chartLines = perStoreData
-    ? (data?.stores ?? []).map((store, index) => ({ key: store.name, name: store.name, color: theme === "dark" ? ["#ff765f", "#d88aa3", "#ffb56b", "#9f86d4"][index % 4] : ["#0a84ff", "#5e5ce6", "#00a3a3", "#34c759"][index % 4] }))
+    ? (data?.stores ?? []).map((store, index) => ({ key: store.name, name: store.name, color: theme === "dark" ? ["#ff765f", "#65b77b", "#ffc15e", "#d97f95"][index % 4] : ["#0a84ff", "#34c759", "#ff9f0a", "#ff453a"][index % 4] }))
     : [{ key: "value", name: kind === "metrics" ? ({ amount: "Сумма чеков", checks: "Чеки", average: "Средний чек" } as Record<SalesMetric, string>)[salesMetric] : ({ amount: "Сумма товаров", quantity: "Количество", positions: "Строки чеков" } as Record<ProductMetric, string>)[productMetric], color: theme === "dark" ? "#ff765f" : "#0a84ff" }];
   const scope = allStoresSelected ? "Все магазины" : data?.stores.length === 1 ? data.stores[0].name : `${data?.stores.length ?? selectedStores.length} магазина`;
   const uniqueStoreCount = new Set((data?.timeline ?? []).map(row => row.storeId)).size;

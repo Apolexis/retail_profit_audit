@@ -239,3 +239,31 @@ html[data-audit-theme="dark"] .packet .packet-card.revenue-own-history:hover { b
   #revenue-print-root .revenue-print-comments p { margin: 0; color: #000; font: 9pt/1.25 Arial, sans-serif; }
   #revenue-print-root .revenue-print-comments strong { font-family: "Arial Black", Arial, sans-serif; font-weight: 900; }
 }
+
+/* Registry cards replace horizontal drag on compact screens; desktop retains the approved Rhythm table. */
+@media (max-width: 920px) {
+  .packet .data-table-wrap.revenue-register-table-wrap { overflow: visible; cursor: default; border: 0; background: transparent; touch-action: pan-y; }
+  .packet .revenue-admin-register .revenue-register-table.data-table { display: block; min-width: 0; width: 100%; }
+  .packet .revenue-register-table thead { display: none; }
+  .packet .revenue-register-table tbody { display: grid; gap: 9px; }
+  .packet .revenue-register-table tbody tr,
+  .packet .revenue-register-table tbody tr:nth-child(even) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: hidden; border: 1px solid var(--revenue-line); border-radius: 11px; background: var(--revenue-card); }
+  .packet .revenue-register-table tbody td { display: grid; min-width: 0; min-height: 43px; align-content: center; gap: 3px; padding: 8px 10px; border: 0 !important; border-top: 1px solid var(--revenue-quiet-line) !important; background: transparent !important; text-align: left !important; white-space: normal !important; }
+  .packet .revenue-register-table tbody td::before { content: attr(data-label); color: var(--muted); font: 800 9px/1.15 Manrope, Arial, sans-serif; letter-spacing: .07em; text-transform: uppercase; }
+  .packet .revenue-register-table tbody td:first-child { grid-column: 1 / -1; border-top: 0 !important; }
+  .packet .revenue-register-table tbody td:first-child strong { overflow-wrap: anywhere; }
+  .packet .revenue-register-table tbody td[data-label="Комментарии расходов"],
+  .packet .revenue-register-table tbody td[data-label="Действия"] { grid-column: 1 / -1; }
+  .packet .revenue-row-actions { flex-wrap: wrap; }
+  .packet .revenue-row-actions .subtle-button { flex: 1 1 145px; justify-content: center; min-width: 0; }
+  .packet .revenue-register-table tfoot { display: block; margin-top: 9px; }
+  .packet .revenue-register-table tfoot tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: hidden; border: 1px solid var(--revenue-accent-soft); border-radius: 11px; background: var(--revenue-total-surface); }
+  .packet .revenue-register-table tfoot :is(th, td) { display: none; border: 0 !important; background: transparent !important; }
+  .packet .revenue-register-table tfoot th { display: block; grid-column: 1 / -1; padding: 9px 11px; color: var(--ink); text-align: left; }
+  .packet .revenue-register-table tfoot td:nth-last-child(3) { display: block; padding: 0 11px 9px; color: var(--ink); font-weight: 800; }
+  .packet .revenue-register-table tfoot td:nth-last-child(3)::before { content: "Итого"; display: block; margin-bottom: 2px; color: var(--muted); font: 800 9px/1.15 Manrope,Arial,sans-serif; letter-spacing: .07em; text-transform: uppercase; }
+}
+@media (max-width: 440px) {
+  .packet .revenue-register-table tbody tr { grid-template-columns: 1fr; }
+  .packet .revenue-register-table tfoot tr { grid-template-columns: 1fr; }
+}
