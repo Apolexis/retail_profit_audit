@@ -1,0 +1,1 @@
+ALTER TABLE `operational_store_request_lines` ADD `manualPrintCategoryGroupId` int;

@@ -29,4 +29,11 @@ describe("read-only показатели продаж Эвотор", () => {
     expect(service).toContain("businessDate >= EVOTOR_DOCUMENT_RETENTION_START");
     expect(service).toContain("input.from < EVOTOR_DOCUMENT_RETENTION_START");
   });
+
+  it("отбирает только чеки продажи и отдает временной ряд самих товаров", () => {
+    expect(service).toContain('eq(operationalEvotorDocuments.documentType, "SELL")');
+    expect(service).toContain("productTimelineMap");
+    expect(service).toContain("productTimeline: Array.from(productTimelineMap.values())");
+    expect(service).toContain("productKey: key");
+  });
 });

@@ -344,6 +344,20 @@
       "when": 1789752879599,
       "tag": "0048_first_electro",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "5",
+      "when": 1789763463872,
+      "tag": "0049_thin_ravenous",
+      "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "5",
+      "when": 1789764825312,
+      "tag": "0050_old_union_jack",
+      "breakpoints": true
     }
   ]
 }

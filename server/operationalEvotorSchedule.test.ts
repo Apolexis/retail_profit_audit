@@ -5,13 +5,13 @@ import { operationalEvotorScheduleDefinitions } from "./operationalEvotorSchedul
 const registry = readFileSync(new URL("./inventoryRegistry.ts", import.meta.url), "utf8");
 
 describe("планировщик read-only синхронизации Эвотор", () => {
-  it("ограничивает каждый scheduled запуск одним складом с разным ритмом каталога и чеков", () => {
+  it("ограничивает каждый scheduled запуск одним складом на минимальном допустимом интервале", () => {
     expect(operationalEvotorScheduleDefinitions.evotor_catalog).toMatchObject({
-      cron: "0 */15 * * * *",
+      cron: "0 * * * * *",
       path: "/api/scheduled/operational-evotor-catalog",
     });
     expect(operationalEvotorScheduleDefinitions.evotor_documents).toMatchObject({
-      cron: "0 */10 * * * *",
+      cron: "0 * * * * *",
       path: "/api/scheduled/operational-evotor-documents",
     });
     expect(operationalEvotorScheduleDefinitions.evotor_catalog.description).toContain("одного закрепленного склада");

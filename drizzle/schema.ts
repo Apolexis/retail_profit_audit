@@ -576,12 +576,33 @@ export const operationalStoreRequestLines = mysqlTable("operational_store_reques
   /** A request-only product name; it never creates or changes the common catalog. */
   manualProductName: varchar("manualProductName", { length: 512 }),
   categoryName: varchar("categoryName", { length: 512 }),
+  /** Selected only for a manual line so it reaches the intended configured print sheet. */
+  manualPrintCategoryGroupId: int("manualPrintCategoryGroupId"),
   requestedQuantity: decimal("requestedQuantity", { precision: 16, scale: 3 }).notNull(),
   unit: mysqlEnum("unit", ["kg", "l", "piece"]).notNull(),
   note: varchar("note", { length: 512 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => [unique("operational_store_request_line_product_uq").on(table.requestId, table.productId)]);
+
+/**
+ * Two optional operational comments may be attached to a request.  Each one is
+ * explicitly assigned to a product print category so the comment appears only
+ * on the matching printed sheet.  The category name is snapshotted to preserve
+ * the historical meaning if the printing setup is renamed later.
+ */
+export const operationalStoreRequestComments = mysqlTable("operational_store_request_comments", {
+  id: int("id").autoincrement().primaryKey(),
+  requestId: int("requestId").notNull(),
+  slot: int("slot").notNull(),
+  printCategoryGroupId: int("printCategoryGroupId").notNull(),
+  printCategoryGroupName: varchar("printCategoryGroupName", { length: 128 }).notNull(),
+  text: varchar("text", { length: 2_000 }).notNull(),
+  createdByAccountId: int("createdByAccountId").notNull(),
+  updatedByAccountId: int("updatedByAccountId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [unique("operational_store_request_comment_slot_uq").on(table.requestId, table.slot)]);
 
 export type OperationalInventory = typeof operationalInventories.$inferSelect;
 export type OperationalCatalogProduct = typeof operationalCatalogProducts.$inferSelect;
@@ -596,6 +617,7 @@ export type OperationalInventoryLine = typeof operationalInventoryLines.$inferSe
 export type OperationalStockMovement = typeof operationalStockMovements.$inferSelect;
 export type OperationalStoreRequest = typeof operationalStoreRequests.$inferSelect;
 export type OperationalStoreRequestLine = typeof operationalStoreRequestLines.$inferSelect;
+export type OperationalStoreRequestComment = typeof operationalStoreRequestComments.$inferSelect;
 
 /** Supplier catalog is deliberately isolated from financial facts and financial workbook imports. */
 export const priceSuppliers = mysqlTable("price_suppliers", {

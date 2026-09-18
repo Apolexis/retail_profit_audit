@@ -17,6 +17,7 @@ import {
   operationalStockMovements,
   operationalStoreMappings,
   operationalStorePriceTypes,
+  operationalStoreRequestComments,
   operationalStoreRequestLines,
   operationalStoreRequests,
   operationalWarehouseSettings,
@@ -449,12 +450,16 @@ export async function listOperationalStoreRequestProducts(input: { storeId: numb
       : daysCover !== null
         ? daysCover <= 3 ? "low" : daysCover <= 10 ? "sufficient" : "high"
         : quantity <= 0 ? "low" : "high";
+    const recommendedQuantity = quantity !== undefined && dailySold !== null && dailySold > 0 && quantity < 100_000
+      ? Math.max(0, Math.ceil((dailySold * 7 - quantity) * 1_000) / 1_000)
+      : null;
     return {
       ...product,
       weeklySold,
       dailySold,
       daysCover,
       stockState,
+      recommendedQuantity,
       recommendation: daysCover !== null && daysCover <= 3
         ? "order_soon"
         : dailySold === null
@@ -500,13 +505,25 @@ export async function getOperationalStoreRequestDetail(requestId: number) {
   const db = await getDb();
   if (!db) return null;
   const request = await requireStoreRequest(requestId);
-  const lines = await db
-    .select()
-    .from(operationalStoreRequestLines)
-    .where(eq(operationalStoreRequestLines.requestId, requestId))
-    .orderBy(operationalStoreRequestLines.categoryName, operationalStoreRequestLines.catalogNumber)
-    .limit(2_000);
-  return { ...requestHeaderState(request), lines: lines.map(line => ({ ...line, requestedQuantity: Number(line.requestedQuantity) })) };
+  const [lines, comments] = await Promise.all([
+    db
+      .select()
+      .from(operationalStoreRequestLines)
+      .where(eq(operationalStoreRequestLines.requestId, requestId))
+      .orderBy(operationalStoreRequestLines.categoryName, operationalStoreRequestLines.catalogNumber)
+      .limit(2_000),
+    db
+      .select()
+      .from(operationalStoreRequestComments)
+      .where(eq(operationalStoreRequestComments.requestId, requestId))
+      .orderBy(operationalStoreRequestComments.slot)
+      .limit(2),
+  ]);
+  return {
+    ...requestHeaderState(request),
+    lines: lines.map(line => ({ ...line, requestedQuantity: Number(line.requestedQuantity) })),
+    comments,
+  };
 }
 
 export async function createOperationalStoreRequest(input: { storeId: number; businessDate: string; note?: string; createdByAccountId: number }) {
@@ -538,14 +555,48 @@ export async function createOperationalStoreRequest(input: { storeId: number; bu
   }
 }
 
-export async function updateOperationalStoreRequestNote(input: { requestId: number; note: string }) {
+/** Each request has two optional comments bound to the selected print category. */
+export async function upsertOperationalStoreRequestComment(input: {
+  requestId: number;
+  slot: 1 | 2;
+  printCategoryGroupId: number;
+  text: string;
+  actorId: number;
+}) {
   const db = await getDb();
   if (!db) throw new Error("База данных недоступна");
-  const before = await requireDraftStoreRequest(input.requestId);
-  const note = normalizedText(input.note).slice(0, 4_000) || null;
-  await db.update(operationalStoreRequests).set({ note }).where(eq(operationalStoreRequests.id, input.requestId));
-  const after = await requireStoreRequest(input.requestId);
-  return { before, after };
+  await requireDraftStoreRequest(input.requestId);
+  const [categoryGroup] = await db
+    .select({ id: operationalPrintCategoryGroups.id, name: operationalPrintCategoryGroups.name, isActive: operationalPrintCategoryGroups.isActive })
+    .from(operationalPrintCategoryGroups)
+    .where(eq(operationalPrintCategoryGroups.id, input.printCategoryGroupId))
+    .limit(1);
+  if (!categoryGroup || !categoryGroup.isActive) throw new Error("Категория печати недоступна.");
+  const text = normalizedText(input.text).slice(0, 2_000);
+  const [before] = await db.select().from(operationalStoreRequestComments)
+    .where(and(eq(operationalStoreRequestComments.requestId, input.requestId), eq(operationalStoreRequestComments.slot, input.slot)))
+    .limit(1);
+  if (!text) {
+    if (before) await db.delete(operationalStoreRequestComments).where(eq(operationalStoreRequestComments.id, before.id));
+    return { before: before ?? null, after: null };
+  }
+  const values = {
+    requestId: input.requestId,
+    slot: input.slot,
+    printCategoryGroupId: categoryGroup.id,
+    printCategoryGroupName: categoryGroup.name,
+    text,
+    updatedByAccountId: input.actorId,
+  };
+  if (before) {
+    await db.update(operationalStoreRequestComments).set(values).where(eq(operationalStoreRequestComments.id, before.id));
+  } else {
+    await db.insert(operationalStoreRequestComments).values({ ...values, createdByAccountId: input.actorId });
+  }
+  const [after] = await db.select().from(operationalStoreRequestComments)
+    .where(and(eq(operationalStoreRequestComments.requestId, input.requestId), eq(operationalStoreRequestComments.slot, input.slot)))
+    .limit(1);
+  return { before: before ?? null, after: after! };
 }
 
 export async function upsertOperationalStoreRequestLine(input: { requestId: number; productId: number; requestedQuantity: number; note?: string; allowHidden?: boolean }) {
@@ -594,7 +645,7 @@ export async function upsertOperationalStoreRequestLine(input: { requestId: numb
  * request into a new catalog record. Such a line is intentionally print-only
  * and has no route into Evotor.
  */
-export async function addOperationalStoreRequestManualLine(input: { requestId: number; productName: string; requestedQuantity: number; unit: InventoryUnit; note?: string }) {
+export async function addOperationalStoreRequestManualLine(input: { requestId: number; productName: string; requestedQuantity: number; unit: InventoryUnit; printCategoryGroupId: number; note?: string }) {
   const db = await getDb();
   if (!db) throw new Error("База данных недоступна");
   await requireDraftStoreRequest(input.requestId);
@@ -602,6 +653,12 @@ export async function addOperationalStoreRequestManualLine(input: { requestId: n
   if (productName.length < 2 || productName.length > 512) throw new Error("Укажите название товара от 2 до 512 символов.");
   const requestedQuantity = validateStoreRequestQuantity(input.requestedQuantity);
   const note = normalizedText(input.note ?? "").slice(0, 512) || null;
+  const [printCategoryGroup] = await db
+    .select({ id: operationalPrintCategoryGroups.id, isActive: operationalPrintCategoryGroups.isActive })
+    .from(operationalPrintCategoryGroups)
+    .where(eq(operationalPrintCategoryGroups.id, input.printCategoryGroupId))
+    .limit(1);
+  if (!printCategoryGroup?.isActive) throw new Error("Выбранная категория печати недоступна.");
   const [inserted] = await db.insert(operationalStoreRequestLines).values({
     requestId: input.requestId,
     productId: null,
@@ -609,6 +666,7 @@ export async function addOperationalStoreRequestManualLine(input: { requestId: n
     productName,
     manualProductName: productName,
     categoryName: "Не найдено в справочнике",
+    manualPrintCategoryGroupId: printCategoryGroup.id,
     requestedQuantity: requestedQuantity.toFixed(3),
     unit: input.unit,
     note,
@@ -673,18 +731,20 @@ function expandPrintCategoryNames(groupId: number, groups: Array<typeof operatio
 }
 
 /** Builds a reproducible, read-only print projection from closed request snapshots. */
-export async function getOperationalStoreRequestPrintProjection(input: { businessDate: string; printGroupIds?: number[]; printCategoryGroupIds: number[]; storeIds?: number[] | null }) {
+export async function getOperationalStoreRequestPrintProjection(input: { businessDate: string; printGroupIds?: number[]; printCategoryGroupIds?: number[]; storeIds?: number[] | null }) {
   const db = await getDb();
   if (!db) throw new Error("База данных недоступна");
   const businessDate = validateInventoryDate(input.businessDate);
-  const categoryGroupIds = Array.from(new Set(input.printCategoryGroupIds)).filter(Number.isInteger);
-  if (!categoryGroupIds.length) throw new Error("Выберите хотя бы одну категорию печати.");
   const [allPrintGroups, allCategoryGroups, members] = await Promise.all([
     db.select().from(operationalPrintGroups).where(eq(operationalPrintGroups.isActive, true)).orderBy(operationalPrintGroups.name).limit(100),
-    db.select().from(operationalPrintCategoryGroups).orderBy(operationalPrintCategoryGroups.name).limit(200),
+    db.select().from(operationalPrintCategoryGroups).where(eq(operationalPrintCategoryGroups.isActive, true)).orderBy(operationalPrintCategoryGroups.name).limit(200),
     db.select().from(operationalPrintCategoryGroupMembers).limit(2_000),
   ]);
+  const categoryGroupIds = input.printCategoryGroupIds?.length
+    ? Array.from(new Set(input.printCategoryGroupIds)).filter(Number.isInteger)
+    : allCategoryGroups.map(group => group.id);
   const categoryGroups = allCategoryGroups.filter(group => categoryGroupIds.includes(group.id));
+  if (!categoryGroups.length) throw new Error("Нет активных категорий печати.");
   if (categoryGroups.length !== categoryGroupIds.length) throw new Error("Одна из выбранных категорий печати недоступна.");
   const chosenPrintGroups = input.printGroupIds?.length ? allPrintGroups.filter(group => input.printGroupIds!.includes(group.id)) : allPrintGroups;
   if (!chosenPrintGroups.length) throw new Error("Нет активных групп магазинов для печати.");
@@ -699,19 +759,30 @@ export async function getOperationalStoreRequestPrintProjection(input: { busines
     db.select().from(operationalStoreRequests).where(and(inArray(operationalStoreRequests.storeId, scopedStoreIds), eq(operationalStoreRequests.businessDate, businessDate), eq(operationalStoreRequests.status, "closed"))).orderBy(operationalStoreRequests.storeName, operationalStoreRequests.id).limit(2_000),
   ]) : [[], [] as Array<typeof operationalStoreRequests.$inferSelect>];
   const requestIds = requests.map(request => request.id);
-  const lines = requestIds.length ? await db.select().from(operationalStoreRequestLines).where(inArray(operationalStoreRequestLines.requestId, requestIds)).orderBy(operationalStoreRequestLines.catalogNumber).limit(20_000) : [];
+  const [lines, comments] = requestIds.length ? await Promise.all([
+    db.select().from(operationalStoreRequestLines).where(inArray(operationalStoreRequestLines.requestId, requestIds)).orderBy(operationalStoreRequestLines.catalogNumber).limit(20_000),
+    db.select().from(operationalStoreRequestComments).where(inArray(operationalStoreRequestComments.requestId, requestIds)).orderBy(operationalStoreRequestComments.slot).limit(4_000),
+  ]) : [[], []] as const;
   const requestById = new Map(requests.map(request => [request.id, request]));
   const requestsByStore = new Map<number, typeof requests>();
   for (const request of requests) requestsByStore.set(request.storeId, [...(requestsByStore.get(request.storeId) ?? []), request]);
   const linesByRequest = new Map<number, typeof lines>();
   for (const line of lines) linesByRequest.set(line.requestId, [...(linesByRequest.get(line.requestId) ?? []), line]);
+  const commentsByRequest = new Map<number, typeof comments>();
+  for (const comment of comments) commentsByRequest.set(comment.requestId, [...(commentsByRequest.get(comment.requestId) ?? []), comment]);
   const activeStoreIds = new Set(visibleStores.map(store => store.id));
   const sheets = chosenPrintGroups.flatMap(storeGroup => categoryGroups.flatMap(categoryGroup => {
     const allowedCategories = expandPrintCategoryNames(categoryGroup.id, allCategoryGroups, members);
     const storesInGroup = visibleStores.filter(store => activeStoreIds.has(store.id) && groupByStore.get(store.id) === storeGroup.id).map(store => {
-      const rows = (requestsByStore.get(store.id) ?? []).flatMap(request => (linesByRequest.get(request.id) ?? []).filter(line => line.categoryName !== null && allowedCategories.has(line.categoryName)).map(line => ({ ...line, requestNumber: request.requestNumber, requestNote: request.note })));
-      return { storeId: store.id, storeName: store.name, lines: rows };
-    }).filter(store => store.lines.length);
+      const storeRequests = requestsByStore.get(store.id) ?? [];
+      const rows = storeRequests.flatMap(request => (linesByRequest.get(request.id) ?? [])
+        .filter(line => line.manualPrintCategoryGroupId === categoryGroup.id || (line.manualPrintCategoryGroupId === null && line.categoryName !== null && allowedCategories.has(line.categoryName)))
+        .map(line => ({ ...line, requestNumber: request.requestNumber })));
+      const requestComments = storeRequests.flatMap(request => (commentsByRequest.get(request.id) ?? [])
+        .filter(comment => comment.printCategoryGroupId === categoryGroup.id)
+        .map(comment => ({ id: comment.id, slot: comment.slot, text: comment.text, requestNumber: request.requestNumber })));
+      return { storeId: store.id, storeName: store.name, lines: rows, comments: requestComments };
+    }).filter(store => store.lines.length || store.comments.length);
     if (!storesInGroup.length) return [];
     if (categoryGroup.printMode === "grouped_stores") return [{ id: `${storeGroup.id}:${categoryGroup.id}:grouped`, storeGroupName: storeGroup.name, categoryGroupName: categoryGroup.name, printMode: categoryGroup.printMode, stores: storesInGroup }];
     return storesInGroup.map(store => ({ id: `${storeGroup.id}:${categoryGroup.id}:${store.storeId}`, storeGroupName: storeGroup.name, categoryGroupName: categoryGroup.name, printMode: categoryGroup.printMode, stores: [store] }));
@@ -883,7 +954,7 @@ export async function listOperationalEvotorSalesAnalytics(input: {
   if (!db) throw new Error("База данных недоступна");
   const from = input.from < EVOTOR_DOCUMENT_RETENTION_START ? EVOTOR_DOCUMENT_RETENTION_START : input.from;
   if (input.to < EVOTOR_DOCUMENT_RETENTION_START) {
-    return { stores: [], timeline: [], products: [], summary: { checks: 0, amount: 0, positions: 0, positionAmount: 0, quantity: 0 }, coverage: { from: null, to: null } };
+    return { stores: [], timeline: [], products: [], productTimeline: [], summary: { checks: 0, amount: 0, positions: 0, positionAmount: 0, quantity: 0 }, coverage: { from: null, to: null } };
   }
   const allVisibleStores = await db
     .select({ id: stores.id, name: stores.name })
@@ -892,7 +963,7 @@ export async function listOperationalEvotorSalesAnalytics(input: {
     .orderBy(stores.name);
   const requestedStoreIds = input.storeIds?.length ? new Set(input.storeIds) : null;
   const scopedStores = requestedStoreIds ? allVisibleStores.filter(store => requestedStoreIds.has(store.id)) : allVisibleStores;
-  if (!scopedStores.length) return { stores: [], timeline: [], products: [], summary: { checks: 0, amount: 0, positions: 0, positionAmount: 0, quantity: 0 }, coverage: { from: null, to: null } };
+  if (!scopedStores.length) return { stores: [], timeline: [], products: [], productTimeline: [], summary: { checks: 0, amount: 0, positions: 0, positionAmount: 0, quantity: 0 }, coverage: { from: null, to: null } };
   const storeIds = scopedStores.map(store => store.id);
   const storeNameById = new Map(scopedStores.map(store => [store.id, store.name]));
   const [firstDocument, lastDocument, documents] = await Promise.all([
@@ -906,19 +977,20 @@ export async function listOperationalEvotorSalesAnalytics(input: {
       total: operationalEvotorDocuments.total,
     })
     .from(operationalEvotorDocuments)
-    .where(and(
-      inArray(operationalEvotorDocuments.storeId, storeIds),
-      isNotNull(operationalEvotorDocuments.occurredAt),
-      gte(operationalEvotorDocuments.occurredAt, `${from}T00:00:00`),
-      lte(operationalEvotorDocuments.occurredAt, `${input.to}T23:59:59.999`),
-    )),
+      .where(and(
+        inArray(operationalEvotorDocuments.storeId, storeIds),
+        eq(operationalEvotorDocuments.documentType, "SELL"),
+        isNotNull(operationalEvotorDocuments.occurredAt),
+        gte(operationalEvotorDocuments.occurredAt, `${from}T00:00:00`),
+        lte(operationalEvotorDocuments.occurredAt, `${input.to}T23:59:59.999`),
+      )),
   ]);
   const coverage = {
     from: firstDocument[0]?.occurredAt?.slice(0, 10) ?? null,
     to: lastDocument[0]?.occurredAt?.slice(0, 10) ?? null,
   };
   const timelineMap = new Map<string, { key: string; label: string; storeId: number; storeName: string; checks: number; amount: number; positions: number; positionAmount: number; quantity: number }>();
-  const documentById = new Map<number, { storeId: number; storeName: string; timelineKey: string }>();
+  const documentById = new Map<number, { storeId: number; storeName: string; intervalKey: string; intervalLabel: string; timelineKey: string }>();
   let checks = 0;
   let amount = 0;
   for (const document of documents) {
@@ -930,7 +1002,7 @@ export async function listOperationalEvotorSalesAnalytics(input: {
     aggregate.checks += 1;
     aggregate.amount += Number(document.total ?? 0);
     timelineMap.set(aggregateKey, aggregate);
-    documentById.set(document.id, { storeId: document.storeId, storeName, timelineKey: aggregateKey });
+    documentById.set(document.id, { storeId: document.storeId, storeName, intervalKey: interval.key, intervalLabel: interval.label, timelineKey: aggregateKey });
     checks += 1;
     amount += Number(document.total ?? 0);
   }
@@ -942,7 +1014,8 @@ export async function listOperationalEvotorSalesAnalytics(input: {
       .from(operationalEvotorDocumentPositions)
       .where(inArray(operationalEvotorDocumentPositions.documentId, documentIds.slice(start, start + 500))));
   }
-  const productMap = new Map<string, { productName: string; unit: string | null; amount: number; quantity: number; positions: number; stores: Set<number> }>();
+  const productMap = new Map<string, { key: string; productName: string; unit: string | null; amount: number; quantity: number; positions: number; stores: Set<number> }>();
+  const productTimelineMap = new Map<string, { key: string; label: string; productKey: string; productName: string; unit: string | null; amount: number; quantity: number; positions: number }>();
   let quantity = 0;
   let positionAmount = 0;
   for (const position of positions) {
@@ -950,7 +1023,7 @@ export async function listOperationalEvotorSalesAnalytics(input: {
     if (!document) continue;
     const productName = normalizedText(position.productName ?? "") || "Товар без названия";
     const key = `${productName}\u0000${position.unit ?? ""}`;
-    const product = productMap.get(key) ?? { productName, unit: position.unit, amount: 0, quantity: 0, positions: 0, stores: new Set<number>() };
+    const product = productMap.get(key) ?? { key, productName, unit: position.unit, amount: 0, quantity: 0, positions: 0, stores: new Set<number>() };
     const lineQuantity = Number(position.quantity ?? 0);
     product.amount += Number(position.resultSum ?? 0);
     product.quantity += lineQuantity;
@@ -965,11 +1038,27 @@ export async function listOperationalEvotorSalesAnalytics(input: {
       timeline.positionAmount += Number(position.resultSum ?? 0);
       timeline.quantity += lineQuantity;
     }
+    const productTimelineKey = `${document.intervalKey}\u0000${key}`;
+    const productTimeline = productTimelineMap.get(productTimelineKey) ?? {
+      key: document.intervalKey,
+      label: document.intervalLabel,
+      productKey: key,
+      productName,
+      unit: position.unit,
+      amount: 0,
+      quantity: 0,
+      positions: 0,
+    };
+    productTimeline.amount += Number(position.resultSum ?? 0);
+    productTimeline.quantity += lineQuantity;
+    productTimeline.positions += 1;
+    productTimelineMap.set(productTimelineKey, productTimeline);
   }
   return {
     stores: scopedStores,
     timeline: Array.from(timelineMap.values()).map(row => ({ ...row, amount: Math.round(row.amount * 100) / 100, positionAmount: Math.round(row.positionAmount * 100) / 100, quantity: Math.round(row.quantity * 1_000) / 1_000 })).sort((left, right) => left.key.localeCompare(right.key) || left.storeName.localeCompare(right.storeName, "ru")),
-    products: Array.from(productMap.values()).map(product => ({ productName: product.productName, unit: product.unit, amount: Math.round(product.amount * 100) / 100, quantity: Math.round(product.quantity * 1_000) / 1_000, positions: product.positions, stores: product.stores.size })).sort((left, right) => right.amount - left.amount || left.productName.localeCompare(right.productName, "ru")),
+    products: Array.from(productMap.values()).map(product => ({ key: product.key, productName: product.productName, unit: product.unit, amount: Math.round(product.amount * 100) / 100, quantity: Math.round(product.quantity * 1_000) / 1_000, positions: product.positions, stores: product.stores.size })).sort((left, right) => right.amount - left.amount || left.productName.localeCompare(right.productName, "ru")),
+    productTimeline: Array.from(productTimelineMap.values()).map(row => ({ ...row, amount: Math.round(row.amount * 100) / 100, quantity: Math.round(row.quantity * 1_000) / 1_000 })).sort((left, right) => left.key.localeCompare(right.key) || left.productName.localeCompare(right.productName, "ru")),
     summary: { checks, amount: Math.round(amount * 100) / 100, positions: positions.length, positionAmount: Math.round(positionAmount * 100) / 100, quantity: Math.round(quantity * 1_000) / 1_000 },
     coverage,
   };

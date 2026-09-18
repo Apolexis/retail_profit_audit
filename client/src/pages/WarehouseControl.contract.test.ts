@@ -21,8 +21,7 @@ describe("warehouse control contract", () => {
 	  expect(page).toContain("Cloud preview can append a street address");
 	  expect(page).toContain("Запись в Эвотор исключена");
 	  expect(page).toContain("Автоматическая read-only синхронизация");
-	  expect(page).toContain("каждые 15 минут");
-	  expect(page).toContain("каждые 10 минут");
+	  expect(page).toContain("каждую минуту, по одному закрепленному складу");
 	  expect(page).not.toContain("syncEvotorDocumentPage.useMutation");
 	  expect(page).not.toContain("Загрузить документы");
 	  expect(page).not.toContain("Обновить данные Эвотор");

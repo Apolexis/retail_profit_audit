@@ -17,22 +17,23 @@ import { createHeartbeatJob } from "./_core/heartbeat";
 export type OperationalEvotorScheduledKind = "evotor_catalog" | "evotor_documents";
 
 const SYNC_JOBS: Record<OperationalEvotorScheduledKind, { name: string; cron: string; path: string; description: string }> = {
-  // One mapped store per call. A 15-minute rotation stays comfortably below the
-  // callback timeout even when a catalog has five pages, while covering the network
-  // overnight without large bursts against a shared Evotor account.
+  // One mapped store per call. The platform's minimum supported interval is one
+  // minute; a catalog callback is bounded to five pages and has been measured below
+  // the two-minute callback limit. This maximizes freshness without fan-out bursts.
   evotor_catalog: {
     name: "operational-evotor-catalog-rotation",
-    cron: "0 */15 * * * *",
+    cron: "0 * * * * *",
     path: "/api/scheduled/operational-evotor-catalog",
-    description: "Read-only обновление каталога и остатка одного закрепленного склада Эвотор по очереди каждые 15 минут.",
+    description: "Read-only обновление каталога и остатка одного закрепленного склада Эвотор по очереди каждую минуту.",
   },
-  // Documents are cursor-paged one store at a time, so a slow external response
-  // cannot block the other scheduled work or exhaust the two-minute callback budget.
+  // Documents are cursor-paged one store at a time. The callback has a two-minute
+  // execution limit; a measured page completes in seconds, so one minute is safe
+  // while preserving strict sequential calls to the external API.
   evotor_documents: {
     name: "operational-evotor-documents-rolling",
-    cron: "0 */10 * * * *",
+    cron: "0 * * * * *",
     path: "/api/scheduled/operational-evotor-documents",
-    description: "Read-only подгрузка следующей страницы чеков и товарных строк одного закрепленного склада Эвотор каждые 10 минут.",
+    description: "Read-only подгрузка следующей страницы чеков и товарных строк одного закрепленного склада Эвотор каждую минуту.",
   },
 };
 
@@ -104,9 +105,9 @@ export async function ensureOperationalEvotorSchedules(): Promise<void> {
     const definition = SYNC_JOBS[kind];
     const existing = await findJob(kind);
     if (existing?.scheduleCronTaskUid) {
-      // The platform scheduler is persistent. It was verified in production
-      // with the declared 15/10-minute cadence, so restarting the HTTP process
-      // must not issue a mutable remote update on every hot reload/deployment.
+      // The platform scheduler is persistent. Its registered one-minute cadence
+      // is verified separately; restarting the HTTP process must not issue a
+      // mutable remote update on every hot reload or deployment.
       continue;
     }
     const created = await createHeartbeatJob({

@@ -1,59 +1,24 @@
-/* Evotor sales pages reuse the established Rhythm card, chip and data-table system. */
-.packet .evotor-sales-lede { margin-bottom: 18px; }
-.packet .evotor-sales-store-picker { margin-bottom: 18px; }
-.packet .evotor-sales-kpis { margin: 0 0 18px; }
+/* These pages deliberately inherit the card, controls and data table rules of «Ритм». */
+.packet .evotor-sales-period { margin-bottom: 18px; }
+.packet .evotor-sales-store-picker,
+.packet .evotor-sales-kpis,
 .packet .evotor-sales-chart-card,
 .packet .evotor-sales-table-card { margin-bottom: 18px; }
-.packet .evotor-metrics-picker { margin: 0 0 16px; }
-.packet .evotor-sales-period { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 18px; margin: 0 0 18px; padding: 0 0 18px; border-bottom: 1px solid var(--packet-line); }
-.packet .evotor-sales-period > div { min-width: 0; display: grid; gap: 4px; }
-.packet .evotor-sales-period span { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .12em; }
-.packet .evotor-sales-period strong { font-size: 16px; line-height: 1.25; }
-.packet .evotor-sales-period small { color: var(--muted); line-height: 1.45; }
-.packet .evotor-sales-period .date-range-control {
-  flex: 0 0 auto;
-  align-self: center;
-  width: min(340px, 100%);
-  min-width: 220px;
-  min-height: 38px;
-  height: 38px;
-  margin: 0;
-}
-.packet .evotor-sales-table-wrap { overflow-x: auto; cursor: grab; }
-.packet .evotor-sales-table-wrap:active { cursor: grabbing; }
+.packet .evotor-products-picker { margin-bottom: 16px; }
+.packet .evotor-product-search { display: grid; gap: 6px; margin-top: 12px; min-width: 0; }
+.packet .evotor-product-search > span { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.packet .evotor-product-search input { width: 100%; min-width: 0; min-height: 38px; padding: 0 11px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); color: var(--text); font: 650 13px Manrope, Arial, sans-serif; outline: none; }
+.packet .evotor-product-search input:focus-visible { border-color: var(--cyan); box-shadow: 0 0 0 1px color-mix(in srgb, var(--cyan) 24%, transparent); }
+.packet .evotor-product-chips { display: flex; max-height: 234px; margin-top: 9px; padding: 1px; gap: 7px; overflow: auto; flex-wrap: wrap; scrollbar-width: thin; }
+.packet .evotor-product-chips .cadence-metric-chip { max-width: min(100%, 360px); }
+.packet .evotor-product-chips .cadence-metric-chip:not(.active) { color: var(--text); }
+.packet .evotor-product-chips .cadence-metric-chip > i { flex: 0 0 auto; }
+.packet .evotor-show-more { margin: 10px 0 0; }
 .packet .evotor-sales-table .numeric-column { text-align: right; font-variant-numeric: tabular-nums; }
 .packet .evotor-sales-table tbody td:first-child strong { display: block; max-width: 520px; }
 
-html[data-audit-theme="light"] .packet .packet-card.evotor-sales-chart-card,
-html[data-audit-theme="light"] .packet .packet-card.evotor-sales-table-card {
-  background: #f7fbff;
-  border-color: #c7e2ff;
-}
-html[data-audit-theme="light"] .packet .evotor-sales-period { border-color: #d8ebff; }
-html[data-audit-theme="light"] .packet .evotor-sales-table-wrap.data-table-wrap { background: #fff; border-color: #d8ebff; }
-html[data-audit-theme="light"] .packet .evotor-sales-table thead th { background: #f2f8ff; border-color: #d8ebff; }
-html[data-audit-theme="light"] .packet .evotor-sales-table tbody tr:nth-child(odd) { background: #fff; }
-html[data-audit-theme="light"] .packet .evotor-sales-table tbody tr:nth-child(even) { background: #fafcff; }
-html[data-audit-theme="light"] .packet .evotor-sales-table tbody td { border-color: #e1efff; }
-
-html[data-audit-theme="dark"] .packet .packet-card.evotor-sales-chart-card,
-html[data-audit-theme="dark"] .packet .packet-card.evotor-sales-table-card {
-  background: #16101a;
-  border-color: #3a2031;
-}
-html[data-audit-theme="dark"] .packet .evotor-sales-period { border-color: #3a2031; }
-html[data-audit-theme="dark"] .packet .evotor-sales-table-wrap.data-table-wrap { background: #110d14; border-color: #3a2031; }
-html[data-audit-theme="dark"] .packet .evotor-sales-table thead th { background: #1c1420; border-color: #3a2031; }
-html[data-audit-theme="dark"] .packet .evotor-sales-table tbody tr:nth-child(odd) { background: #16101a; }
-html[data-audit-theme="dark"] .packet .evotor-sales-table tbody tr:nth-child(even) { background: #19111b; }
-html[data-audit-theme="dark"] .packet .evotor-sales-table tbody td { border-color: #2b1b29; }
-
-/* A compact tablet cannot usefully drag an analytical table: preserve each
-   metric as a labeled card before the columns start competing for space. */
 @media (max-width: 1024px) {
-  .packet .evotor-sales-period { grid-template-columns: 1fr; align-items: stretch; gap: 11px; }
-  .packet .evotor-sales-period .date-range-control { align-self: auto; width: 100%; min-width: 0; height: 38px; }
-  .packet .evotor-sales-store-picker summary { align-items: flex-start; }
+  .packet .evotor-sales-period { margin-bottom: 14px; }
   .packet .evotor-sales-chart-card .card-title,
   .packet .evotor-sales-table-card .card-title { gap: 12px; align-items: flex-start; }
   .packet .evotor-sales-chart-card .chart-controls { width: 100%; align-items: stretch; }
@@ -68,46 +33,21 @@ html[data-audit-theme="dark"] .packet .evotor-sales-table tbody td { border-colo
   .packet .evotor-sales-table.data-table td { display: block; width: 100%; min-width: 0; }
   .packet .evotor-sales-table.data-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .packet .evotor-sales-table.data-table tbody { display: grid; gap: 10px; }
-  .packet .evotor-sales-table.data-table tbody tr,
-  html[data-audit-theme="light"] .packet .evotor-sales-table.data-table tbody tr:nth-child(even),
-  html[data-audit-theme="dark"] .packet .evotor-sales-table.data-table tbody tr:nth-child(even) {
-    display: grid;
-    gap: 0;
-    padding: 4px 12px;
-    border: 1px solid var(--packet-line);
-    border-radius: 14px;
-    background: var(--packet-panel);
-  }
-  .packet .evotor-sales-table.data-table tbody td {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: baseline;
-    gap: 12px;
-    min-height: 34px;
-    padding: 7px 0;
-    border: 0;
-    text-align: right;
-  }
-  .packet .evotor-sales-table.data-table tbody td::before {
-    content: attr(data-label);
-    grid-column: 1;
-    color: var(--muted);
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: .06em;
-    text-align: left;
-    text-transform: uppercase;
-  }
+  .packet .evotor-sales-table.data-table tbody tr { display: grid; gap: 0; padding: 4px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); }
+  .packet .evotor-sales-table.data-table tbody td { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 12px; min-height: 34px; padding: 7px 0; border: 0; text-align: right; }
+  .packet .evotor-sales-table.data-table tbody td::before { content: attr(data-label); grid-column: 1; color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .06em; text-align: left; text-transform: uppercase; }
   .packet .evotor-sales-table.data-table tbody td:first-child { padding-top: 10px; }
   .packet .evotor-sales-table.data-table tbody td:first-child strong { max-width: none; text-align: right; }
   .packet .evotor-sales-table.data-table tbody td:last-child { padding-bottom: 10px; }
 }
 
 @media (max-width: 560px) {
-  .packet .evotor-sales-lede { margin-bottom: 14px; }
-  .packet .evotor-sales-period { gap: 8px; margin-bottom: 14px; padding-bottom: 14px; }
-  .packet .evotor-sales-period strong { font-size: 14px; }
-  .packet .evotor-sales-period small { font-size: 11px; }
+  .packet .evotor-sales-period,
+  .packet .evotor-sales-store-picker,
+  .packet .evotor-sales-kpis,
+  .packet .evotor-sales-chart-card,
+  .packet .evotor-sales-table-card { margin-bottom: 14px; }
+  .packet .evotor-product-chips { max-height: 210px; }
+  .packet .evotor-product-chips .cadence-metric-chip { max-width: 100%; }
   .packet .evotor-sales-chart-card .chart-view-button { min-width: 0; padding-inline: 8px; font-size: 11px; }
-  .packet .evotor-sales-kpis { margin-bottom: 14px; }
 }

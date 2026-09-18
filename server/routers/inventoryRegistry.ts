@@ -53,7 +53,7 @@ import {
   updateOperationalPrintCategoryGroup,
   updateOperationalPrintGroup,
   updateOperationalPriceType,
-  updateOperationalStoreRequestNote,
+  upsertOperationalStoreRequestComment,
   upsertInventoryLine,
   upsertOperationalStoreRequestLine,
 } from "../inventoryRegistry";
@@ -186,7 +186,7 @@ export const inventoryRegistryRouter = router({
   }),
   printCategoryGroups: protectedProcedure.query(async ({ ctx }) => {
     const actor = await localActor(ctx.user.openId);
-    if (actor.role !== "admin" && actor.role !== "manager") throw new TRPCError({ code: "FORBIDDEN", message: "Категории печати доступны только руководителю или администратору." });
+    if (actor.role !== "admin" && actor.role !== "manager" && actor.role !== "seller") throw new TRPCError({ code: "FORBIDDEN", message: "Нет операционного доступа к категориям печати." });
     return listOperationalPrintCategoryGroups();
   }),
   createPrintGroup: protectedProcedure.input(z.object({ name: z.string().trim().min(1).max(128) })).mutation(async ({ ctx, input }) => {
@@ -347,10 +347,17 @@ export const inventoryRegistryRouter = router({
     if (result.created) await recordChange({ actorId: actor.id, action: "store_request.create", entityType: "operational_store_request", entityId: String(result.request.id), afterState: { requestNumber: result.request.requestNumber, storeName: result.request.storeName, businessDate: result.request.businessDate, status: result.request.status } });
     return { created: result.created, request: await getOperationalStoreRequestDetail(result.request.id) };
   }),
-  updateRequestNote: protectedProcedure.input(z.object({ requestId: z.number().int().positive(), note: z.string().max(4_000) })).mutation(async ({ ctx, input }) => {
+  upsertRequestComment: protectedProcedure.input(z.object({ requestId: z.number().int().positive(), slot: z.union([z.literal(1), z.literal(2)]), printCategoryGroupId: z.number().int().positive(), text: z.string().max(2_000) })).mutation(async ({ ctx, input }) => {
     const { actor } = await storeRequestDetailWithPermission(ctx.user.openId, input.requestId, "edit");
-    const result = await updateOperationalStoreRequestNote(input);
-    await recordChange({ actorId: actor.id, action: "store_request.note.update", entityType: "operational_store_request", entityId: String(input.requestId), beforeState: { note: result.before.note }, afterState: { note: result.after.note } });
+    const result = await upsertOperationalStoreRequestComment({ ...input, actorId: actor.id });
+    await recordChange({
+      actorId: actor.id,
+      action: result.after ? "store_request.comment.upsert" : "store_request.comment.delete",
+      entityType: "operational_store_request_comment",
+      entityId: `${input.requestId}:${input.slot}`,
+      beforeState: result.before ? { categoryGroupId: result.before.printCategoryGroupId, categoryGroup: result.before.printCategoryGroupName, text: result.before.text } : null,
+      afterState: result.after ? { categoryGroupId: result.after.printCategoryGroupId, categoryGroup: result.after.printCategoryGroupName, text: result.after.text } : { deleted: true },
+    });
     return result;
   }),
   upsertRequestLine: protectedProcedure.input(z.object({ requestId: z.number().int().positive(), productId: z.number().int().positive(), requestedQuantity: z.number().finite().positive().max(1_000_000), note: z.string().max(512).optional() })).mutation(async ({ ctx, input }) => {
@@ -359,10 +366,10 @@ export const inventoryRegistryRouter = router({
     await recordChange({ actorId: actor.id, action: "store_request.line.upsert", entityType: "operational_store_request_line", entityId: `${input.requestId}:${input.productId}`, beforeState: result.before ? { quantity: result.before.requestedQuantity, note: result.before.note } : null, afterState: { product: result.product.canonicalName, catalogNumber: result.product.catalogNumber, quantity: result.after.requestedQuantity, unit: result.after.unit, note: result.after.note } });
     return result;
   }),
-  addRequestManualLine: protectedProcedure.input(z.object({ requestId: z.number().int().positive(), productName: z.string().trim().min(2).max(512), requestedQuantity: z.number().finite().positive().max(1_000_000), unit: z.enum(["kg", "l", "piece"]), note: z.string().max(512).optional() })).mutation(async ({ ctx, input }) => {
+  addRequestManualLine: protectedProcedure.input(z.object({ requestId: z.number().int().positive(), productName: z.string().trim().min(2).max(512), requestedQuantity: z.number().finite().positive().max(1_000_000), unit: z.enum(["kg", "l", "piece"]), printCategoryGroupId: z.number().int().positive(), note: z.string().max(512).optional() })).mutation(async ({ ctx, input }) => {
     const { actor } = await storeRequestDetailWithPermission(ctx.user.openId, input.requestId, "edit");
     const after = await addOperationalStoreRequestManualLine(input);
-    await recordChange({ actorId: actor.id, action: "store_request.line.manual_add", entityType: "operational_store_request_line", entityId: String(after.id), afterState: { product: after.productName, manual: true, quantity: after.requestedQuantity, unit: after.unit, note: after.note } });
+    await recordChange({ actorId: actor.id, action: "store_request.line.manual_add", entityType: "operational_store_request_line", entityId: String(after.id), afterState: { product: after.productName, manual: true, quantity: after.requestedQuantity, unit: after.unit, printCategoryGroupId: after.manualPrintCategoryGroupId, note: after.note } });
     return after;
   }),
   removeRequestLine: protectedProcedure.input(z.object({ requestId: z.number().int().positive(), productId: z.number().int().positive().optional(), lineId: z.number().int().positive().optional() }).refine(input => Boolean(input.productId || input.lineId), "Укажите строку заявки для удаления.")).mutation(async ({ ctx, input }) => {
@@ -384,13 +391,13 @@ export const inventoryRegistryRouter = router({
     await recordChange({ actorId: actor.id, action: "store_request.draft.delete", entityType: "operational_store_request", entityId: String(input.requestId), beforeState: { requestNumber: result.before.requestNumber, storeName: detail.storeName, businessDate: result.before.businessDate, lineCount: result.lineCount }, afterState: { deleted: true } });
     return result;
   }),
-  printRequests: protectedProcedure.input(z.object({ businessDate: dateInput, printGroupIds: z.array(z.number().int().positive()).max(100).optional(), printCategoryGroupIds: z.array(z.number().int().positive()).min(1).max(200) })).mutation(async ({ ctx, input }) => {
+  printRequests: protectedProcedure.input(z.object({ businessDate: dateInput, printGroupIds: z.array(z.number().int().positive()).max(100).optional(), printCategoryGroupIds: z.array(z.number().int().positive()).max(200).optional() })).mutation(async ({ ctx, input }) => {
     const actor = await localActor(ctx.user.openId);
     if (actor.role !== "admin" && actor.role !== "manager") throw new TRPCError({ code: "FORBIDDEN", message: "Печать заявок доступна только руководителю или администратору." });
     const storeIds = actor.role === "admin" ? null : await getAccessibleStoreIds(ctx.user.openId);
     if (Array.isArray(storeIds) && !storeIds.length) throw new TRPCError({ code: "FORBIDDEN", message: "Нет доступных магазинов для печати заявок." });
     const projection = await getOperationalStoreRequestPrintProjection({ ...input, storeIds });
-    await recordChange({ actorId: actor.id, action: "store_request.print", entityType: "operational_store_request_print", entityId: input.businessDate, afterState: { businessDate: input.businessDate, printGroupIds: input.printGroupIds ?? "all", printCategoryGroupIds: input.printCategoryGroupIds, sheets: projection.sheets.length, source: "closed_request_snapshots" } });
+    await recordChange({ actorId: actor.id, action: "store_request.print", entityType: "operational_store_request_print", entityId: input.businessDate, afterState: { businessDate: input.businessDate, printGroupIds: input.printGroupIds ?? "all", printCategoryGroupIds: input.printCategoryGroupIds ?? "all_active", sheets: projection.sheets.length, source: "closed_request_snapshots" } });
     return projection;
   }),
   list: protectedProcedure.input(z.object({ storeId: z.number().int().positive().optional(), limit: z.number().int().min(1).max(30).optional() }).optional()).query(async ({ ctx, input }) => {
