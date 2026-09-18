@@ -21,13 +21,19 @@ describe("Эвотор V2: preview номенклатуры", () => {
       price: 1000,
       cost_price: 700,
     });
-    expect(preview).toEqual({ id: "product-1", name: "Форель", code: "F-1", barcodes: ["123", "456"], quantity: 2.5, unit: "дроб", tax: "vat10", vatRate: "VAT_10", type: "commodity", parentId: "group-1", categoryName: null });
+    expect(preview).toEqual({ id: "product-1", name: "Форель", code: "F-1", barcodes: ["123", "456"], quantity: 2.5, unit: "дроб", tax: "vat10", vatRate: "VAT_10", type: "commodity", parentId: "group-1", categoryName: null, alcoholCode: null, alcoholTypeCode: null, alcoholStrengthPercent: null, alcoholVolumeLiters: null });
     expect(preview).not.toHaveProperty("price");
     expect(preview).not.toHaveProperty("costPrice");
   });
 
   it("показывает прочитанное количество Эвотор без скрытого преобразования", () => {
     expect(normalizeEvotorCatalogPreviewItem({ id: "product-2", name: "Товар", quantity: 1_000_000 })?.quantity).toBe(1_000_000);
+  });
+
+  it("извлекает явные поля маркированного алкоголя без цен и фискальных данных", () => {
+    const preview = normalizeEvotorCatalogPreviewItem({ id: "beer-1", name: "Пиво", type: "BEER_MARKED", alcocodes: { 0: "01234567890123456789" }, alcohol_product_kind_code: 500, alcohol_by_volume: "4,7", tare_volume: "0.45" });
+    expect(preview).toMatchObject({ alcoholCode: "01234567890123456789", alcoholTypeCode: "500", alcoholStrengthPercent: 4.7, alcoholVolumeLiters: 0.45 });
+    expect(preview).not.toHaveProperty("price");
   });
 
   it("нормализует только необходимые поля документа и строки без фискальных реквизитов", () => {

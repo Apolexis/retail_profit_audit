@@ -78,7 +78,7 @@
 .packet .inventory-history-list { display: grid; gap: 7px; }
 .packet .inventory-history-list > article { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; min-width: 0; padding: 0 10px 0 0; border: 1px solid var(--inventory-line); border-radius: 10px; background: var(--inventory-field); transition: border-color 160ms var(--audit-hover-ease), background 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease); }
 .packet .inventory-history-select { display: grid; grid-template-columns: minmax(110px, .6fr) minmax(180px, 1.25fr) minmax(170px, 1fr) auto; gap: 10px; align-items: center; width: 100%; min-width: 0; padding: 12px 13px; border: 0; background: transparent; color: var(--ink); text-align: left; }
-.packet .inventory-history-list > article.selected { border-color: var(--inventory-accent); background: var(--inventory-accent-faint); }
+.packet .inventory-history-list > article.selected { border-color: var(--inventory-accent); background: var(--inventory-field); }
 .packet .inventory-history-list > article:hover { border-color: var(--inventory-accent); box-shadow: 0 0 0 1px var(--inventory-accent-faint); }
 .packet .inventory-history-list > article .subtle-button { display: inline-flex; align-items: center; gap: 6px; margin: 0; white-space: nowrap; }
 .packet .inventory-history-list span,
@@ -100,7 +100,7 @@ html[data-audit-theme="light"] .packet {
 }
 html[data-audit-theme="light"] .packet :is(.inventory-line-create, .inventory-accounting-readout) { border-color: var(--inventory-quiet-line); background: var(--inventory-panel); }
 html[data-audit-theme="light"] .packet .inventory-history-list > article { border-color: var(--inventory-line); background: var(--inventory-field); }
-html[data-audit-theme="light"] .packet .inventory-history-list > article.selected { border-color: var(--inventory-accent); background: var(--inventory-accent-faint); }
+html[data-audit-theme="light"] .packet .inventory-history-list > article.selected { border-color: var(--inventory-accent); background: var(--inventory-field); }
 html[data-audit-theme="light"] .packet .inventory-create-actions .packet-link,
 html[data-audit-theme="light"] .packet .inventory-line-create .packet-link,
 html[data-audit-theme="light"] .packet .inventory-close-actions .packet-link { border-color: #0a84ff !important; background: #0a84ff !important; color: #fff !important; box-shadow: 0 8px 18px rgba(10, 132, 255, .22) !important; }
@@ -125,7 +125,7 @@ html[data-audit-theme="dark"] .packet {
 }
 html[data-audit-theme="dark"] .packet :is(.inventory-line-create, .inventory-accounting-readout) { border-color: var(--inventory-quiet-line); background: var(--inventory-panel); }
 html[data-audit-theme="dark"] .packet .inventory-history-list > article { border-color: var(--inventory-line); background: var(--inventory-field); }
-html[data-audit-theme="dark"] .packet .inventory-history-list > article.selected { border-color: var(--inventory-accent); background: var(--inventory-accent-faint); }
+html[data-audit-theme="dark"] .packet .inventory-history-list > article.selected { border-color: var(--inventory-accent); background: var(--inventory-field); }
 html[data-audit-theme="dark"] .packet .inventory-lines tbody tr:nth-child(even) { background: #1b121c; }
 html[data-audit-theme="dark"] .packet .inventory-history-list > article .subtle-button:hover,
 html[data-audit-theme="dark"] .packet .inventory-history-list > article .subtle-button:focus-visible,

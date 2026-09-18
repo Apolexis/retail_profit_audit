@@ -5053,3 +5053,48 @@ html[data-audit-theme="dark"] .packet :is(.revenue-registry, .inventory-layout, 
   gap: 6px;
 }
 .packet :is(.packet-link, .subtle-button) > svg { flex: 0 0 auto; }
+
+/* Action invariant: icons precede labels; operating actions preserve Analysis contrast. */
+.packet :is(.inventory-create-actions, .inventory-draft-actions, .inventory-table-actions, .inventory-note-form, .inventory-close-actions, .price-directory-actions, .warehouse-row-actions, .catalog-editor-actions) :is(.packet-link, .subtle-button),
+.packet :is(.catalog-back, .warehouse-edit) {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  white-space: nowrap;
+}
+.packet :is(.inventory-create-actions, .inventory-draft-actions, .inventory-table-actions, .inventory-note-form, .inventory-close-actions, .price-directory-actions, .warehouse-row-actions, .catalog-editor-actions) :is(.packet-link, .subtle-button) svg,
+.packet :is(.catalog-back, .warehouse-edit) svg { flex: 0 0 auto; order: -1; }
+html[data-audit-theme="light"] .packet .inventory-create-actions .packet-link {
+  color: #075dbb !important;
+  border-color: #c6d9ec !important;
+  background: #ffffff !important;
+}
+html[data-audit-theme="light"] .packet .inventory-create-actions .packet-link:hover {
+  color: #075dbb !important;
+  border-color: #0a84ff !important;
+  background: #eef7ff !important;
+  box-shadow: 0 0 0 2px rgba(10, 132, 255, .14) !important;
+}
+@media (max-width: 640px) {
+  .packet .inventory-history-list article { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+  .packet .inventory-history-select { min-width: 0; }
+  .packet .inventory-history-select :is(strong, small) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .packet :is(.inventory-create-actions, .inventory-draft-actions, .inventory-table-actions, .inventory-note-form, .inventory-close-actions, .price-directory-actions, .warehouse-row-actions, .catalog-editor-actions) :is(.packet-link, .subtle-button) { min-width: 0; }
+}
+
+/* Supplier actions remain compact controls; they must not span the directory row. */
+.packet .price-directory-list > article > .packet-link.compact {
+  width: fit-content !important;
+  justify-self: end;
+  align-self: center;
+}
+.packet .price-directory-list > article > .packet-link.compact.subtle {
+  min-width: 0;
+}
+@media (max-width: 720px) {
+  .packet .price-directory-list > article > .packet-link.compact {
+    justify-self: start;
+  }
+}

@@ -107,7 +107,13 @@ export function FreeScrollSelect({
       if (searchable) searchInputRef.current?.focus({ preventScroll: true });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [open, searchable, visibleOptions.length, updateScrollAvailability]);
+  }, [open, searchable, updateScrollAvailability]);
+
+  useEffect(() => {
+    if (!open) return;
+    const frame = window.requestAnimationFrame(updateScrollAvailability);
+    return () => window.cancelAnimationFrame(frame);
+  }, [open, visibleOptions.length, updateScrollAvailability]);
 
   return (
     <Popover open={open} onOpenChange={setOpen} modal={false}>

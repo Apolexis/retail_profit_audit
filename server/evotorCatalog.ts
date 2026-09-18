@@ -32,6 +32,11 @@ export type EvotorCatalogPreviewItem = {
   type: string | null;
   parentId: string | null;
   categoryName: string | null;
+  /** Marked alcohol metadata supplied by the read-only V2 product payload. */
+  alcoholCode: string | null;
+  alcoholTypeCode: string | null;
+  alcoholStrengthPercent: number | null;
+  alcoholVolumeLiters: number | null;
 };
 
 /** Minimal read-only document projection: no fiscal IDs, customer details or payment requisites leave the server. */
@@ -69,6 +74,27 @@ function finiteNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+function finiteNumberLike(value: unknown): number | null {
+  const direct = finiteNumber(value);
+  if (direct !== null) return direct;
+  if (typeof value !== "string" || !value.trim()) return null;
+  const parsed = Number(value.replace(",", "."));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function codeValue(value: unknown): string | null {
+  const direct = text(value);
+  if (direct) return direct;
+  return typeof value === "number" && Number.isFinite(value) ? String(value) : null;
+}
+
+function firstCodeValue(value: unknown): string | null {
+  if (Array.isArray(value)) return value.map(codeValue).find((item): item is string => Boolean(item)) ?? null;
+  const record = asRecord(value);
+  if (record) return Object.values(record).map(codeValue).find((item): item is string => Boolean(item)) ?? null;
+  return codeValue(value);
+}
+
 function barcodeList(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return Array.from(new Set(value.map(text).filter((barcode): barcode is string => Boolean(barcode))));
@@ -102,6 +128,10 @@ export function normalizeEvotorCatalogPreviewItem(value: unknown): EvotorCatalog
     type: text(record.type),
     parentId: text(record.parent_id),
     categoryName: null,
+    alcoholCode: firstCodeValue(record.alcocodes) ?? codeValue(record.alcocode),
+    alcoholTypeCode: codeValue(record.alcohol_product_kind_code),
+    alcoholStrengthPercent: finiteNumberLike(record.alcohol_by_volume),
+    alcoholVolumeLiters: finiteNumberLike(record.tare_volume),
   };
 }
 

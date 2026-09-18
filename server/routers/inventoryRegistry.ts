@@ -10,6 +10,7 @@ import {
   createOperationalPriceType,
   createOperationalCatalogProduct,
   createInventoryDraft,
+  deleteOperationalPrintCategoryGroup,
   deleteOperationalPriceType,
   deleteInventoryDraft,
   fillInventoryLinesFromAccounting,
@@ -37,6 +38,7 @@ import {
   updateInventoryNote,
   updateOperationalCatalogProduct,
   updateOperationalCatalogCost,
+  updateOperationalPrintCategoryGroup,
   updateOperationalPrintGroup,
   updateOperationalPriceType,
   upsertInventoryLine,
@@ -176,10 +178,24 @@ export const inventoryRegistryRouter = router({
   }),
   createPrintCategoryGroup: protectedProcedure.input(z.object({ name: z.string().trim().min(1).max(128) })).mutation(async ({ ctx, input }) => {
     const actor = await localActor(ctx.user.openId);
-    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Создавать категории печати может только администратор." });
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Настраивать категории печати может только администратор." });
     const after = await createOperationalPrintCategoryGroup({ ...input, actorId: actor.id });
     await recordChange({ actorId: actor.id, action: "operational_print_category_group.create", entityType: "operational_print_category_group", entityId: String(after.id), afterState: { name: after.name } });
     return after;
+  }),
+  updatePrintCategoryGroup: protectedProcedure.input(z.object({ id: z.number().int().positive(), name: z.string().trim().min(1).max(128) })).mutation(async ({ ctx, input }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Настраивать категории печати может только администратор." });
+    const result = await updateOperationalPrintCategoryGroup(input);
+    await recordChange({ actorId: actor.id, action: "operational_print_category_group.update", entityType: "operational_print_category_group", entityId: String(input.id), beforeState: { name: result.before.name }, afterState: { name: result.after.name } });
+    return result;
+  }),
+  deletePrintCategoryGroup: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Настраивать категории печати может только администратор." });
+    const result = await deleteOperationalPrintCategoryGroup(input.id);
+    await recordChange({ actorId: actor.id, action: "operational_print_category_group.delete", entityType: "operational_print_category_group", entityId: String(input.id), beforeState: { name: result.before.name, detachedMembers: result.detachedMembers }, afterState: { deleted: true } });
+    return result;
   }),
   addPrintCategoryGroupMember: protectedProcedure.input(z.object({ groupId: z.number().int().positive(), memberType: z.enum(["catalog_category", "category_group"]), catalogCategory: z.string().trim().min(1).max(512).optional(), childGroupId: z.number().int().positive().optional() })).mutation(async ({ ctx, input }) => {
     const actor = await localActor(ctx.user.openId);

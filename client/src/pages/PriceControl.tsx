@@ -117,6 +117,7 @@ type ProductDraft = {
   id: number | null;
   canonicalName: string;
   internalCode: string;
+  linkGroupId: string;
   categoryId: string;
   variantCharacteristicId: string;
   sizeCharacteristicId: string;
@@ -501,6 +502,13 @@ export default function PriceControl({
     },
     onError: error => toast.error(error.message),
   });
+  const deleteLinkGroup = trpc.priceControl.deleteLinkGroup.useMutation({
+    onSuccess: () => {
+      invalidate();
+      toast.success("Имя связи удалено");
+    },
+    onError: error => toast.error(error.message),
+  });
   const assignProductLinkGroup = trpc.priceControl.assignProductLinkGroup.useMutation({
     onSuccess: () => { invalidate(); toast.success("Товар добавлен в связь"); },
     onError: error => toast.error(error.message),
@@ -615,6 +623,14 @@ export default function PriceControl({
     },
     onError: error => toast.error(error.message),
   });
+  const deleteOffer = trpc.priceControl.deleteOffer.useMutation({
+    onSuccess: () => {
+      invalidate();
+      setDeleteOfferCandidate(null);
+      toast.success("Цена удалена; исходная строка прайс-листа сохранена");
+    },
+    onError: error => toast.error(error.message),
+  });
   const createManualOffer = trpc.priceControl.createManualOffer.useMutation({
     onSuccess: () => {
       invalidate();
@@ -724,9 +740,12 @@ export default function PriceControl({
   const [offerMarketFilter, setOfferMarketFilter] = useState<"" | "moscow" | "spb">("");
   const [visibilityFilter, setVisibilityFilter] =
     useState<VisibilityFilter>("active");
-  const [selectedProductId, setSelectedProductId] = useState<number | null>(
-    null
-  );
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(() => {
+    if (typeof window === "undefined") return null;
+    const raw = new URLSearchParams(window.location.search).get("product");
+    const productId = Number(raw);
+    return Number.isInteger(productId) && productId > 0 ? productId : null;
+  });
   const [selectedImportId, setSelectedImportId] = useState<number | null>(null);
   const [savedImportsSupplierFilter, setSavedImportsSupplierFilter] = useState("");
   const [savedImportsLimit, setSavedImportsLimit] = useState(8);
@@ -811,6 +830,10 @@ export default function PriceControl({
   const [deleteSavedRowCandidate, setDeleteSavedRowCandidate] = useState<{
     rowId: number;
     name: string;
+  } | null>(null);
+  const [deleteOfferCandidate, setDeleteOfferCandidate] = useState<{
+    priceId: number;
+    label: string;
   } | null>(null);
   const [editingSavedImportRowId, setEditingSavedImportRowId] = useState<number | null>(null);
   const [savedImportLinkTargets, setSavedImportLinkTargets] = useState<Record<number, string>>({});
@@ -974,7 +997,7 @@ export default function PriceControl({
       return matchesSearch && matchesMode;
     });
   }, [categories, directoryCategorySearch, visibilityFilter]);
-  const filteredComparisons = useMemo(() => {
+  const filteredProductComparisons = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("ru");
     const [characteristicKind, characteristicId] = characteristicFilter.split(":");
     return (overview.data?.comparisons ?? [])
@@ -1064,12 +1087,40 @@ export default function PriceControl({
       })
       .filter(item => item.offers.length);
   }, [overview.data?.comparisons, search, categoryFilter, characteristicFilter, supplierFilter, offerMarketFilter, visibilityFilter]);
+  const filteredComparisons = useMemo(() => {
+    type ProductComparison = (typeof filteredProductComparisons)[number];
+    type ProductOffer = ProductComparison["offers"][number] & { productId: number; productName: string };
+    type LinkComparison = { groupId: number; groupName: string; groupCode: string; products: ProductComparison[]; offers: ProductOffer[] };
+    const groups = new Map<number, LinkComparison>();
+    filteredProductComparisons.forEach(item => {
+      const groupId = item.product.linkGroupId ?? item.product.id;
+      const group = linkGroups.find(candidate => candidate.id === groupId);
+      const entry = groups.get(groupId) ?? { groupId, groupName: group?.canonicalName ?? item.product.canonicalName, groupCode: group?.linkCode ?? item.product.linkGroupCode ?? item.product.internalCode, products: [], offers: [] };
+      entry.products.push(item);
+      entry.offers.push(...item.offers.map(offer => ({ ...offer, productId: item.product.id, productName: item.product.canonicalName })));
+      groups.set(groupId, entry);
+    });
+    return Array.from(groups.values()).map(entry => {
+      const offers = [...entry.offers].sort((left, right) => left.normalizedPrice - right.normalizedPrice);
+      const best = offers[0];
+      const next = offers.find(offer => offer.supplierId !== best?.supplierId && offer.normalizedUnit === best?.normalizedUnit && offer.priceMode === best?.priceMode);
+      const savings = best && next ? Number((next.normalizedPrice - best.normalizedPrice).toFixed(2)) : null;
+      const first = entry.products[0].product;
+      return {
+        product: { ...first, id: entry.groupId, internalCode: entry.groupCode, canonicalName: entry.groupName, category: null },
+        products: entry.products.map(item => item.product),
+        offers,
+        recommendation: best && next && savings !== null ? { supplierId: best.supplierId, supplierName: best.supplierName, normalizedPrice: best.normalizedPrice, normalizedUnit: best.normalizedUnit, savings, savingsPercent: Number(((savings / next.normalizedPrice) * 100).toFixed(1)) } : null,
+      };
+    }).sort((left, right) => left.product.canonicalName.localeCompare(right.product.canonicalName, "ru"));
+  }, [filteredProductComparisons, linkGroups]);
   const selected =
-    filteredComparisons.find(item => item.product.id === selectedProductId) ??
+    filteredComparisons.find(item => item.product.id === selectedProductId || item.products.some(product => product.id === selectedProductId)) ??
     filteredComparisons[0] ??
     null;
+  const selectedPriceProduct = selected?.products.find(product => product.id === selectedProductId) ?? selected?.products[0] ?? null;
   const comparisonManualDraft =
-    comparisonManualOffer && selected && comparisonManualOffer.productId === selected.product.id
+    comparisonManualOffer && selectedPriceProduct && comparisonManualOffer.productId === selectedPriceProduct.id
       ? comparisonManualOffer.draft
       : null;
   const historyRows = useMemo(
@@ -1077,7 +1128,7 @@ export default function PriceControl({
       (overview.data?.history ?? [])
         .filter(
           item =>
-            item.productId === selected?.product.id &&
+            item.productId === selectedPriceProduct?.id &&
             (!supplierFilter || String(item.supplierId) === supplierFilter) &&
             item.normalizedPrice !== null &&
             item.supplierName !== null
@@ -1087,7 +1138,7 @@ export default function PriceControl({
           normalizedPrice: Number(item.normalizedPrice),
           supplierName: item.supplierName ?? "Неизвестный поставщик",
         })),
-    [overview.data?.history, selected?.product.id, supplierFilter]
+    [overview.data?.history, selectedPriceProduct?.id, supplierFilter]
   );
   const historySuppliers = useMemo(
     () => Array.from(new Set(historyRows.map(item => item.supplierName))),
@@ -1467,6 +1518,7 @@ export default function PriceControl({
         id: productDraft.id,
         canonicalName: productDraft.canonicalName.trim(),
         internalCode: productDraft.internalCode.trim(),
+        ...(productDraft.linkGroupId ? { linkGroupId: Number(productDraft.linkGroupId) } : {}),
         categoryId: Number(productDraft.categoryId) || null,
         variantCharacteristicId: productDraft.variantCharacteristicId ? Number(productDraft.variantCharacteristicId) : null,
         sizeCharacteristicId: productDraft.sizeCharacteristicId ? Number(productDraft.sizeCharacteristicId) : null,
@@ -1481,6 +1533,9 @@ export default function PriceControl({
         ...(productDraft.internalCode.trim()
           ? { internalCode: productDraft.internalCode.trim() }
           : {}),
+        ...(Number(productDraft.linkGroupId)
+          ? { linkGroupId: Number(productDraft.linkGroupId) }
+          : { linkGroupName: productDraft.canonicalName.trim() }),
         ...(Number(productDraft.categoryId)
           ? { categoryId: Number(productDraft.categoryId) }
           : {}),
@@ -1537,6 +1592,7 @@ export default function PriceControl({
       id: product.id,
       canonicalName: product.canonicalName,
       internalCode: product.internalCode,
+      linkGroupId: String(product.linkGroupId ?? ""),
       categoryId: String(product.categoryId ?? ""),
       variantCharacteristicId: product.variantCharacteristicId ? String(product.variantCharacteristicId) : "",
       sizeCharacteristicId: product.sizeCharacteristicId ? String(product.sizeCharacteristicId) : "",
@@ -2059,7 +2115,7 @@ export default function PriceControl({
                   <div className="price-product-panel-heading">
                     <span>ИМЕНА СВЯЗЕЙ</span>
                     <strong>{filteredComparisons.length}</strong>
-                    <small>найдите нужный товар и откройте его предложения</small>
+                    <small>выберите имя связи и затем товар с ценами</small>
                   </div>
                   <div
                     className="price-product-list"
@@ -2078,12 +2134,11 @@ export default function PriceControl({
                       onClick={() => setSelectedProductId(item.product.id)}
                     >
                       <span>
-                        {item.product.internalCode} ·{" "}
-                        {item.product.category || "Без категории"}
+                        {item.product.internalCode}
                       </span>
                       <strong>{item.product.canonicalName}</strong>
                       <small>
-                        {item.offers.length}{" "}
+                        {item.products.length} {item.products.length === 1 ? "товар" : "товаров"} · {item.offers.length}{" "}
                         {item.offers.length === 1
                           ? "предложение"
                           : "предложения"}
@@ -2099,34 +2154,22 @@ export default function PriceControl({
                   <div className="price-detail">
                     <div className="price-detail-heading">
                       <div>
-                        <span>
-                          {selected.product.internalCode} ·{" "}
-                          {selected.product.category || "Без категории"}
-                        </span>
+                        <span>ИМЯ СВЯЗИ · {selected.product.internalCode}</span>
                         <h4>{selected.product.canonicalName}</h4>
-                        {(selected.product.sizeText ||
-                          selected.product.variant) && (
-                          <small>
-                            {[
-                              selected.product.sizeText,
-                              selected.product.variant,
-                            ]
-                              .filter(Boolean)
-                              .join(" · ")}
-                          </small>
-                        )}
+                        <div className="price-link-product-chooser" aria-label="Товар в выбранной связи">
+                          <span>Товар с ценами</span>
+                          {selected.products.map(product => <button key={product.id} type="button" className={selectedPriceProduct?.id === product.id ? "active" : ""} onClick={() => setSelectedProductId(product.id)}>{product.canonicalName}</button>)}
+                        </div>
                         {canEdit && (
                           <button
                             type="button"
                             className="packet-link compact price-add-history-action"
-                            aria-label="Добавить цену в историю выбранного имени связи"
-                            title="Добавить цену в историю"
-                            onClick={() =>
-                              setComparisonManualOffer({
-                                productId: selected.product.id,
-                                draft: createManualOfferDraft(selected.product.baseUnit),
-                              })
-                            }
+                            aria-label={`Добавить цену товару «${selectedPriceProduct?.canonicalName ?? ""}»`}
+                            title="Добавить цену выбранному товару"
+                            onClick={() => selectedPriceProduct && setComparisonManualOffer({
+                              productId: selectedPriceProduct.id,
+                              draft: createManualOfferDraft(selectedPriceProduct.baseUnit),
+                            })}
                           >
                             <Plus size={14} /> Добавить цену
                           </button>
@@ -2159,8 +2202,8 @@ export default function PriceControl({
                       <section className="price-comparison-manual-offer" aria-label="Добавить цену в историю">
                         <div>
                           <span>ДОБАВИТЬ ЦЕНУ В ИСТОРИЮ</span>
-                          <h5>{selected.product.canonicalName}</h5>
-                          <p>Цена появится в таблице и на графике только у выбранного имени связи.</p>
+                          <h5>{selectedPriceProduct?.canonicalName}</h5>
+                          <p>Цена принадлежит выбранному товару и будет показана в сравнении его имени связи.</p>
                         </div>
                         <div className="price-comparison-manual-fields">
                           <label>
@@ -2222,7 +2265,7 @@ export default function PriceControl({
                             className="packet-link compact"
                             disabled={createManualOffer.isPending || !Number(comparisonManualDraft.supplierId) || !Number(comparisonManualDraft.priceAmount)}
                             onClick={() => createManualOffer.mutate({
-                              productId: selected.product.id,
+                              productId: selectedPriceProduct!.id,
                               supplierId: Number(comparisonManualDraft.supplierId),
                               sourceDate: comparisonManualDraft.sourceDate,
                               priceAmount: Number(comparisonManualDraft.priceAmount),
@@ -2250,6 +2293,7 @@ export default function PriceControl({
                           >
                             <CartesianGrid
                               strokeDasharray="3 5"
+                              stroke="var(--price-grid)"
                               vertical={false}
                             />
                             <XAxis
@@ -2271,6 +2315,7 @@ export default function PriceControl({
                             />
                             <Tooltip
                               content={<PriceHistoryTooltip />}
+                              cursor={false}
                               allowEscapeViewBox={{ x: false, y: false }}
                               wrapperStyle={{ outline: "none" }}
                             />
@@ -2288,8 +2333,8 @@ export default function PriceControl({
                                       : "var(--price-muted)"
                                 }
                                 strokeWidth={2.4}
-                                dot={{ r: 3, stroke: "var(--price-surface)", strokeWidth: 2 }}
-                                activeDot={{ r: 5, stroke: "var(--price-surface)", strokeWidth: 2 }}
+                                dot={{ r: 3, fill: index === 0 ? "var(--price-accent)" : index === 1 ? "var(--price-bar)" : "var(--price-muted)", stroke: "var(--price-surface)", strokeWidth: 1 }}
+                                activeDot={{ r: 5, fill: index === 0 ? "var(--price-accent)" : index === 1 ? "var(--price-bar)" : "var(--price-muted)", stroke: "var(--price-surface)", strokeWidth: 2 }}
                                 connectNulls
                               />
                             ))}
@@ -2357,7 +2402,7 @@ export default function PriceControl({
                             <span className="price-offer-price">
                               <strong>{formatMoney(offer.priceAmount)} ₽/{offer.priceBasis === "kg" ? "кг" : offer.priceBasis === "l" ? "л" : "шт"}</strong>
                               <small>{modeLabel[currentDraft.priceMode]} · {marketLabel[currentDraft.market]}</small>
-                              {canEdit && !isEditingOffer && <button type="button" className="price-offer-edit-action" onClick={() => setEditingOfferId(offer.priceId)}><Pencil size={13} /> Изменить</button>}
+                              {canEdit && !isEditingOffer && <span className="price-offer-actions"><button type="button" className="price-offer-edit-action" onClick={() => setEditingOfferId(offer.priceId)}><Pencil size={13} /> Изменить</button><button type="button" className="price-offer-edit-action subtle" onClick={() => setDeleteOfferCandidate({ priceId: offer.priceId, label: `${offer.supplierName}: ${formatMoney(offer.priceAmount)} ₽` })}><Trash2 size={13} /> Удалить</button></span>}
                             </span>
                             <span className="price-offer-normalized">
                               <strong>{priceLabel({ normalizedPrice: offer.normalizedPrice, normalizedUnit: offer.normalizedUnit ?? "kg" })}</strong>
@@ -3356,6 +3401,7 @@ export default function PriceControl({
                     id: null,
                     canonicalName: "",
                     internalCode: "",
+                    linkGroupId: "",
                     categoryId: "",
                     variantCharacteristicId: "",
                     sizeCharacteristicId: "",
@@ -3523,6 +3569,19 @@ export default function PriceControl({
                     }
                   placeholder="Внутренний код товара"
                   />
+                </label>
+                <label>
+                  Имя связи <em>*</em>
+                  <PriceSelect
+                    value={productDraft.linkGroupId}
+                    onValueChange={value => setProductDraft({ ...productDraft, linkGroupId: value })}
+                    placeholder="Выберите имя связи"
+                    options={(overview.data?.linkGroups ?? []).filter(group => group.isActive).map(group => ({
+                      value: String(group.id),
+                      label: `${group.linkCode} · ${group.canonicalName}`,
+                    }))}
+                  />
+                  {!productDraft.linkGroupId && <small>Если не выбрать, при сохранении будет создана связь с именем товара.</small>}
                 </label>
                 <label>
                   Категория
@@ -3893,6 +3952,10 @@ export default function PriceControl({
                         <Pencil size={14} />
                         Изменить
                       </button>
+                      <a className="packet-link compact subtle" href={`/price-control?product=${product.id}`}>
+                        <GitCompareArrows size={14} />
+                        Цены
+                      </a>
                       <button
                         type="button"
                         className="packet-link compact subtle"
@@ -4438,7 +4501,7 @@ export default function PriceControl({
                     <div className="price-alias-group-heading">
                       <span>ИМЯ СВЯЗИ · {group.linkCode}</span><strong>{group.canonicalName}</strong>
                       <small>Товаров в связи: {group.products.length}</small>
-                      {editingLinkNameProductId === group.id ? <div className="price-link-name-editor"><input value={linkNameDrafts[group.id] ?? group.canonicalName} onChange={event => setLinkNameDrafts(current => ({ ...current, [group.id]: event.target.value }))} aria-label={`Изменить имя связи «${group.canonicalName}»`}/><button type="button" className="packet-link compact" disabled={updateLinkGroup.isPending} onClick={() => { const canonicalName = (linkNameDrafts[group.id] ?? group.canonicalName).trim(); if (canonicalName.length < 2) { toast.error("Имя связи должно содержать не менее двух символов."); return; } updateLinkGroup.mutate({ id: group.id, canonicalName }); setEditingLinkNameProductId(null); }}><Save size={13}/>Сохранить</button><button type="button" className="packet-link compact subtle" onClick={() => setEditingLinkNameProductId(null)}>Отменить</button></div> : <div className="price-link-name-actions"><button type="button" className="packet-link compact subtle" onClick={() => { setLinkNameDrafts(current => ({ ...current, [group.id]: group.canonicalName })); setEditingLinkNameProductId(group.id); }}><Pencil size={13}/>Изменить связь</button><button type="button" className="packet-link compact subtle" onClick={() => setNewGroupProductDrafts(current => ({ ...current, [group.id]: current[group.id] ?? { productIds: [] } }))}><Plus size={13}/>Добавить товары</button></div>}
+                      {editingLinkNameProductId === group.id ? <div className="price-link-name-editor"><input value={linkNameDrafts[group.id] ?? group.canonicalName} onChange={event => setLinkNameDrafts(current => ({ ...current, [group.id]: event.target.value }))} aria-label={`Изменить имя связи «${group.canonicalName}»`}/><button type="button" className="packet-link compact" disabled={updateLinkGroup.isPending} onClick={() => { const canonicalName = (linkNameDrafts[group.id] ?? group.canonicalName).trim(); if (canonicalName.length < 2) { toast.error("Имя связи должно содержать не менее двух символов."); return; } updateLinkGroup.mutate({ id: group.id, canonicalName }); setEditingLinkNameProductId(null); }}><Save size={13}/>Сохранить</button><button type="button" className="packet-link compact subtle" onClick={() => setEditingLinkNameProductId(null)}>Отменить</button></div> : <div className="price-link-name-actions"><button type="button" className="packet-link compact subtle" onClick={() => { setLinkNameDrafts(current => ({ ...current, [group.id]: group.canonicalName })); setEditingLinkNameProductId(group.id); }}><Pencil size={13}/>Изменить связь</button><button type="button" className="packet-link compact subtle" onClick={() => setNewGroupProductDrafts(current => ({ ...current, [group.id]: current[group.id] ?? { productIds: [] } }))}><Plus size={13}/>Добавить товары</button><button type="button" className="packet-link compact subtle" onClick={() => updateLinkGroup.mutate({ id: group.id, canonicalName: group.canonicalName, isActive: !group.isActive })}>{group.isActive ? <EyeOff size={13}/> : <Eye size={13}/>}{group.isActive ? "Скрыть" : "Показать"}</button>{group.products.length === 0 && <button type="button" className="packet-link compact subtle" disabled={deleteLinkGroup.isPending} onClick={() => { if (window.confirm(`Удалить имя связи «${group.canonicalName}»?`)) deleteLinkGroup.mutate({ id: group.id }); }}><Trash2 size={13}/>Удалить</button>}</div>}
                       {newGroupProductDrafts[group.id] && <form className="price-link-new-product" onSubmit={async event => { event.preventDefault(); if (!draft.productIds.length) return; await Promise.all(draft.productIds.map(productId => assignProductLinkGroup.mutateAsync({ productId: Number(productId), linkGroupId: group.id }))); setNewGroupProductDrafts(current => { const next = { ...current }; delete next[group.id]; return next; }); }}><PriceSelect value="" onValueChange={productId => setNewGroupProductDrafts(current => ({ ...current, [group.id]: { productIds: Array.from(new Set([...(current[group.id]?.productIds ?? []), productId])) } }))} placeholder="Найти и добавить товар" options={catalogProducts.filter(product => product.linkGroupId !== group.id && !draft.productIds.includes(String(product.id))).map(product => ({ value: String(product.id), label: `${product.canonicalName} · ${product.category ?? "Без категории"}` }))}/>{draft.productIds.length > 0 && <div className="price-link-picked-products">{draft.productIds.map(productId => { const product = catalogProducts.find(item => String(item.id) === productId); return <button type="button" key={productId} onClick={() => setNewGroupProductDrafts(current => ({ ...current, [group.id]: { productIds: (current[group.id]?.productIds ?? []).filter(item => item !== productId) } }))}>{product?.canonicalName ?? "Товар"}<X size={12}/></button>; })}</div>}<button className="packet-link compact" disabled={assignProductLinkGroup.isPending || !draft.productIds.length}><Plus size={13}/>Добавить выбранные</button><button type="button" className="packet-link compact subtle" onClick={() => setNewGroupProductDrafts(current => { const next = { ...current }; delete next[group.id]; return next; })}>Отменить</button></form>}
                     </div>
                     <div className="price-link-products"><span>Товары в связи</span>{group.products.map(product => <div key={product.id}><strong>{product.canonicalName}</strong><small>{product.internalCode} · {product.category ?? "Без категории"}</small><button type="button" className="packet-link compact subtle" onClick={() => { setDirectoryTab("products"); setDirectoryProductSearch(product.canonicalName); }}>Открыть товар</button></div>)}</div>
@@ -4502,6 +4565,33 @@ export default function PriceControl({
               }}
             >
               {deleteImportRow.isPending ? "Удаляем…" : "Удалить позицию"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog
+        open={Boolean(deleteOfferCandidate)}
+        onOpenChange={open => {
+          if (!open) setDeleteOfferCandidate(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить эту цену?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Будет удалена только цена «{deleteOfferCandidate?.label}». Исходная строка и файл прайс-листа останутся в истории.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отменить</AlertDialogCancel>
+            <AlertDialogAction
+              className="danger-confirm-action"
+              disabled={deleteOffer.isPending}
+              onClick={() => {
+                if (deleteOfferCandidate) deleteOffer.mutate({ priceId: deleteOfferCandidate.priceId });
+              }}
+            >
+              {deleteOffer.isPending ? "Удаляем…" : "Удалить цену"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

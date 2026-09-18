@@ -1374,7 +1374,7 @@ export async function listPriceControlData() {
     const comparable = offers.filter(offer => offer.normalizedPrice !== null && offer.normalizedUnit !== "unknown").sort((a, b) => Number(a.normalizedPrice) - Number(b.normalizedPrice));
     const best = comparable[0]; const next = comparable.find(offer => offer.supplierId !== best?.supplierId && offer.normalizedUnit === best?.normalizedUnit && resolvePriceMarket(offer.market, offer.priceMode) === resolvePriceMarket(best?.market, best?.priceMode) && canonicalPriceMode(offer.priceMode) === canonicalPriceMode(best?.priceMode));
     const savings = best && next ? Number(next.normalizedPrice) - Number(best.normalizedPrice) : null;
-    return { product: { id: product.id, internalCode: product.internalCode, linkCode: product.linkCode, canonicalName: product.canonicalName, categoryId: product.categoryId, category: product.category, categoryIsActive: product.categoryIsActive, variantCharacteristicId: product.variantCharacteristicId, sizeCharacteristicId: product.sizeCharacteristicId, placeContentsCharacteristicId: product.placeContentsCharacteristicId, variant: product.variant, sizeText: product.sizeText, placeContents: product.placeContents, baseUnit: product.baseUnit, isActive: product.isActive }, offers: comparable.map(offer => ({ importId: offer.importId, rowId: offer.rowId, priceId: offer.priceId, supplierId: offer.supplierId, supplierName: offer.supplierName, rawName: offer.rawName, packaging: offer.rawPackaging, manufacturer: offer.manufacturer, placeContents: offer.placeContents, manufacturedOn: offer.manufacturedOn, shelfLifeMonths: offer.shelfLifeMonths, expiresOn: offer.expiresOn, sourceDate: offer.sourceDate, priceMode: canonicalPriceMode(offer.priceMode), market: resolvePriceMarket(offer.market, offer.priceMode), priceAmount: Number(offer.priceAmount), priceBasis: offer.priceBasis, normalizedPrice: Number(offer.normalizedPrice), normalizedUnit: offer.normalizedUnit, minimumQuantityKg: offer.minimumQuantityKg === null ? null : Number(offer.minimumQuantityKg), sourcePriceText: offer.sourcePriceText, priceChange: offer.priceId === null ? null : priceChanges.get(offer.priceId) ?? null })), recommendation: best && next && savings !== null ? { supplierId: best.supplierId, supplierName: best.supplierName, normalizedPrice: Number(best.normalizedPrice), normalizedUnit: best.normalizedUnit as "kg" | "l" | "piece", savings, savingsPercent: Number(((savings / Number(next.normalizedPrice)) * 100).toFixed(1)) } : null };
+    return { product: { id: product.id, internalCode: product.internalCode, linkCode: product.linkCode, linkGroupId: product.linkGroupId, linkGroupCode: product.linkGroupCode, canonicalName: product.canonicalName, categoryId: product.categoryId, category: product.category, categoryIsActive: product.categoryIsActive, variantCharacteristicId: product.variantCharacteristicId, sizeCharacteristicId: product.sizeCharacteristicId, placeContentsCharacteristicId: product.placeContentsCharacteristicId, variant: product.variant, sizeText: product.sizeText, placeContents: product.placeContents, baseUnit: product.baseUnit, isActive: product.isActive }, offers: comparable.map(offer => ({ importId: offer.importId, rowId: offer.rowId, priceId: offer.priceId, supplierId: offer.supplierId, supplierName: offer.supplierName, rawName: offer.rawName, packaging: offer.rawPackaging, manufacturer: offer.manufacturer, placeContents: offer.placeContents, manufacturedOn: offer.manufacturedOn, shelfLifeMonths: offer.shelfLifeMonths, expiresOn: offer.expiresOn, sourceDate: offer.sourceDate, priceMode: canonicalPriceMode(offer.priceMode), market: resolvePriceMarket(offer.market, offer.priceMode), priceAmount: Number(offer.priceAmount), priceBasis: offer.priceBasis, normalizedPrice: Number(offer.normalizedPrice), normalizedUnit: offer.normalizedUnit, minimumQuantityKg: offer.minimumQuantityKg === null ? null : Number(offer.minimumQuantityKg), sourcePriceText: offer.sourcePriceText, priceChange: offer.priceId === null ? null : priceChanges.get(offer.priceId) ?? null })), recommendation: best && next && savings !== null ? { supplierId: best.supplierId, supplierName: best.supplierName, normalizedPrice: Number(best.normalizedPrice), normalizedUnit: best.normalizedUnit as "kg" | "l" | "piece", savings, savingsPercent: Number(((savings / Number(next.normalizedPrice)) * 100).toFixed(1)) } : null };
   }).sort((a, b) => (b.recommendation?.savings ?? 0) - (a.recommendation?.savings ?? 0));
   const unmappedRows = rows.filter(row => row.mappingStatus !== "linked").slice(0, 100).map(row => ({ rowId: row.rowId, importId: row.importId, supplierId: row.supplierId, supplierName: row.supplierName, rawName: row.rawName, rawCategory: row.rawCategory, rawPackaging: row.rawPackaging, manufacturer: row.manufacturer, placeContents: row.placeContents, mappingStatus: row.mappingStatus, matchedBy: row.matchedBy, matchConfidence: row.matchConfidence === null ? null : Number(row.matchConfidence), suggestedProduct: row.productId ? { id: row.productId, name: row.productName, internalCode: row.internalCode } : null }));
   const history = rows.filter(row => row.productId && row.priceId && row.normalizedPrice !== null && row.normalizedUnit !== "unknown").map(row => ({ priceId: row.priceId!, productId: row.productId!, supplierId: row.supplierId, supplierName: row.supplierName, date: row.sourceDate || row.importedAt.toISOString().slice(0, 10), rawName: row.rawName, packaging: row.rawPackaging, manufacturer: row.manufacturer, placeContents: row.placeContents, priceAmount: Number(row.priceAmount), priceBasis: row.priceBasis, sourceDate: row.sourceDate, sourcePriceText: row.sourcePriceText, normalizedPrice: Number(row.normalizedPrice), normalizedUnit: row.normalizedUnit, priceMode: canonicalPriceMode(row.priceMode), market: resolvePriceMarket(row.market, row.priceMode), priceChange: priceChanges.get(row.priceId!) ?? null }));
@@ -1670,6 +1670,15 @@ export async function updatePriceLinkGroup(input: { id: number; canonicalName: s
   return group;
 }
 
+/** A link name may be removed only when it owns no goods; price history remains attached to goods. */
+export async function deletePriceLinkGroup(id: number) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const before = await getPriceLinkGroupAuditState(id);
+  if (before.members.length) throw new Error("Нельзя удалить имя связи, пока в нем есть товары. Сначала перенесите или скройте товары.");
+  await db.delete(priceLinkGroups).where(eq(priceLinkGroups.id, id));
+  return before;
+}
+
 export async function assignPriceProductLinkGroup(input: { productId: number; linkGroupId: number }) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
   const [group] = await db.select({ id: priceLinkGroups.id, isActive: priceLinkGroups.isActive }).from(priceLinkGroups).where(eq(priceLinkGroups.id, input.linkGroupId)).limit(1);
@@ -1696,12 +1705,16 @@ export async function createPriceProduct(input: { canonicalName: string; interna
   return created!;
 }
 
-export async function updatePriceProduct(input: { id: number; canonicalName: string; internalCode: string; categoryId?: number | null; category?: string | null; variantCharacteristicId?: number | null; sizeCharacteristicId?: number | null; placeContentsCharacteristicId?: number | null; variant?: string | null; sizeText?: string | null; placeContents?: string | null; baseUnit?: NormalizedUnit; isActive?: boolean }) {
+export async function updatePriceProduct(input: { id: number; canonicalName: string; internalCode: string; linkGroupId?: number; categoryId?: number | null; category?: string | null; variantCharacteristicId?: number | null; sizeCharacteristicId?: number | null; placeContentsCharacteristicId?: number | null; variant?: string | null; sizeText?: string | null; placeContents?: string | null; baseUnit?: NormalizedUnit; isActive?: boolean }) {
   const db = await getDb(); if (!db) throw new Error("База данных недоступна");
   const canonicalName = text(input.canonicalName); const internalCode = text(input.internalCode).toUpperCase();
   if (canonicalName.length < 2 || internalCode.length < 3) throw new Error("Укажите эталонное название и внутренний код товара.");
   const signature = productSignature(canonicalName);
   const category = await getPriceCategory(input.categoryId);
+  const linkGroup = input.linkGroupId === undefined
+    ? null
+    : (await db.select({ id: priceLinkGroups.id, isActive: priceLinkGroups.isActive }).from(priceLinkGroups).where(eq(priceLinkGroups.id, input.linkGroupId)).limit(1))[0] ?? null;
+  if (input.linkGroupId !== undefined && (!linkGroup || !linkGroup.isActive)) throw new Error("Выберите активное имя связи.");
   const [codeConflict] = await db.select({ id: priceProducts.id }).from(priceProducts).where(eq(priceProducts.internalCode, internalCode)).limit(1);
   if (codeConflict && codeConflict.id !== input.id) throw new Error("Такой внутренний код уже используется другим товаром.");
   const [current] = await db.select({ variantCharacteristicId: priceProducts.variantCharacteristicId, sizeCharacteristicId: priceProducts.sizeCharacteristicId, placeContentsCharacteristicId: priceProducts.placeContentsCharacteristicId, variant: priceProducts.variant, sizeText: priceProducts.sizeText, placeContents: priceProducts.placeContents }).from(priceProducts).where(eq(priceProducts.id, input.id)).limit(1);
@@ -1715,7 +1728,7 @@ export async function updatePriceProduct(input: { id: number; canonicalName: str
   const placeContents = input.placeContentsCharacteristicId === undefined
     ? input.placeContents === undefined ? { id: current.placeContentsCharacteristicId, value: current.placeContents } : await ensurePriceProductCharacteristic("place_contents", input.placeContents)
     : await findPriceProductCharacteristic("place_contents", input.placeContentsCharacteristicId);
-  await db.update(priceProducts).set({ canonicalName, internalCode, normalizedSignature: signature, categoryId: category?.id ?? input.categoryId ?? null, category: category?.name ?? (text(input.category || "") || null), variantCharacteristicId: variant?.id ?? null, sizeCharacteristicId: size?.id ?? null, placeContentsCharacteristicId: placeContents?.id ?? null, variant: variant?.value ?? null, sizeText: size?.value ?? null, placeContents: placeContents?.value ?? null, baseUnit: input.baseUnit || "unknown", ...(input.isActive === undefined ? {} : { isActive: input.isActive }) }).where(eq(priceProducts.id, input.id));
+  await db.update(priceProducts).set({ canonicalName, internalCode, normalizedSignature: signature, ...(input.linkGroupId === undefined ? {} : { linkGroupId: linkGroup!.id }), categoryId: category?.id ?? input.categoryId ?? null, category: category?.name ?? (text(input.category || "") || null), variantCharacteristicId: variant?.id ?? null, sizeCharacteristicId: size?.id ?? null, placeContentsCharacteristicId: placeContents?.id ?? null, variant: variant?.value ?? null, sizeText: size?.value ?? null, placeContents: placeContents?.value ?? null, baseUnit: input.baseUnit || "unknown", ...(input.isActive === undefined ? {} : { isActive: input.isActive }) }).where(eq(priceProducts.id, input.id));
   const [product] = await db.select().from(priceProducts).where(eq(priceProducts.id, input.id)).limit(1);
   if (!product) throw new Error("Внутренний товар не найден.");
   return product;
@@ -1947,6 +1960,15 @@ export async function updatePriceOffer(input: { priceId: number; priceAmount: nu
     await db.update(priceImportRows).set({ ...(manufacturer === undefined ? {} : { manufacturer }), ...(placeContents === undefined ? {} : { placeContents }), ...(manufacturedOn === undefined ? {} : { manufacturedOn }), ...(shelfLifeMonths === undefined ? {} : { shelfLifeMonths }), ...(expiresOn === undefined ? {} : { expiresOn }) }).where(eq(priceImportRows.id, price.importRowId));
   }
   return { success: true, normalized };
+}
+
+/** Removes one imported offer only; its source row and the original file remain intact. */
+export async function deletePriceOffer(priceId: number) {
+  const db = await getDb(); if (!db) throw new Error("База данных недоступна");
+  const [offer] = await db.select({ id: priceOfferPrices.id, importRowId: priceOfferPrices.importRowId }).from(priceOfferPrices).where(eq(priceOfferPrices.id, priceId)).limit(1);
+  if (!offer) throw new Error("Цена прайс-листа не найдена.");
+  await db.delete(priceOfferPrices).where(eq(priceOfferPrices.id, priceId));
+  return { priceId, importRowId: offer.importRowId };
 }
 
 export async function updatePriceImportDate(input: { importId: number; sourceDate: string | null }) {

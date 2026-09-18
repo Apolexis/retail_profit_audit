@@ -19,7 +19,7 @@ describe("warehouse control contract", () => {
     expect(page).toContain("Адреса и технические идентификаторы в интерфейсе не показываются");
     expect(page).toContain("Запись в Эвотор исключена");
     expect(page).toContain("syncEvotorDocumentPage.useMutation");
-    expect(page).toContain("Загрузить документы");
+    expect(page).not.toContain("Загрузить документы");
     expect(page).toContain("setWarehouseEvotorMapping.useMutation");
   });
 
@@ -37,5 +37,12 @@ describe("warehouse control contract", () => {
     expect(page).toContain("Новая группа печати");
     expect(page).toContain("Сохранить печать");
     expect(page).toContain("<EyeOff size={14}/>Скрыть");
+  });
+
+  it("allows print categories to be renamed and deleted without changing goods", () => {
+    expect(page).toContain("updatePrintCategoryGroup.useMutation");
+    expect(page).toContain("deletePrintCategoryGroup.useMutation");
+    expect(page).toContain("Категория печати сохранена");
+    expect(page).toContain("Товары не изменятся, а вложенные связи будут отсоединены.");
   });
 });

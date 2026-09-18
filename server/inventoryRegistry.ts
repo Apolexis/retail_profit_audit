@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, inArray, isNotNull, ne } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNotNull, ne, or } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import {
   localAccounts,
@@ -177,12 +177,19 @@ export async function listInventoryProducts(input?: { storeId?: number; includeA
       catalogNumber: operationalCatalogProducts.catalogNumber,
       canonicalName: operationalCatalogProducts.canonicalName,
       barcodes: operationalCatalogProducts.barcodes,
+      // Keep the source name stable for the card editor. The stock projection
+      // independently exposes the same field under the shorter `category` key.
+      evotorCategoryName: operationalCatalogProducts.evotorCategoryName,
       category: operationalCatalogProducts.evotorCategoryName,
       baseUnit: operationalCatalogProducts.baseUnit,
       vatRate: operationalCatalogProducts.vatRate,
       evotorCostPrice: operationalCatalogProducts.evotorCostPrice,
       internalCostPrice: operationalCatalogProducts.internalCostPrice,
       markingCategory: operationalCatalogProducts.markingCategory,
+      alcoholCode: operationalCatalogProducts.alcoholCode,
+      alcoholTypeCode: operationalCatalogProducts.alcoholTypeCode,
+      alcoholStrengthPercent: operationalCatalogProducts.alcoholStrengthPercent,
+      alcoholVolumeLiters: operationalCatalogProducts.alcoholVolumeLiters,
       manualBarcodes: operationalCatalogProducts.manualBarcodes,
       isVisibleInRequests: operationalCatalogProducts.isVisibleInRequests,
       isEvotorExportEnabled: operationalCatalogProducts.isEvotorExportEnabled,
@@ -357,7 +364,24 @@ export async function confirmOperationalCatalogFromEvotor(input: { storeId: numb
     const [link] = await db.select().from(operationalEvotorProductLinks).where(and(eq(operationalEvotorProductLinks.storeId, input.storeId), eq(operationalEvotorProductLinks.evotorProductId, product.id))).limit(1);
     if (link) {
       const [existing] = await db.select({ markingCategory: operationalCatalogProducts.markingCategory }).from(operationalCatalogProducts).where(eq(operationalCatalogProducts.id, link.productId)).limit(1);
-      await db.update(operationalCatalogProducts).set({ evotorCode: product.code, canonicalName: product.name, evotorCategoryName: product.categoryName, barcodes: product.barcodes, baseUnit, vatRate: product.vatRate, markingCategory: existing?.markingCategory === "none" ? markingFromEvotorCategory(product) : existing?.markingCategory ?? "none", isActive: true, importedAt: new Date() }).where(eq(operationalCatalogProducts.id, link.productId));
+      const markingFromSource = markingFromEvotorCategory(product);
+      const hasExplicitMarking = product.type !== null && markingFromSource !== "none";
+      const isAlcoholProduct = markingFromSource === "alcohol" || markingFromSource === "beer_marked";
+      await db.update(operationalCatalogProducts).set({
+        evotorCode: product.code,
+        canonicalName: product.name,
+        evotorCategoryName: product.categoryName,
+        barcodes: product.barcodes,
+        baseUnit,
+        vatRate: product.vatRate,
+        markingCategory: hasExplicitMarking ? markingFromSource : (existing?.markingCategory === "none" ? markingFromSource : existing?.markingCategory ?? "none"),
+        alcoholCode: isAlcoholProduct ? product.alcoholCode : null,
+        alcoholTypeCode: isAlcoholProduct ? product.alcoholTypeCode : null,
+        alcoholStrengthPercent: isAlcoholProduct && product.alcoholStrengthPercent !== null ? product.alcoholStrengthPercent.toFixed(2) : null,
+        alcoholVolumeLiters: isAlcoholProduct && product.alcoholVolumeLiters !== null ? product.alcoholVolumeLiters.toFixed(3) : null,
+        isActive: true,
+        importedAt: new Date(),
+      }).where(eq(operationalCatalogProducts.id, link.productId));
       await db.update(operationalEvotorProductLinks).set({ evotorQuantitySnapshot, evotorQuantityUpdatedAt: new Date() }).where(eq(operationalEvotorProductLinks.id, link.id));
       continue;
     }
@@ -379,6 +403,10 @@ export async function confirmOperationalCatalogFromEvotor(input: { storeId: numb
       markingCategory: markingFromEvotorCategory(product),
       evotorCostPrice: "0.00",
       importedByAccountId: input.actorId,
+      alcoholCode: product.alcoholCode,
+      alcoholTypeCode: product.alcoholTypeCode,
+      alcoholStrengthPercent: product.alcoholStrengthPercent === null ? null : product.alcoholStrengthPercent.toFixed(2),
+      alcoholVolumeLiters: product.alcoholVolumeLiters === null ? null : product.alcoholVolumeLiters.toFixed(3),
     }).$returningId();
     await db.insert(operationalEvotorProductLinks).values({ storeId: input.storeId, evotorProductId: product.id, productId: inserted.id, evotorQuantitySnapshot, evotorQuantityUpdatedAt: new Date(), linkedByAccountId: input.actorId });
   }
@@ -536,6 +564,34 @@ export async function createOperationalPrintCategoryGroup(input: { name: string;
   await db.insert(operationalPrintCategoryGroups).values({ name, normalizedName, createdByAccountId: input.actorId });
   const [after] = await db.select().from(operationalPrintCategoryGroups).where(eq(operationalPrintCategoryGroups.normalizedName, normalizedName)).limit(1);
   return after!;
+}
+
+/** Print-category groups are user-managed configuration, separate from immutable order history. */
+export async function updateOperationalPrintCategoryGroup(input: { id: number; name: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const [before] = await db.select().from(operationalPrintCategoryGroups).where(eq(operationalPrintCategoryGroups.id, input.id)).limit(1);
+  if (!before) throw new Error("Категория печати не найдена.");
+  const name = normalizedText(input.name);
+  if (!name) throw new Error("Укажите название категории печати.");
+  const normalizedName = normalizedKey(name);
+  const [sameName] = await db.select().from(operationalPrintCategoryGroups).where(and(eq(operationalPrintCategoryGroups.normalizedName, normalizedName), ne(operationalPrintCategoryGroups.id, input.id))).limit(1);
+  if (sameName) throw new Error("Такая категория печати уже существует.");
+  await db.update(operationalPrintCategoryGroups).set({ name, normalizedName }).where(eq(operationalPrintCategoryGroups.id, input.id));
+  const [after] = await db.select().from(operationalPrintCategoryGroups).where(eq(operationalPrintCategoryGroups.id, input.id)).limit(1);
+  return { before, after: after! };
+}
+
+/** Deleting a configuration group detaches its membership from all parents, never touches goods or documents. */
+export async function deleteOperationalPrintCategoryGroup(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const [before] = await db.select().from(operationalPrintCategoryGroups).where(eq(operationalPrintCategoryGroups.id, id)).limit(1);
+  if (!before) throw new Error("Категория печати не найдена.");
+  const members = await db.select({ id: operationalPrintCategoryGroupMembers.id }).from(operationalPrintCategoryGroupMembers).where(or(eq(operationalPrintCategoryGroupMembers.groupId, id), eq(operationalPrintCategoryGroupMembers.childGroupId, id))).limit(2_000);
+  if (members.length) await db.delete(operationalPrintCategoryGroupMembers).where(or(eq(operationalPrintCategoryGroupMembers.groupId, id), eq(operationalPrintCategoryGroupMembers.childGroupId, id)));
+  await db.delete(operationalPrintCategoryGroups).where(eq(operationalPrintCategoryGroups.id, id));
+  return { before, detachedMembers: members.length };
 }
 
 export async function setOperationalPrintCategoryGroupMember(input: { groupId: number; memberType: "catalog_category" | "category_group"; catalogCategory?: string; childGroupId?: number }) {
