@@ -25,7 +25,7 @@ describe("общий операционный справочник", () => {
     expect(page).toContain("Заявки");
     expect(page).toContain("Выключена");
     expect(editor).toContain("В заявках");
-    expect(editor).toContain("Выгрузка Эвотор");
+    expect(editor).toContain("Эвотор: не подключено");
     expect(editor).toContain("aria-pressed={visibleInRequests}");
   });
 
@@ -45,5 +45,10 @@ describe("общий операционный справочник", () => {
     expect(page).toContain("trpc.inventoryRegistry.salePrices.useQuery");
     expect(page).toContain("Продажная цена");
     expect(page).toContain("catalog-table-money");
+  });
+
+  it("не выдает read-only интеграцию Эвотор за работающую выгрузку", () => {
+    expect(editor).toContain("Эвотор: не подключено");
+    expect(editor).toContain("Обратная запись в Эвотор пока не подключена");
   });
 });
