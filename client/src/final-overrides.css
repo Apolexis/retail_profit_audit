@@ -4908,3 +4908,43 @@ html[data-audit-theme="dark"] .password-input-toggle { color: #c7bdcc; }
   .packet .price-import-workbench.is-preview-ready .price-preview-row .price-preview-remove,
   .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-remove { position: static !important; grid-column: 1 !important; grid-row: 1 !important; align-self: start; justify-self: start; }
 }
+
+/* Связи прайсов: контур появляется только там, где карточка или строка интерактивна; геометрия не меняется. */
+.packet .price-alias-group,
+.packet .price-mapping-list > article {
+  border-color: var(--price-border);
+  transition: border-color 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .packet .price-alias-group:hover,
+  .packet .price-mapping-list > article:hover {
+    border-color: color-mix(in srgb, var(--price-accent) 62%, var(--price-border));
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--price-accent) 22%, transparent);
+  }
+}
+.packet .price-alias-group:focus-within,
+.packet .price-mapping-list > article:focus-within {
+  border-color: color-mix(in srgb, var(--price-accent) 68%, var(--price-border));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--price-accent) 24%, transparent);
+}
+.packet .price-preview-product-link > input:not(.price-product-link-search) {
+  width: 100%;
+  min-width: 0;
+  min-height: 34px;
+  margin-top: 3px;
+  padding: 6px 8px;
+  border: 1px solid var(--price-border);
+  border-radius: 8px;
+  background: var(--price-surface);
+  color: var(--price-ink);
+  font: 650 11px/1.3 Manrope, Arial, sans-serif;
+}
+@media (max-width: 560px) {
+  .packet .price-import-workbench.is-preview-ready .price-preview-row .price-preview-product-link,
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-product-link {
+    grid-column: 1 / -1 !important;
+    min-width: 0;
+  }
+  .packet .price-preview-product-link > input:not(.price-product-link-search) { min-height: 38px; }
+  .packet .price-map-actions .price-alias-search { grid-column: 1 / -1; }
+}

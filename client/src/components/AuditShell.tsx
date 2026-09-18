@@ -18,13 +18,13 @@ type NavGroup = { title?: string; items: readonly NavItem[] };
 type NavSection = { title: string; groups: readonly NavGroup[] };
 
 const navSections: readonly NavSection[] = [
+  { title: "УПРАВЛЕНИЕ МАГАЗИНАМИ", groups: [{ items: [["/revenue", "23", "Выручка", "revenue"], ["/stock-control", "24", "Остатки", "operations"], ["/inventory-control", "25", "Инвентаризации", "operations"], ["/catalog-control", "26", "Номенклатура", true]] }] },
   { title: "АНАЛИЗ МАГАЗИНОВ", groups: [
     { title: "АНАЛИТИКА", items: [["/", "00", "Сводка", false], ["/months", "01", "Месяцы", false], ["/pricing", "02", "Цены", false], ["/expenses", "03", "Расходы", false], ["/inventory", "04", "Остатки", false], ["/stores", "05", "Магазины", false], ["/compare", "06", "Сравнить", false]] },
     { title: "РЕШЕНИЯ", items: [["/control", "07", "Динамика", false], ["/cadence", "08", "Ритм", false], ["/portfolio", "09", "Портфель", false], ["/pilot", "10", "Пилот", false], ["/forecast", "19", "Прогноз", false], ["/planfact", "11", "План‑факт", false]] },
     { title: "УПРАВЛЕНИЕ", items: [["/import", "12", "Импорт", true], ["/manage", "13", "База", true]] },
   ] },
   { title: "ПРАЙС‑КОНТРОЛЬ", groups: [{ items: [["/price-control", "20", "Сравнение", "price"], ["/price-control/import", "21", "Импорт прайсов", "price"], ["/price-control/directory", "22", "Справочник", "price"]] }] },
-  { title: "УПРАВЛЕНИЕ МАГАЗИНАМИ", groups: [{ items: [["/revenue", "23", "Выручка", "revenue"], ["/stock-control", "24", "Остатки", "operations"], ["/inventory-control", "25", "Инвентаризации", "operations"], ["/catalog-control", "26", "Номенклатура", true]] }] },
   { title: "УПРАВЛЕНИЕ", groups: [{ items: [["/notifications", "17", "Сигналы", false], ["/reports", "18", "Отчеты", true], ["/access", "15", "Доступ", true], ["/history", "16", "Журнал", true]] }] },
 ];
 const profileItem=["/profile","14","Профиль",false] as const;

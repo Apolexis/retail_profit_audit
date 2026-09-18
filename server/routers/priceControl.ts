@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getCurrentLocalAccount, hasPriceAccess } from "../accessControl";
 import { protectedProcedure, router } from "../_core/trpc";
-import { bulkAssignPriceCategory, bulkSetPriceOfferMarketByProducts, bulkSetPriceProductsActive, createManualPriceOffer, createPriceCategory, createPriceProduct, createPriceProductCharacteristic, createPriceSupplier, createPriceSupplierAlias, deletePriceImport, deletePriceImportRow, deletePriceSupplier, getPriceCategoryAuditState, getPriceImportAuditState, getPriceImportDownload, getPriceImportRowAuditState, getPriceOfferAuditState, getPriceOfferMarketAuditState, getPriceProductAuditState, getPriceProductCharacteristicAuditState, getPriceProductsAuditStates, getPriceSupplierAuditState, linkPriceImportRow, listPriceControlData, reassignPriceSupplierAlias, repairPriceProductLinkCodes, repairRecognizedPriceProductVariants, seedPriceOfferPlaceContentsCharacteristics, setPriceSupplierActive, unlinkPriceSupplierAlias, updatePriceCategory, updatePriceImportDate, updatePriceOffer, updatePriceProduct, updatePriceProductCharacteristic, updatePriceSupplier } from "../priceControl";
+import { backfillPriceImportLinkNames, bulkAssignPriceCategory, bulkSetPriceOfferMarketByProducts, bulkSetPriceProductsActive, createManualPriceOffer, createPriceCategory, createPriceProduct, createPriceProductCharacteristic, createPriceSupplier, createPriceSupplierAlias, deletePriceImport, deletePriceImportRow, deletePriceSupplier, getPriceCategoryAuditState, getPriceImportAuditState, getPriceImportDownload, getPriceImportRowAuditState, getPriceOfferAuditState, getPriceOfferMarketAuditState, getPriceProductAuditState, getPriceProductCharacteristicAuditState, getPriceProductsAuditStates, getPriceSupplierAuditState, linkPriceImportRow, listPriceControlData, reassignPriceSupplierAlias, repairPriceProductLinkCodes, repairRecognizedPriceProductVariants, seedPriceOfferPlaceContentsCharacteristics, setPriceSupplierActive, unlinkPriceSupplierAlias, updatePriceCategory, updatePriceImportDate, updatePriceOffer, updatePriceProduct, updatePriceProductCharacteristic, updatePriceSupplier } from "../priceControl";
 import { recordChange } from "../localAuth";
 
 async function requirePricePermission(openId: string | null | undefined, required: "view" | "upload" | "edit") {
@@ -185,6 +185,25 @@ export const priceControlRouter = router({
     const actor = await localActor(ctx.user.openId);
     const result = await unlinkPriceSupplierAlias(input.aliasId);
     await recordChange({ actorId: actor.id, action: "price_alias.unlink", entityType: "price_supplier_alias", entityId: String(input.aliasId), beforeState: result.audit.before, afterState: result.audit.after });
+    return result;
+  }),
+  backfillLinkNames: protectedProcedure.mutation(async ({ ctx }) => {
+    await requirePricePermission(ctx.user.openId, "edit");
+    const actor = await localActor(ctx.user.openId);
+    const result = await backfillPriceImportLinkNames({ actorId: actor.id });
+    if (result.linkedRows) {
+      await recordChange({
+        actorId: actor.id,
+        action: "price_alias.link_name_backfill",
+        entityType: "price_import_row",
+        entityId: `link-names:${result.linkedRows}`,
+        afterState: {
+          linkedRows: result.linkedRows,
+          sharedNames: result.sharedNames,
+          examples: result.examples,
+        },
+      });
+    }
     return result;
   }),
   createAlias: protectedProcedure.input(z.object({ productId: z.number().int().positive(), supplierId: z.number().int().positive(), aliasName: z.string().trim().min(2).max(512), packaging: z.string().trim().max(255).nullable().optional() })).mutation(async ({ ctx, input }) => {

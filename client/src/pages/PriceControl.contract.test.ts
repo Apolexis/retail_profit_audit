@@ -37,7 +37,7 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("price-saved-import-row");
     expect(page).toContain("price-saved-import-number");
     expect(page).toContain("Показано позиций:");
-    expect(page).toContain("Связь с товаром");
+    expect(page).toContain("Выбрать имя связи");
     expect(page).toContain("Сохранить связь");
     expect(page).toContain("editingSavedImportRowId");
     expect(styles).toContain(".packet .price-saved-import-row");
@@ -58,14 +58,14 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("previewProductLinkSearches");
     expect(page).toContain("savedImportLinkSearches");
     expect(page).toContain("const productLinkOptions");
-    expect(page).toContain("Поиск товара или кода");
+    expect(page).toContain("Поиск имени связи или кода");
     expect(styles).toContain(".packet .price-product-link-search");
   });
 
   it("объясняет точную связь названия поставщика с именем для сравнения", () => {
     expect(page).toContain("Выберите имя, под которым позиция будет показываться в");
     expect(page).toContain("Имя связи для сравнения");
-    expect(page).toContain("Создать и связать");
+    expect(page).toContain("Создать новое имя связи");
     expect(page).toContain("internalCode");
   });
 
@@ -118,11 +118,11 @@ describe("страница «Прайс‑контроль»", () => {
     expect(styles).toContain(".packet .price-active-toggle.is-active");
   });
 
-  it("разделяет справочник на товары и категории с обязательным выбором существующей категории", () => {
+  it("разделяет имена связей и категории без ложной обязательности категории", () => {
     expect(page).toContain('directoryTab === "products"');
     expect(page).toContain('directoryTab === "categories"');
     expect(page).toContain("Единый список для выбора в товарах");
-    expect(page).toContain("Выберите существующую категорию");
+    expect(page).toContain("Категория · необязательно");
     expect(page).toContain("Выберите категорию");
     expect(page).toContain("newCategoryTargets[row.rowId]");
     expect(page).toContain("Скрыта из новых выборов");
@@ -137,7 +137,7 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("hiddenCategoriesCount");
     expect(page).toContain("bulkAssignCategory");
     expect(page).toContain("Назначить категорию");
-    expect(page).toContain("Товары в категории ·");
+    expect(page).toContain("Имена связей в категории ·");
     expect(page).toContain("openProductEditor");
   });
 
@@ -196,6 +196,13 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("price-alias-group-members");
     expect(page).toContain("Имя связи · {group.aliases.length}");
     expect(styles).toContain(".packet .price-alias-group-members > summary");
+  });
+
+  it("создает редактируемые имена связей для ранее сохраненных несвязанных строк", () => {
+    expect(page).toContain("backfillLinkNames");
+    expect(page).toContain("Создать имена связей");
+    expect(page).toContain("Поиск имени связи или кода");
+    expect(styles).toContain(".packet .price-alias-group:hover");
   });
 
   it("дает добавить ручную цену прямо у выбранного имени связи", () => {
@@ -330,7 +337,7 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("previewProductLinks");
     expect(page).toContain("Название в этом прайсе");
     expect(page).toContain("Имя связи для сравнения");
-    expect(page).toContain("Укажите существующий товар, только если это та же позиция.");
+    expect(page).toContain("Без выбранной связи будет создано это имя");
     expect(page).toContain("Связано:");
     expect(page).toContain("productLinks:");
     expect(page).toContain("rowEdits,");

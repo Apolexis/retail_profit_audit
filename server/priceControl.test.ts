@@ -282,13 +282,23 @@ describe("прайс‑контроль: нормализация товарны
     expect(router).toContain('action: "price_offer.create"');
   });
 
-  it("применяет категорию из предпросмотра только к новой выбранной строке, а не к сохраненным товарам", () => {
+  it("применяет категорию из предпросмотра только к новому имени связи, а не к сохраненным именам", () => {
     const source = readFileSync(new URL("./priceControl.ts", import.meta.url), "utf8");
     expect(source).toContain("export type PriceImportCategorySelection = { rowIndex: number; categoryId: number }");
-    expect(source).toContain("if (mapping.productId === null && category)");
+    expect(source).toContain("if (!selectedProductId && (requestedLinkName || mapping.productId === null))");
     expect(source).toContain("Для импорта можно выбрать только активную существующую категорию.");
     expect(source).toContain("createdProducts");
     expect(source).not.toContain("categoryId: category.id }).where(eq(priceProducts.id");
+  });
+
+  it("дает каждой ранее сохраненной несвязанной строке отдельное имя связи через журналируемую операцию", () => {
+    const source = readFileSync(new URL("./priceControl.ts", import.meta.url), "utf8");
+    const router = readFileSync(new URL("./routers/priceControl.ts", import.meta.url), "utf8");
+    expect(source).toContain("export async function backfillPriceImportLinkNames");
+    expect(source).toContain("mappingStatus: \"linked\"");
+    expect(source).toContain("canonicalName: row.rawName");
+    expect(router).toContain("backfillLinkNames: protectedProcedure");
+    expect(router).toContain('action: "price_alias.link_name_backfill"');
   });
 
   it("применяет ручную правку цены к конкретному режиму и пересчитывает нормализацию до сохранения", () => {

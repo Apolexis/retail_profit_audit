@@ -411,6 +411,7 @@ async function postPriceFile(
     rowEdits: Array<{ rowIndex: number; rawName: string }>;
     metadataEdits: Array<{ rowIndex: number; manufacturer: string | null; placeContents: string | null; manufacturedOn: string | null; shelfLifeMonths: number | null; expiresOn: string | null }>;
     productLinks: Array<{ rowIndex: number; productId: number }>;
+    linkNames: Array<{ rowIndex: number; canonicalName: string }>;
     excludedRowIndexes: number[];
   }
 ) {
@@ -444,6 +445,7 @@ async function packPriceImportCommitBody(
     rowEdits: Array<{ rowIndex: number; rawName: string }>;
     metadataEdits: Array<{ rowIndex: number; manufacturer: string | null; placeContents: string | null; manufacturedOn: string | null; shelfLifeMonths: number | null; expiresOn: string | null }>;
     productLinks: Array<{ rowIndex: number; productId: number }>;
+    linkNames: Array<{ rowIndex: number; canonicalName: string }>;
     excludedRowIndexes: number[];
   }
 ) {
@@ -479,7 +481,7 @@ export default function PriceControl({
   const createProduct = trpc.priceControl.createProduct.useMutation({
     onSuccess: () => {
       invalidate();
-      toast.success("Внутренний товар создан");
+      toast.success("Имя связи создано");
     },
     onError: error => toast.error(error.message),
   });
@@ -539,7 +541,7 @@ export default function PriceControl({
     onSuccess: result => {
       invalidate();
       setSelectedDirectoryProductIds([]);
-      toast.success(result.isActive ? "Товары показаны" : "Товары скрыты", {
+      toast.success(result.isActive ? "Имена связей показаны" : "Имена связей скрыты", {
         description: `Обновлено товаров: ${result.updated}.`,
       });
     },
@@ -618,9 +620,9 @@ export default function PriceControl({
   const linkRow = trpc.priceControl.linkRow.useMutation({
     onSuccess: () => {
       invalidate();
-      toast.success("Связь поставщика сохранена", {
+      toast.success("Название поставщика добавлено в связь", {
         description:
-          "Следующие прайсы этого поставщика будут сопоставляться автоматически.",
+          "Следующие прайсы этого поставщика будут сопоставляться с этим именем связи.",
       });
     },
     onError: error => toast.error(error.message),
@@ -629,14 +631,14 @@ export default function PriceControl({
     onSuccess: () => {
       invalidate();
       setEditingAliasId(null);
-      toast.success("Автосвязь поставщика переназначена");
+      toast.success("Название поставщика переназначено");
     },
     onError: error => toast.error(error.message),
   });
   const unlinkAlias = trpc.priceControl.unlinkAlias.useMutation({
     onSuccess: () => {
       invalidate();
-      toast.success("Автосвязь поставщика отменена");
+      toast.success("Название поставщика убрано из связи");
     },
     onError: error => toast.error(error.message),
   });
@@ -652,6 +654,17 @@ export default function PriceControl({
     onSuccess: result => {
       invalidate();
       toast.success(result.updated ? `Назначены коды связей: ${result.updated}` : "Все коды связей уже назначены");
+    },
+    onError: error => toast.error(error.message),
+  });
+  const backfillLinkNames = trpc.priceControl.backfillLinkNames.useMutation({
+    onSuccess: result => {
+      invalidate();
+      toast.success(
+        result.linkedRows
+          ? `Созданы имена связей: ${result.sharedNames}`
+          : "У всех сохраненных строк уже есть имя связи"
+      );
     },
     onError: error => toast.error(error.message),
   });
@@ -704,6 +717,7 @@ export default function PriceControl({
     null
   );
   const [linkTargets, setLinkTargets] = useState<Record<number, string>>({});
+  const [linkSearches, setLinkSearches] = useState<Record<number, string>>({});
   const [aliasTargets, setAliasTargets] = useState<Record<number, string>>({});
   const [newNames, setNewNames] = useState<Record<number, string>>({});
   const [newCategoryTargets, setNewCategoryTargets] = useState<
@@ -730,6 +744,7 @@ export default function PriceControl({
   >({});
   const [previewProductLinks, setPreviewProductLinks] = useState<Record<number, string>>({});
   const [previewProductLinkSearches, setPreviewProductLinkSearches] = useState<Record<number, string>>({});
+  const [previewLinkNameDrafts, setPreviewLinkNameDrafts] = useState<Record<number, string>>({});
   const [excludedPreviewRowIndexes, setExcludedPreviewRowIndexes] = useState<number[]>([]);
   const [mobilePreviewPosition, setMobilePreviewPosition] = useState(0);
   const [mobilePreviewSwipeOffset, setMobilePreviewSwipeOffset] = useState(0);
@@ -1246,6 +1261,8 @@ export default function PriceControl({
     setExpandedPreviewNameRows({});
     setPreviewMetadataEdits({});
     setPreviewProductLinks({});
+    setPreviewProductLinkSearches({});
+    setPreviewLinkNameDrafts({});
     setExcludedPreviewRowIndexes([]);
     setMobilePreviewPosition(0);
     setMobilePreviewSwipeOffset(0);
@@ -1357,11 +1374,15 @@ export default function PriceControl({
         productLinks: Object.entries(previewProductLinks)
           .filter(([rowIndex, productId]) => !excludedPreviewRowIndexes.includes(Number(rowIndex)) && Number(productId) > 0)
           .map(([rowIndex, productId]) => ({ rowIndex: Number(rowIndex), productId: Number(productId) })),
+        linkNames: preview.rows
+          .map((row, rowIndex) => ({ rowIndex, canonicalName: (previewLinkNameDrafts[rowIndex] ?? previewNameEdits[rowIndex] ?? row.rawName).trim() }))
+          .filter(({ rowIndex }) => !excludedPreviewRowIndexes.includes(rowIndex) && !Number(previewProductLinks[rowIndex]))
+          .filter(({ canonicalName }) => canonicalName.length >= 2),
         excludedRowIndexes: excludedPreviewRowIndexes,
       });
       await invalidate();
       toast.success("Прайс‑лист сохранен", {
-        description: `Автосвязано: ${result.linked}; новых товаров создано: ${result.createdProducts ?? 0}; на проверке: ${result.suggested}; без связи: ${result.unmapped}.`,
+        description: `Связано с именами: ${result.linked}; создано новых имен: ${result.createdProducts ?? 0}.`,
       });
       setFile(null);
       resetPreviewState();
@@ -1401,14 +1422,14 @@ export default function PriceControl({
   ) => {
     const canonicalName = (newNames[rowId] || rawName).trim();
     const categoryId = Number(newCategoryTargets[rowId]);
-    if (!canonicalName || !categoryId) {
-      toast.error("Для нового товара выберите существующую категорию.");
+    if (canonicalName.length < 2) {
+      toast.error("Укажите имя связи длиной не менее двух символов.");
       return;
     }
     try {
       const product = await createProduct.mutateAsync({
         canonicalName,
-        categoryId,
+        ...(categoryId ? { categoryId } : {}),
       });
       await linkRow.mutateAsync({
         rowId,
@@ -1421,10 +1442,6 @@ export default function PriceControl({
   };
   const saveProduct = async () => {
     if (!productDraft?.canonicalName.trim()) return;
-    if (!Number(productDraft.categoryId)) {
-      toast.error("Выберите существующую категорию товара.");
-      return;
-    }
     const manualOffer = productDraft.manualOffer;
     const manualPrice = Number(
       manualOffer.priceAmount.replace(/\s/g, "").replace(",", ".")
@@ -1759,6 +1776,11 @@ export default function PriceControl({
         delete next[rowIndex];
         return next;
       });
+      setPreviewLinkNameDrafts(current => {
+        const next = { ...current };
+        delete next[rowIndex];
+        return next;
+      });
       setSelectedPreviewRowIndexes(current => current.filter(index => index !== rowIndex));
     }
   };
@@ -2037,7 +2059,7 @@ export default function PriceControl({
                   <div
                     className="price-product-list"
                     role="list"
-                    aria-label="Товары по именам связей"
+                    aria-label="Имена связей для сравнения"
                   >
                   {filteredComparisons.map(item => (
                     <button
@@ -2520,7 +2542,7 @@ export default function PriceControl({
                         <strong>{previewNewRows.length}</strong>
                         <small>
                           Отметьте новые строки и назначьте существующую или
-                          явно создайте новую категорию. Товары появятся только
+                          явно создайте новую категорию. Имена связей появятся только
                           после сохранения прайс‑листа.
                         </small>
                       </div>
@@ -2874,7 +2896,7 @@ export default function PriceControl({
                         </div>
                         {canEdit && (
                           <label className="price-preview-product-link">
-                            <span>Внутренний товар</span>
+                            <span>Имя связи для сравнения</span>
                             <input
                               className="price-product-link-search"
                               value={previewProductLinkSearches[index] ?? ""}
@@ -2882,22 +2904,31 @@ export default function PriceControl({
                                 ...current,
                                 [index]: event.target.value,
                               }))}
-                              placeholder="Поиск товара или кода"
-                              aria-label={`Поиск внутреннего товара для «${row.rawName}»`}
+                              placeholder="Поиск имени связи или кода"
+                              aria-label={`Поиск имени связи для «${row.rawName}»`}
                             />
                             <PriceSelect
                               value={previewProductLinks[index] ?? "__unlinked"}
                               onValueChange={value => setPreviewProductLink(index, value)}
                               placeholder="Имя связи для сравнения"
                               options={[
-                                { value: "__unlinked", label: "Не связывать сейчас" },
+                                { value: "__unlinked", label: "Создать новое имя связи" },
                                 ...productLinkOptions(
                                   previewProductLinkSearches[index] ?? "",
                                   previewProductLinks[index] ?? ""
                                 ),
                               ]}
                             />
-                            <small>{linkedProduct ? `Связано: ${linkedProduct.internalCode} · ${linkedProduct.canonicalName}` : "Укажите существующий товар, только если это та же позиция."}</small>
+                            {!linkedProduct && (
+                              <input
+                                value={previewLinkNameDrafts[index] ?? previewNameEdits[index] ?? row.rawName}
+                                onChange={event => setPreviewLinkNameDrafts(current => ({ ...current, [index]: event.target.value }))}
+                                placeholder="Новое имя связи"
+                                maxLength={255}
+                                aria-label={`Новое имя связи для «${row.rawName}»`}
+                              />
+                            )}
+                            <small>{linkedProduct ? `Связано: ${linkedProduct.linkCode ?? linkedProduct.internalCode} · ${linkedProduct.canonicalName}` : "Без выбранной связи будет создано это имя; затем к нему можно добавить варианты любых поставщиков."}</small>
                           </label>
                         )}
                         {canEdit && previewNewRowIndexes.has(index) && (
@@ -3148,7 +3179,7 @@ export default function PriceControl({
                         {row.priceAmount === null ? "цена не указана" : `${formatMoney(row.priceAmount)} ₽`}
                       </b>
                       <small className={row.productName ? "price-saved-import-linked" : "price-saved-import-unlinked"}>
-                        {row.productName ? `Связь: ${row.productName}` : "Связь с товаром не задана"}
+                        {row.productName ? `Имя связи: ${row.productName}` : "Имя связи будет создано при изменении"}
                       </small>
                       {canEdit && (
                         <div className="price-saved-import-actions">
@@ -3174,7 +3205,7 @@ export default function PriceControl({
                       {canEdit && isEditing && (
                         <div className="price-saved-import-editor">
                           <label>
-                            Связь с товаром
+                            Выбрать имя связи
                             <input
                               className="price-product-link-search"
                               value={savedImportLinkSearches[row.rowId] ?? ""}
@@ -3182,20 +3213,31 @@ export default function PriceControl({
                                 ...current,
                                 [row.rowId]: event.target.value,
                               }))}
-                              placeholder="Поиск товара или кода"
-                              aria-label={`Поиск товара для связи «${row.rawName}»`}
+                              placeholder="Поиск имени связи или кода"
+                              aria-label={`Поиск имени связи для «${row.rawName}»`}
                             />
                             <PriceSelect
                               value={currentTarget}
                               onValueChange={value => setSavedImportLinkTargets(current => ({ ...current, [row.rowId]: value }))}
-                              placeholder={row.productName ? `Оставить: ${row.productName}` : "Выберите товар"}
+                              placeholder={row.productName ? `Оставить: ${row.productName}` : "Выберите имя связи"}
                               options={productLinkOptions(
                                 savedImportLinkSearches[row.rowId] ?? "",
                                 currentTarget
                               )}
                             />
                           </label>
-                          <small>Связь объединяет это название поставщика с выбранным товаром. Следующие прайсы того же поставщика будут распознаваться автоматически.</small>
+                          {!currentTarget && (
+                            <label>
+                              Новое имя связи
+                              <input
+                                value={newNames[row.rowId] ?? row.rawName}
+                                onChange={event => setNewNames(current => ({ ...current, [row.rowId]: event.target.value }))}
+                                placeholder="Имя связи"
+                                maxLength={255}
+                              />
+                            </label>
+                          )}
+                          <small>Имя связи объединяет разные названия поставщиков. Следующие прайсы этого поставщика будут находить его автоматически.</small>
                           <div>
                             <button
                               type="button"
@@ -3205,6 +3247,16 @@ export default function PriceControl({
                             >
                               <Save size={14} /> Сохранить связь
                             </button>
+                            {!currentTarget && (
+                              <button
+                                type="button"
+                                className="packet-link compact subtle"
+                                disabled={linkRow.isPending || (newNames[row.rowId] ?? row.rawName).trim().length < 2}
+                                onClick={() => void createAndLink(row.rowId, row.rawName, row.rawCategory)}
+                              >
+                                <Plus size={14} /> Создать связь
+                              </button>
+                            )}
                             <button type="button" className="packet-link compact subtle" onClick={() => setEditingSavedImportRowId(null)}>Готово</button>
                           </div>
                         </div>
@@ -3214,7 +3266,7 @@ export default function PriceControl({
                 })}
               </div>
               <p className="packet-note price-saved-import-limit">
-                Показано позиций: {selectedImportPreview?.rows.length ?? 0} из {selectedImport.rowCount}. Для каждой строки доступны порядковый номер, связь с товаром и изменение.
+                Показано позиций: {selectedImportPreview?.rows.length ?? 0} из {selectedImport.rowCount}. Для каждой строки доступны порядковый номер, имя связи и изменение.
               </p>
             </section>
           )}
@@ -3225,7 +3277,7 @@ export default function PriceControl({
           <section className="page-lede price-lede">
             <div>
               <span>СПРАВОЧНИК ПРАЙС‑КОНТРОЛЯ</span>
-              <h2>Товары, категории и поставщики</h2>
+              <h2>Имена связей, категории и поставщики</h2>
               <p>
                 Здесь редактируются только данные коммерческих прайс‑листов.
                 Финансовая «База» и ее показатели остаются отдельными и не
@@ -3239,7 +3291,7 @@ export default function PriceControl({
               className={directoryTab === "products" ? "active" : ""}
               onClick={() => setDirectoryTab("products")}
             >
-              Товары
+              Имена связей
             </button>
             <button
               type="button"
@@ -3267,8 +3319,8 @@ export default function PriceControl({
           <section className="packet-card price-directory">
             <div className="card-title">
               <div>
-                <span>ВНУТРЕННИЕ ТОВАРЫ</span>
-                <h3>Коды, категории и эталонные названия</h3>
+                <span>ИМЕНА СВЯЗЕЙ</span>
+                <h3>Единые имена, коды и характеристики сравнения</h3>
               </div>
               <Tags size={21} />
             </div>
@@ -3292,7 +3344,7 @@ export default function PriceControl({
                 }
               >
                 <Plus size={14} />
-                Новый товар
+                Новое имя связи
               </button>
             )}
             <section className="price-characteristics-panel" aria-label="Характеристики товаров">
@@ -3425,7 +3477,7 @@ export default function PriceControl({
             {productDraft && (
               <div ref={productEditorRef} className="price-directory-editor">
                 <label>
-                  Эталонное название
+                  Имя связи <em>*</em>
                   <input
                     value={productDraft.canonicalName}
                     onChange={event =>
@@ -3437,7 +3489,7 @@ export default function PriceControl({
                   />
                 </label>
                 <label>
-                  Внутренний код
+                  Код связи
                   <input
                     value={productDraft.internalCode}
                     onChange={event =>
@@ -3446,7 +3498,7 @@ export default function PriceControl({
                         internalCode: event.target.value,
                       })
                     }
-                    placeholder="Будет создан автоматически"
+                  placeholder="Будет создан автоматически · A001"
                   />
                 </label>
                 <label>
@@ -3459,7 +3511,7 @@ export default function PriceControl({
                         categoryId: value,
                       })
                     }
-                    placeholder="Выберите существующую категорию"
+                  placeholder="Необязательно"
                     options={selectableCategories.map(category => ({
                       value: String(category.id),
                       label: category.name,
@@ -3674,8 +3726,8 @@ export default function PriceControl({
                     setDirectoryProductSearch(event.target.value);
                     setDirectoryProductLimit(60);
                   }}
-                  placeholder="Поиск по товару, коду или категории"
-                  aria-label="Поиск товаров справочника"
+                  placeholder="Поиск по имени связи, коду или категории"
+                  aria-label="Поиск имен связей"
                 />
               </label>
               <small>
@@ -3684,7 +3736,7 @@ export default function PriceControl({
             </div>
             {canEdit && selectedDirectoryProductIds.length > 0 && (
               <div className="price-bulk-actions">
-                <span>Выбрано товаров: {selectedDirectoryProductIds.length}</span>
+                <span>Выбрано связей: {selectedDirectoryProductIds.length}</span>
                 <PriceSelect
                   value={bulkCategoryId}
                   onValueChange={setBulkCategoryId}
@@ -3830,7 +3882,7 @@ export default function PriceControl({
               {!directoryProducts.length && (
                 <div className="empty-state compact">
                   <Search size={22} />
-                  <p>Товары по текущему поиску и фильтру не найдены.</p>
+                  <p>Имена связей по текущему поиску и фильтру не найдены.</p>
                 </div>
               )}
             </div>
@@ -3925,7 +3977,7 @@ export default function PriceControl({
                           <strong>{category.name}</strong>
                           {(categoryMembers.get(category.id) ?? []).length > 0 ? (
                             <details className="price-category-members">
-                              <summary>Товары в категории · {(categoryMembers.get(category.id) ?? []).length}</summary>
+                              <summary>Имена связей в категории · {(categoryMembers.get(category.id) ?? []).length}</summary>
                               <div>
                                 {(categoryMembers.get(category.id) ?? []).map(product => (
                                   <button
@@ -3939,7 +3991,7 @@ export default function PriceControl({
                                 ))}
                               </div>
                             </details>
-                          ) : <small>Товары пока не добавлены</small>}
+                          ) : <small>Имена связей пока не добавлены</small>}
                         </div>
                         {canEdit && (
                           <div className="price-directory-actions">
@@ -4195,6 +4247,20 @@ export default function PriceControl({
                     {repairLinkCodes.isPending ? "Нумеруем…" : "Назначить коды A001"}
                   </button>
                 )}
+                {filteredUnmappedRows.length > 0 && (
+                  <button
+                    type="button"
+                    className="packet-link compact"
+                    onClick={() => backfillLinkNames.mutate()}
+                    disabled={backfillLinkNames.isPending}
+                    title="Создать отдельное редактируемое имя связи для каждой ранее сохраненной несвязанной строки"
+                  >
+                    <WandSparkles size={13} />
+                    {backfillLinkNames.isPending
+                      ? "Создаем…"
+                      : `Создать имена связей · ${filteredUnmappedRows.length}`}
+                  </button>
+                )}
               </div>
               {!filteredUnmappedRows.length ? (
                 <div className="empty-state compact">
@@ -4202,7 +4268,7 @@ export default function PriceControl({
                   <p>
                     {directoryLinkSearch
                       ? "Нераспознанных названий по этому поиску нет."
-                      : "Все распознанные строки уже связаны с внутренними товарами."}
+                      : "Все распознанные строки уже имеют имя связи."}
                   </p>
                 </div>
               ) : (
@@ -4222,6 +4288,15 @@ export default function PriceControl({
                         </small>
                       </div>
                       <div className="price-map-actions">
+                        <label className="price-alias-search">
+                          <Search size={14} />
+                          <input
+                            value={linkSearches[row.rowId] ?? ""}
+                            onChange={event => setLinkSearches(current => ({ ...current, [row.rowId]: event.target.value }))}
+                            placeholder="Найти имя связи или код"
+                            aria-label={`Поиск имени связи для «${row.rawName}»`}
+                          />
+                        </label>
                         <PriceSelect
                           value={
                             linkTargets[row.rowId] ??
@@ -4235,7 +4310,7 @@ export default function PriceControl({
                             }))
                           }
                           placeholder="Выберите имя связи"
-                          options={productLinkOptions("", String(linkTargets[row.rowId] ?? row.suggestedProduct?.id ?? ""))}
+                          options={productLinkOptions(linkSearches[row.rowId] ?? "", String(linkTargets[row.rowId] ?? row.suggestedProduct?.id ?? ""))}
                         />
                         <button
                           type="button"
@@ -4251,7 +4326,7 @@ export default function PriceControl({
                           Подтвердить связь
                         </button>
                         <details>
-                          <summary>Создать новый товар</summary>
+                          <summary>Создать новое имя связи</summary>
                           <div>
                             <input
                               value={newNames[row.rowId] ?? row.rawName}
@@ -4270,7 +4345,7 @@ export default function PriceControl({
                                   [row.rowId]: value,
                                 }))
                               }
-                              placeholder="Выберите категорию"
+                              placeholder="Категория · необязательно"
                               options={selectableCategories.map(category => ({
                                 value: String(category.id),
                                 label: category.name,
@@ -4289,11 +4364,11 @@ export default function PriceControl({
                               disabled={
                                 createProduct.isPending ||
                                 linkRow.isPending ||
-                                !Number(newCategoryTargets[row.rowId])
+                                (newNames[row.rowId] ?? row.rawName).trim().length < 2
                               }
                             >
                               <WandSparkles size={14} />
-                              Создать и связать
+                              Создать связь
                             </button>
                           </div>
                         </details>
@@ -4486,7 +4561,7 @@ export default function PriceControl({
             <AlertDialogTitle>Удалить сохраненный прайс‑лист?</AlertDialogTitle>
             <AlertDialogDescription>
               Будут удалены файл, распознанные строки и цены этого импорта.
-              Связи поставщиков с внутренними товарами сохранятся для следующих
+              Связи названий поставщиков с именами сравнения сохранятся для следующих
               прайсов.
             </AlertDialogDescription>
           </AlertDialogHeader>

@@ -25,6 +25,8 @@ export type PriceImportPriceRemoval = { rowIndex: number; optionIndex: number };
 export type PriceImportRowEdit = { rowIndex: number; rawName: string };
 export type PriceImportMetadataEdit = { rowIndex: number; manufacturer: string | null; placeContents: string | null; manufacturedOn: string | null; shelfLifeMonths: number | null; expiresOn: string | null };
 export type PriceImportProductLink = { rowIndex: number; productId: number };
+/** A user-provided shared name. The existing priceProducts table is the link directory. */
+export type PriceImportLinkName = { rowIndex: number; canonicalName: string };
 export type PreparedPriceImportRows = {
   rows: Array<{ rowIndex: number; row: ParsedPriceRow }>;
   excludedRowIndexes: number[];
@@ -1229,7 +1231,7 @@ export async function createPriceSupplier(input: { name: string; contactNote?: s
   const [supplier] = await db.select().from(priceSuppliers).where(eq(priceSuppliers.id, inserted.id)).limit(1);
   return supplier!;
 }
-export async function commitPriceImport(input: { buffer: Buffer; fileName: string; supplierName: string; sourceDate?: string | null; actorId: number; categorySelections?: PriceImportCategorySelection[]; priceEdits?: PriceImportPriceEdit[]; rowEdits?: PriceImportRowEdit[]; metadataEdits?: PriceImportMetadataEdit[]; priceAdditions?: PriceImportPriceAddition[]; priceRemovals?: PriceImportPriceRemoval[]; productLinks?: PriceImportProductLink[]; excludedRowIndexes?: number[] }) {
+export async function commitPriceImport(input: { buffer: Buffer; fileName: string; supplierName: string; sourceDate?: string | null; actorId: number; categorySelections?: PriceImportCategorySelection[]; priceEdits?: PriceImportPriceEdit[]; rowEdits?: PriceImportRowEdit[]; metadataEdits?: PriceImportMetadataEdit[]; priceAdditions?: PriceImportPriceAddition[]; priceRemovals?: PriceImportPriceRemoval[]; productLinks?: PriceImportProductLink[]; linkNames?: PriceImportLinkName[]; excludedRowIndexes?: number[] }) {
   const preview = await previewPriceImport(input.buffer, input.fileName);
   if (!preview.rows.length) throw new Error("Импорт не сохранен: в документе не найдено ни одной товарной строки с ценой.");
   const preparedRows = preparePriceImportRows(preview.rows, input.priceEdits, input.excludedRowIndexes, input.rowEdits, input.metadataEdits, input.priceAdditions, input.priceRemovals);
@@ -1257,6 +1259,16 @@ export async function commitPriceImport(input: { buffer: Buffer; fileName: strin
     if (categoryByRow.has(link.rowIndex)) throw new Error("Для связанной позиции нельзя одновременно назначать новую категорию.");
     productByRow.set(link.rowIndex, link.productId);
   }
+  const linkNameByRow = new Map<number, string>();
+  for (const link of input.linkNames ?? []) {
+    const canonicalName = text(link.canonicalName);
+    if (!Number.isInteger(link.rowIndex) || link.rowIndex < 0 || link.rowIndex >= preview.rows.length || canonicalName.length < 2 || canonicalName.length > 255) {
+      throw new Error("Передано некорректное имя связи для строки прайс‑листа.");
+    }
+    if (preparedRows.excludedRowIndexes.includes(link.rowIndex)) throw new Error("Нельзя создать связь для строки, исключенной из импорта.");
+    if (productByRow.has(link.rowIndex) || linkNameByRow.has(link.rowIndex)) throw new Error("Для одной строки прайс‑листа выбрана только одна связь.");
+    linkNameByRow.set(link.rowIndex, canonicalName);
+  }
   const linkedProductIds = Array.from(new Set(productByRow.values()));
   const explicitlyLinkedProducts = linkedProductIds.length
     ? await db.select({ id: priceProducts.id, canonicalName: priceProducts.canonicalName, normalizedSignature: priceProducts.normalizedSignature }).from(priceProducts).where(inArray(priceProducts.id, linkedProductIds))
@@ -1268,13 +1280,14 @@ export async function commitPriceImport(input: { buffer: Buffer; fileName: strin
   const stored = await storagePut(`price-imports/${supplier.id}/${Date.now()}_${input.fileName}`, input.buffer, sourceMimeType(preview.sourceType));
   const [inserted] = await db.insert(priceImports).values({ supplierId: supplier.id, fileName: input.fileName, fileKey: stored.key, sourceDate: input.sourceDate || preview.detectedSourceDate, sourceType: preview.sourceType, status: "completed", rowCount: preparedRows.rows.length, importedByAccountId: input.actorId }).$returningId();
   const aliases = await db.select({ supplierId: priceSupplierAliases.supplierId, productId: priceSupplierAliases.productId, normalizedName: priceSupplierAliases.normalizedName, packagingSignature: priceSupplierAliases.packagingSignature }).from(priceSupplierAliases).where(eq(priceSupplierAliases.supplierId, supplier.id));
-  const products = await db.select({ id: priceProducts.id, normalizedSignature: priceProducts.normalizedSignature }).from(priceProducts).where(eq(priceProducts.isActive, true));
+  const products = await db.select({ id: priceProducts.id, canonicalName: priceProducts.canonicalName, normalizedSignature: priceProducts.normalizedSignature }).from(priceProducts).where(eq(priceProducts.isActive, true));
   let linked = 0, suggested = 0, createdProducts = 0, categorizedRows = 0, explicitlyLinked = 0;
   const createdProductDetails: Array<{ productName: string; internalCode: string; categoryName: string | null }> = [];
   const createdAliasDetails: Array<{ supplierProductName: string; productLabel: string; packaging: string | null }> = [];
   for (const { rowIndex, row } of preparedRows.rows) {
     const category = categoryMap.get(categoryByRow.get(rowIndex) ?? -1);
     const selectedProductId = productByRow.get(rowIndex);
+    const requestedLinkName = linkNameByRow.get(rowIndex);
     let mapping = selectedProductId
       ? { productId: selectedProductId, mappingStatus: "linked" as const, matchedBy: "supplier_alias" as const, matchConfidence: 100 }
       : resolvePriceMapping(row, supplier.id, aliases, products);
@@ -1285,20 +1298,29 @@ export async function commitPriceImport(input: { buffer: Buffer; fileName: strin
       createdAliasDetails.push({ supplierProductName: row.rawName, productLabel: `${product.canonicalName} · выбран вручную`, packaging: row.packaging });
       explicitlyLinked += 1;
     }
-    if (mapping.productId === null && category) {
+    if (!selectedProductId && (requestedLinkName || mapping.productId === null)) {
       const product = await createPriceProduct({
-        canonicalName: row.canonicalHint,
-        categoryId: category.id,
+        canonicalName: requestedLinkName || row.canonicalHint,
+        categoryId: category?.id ?? null,
         placeContents: row.placeContents,
       });
-      products.push({ id: product.id, normalizedSignature: product.normalizedSignature });
+      const wasKnown = products.some(item => item.id === product.id);
+      if (!wasKnown) products.push({ id: product.id, canonicalName: product.canonicalName, normalizedSignature: product.normalizedSignature });
       aliases.push({ supplierId: supplier.id, productId: product.id, normalizedName: row.normalizedName, packagingSignature: row.packagingSignature });
       await db.insert(priceSupplierAliases).values({ supplierId: supplier.id, productId: product.id, normalizedName: row.normalizedName, sourceSku: row.sourceSku, packagingSignature: row.packagingSignature, isConfirmed: true, createdByAccountId: input.actorId }).onDuplicateKeyUpdate({ set: { productId: product.id, sourceSku: row.sourceSku, isConfirmed: true, createdByAccountId: input.actorId } });
       mapping = { productId: product.id, mappingStatus: "linked", matchedBy: "new_product", matchConfidence: 100 };
-      createdProducts += 1;
-      categorizedRows += 1;
-      createdProductDetails.push({ productName: product.canonicalName, internalCode: product.internalCode, categoryName: category.name });
+      if (!wasKnown) {
+        createdProducts += 1;
+        if (category) categorizedRows += 1;
+        createdProductDetails.push({ productName: product.canonicalName, internalCode: product.internalCode, categoryName: category?.name ?? null });
+      }
       createdAliasDetails.push({ supplierProductName: row.rawName, productLabel: `${product.canonicalName} · ${product.internalCode}`, packaging: row.packaging });
+    } else if (!selectedProductId && mapping.mappingStatus === "suggested" && mapping.productId) {
+      const product = products.find(item => item.id === mapping.productId)!;
+      await db.insert(priceSupplierAliases).values({ supplierId: supplier.id, productId: product.id, normalizedName: row.normalizedName, sourceSku: row.sourceSku, packagingSignature: row.packagingSignature, isConfirmed: true, createdByAccountId: input.actorId }).onDuplicateKeyUpdate({ set: { productId: product.id, sourceSku: row.sourceSku, isConfirmed: true, createdByAccountId: input.actorId } });
+      aliases.push({ supplierId: supplier.id, productId: product.id, normalizedName: row.normalizedName, packagingSignature: row.packagingSignature });
+      mapping = { productId: product.id, mappingStatus: "linked", matchedBy: "supplier_alias", matchConfidence: 100 };
+      createdAliasDetails.push({ supplierProductName: row.rawName, productLabel: `${product.canonicalName} · подтверждено по имени`, packaging: row.packaging });
     }
     if (mapping.mappingStatus === "linked") linked += 1;
     if (mapping.mappingStatus === "suggested") suggested += 1;
@@ -1916,6 +1938,68 @@ export async function unlinkPriceSupplierAlias(aliasId: number) {
       before: { ...auditBase, productLabel: `${alias.productName} · ${alias.internalCode}` },
       after: { ...auditBase, productLabel: null },
     },
+  };
+}
+
+/** Gives every already saved unlinked source row its own editable shared name. */
+export async function backfillPriceImportLinkNames(input: { actorId: number }) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const rows = await db
+    .select({
+      id: priceImportRows.id,
+      rawName: priceImportRows.rawName,
+      normalizedName: priceImportRows.normalizedName,
+      rawPackaging: priceImportRows.rawPackaging,
+      placeContents: priceImportRows.placeContents,
+      sourceSku: priceImportRows.sourceSku,
+      supplierId: priceImports.supplierId,
+    })
+    .from(priceImportRows)
+    .innerJoin(priceImports, eq(priceImportRows.importId, priceImports.id))
+    .where(sql`${priceImportRows.mappingStatus} <> 'linked'`)
+    .orderBy(priceImportRows.id);
+
+  const linkedNames = new Set<string>();
+  for (const row of rows) {
+    const product = await createPriceProduct({
+      canonicalName: row.rawName,
+      placeContents: row.placeContents,
+    });
+    await db
+      .update(priceImportRows)
+      .set({
+        productId: product.id,
+        mappingStatus: "linked",
+        matchedBy: "new_product",
+        matchConfidence: "100.00",
+      })
+      .where(eq(priceImportRows.id, row.id));
+    await db
+      .insert(priceSupplierAliases)
+      .values({
+        supplierId: row.supplierId,
+        productId: product.id,
+        normalizedName: row.normalizedName,
+        sourceSku: row.sourceSku,
+        packagingSignature: packagingSignature(row.rawPackaging) || null,
+        isConfirmed: true,
+        createdByAccountId: input.actorId,
+      })
+      .onDuplicateKeyUpdate({
+        set: {
+          productId: product.id,
+          sourceSku: row.sourceSku,
+          isConfirmed: true,
+          createdByAccountId: input.actorId,
+        },
+      });
+    linkedNames.add(product.canonicalName);
+  }
+  return {
+    linkedRows: rows.length,
+    sharedNames: linkedNames.size,
+    examples: Array.from(linkedNames).slice(0, 8),
   };
 }
 
