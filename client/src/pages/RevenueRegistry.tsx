@@ -1,5 +1,6 @@
 import { FilePlus2, PencilLine, Printer, ReceiptText, RotateCcw, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -47,7 +48,7 @@ const fields: Array<{ key: AmountField; label: string; kind: "receipt" | "expens
   { key: "extraPaymentCash", label: "Доплата нал", kind: "expense" },
   { key: "bonusCash", label: "Премия нал", kind: "expense" },
   { key: "vacationCash", label: "Отпускные нал", kind: "expense" },
-  { key: "utilitiesCash", label: "Коммунальные платежи нал", kind: "expense" },
+  { key: "utilitiesCash", label: "Ком. плат. нал", kind: "expense" },
   { key: "deliveryCash", label: "Доставка нал", kind: "expense" },
 ];
 const commentRequiredExpenseFields = new Set<ExpenseField>([
@@ -180,6 +181,17 @@ export default function RevenueRegistry() {
     event.currentTarget.classList.remove("is-dragging");
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   };
+  const printSheet = isAdmin && currentRecords.length ? createPortal(
+    <section id="revenue-print-root" className="revenue-print-sheet" aria-hidden="true">
+      <p>{displayDate(registryDate)}</p>
+      <table className="revenue-print-table">
+        <thead><tr><th>Магазин</th><th>Нал</th><th>Б/Нал</th>{visibleExpenseFields.map(field => <th key={field.key}>{field.label}</th>)}<th>Итого</th></tr></thead>
+        <tbody>{currentRecords.map(record => <tr key={`print-${record.id}`}><td>{record.storeName}</td><td>{formatAmount(record.cash)}</td><td>{formatAmount(record.cashless)}</td>{visibleExpenseFields.map(field => <td key={field.key}>{formatAmount(record[field.key])}</td>)}<td>{formatAmount(record.total)}</td></tr>)}</tbody>
+        <tfoot><tr><th>Итого</th><td>{formatAmount(currentRecords.reduce((sum, record) => sum + record.cash, 0))}</td><td>{formatAmount(currentRecords.reduce((sum, record) => sum + record.cashless, 0))}</td>{visibleExpenseFields.map(field => <td key={field.key}>{formatAmount(currentRecords.reduce((sum, record) => sum + record[field.key], 0))}</td>)}<td>{formatAmount(currentRecords.reduce((sum, record) => sum + record.total, 0))}</td></tr></tfoot>
+      </table>
+      {hasExpenseComments && <div className="revenue-print-comments">{printComments.map(({ record, field }) => <p key={`${record.id}:${field.key}`}><strong>{record.storeName} — {field.label}:</strong> {record.expenseComments[field.key as ExpenseField]}</p>)}</div>}
+    </section>, document.body
+  ) : null;
 
   if (!isAdmin && !isSeller && !me.isLoading) return <AuditShell kicker="23 / ВЫРУЧКА" title="Операционный реестр «Выручка»"><section className="empty-state"><ReceiptText size={28}/><h2>Нет операционного доступа</h2><p>Эта страница доступна только назначенному продавцу или администратору.</p></section></AuditShell>;
 
@@ -209,11 +221,7 @@ export default function RevenueRegistry() {
             <tfoot><tr className="table-total"><th scope="row">Итого</th><td className="numeric-column">{formatAmount(currentRecords.reduce((sum, record) => sum + record.cash, 0))}</td><td className="numeric-column">{formatAmount(currentRecords.reduce((sum, record) => sum + record.cashless, 0))}</td>{visibleExpenseFields.map(field => <td className="numeric-column" key={field.key}>{formatAmount(currentRecords.reduce((sum, record) => sum + record[field.key], 0))}</td>)}<td className="numeric-column">{formatAmount(currentRecords.reduce((sum, record) => sum + record.total, 0))}</td>{hasExpenseComments && <td/>}<td colSpan={2}/></tr></tfoot>
           </table>
         </div>
-        <section className="revenue-print-sheet" aria-hidden="true">
-          <p>{displayDate(registryDate)}</p>
-          <table className="revenue-print-table"><thead><tr><th>Магазин</th><th>Нал</th><th>Б/Нал</th>{visibleExpenseFields.map(field => <th key={field.key}>{field.label}</th>)}<th>Итого</th></tr></thead><tbody>{currentRecords.map(record => <tr key={`print-${record.id}`}><td>{record.storeName}</td><td>{formatAmount(record.cash)}</td><td>{formatAmount(record.cashless)}</td>{visibleExpenseFields.map(field => <td key={field.key}>{formatAmount(record[field.key])}</td>)}<td>{formatAmount(record.total)}</td></tr>)}</tbody><tfoot><tr><th>Итого</th><td>{formatAmount(currentRecords.reduce((sum, record) => sum + record.cash, 0))}</td><td>{formatAmount(currentRecords.reduce((sum, record) => sum + record.cashless, 0))}</td>{visibleExpenseFields.map(field => <td key={field.key}>{formatAmount(currentRecords.reduce((sum, record) => sum + record[field.key], 0))}</td>)}<td>{formatAmount(currentRecords.reduce((sum, record) => sum + record.total, 0))}</td></tr></tfoot></table>
-          {hasExpenseComments && <div className="revenue-print-comments">{printComments.map(({ record, field }) => <p key={`${record.id}:${field.key}`}><strong>{record.storeName} — {field.label}:</strong> <span>{record.expenseComments[field.key as ExpenseField]}</span></p>)}</div>}
-        </section>
+        {printSheet}
       </> : <div className="empty-state compact"><ReceiptText size={25}/><h2>Записей пока нет</h2><p>Переданные продавцами или администратором дневные суммы появятся здесь.</p></div>}
     </section>}
     {!isAdmin && <section className="packet-card revenue-own-history"><div className="card-title"><div><span>МОИ ПОСЛЕДНИЕ ПЕРЕДАЧИ</span><h3>До пяти собственных записей</h3></div></div>{myRecords.isLoading ? <p className="packet-note">Загружаем ваши записи…</p> : currentRecords.length ? <div className="revenue-history-list">{currentRecords.map(record => <article key={record.id}><div><span>{displayDate(record.businessDate)}</span><strong>{record.storeName}</strong><small>Нал {formatAmount(record.cash)} · Б/Нал {formatAmount(record.cashless)} · Расходы {formatAmount(expenseTotal(record))}</small><small>Передано {displayMoscowTimestamp(record.createdAt)} МСК</small></div><b>{formatAmount(record.total)}</b></article>)}</div> : <div className="empty-state compact"><ReceiptText size={25}/><h2>Передач еще нет</h2><p>После первой передачи здесь будут показаны пять последних записей этой учетной записи.</p></div>}</section>}

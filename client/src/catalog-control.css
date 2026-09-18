@@ -14,9 +14,9 @@ html[data-audit-theme="light"] .packet {
   --catalog-accent-faint: rgba(10, 132, 255, .14);
 }
 html[data-audit-theme="dark"] .packet {
-  --catalog-card: #15141a;
-  --catalog-panel: #1b1920;
-  --catalog-line: #3f3a47;
+  --catalog-card: #151820;
+  --catalog-panel: #1a1e27;
+  --catalog-line: #363d49;
   --catalog-accent: #ff765f;
   --catalog-accent-faint: rgba(255, 118, 95, .13);
 }

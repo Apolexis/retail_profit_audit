@@ -501,6 +501,10 @@ export default function PriceControl({
     },
     onError: error => toast.error(error.message),
   });
+  const assignProductLinkGroup = trpc.priceControl.assignProductLinkGroup.useMutation({
+    onSuccess: () => { invalidate(); toast.success("Товар добавлен в связь"); },
+    onError: error => toast.error(error.message),
+  });
   const createCharacteristic = trpc.priceControl.createCharacteristic.useMutation({
     onSuccess: () => {
       invalidate();
@@ -808,7 +812,7 @@ export default function PriceControl({
   const [savedImportLinkSearches, setSavedImportLinkSearches] = useState<Record<number, string>>({});
   const [editingLinkNameProductId, setEditingLinkNameProductId] = useState<number | null>(null);
   const [linkNameDrafts, setLinkNameDrafts] = useState<Record<number, string>>({});
-  const [newGroupProductDrafts, setNewGroupProductDrafts] = useState<Record<number, { canonicalName: string; categoryId: string }>>({});
+  const [newGroupProductDrafts, setNewGroupProductDrafts] = useState<Record<number, { productId: string }>>({});
   const [editingAliasId, setEditingAliasId] = useState<number | null>(null);
   const [aliasSearches, setAliasSearches] = useState<Record<number, string>>({});
   const [newAliasDrafts, setNewAliasDrafts] = useState<Record<number, { supplierId: string; name: string; packaging: string }>>({});
@@ -911,45 +915,28 @@ export default function PriceControl({
     });
     return members;
   }, [catalogProducts]);
-  const aliasGroups = useMemo(() => {
-    const groups = new Map<number, {
-      productId: number;
-      internalCode: string;
-      linkCode: string | null;
-      canonicalName: string;
-      aliases: NonNullable<typeof overview.data>["aliases"];
-    }>();
-    (overview.data?.aliases ?? []).forEach(alias => {
-      const group = groups.get(alias.productId) ?? {
-        productId: alias.productId,
-        internalCode: alias.internalCode,
-        linkCode: alias.linkCode,
-        canonicalName: alias.canonicalName,
-        aliases: [],
-      };
-      group.aliases.push(alias);
-      groups.set(alias.productId, group);
-    });
-    return Array.from(groups.values()).sort((left, right) =>
-      left.canonicalName.localeCompare(right.canonicalName, "ru")
-    );
+  const linkGroups = overview.data?.linkGroups ?? [];
+  const aliasesByProduct = useMemo(() => {
+    const items = new Map<number, NonNullable<typeof overview.data>["aliases"]>();
+    (overview.data?.aliases ?? []).forEach(alias => items.set(alias.productId, [...(items.get(alias.productId) ?? []), alias]));
+    return items;
   }, [overview.data?.aliases]);
-  const filteredAliasGroups = useMemo(() => {
+  const filteredLinkGroups = useMemo(() => {
     const query = directoryLinkSearch.trim().toLocaleLowerCase("ru");
-    if (!query) return aliasGroups;
-    return aliasGroups.filter(group =>
+    return linkGroups.filter(group =>
+      !query ||
       [
         group.canonicalName,
         group.linkCode ?? "",
-        group.internalCode,
-        ...group.aliases.flatMap(alias => [alias.supplierName, alias.normalizedName, alias.packagingSignature ?? ""]),
+        ...group.products.flatMap(product => [product.canonicalName, product.internalCode, product.category ?? ""]),
+        ...group.products.flatMap(product => (aliasesByProduct.get(product.id) ?? []).flatMap(alias => [alias.supplierName, alias.normalizedName, alias.packagingSignature ?? ""])),
       ]
         .join(" ")
         .toLocaleLowerCase("ru")
         .includes(query)
     );
-  }, [aliasGroups, directoryLinkSearch]);
-  const visibleAliasGroups = filteredAliasGroups.slice(0, directoryLinkLimit);
+  }, [linkGroups, aliasesByProduct, directoryLinkSearch]);
+  const visibleLinkGroups = filteredLinkGroups.slice(0, directoryLinkLimit);
   const filteredUnmappedRows = useMemo(() => {
     const query = directoryLinkSearch.trim().toLocaleLowerCase("ru");
     const rows = overview.data?.unmappedRows ?? [];
@@ -4220,7 +4207,7 @@ export default function PriceControl({
             </AlertDialog>
           </section>
           )}
-          {directoryTab === "links" && canEdit && (
+          {directoryTab === "links" && canEdit && filteredUnmappedRows.length > 0 && (
             <section className="packet-card price-mapping">
               <div className="card-title">
                 <div>
@@ -4250,7 +4237,7 @@ export default function PriceControl({
                   />
                 </label>
                 <small>
-                  Нераспознано: {filteredUnmappedRows.length} · связей: {filteredAliasGroups.length}
+                  Нераспознано: {filteredUnmappedRows.length} · связей: {filteredLinkGroups.length}
                 </small>
                 {catalogProducts.some(product => !product.linkCode) && (
                   <button type="button" className="packet-link compact subtle" onClick={() => repairLinkCodes.mutate()} disabled={repairLinkCodes.isPending}>
@@ -4390,172 +4377,25 @@ export default function PriceControl({
               )}
             </section>
           )}
-          {directoryTab === "links" && canEdit && (overview.data?.aliases.length ?? 0) > 0 && (
+          {directoryTab === "links" && canEdit && (
             <section className="packet-card price-aliases">
-              <div className="card-title">
-                <div>
-                  <span>СВЯЗИ НАЗВАНИЙ ПОСТАВЩИКА</span>
-                  <h3>Одна связь — одно общее имя товара</h3>
-                </div>
-                <Link2 size={21} />
-              </div>
-              <p className="packet-note">
-                Здесь не создается второй товар. У одного общего имени собраны
-                все варианты названия из прайсов поставщиков; именно это имя
-                будет видно в сравнении. Изменение действует только на новые
-                импорты, сохраненная история остается неизменной.
-              </p>
-              {visibleAliasGroups.length ? (
-              <div className="price-alias-list">
-                {visibleAliasGroups.map(group => (
-                  <article key={group.productId} className="price-alias-group">
+              <div className="card-title"><div><span>СВЯЗИ</span><h3>Одно имя связи — несколько отдельных товаров</h3></div><Link2 size={21} /></div>
+              <p className="packet-note">Товар хранит собственное название, категорию и цены. Имя связи — только общая группа для сравнения. Переименование связи не меняет товары и историю цен.</p>
+              {visibleLinkGroups.length ? <div className="price-alias-list">
+                {visibleLinkGroups.map(group => {
+                  const draft = newGroupProductDrafts[group.id] ?? { productId: "" };
+                  return <article key={group.id} className="price-alias-group">
                     <div className="price-alias-group-heading">
-                      <span>Имя связи · {group.aliases.length}</span>
-                      <strong>{group.canonicalName}</strong>
-                      <small>В сравнении показывается одно имя, а не все варианты поставщиков · код связи {group.linkCode ?? "не назначен"}</small>
-                      {editingLinkNameProductId === group.productId ? (
-                        <div className="price-link-name-editor">
-                          <input
-                            value={linkNameDrafts[group.productId] ?? group.canonicalName}
-                            onChange={event => setLinkNameDrafts(current => ({
-                              ...current,
-                              [group.productId]: event.target.value,
-                            }))}
-                            aria-label={`Изменить имя связи «${group.canonicalName}»`}
-                          />
-                          <button
-                            type="button"
-                            className="packet-link compact"
-                            disabled={updateProduct.isPending}
-                            onClick={() => {
-                              const product = catalogProducts.find(item => item.id === group.productId);
-                              const canonicalName = (linkNameDrafts[group.productId] ?? group.canonicalName).trim();
-                              if (!product || canonicalName.length < 2) {
-                                toast.error("Имя связи должно содержать не менее двух символов.");
-                                return;
-                              }
-                              updateProduct.mutate({
-                                id: product.id,
-                                canonicalName,
-                                internalCode: product.internalCode,
-                                categoryId: product.categoryId,
-                                baseUnit: product.baseUnit,
-                              });
-                              setEditingLinkNameProductId(null);
-                            }}
-                          >
-                            <Save size={13} /> Сохранить имя
-                          </button>
-                          <button type="button" className="packet-link compact subtle" onClick={() => setEditingLinkNameProductId(null)}>Отменить</button>
-                        </div>
-                      ) : (
-                        <div className="price-link-name-actions">
-                          <button
-                            type="button"
-                            className="packet-link compact subtle"
-                            onClick={() => {
-                              setLinkNameDrafts(current => ({ ...current, [group.productId]: group.canonicalName }));
-                              setEditingLinkNameProductId(group.productId);
-                            }}
-                          >
-                            <Pencil size={13} /> Изменить имя
-                          </button>
-                          <button
-                            type="button"
-                            className="packet-link compact subtle"
-                            onClick={() => setNewAliasDrafts(current => ({ ...current, [group.productId]: current[group.productId] ?? { supplierId: "", name: "", packaging: "" } }))}
-                          >
-                            <Plus size={13} /> Добавить название
-                          </button>
-                        </div>
-                      )}
-                      {newAliasDrafts[group.productId] && (
-                        <div className="price-link-new-alias">
-                          <PriceSelect
-                            value={newAliasDrafts[group.productId]?.supplierId ?? ""}
-                            onValueChange={supplierId => setNewAliasDrafts(current => ({ ...current, [group.productId]: { ...(current[group.productId] ?? { supplierId: "", name: "", packaging: "" }), supplierId } }))}
-                            placeholder="Поставщик"
-                            options={selectableSuppliers.map(supplier => ({ value: String(supplier.id), label: supplier.name }))}
-                          />
-                          <input value={newAliasDrafts[group.productId]?.name ?? ""} onChange={event => setNewAliasDrafts(current => ({ ...current, [group.productId]: { ...(current[group.productId] ?? { supplierId: "", name: "", packaging: "" }), name: event.target.value } }))} placeholder="Название у поставщика" aria-label={`Добавить название к связи «${group.canonicalName}»`} />
-                          <input value={newAliasDrafts[group.productId]?.packaging ?? ""} onChange={event => setNewAliasDrafts(current => ({ ...current, [group.productId]: { ...(current[group.productId] ?? { supplierId: "", name: "", packaging: "" }), packaging: event.target.value } }))} placeholder="Фасовка · необязательно" aria-label={`Фасовка названия «${group.canonicalName}»`} />
-                          <button type="button" className="packet-link compact" disabled={createAlias.isPending || !Number(newAliasDrafts[group.productId]?.supplierId) || (newAliasDrafts[group.productId]?.name.trim().length ?? 0) < 2} onClick={() => createAlias.mutate({ productId: group.productId, supplierId: Number(newAliasDrafts[group.productId]!.supplierId), aliasName: newAliasDrafts[group.productId]!.name, packaging: newAliasDrafts[group.productId]!.packaging.trim() || null })}><Plus size={13}/>Добавить в связь</button>
-                          <button type="button" className="packet-link compact subtle" onClick={() => setNewAliasDrafts(current => { const next = { ...current }; delete next[group.productId]; return next; })}>Отменить</button>
-                        </div>
-                      )}
+                      <span>ИМЯ СВЯЗИ · {group.linkCode}</span><strong>{group.canonicalName}</strong>
+                      <small>Товаров в связи: {group.products.length}</small>
+                      {editingLinkNameProductId === group.id ? <div className="price-link-name-editor"><input value={linkNameDrafts[group.id] ?? group.canonicalName} onChange={event => setLinkNameDrafts(current => ({ ...current, [group.id]: event.target.value }))} aria-label={`Изменить имя связи «${group.canonicalName}»`}/><button type="button" className="packet-link compact" disabled={updateLinkGroup.isPending} onClick={() => { const canonicalName = (linkNameDrafts[group.id] ?? group.canonicalName).trim(); if (canonicalName.length < 2) { toast.error("Имя связи должно содержать не менее двух символов."); return; } updateLinkGroup.mutate({ id: group.id, canonicalName }); setEditingLinkNameProductId(null); }}><Save size={13}/>Сохранить</button><button type="button" className="packet-link compact subtle" onClick={() => setEditingLinkNameProductId(null)}>Отменить</button></div> : <div className="price-link-name-actions"><button type="button" className="packet-link compact subtle" onClick={() => { setLinkNameDrafts(current => ({ ...current, [group.id]: group.canonicalName })); setEditingLinkNameProductId(group.id); }}><Pencil size={13}/>Изменить связь</button><button type="button" className="packet-link compact subtle" onClick={() => setNewGroupProductDrafts(current => ({ ...current, [group.id]: current[group.id] ?? { productId: "" } }))}><Plus size={13}/>Добавить товар</button></div>}
+                      {newGroupProductDrafts[group.id] && <form className="price-link-new-product" onSubmit={event => { event.preventDefault(); if (draft.productId) assignProductLinkGroup.mutate({ productId: Number(draft.productId), linkGroupId: group.id }); setNewGroupProductDrafts(current => { const next = { ...current }; delete next[group.id]; return next; }); }}><PriceSelect value={draft.productId} onValueChange={productId => setNewGroupProductDrafts(current => ({ ...current, [group.id]: { productId } }))} placeholder="Найти и выбрать товар" options={catalogProducts.filter(product => product.linkGroupId !== group.id).map(product => ({ value: String(product.id), label: `${product.canonicalName} · ${product.category ?? "Без категории"}` }))}/><button className="packet-link compact" disabled={assignProductLinkGroup.isPending || !draft.productId}><Plus size={13}/>Добавить товар</button><button type="button" className="packet-link compact subtle" onClick={() => setNewGroupProductDrafts(current => { const next = { ...current }; delete next[group.id]; return next; })}>Отменить</button></form>}
                     </div>
-                    <details className="price-alias-group-members">
-                      <summary>Названия поставщиков · {group.aliases.length}</summary>
-                      <div>
-                        {group.aliases.map(alias => (
-                          <div key={alias.aliasId} className="price-alias-member">
-                            <div>
-                              <span>{alias.supplierName}</span>
-                              <strong>{alias.normalizedName}</strong>
-                              <small>{alias.packagingSignature || "Фасовка не уточнена"}</small>
-                            </div>
-                            <div className="price-alias-actions">
-                              {editingAliasId === alias.aliasId ? <>
-                                <label className="price-alias-search"><Search size={14}/><input autoFocus value={aliasSearches[alias.aliasId] ?? ""} onChange={event => setAliasSearches(current => ({ ...current, [alias.aliasId]: event.target.value }))} placeholder="Найти имя связи" aria-label={`Поиск имени связи для «${alias.normalizedName}»`}/></label>
-                                <PriceSelect
-                                  value={aliasTargets[alias.aliasId] ?? String(alias.productId)}
-                                  onValueChange={value => setAliasTargets(current => ({ ...current, [alias.aliasId]: value }))}
-                                  placeholder="Имя связи"
-                                  options={productLinkOptions(aliasSearches[alias.aliasId] ?? "", aliasTargets[alias.aliasId] ?? String(alias.productId))}
-                                />
-                                <button
-                                  type="button"
-                                  className="packet-link compact"
-                                  onClick={() => reassignExistingAlias(alias.aliasId, alias.productId)}
-                                  disabled={reassignAlias.isPending || Number(aliasTargets[alias.aliasId] ?? alias.productId) === alias.productId}
-                                >
-                                  <Save size={13} /> Сохранить связь
-                                </button>
-                                <button type="button" className="packet-link compact subtle" onClick={() => setEditingAliasId(null)}>Отменить</button>
-                              </> : <button
-                                type="button"
-                                className="packet-link compact subtle"
-                                onClick={() => {
-                                  setAliasTargets(current => ({ ...current, [alias.aliasId]: String(alias.productId) }));
-                                  setAliasSearches(current => ({ ...current, [alias.aliasId]: "" }));
-                                  setEditingAliasId(alias.aliasId);
-                                }}
-                              >
-                                <Pencil size={13} /> Изменить связь
-                              </button>}
-                              <button
-                                type="button"
-                                className="packet-link compact subtle"
-                                onClick={() => unlinkAlias.mutate({ aliasId: alias.aliasId })}
-                                disabled={unlinkAlias.isPending}
-                              >
-                                Убрать
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </details>
-                  </article>
-                ))}
-              </div>
-              ) : (
-                <div className="empty-state compact">
-                  <Search size={22} />
-                  <p>Связи по этому поиску не найдены.</p>
-                </div>
-              )}
-              {(filteredUnmappedRows.length > visibleUnmappedRows.length || filteredAliasGroups.length > visibleAliasGroups.length) && (
-                <div className="price-directory-show-more">
-                  <button
-                    type="button"
-                    className="packet-link compact"
-                    onClick={() => setDirectoryLinkLimit(current => current + 40)}
-                  >
-                    Показать еще
-                  </button>
-                </div>
-              )}
+                    <div className="price-link-products"><span>Товары в связи</span>{group.products.map(product => <div key={product.id}><strong>{product.canonicalName}</strong><small>{product.internalCode} · {product.category ?? "Без категории"}</small><button type="button" className="packet-link compact subtle" onClick={() => { setDirectoryTab("products"); setDirectoryProductSearch(product.canonicalName); }}>Открыть товар</button></div>)}</div>
+                  </article>;
+                })}
+              </div> : <div className="empty-state compact"><Search size={22}/><p>Связи по этому поиску не найдены.</p></div>}
+              {filteredLinkGroups.length > visibleLinkGroups.length && <div className="price-directory-show-more"><button type="button" className="packet-link compact" onClick={() => setDirectoryLinkLimit(current => current + 40)}>Показать еще</button></div>}
             </section>
           )}
         </>

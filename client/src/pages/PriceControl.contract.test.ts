@@ -69,21 +69,21 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("internalCode");
   });
 
-  it("позволяет изменить или убрать связь названия поставщика без удаления прайс‑листа", () => {
-    expect(page).toContain("СВЯЗИ НАЗВАНИЙ ПОСТАВЩИКА");
+  it("сохраняет управление названием поставщика без удаления прайс‑листа", () => {
+    expect(page).toContain("СВЯЗАТЬ НАЗВАНИЕ ПОСТАВЩИКА");
     expect(page).toContain("Изменить связь");
     expect(page).toContain("Убрать");
     expect(page).toContain("reassignAlias");
     expect(page).toContain("unlinkAlias");
   });
 
-  it("дает изменить отображаемое имя связи и перейти к добавлению еще одного названия поставщика", () => {
+  it("дает изменить имя связи и добавить в него самостоятельный товар", () => {
     expect(page).toContain("editingLinkNameProductId");
     expect(page).toContain("linkNameDrafts");
-    expect(page).toContain("Изменить имя");
-    expect(page).toContain("Сохранить имя");
-    expect(page).toContain("Добавить название");
-    expect(page).toContain('id="unmapped-price-links"');
+    expect(page).toContain("Изменить связь");
+    expect(page).toContain("Сохранить");
+    expect(page).toContain("Добавить товар");
+    expect(page).toContain("assignProductLinkGroup.mutate");
     expect(styles).toContain(".packet .price-link-name-editor");
   });
 
@@ -146,7 +146,7 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain('directoryTab === "links"');
     expect(page).toContain("Связи");
     expect(page).toContain("directoryLinkSearch");
-    expect(page).toContain("visibleAliasGroups");
+    expect(page).toContain("visibleLinkGroups");
     expect(page).toContain("visibleUnmappedRows");
     expect(page).toContain("Поиск по имени связи, поставщику или названию");
     expect(page).toContain("Показать еще");
@@ -190,12 +190,13 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("matchesCharacteristic");
   });
 
-  it("собирает названия поставщиков под одним именем связи и раскрывает их по действию", () => {
-    expect(page).toContain("const aliasGroups = useMemo");
-    expect(page).toContain("Одна связь — одно общее имя товара");
-    expect(page).toContain("price-alias-group-members");
-    expect(page).toContain("Имя связи · {group.aliases.length}");
-    expect(styles).toContain(".packet .price-alias-group-members > summary");
+  it("отделяет товар от имени связи и показывает товары группы отдельными строками", () => {
+    expect(page).toContain("const linkGroups = overview.data?.linkGroups ?? []");
+    expect(page).toContain("Одно имя связи — несколько отдельных товаров");
+    expect(page).toContain("Товары в связи");
+    expect(page).toContain("Добавить товар");
+    expect(page).toContain("Без категории");
+    expect(styles).toContain(".packet .price-link-products");
   });
 
   it("создает редактируемые имена связей для ранее сохраненных несвязанных строк", () => {

@@ -11,7 +11,7 @@ describe("контракт страницы Выручка", () => {
     expect(page).toContain('label: "Нал"');
     expect(page).toContain('label: "Б/Нал"');
     expect(page).toContain('label: "Расходы нал"');
-    expect(page).toContain('label: "Коммунальные платежи нал"');
+    expect(page).toContain('label: "Ком. плат. нал"');
     expect(page).toContain('label: "Доставка нал"');
     expect(page).toContain('placeholder="Куда / зачем / за что"');
     expect(page).toContain('Нал + Б/Нал + все наличные расходы');
@@ -69,11 +69,13 @@ describe("контракт страницы Выручка", () => {
     expect(page).toContain('window.print()');
     expect(page).toContain('<Printer size={14}/>');
     expect(page.indexOf('className="revenue-filter-row"')).toBeLessThan(page.indexOf('className="revenue-register-actions"'));
-    expect(page).toContain('className="revenue-print-sheet"');
+    expect(page).toContain('id="revenue-print-root"');
+    expect(page).toContain('createPortal(');
     expect(page).toContain('className="revenue-print-table"');
     expect(page).toContain('— {field.label}:');
     expect(styles).toContain('/* Print uses a separate sheet, never the interactive/sortable registry table. */');
-    expect(styles).toContain('.packet .revenue-admin-register > :not(.revenue-print-sheet) { display: none !important; }');
+    expect(styles).toContain('body > :not(#revenue-print-root) { display: none !important; }');
+    expect(styles).toContain('@page { size: A4 landscape; margin: 7mm; }');
     expect(styles).toContain('font-family: Arial, sans-serif; font-size: 9pt;');
     expect(styles).toContain('font-family: "Arial Black", Arial, sans-serif;');
     expect(styles).toContain('tbody tr:nth-child(even) td { background: #f0f0f0 !important; }');
@@ -85,8 +87,8 @@ describe("контракт страницы Выручка", () => {
     expect(styles).toContain('--revenue-panel: #edf6ff;');
     expect(styles).toContain('--revenue-table-zebra: #f6faff;');
     expect(styles).toContain('html[data-audit-theme="dark"] .packet {');
-    expect(styles).toContain('--revenue-panel: #1b1920;');
-    expect(styles).toContain('--revenue-table-zebra: #1c1920;');
+    expect(styles).toContain('--revenue-panel: #1a1e27;');
+    expect(styles).toContain('--revenue-table-zebra: #1c2028;');
     expect(styles).not.toContain('#d64146');
     expect(styles).not.toContain('#d55b63');
     expect(styles).toContain('--revenue-accent: #ff765f;');

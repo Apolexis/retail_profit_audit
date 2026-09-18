@@ -100,6 +100,7 @@
 .packet .revenue-row-actions { display: flex; align-items: center; gap: 7px; }
 .packet .revenue-row-actions .subtle-button { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .packet .revenue-print-sheet { display: none; }
+#revenue-print-root { display: none; }
 .packet .revenue-void-reason { display: grid; gap: 6px; color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
 .packet .revenue-history-list { display: grid; gap: 8px; }
 .packet .revenue-history-list article { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 0; border-bottom: 1px solid var(--revenue-quiet-line); }
@@ -142,20 +143,20 @@ html[data-audit-theme="light"] .packet .revenue-form-actions .packet-link:focus-
 
 /* Dark: cards and table cells remain deep neutral; coral is confined to an outline, icon and key total. */
 html[data-audit-theme="dark"] .packet {
-  --revenue-card: #15141a;
-  --revenue-panel: #1b1920;
-  --revenue-field: #201d25;
-  --revenue-input: #121116;
-  --revenue-line: #3f3a47;
-  --revenue-quiet-line: #332f39;
+  --revenue-card: #151820;
+  --revenue-panel: #1a1e27;
+  --revenue-field: #20242d;
+  --revenue-input: #12151b;
+  --revenue-line: #363d49;
+  --revenue-quiet-line: #2d3440;
   --revenue-accent: #ff765f;
   --revenue-accent-soft: #64394d;
   --revenue-accent-faint: rgba(255, 118, 95, .075);
-  --revenue-table-head: #211e27;
-  --revenue-table-row: #17151b;
-  --revenue-table-zebra: #1c1920;
-  --revenue-table-hover: #221d24;
-  --revenue-total-surface: #201b22;
+  --revenue-table-head: #20242d;
+  --revenue-table-row: #171a21;
+  --revenue-table-zebra: #1c2028;
+  --revenue-table-hover: #222731;
+  --revenue-total-surface: #20242d;
 }
 html[data-audit-theme="dark"] .packet .revenue-entry-card,
 html[data-audit-theme="dark"] .packet .revenue-rule-disclosure,
@@ -176,6 +177,9 @@ html[data-audit-theme="dark"] .packet .packet-card.revenue-entry-card,
 html[data-audit-theme="dark"] .packet .packet-card.revenue-rule-disclosure,
 html[data-audit-theme="dark"] .packet .packet-card.revenue-admin-register,
 html[data-audit-theme="dark"] .packet .packet-card.revenue-own-history { border-color: var(--revenue-line) !important; background: var(--revenue-card) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .025) !important; }
+html[data-audit-theme="dark"] .packet .revenue-entry-card :is(input, textarea, .date-range-control.fact-date-trigger, .free-scroll-select-trigger) { border-color: var(--revenue-line) !important; background: var(--revenue-input) !important; color: var(--ink) !important; box-shadow: none !important; }
+html[data-audit-theme="dark"] .packet .packet-card.revenue-entry-card button.date-range-control.fact-date-trigger,
+html[data-audit-theme="dark"] .packet .packet-card.revenue-entry-card button.free-scroll-select-trigger { border-color: var(--revenue-line) !important; background: var(--revenue-input) !important; color: var(--ink) !important; box-shadow: none !important; }
 html[data-audit-theme="light"] .packet .packet-card.revenue-entry-card:hover,
 html[data-audit-theme="light"] .packet .packet-card.revenue-rule-disclosure:hover,
 html[data-audit-theme="light"] .packet .packet-card.revenue-admin-register:hover,
@@ -208,27 +212,21 @@ html[data-audit-theme="dark"] .packet .packet-card.revenue-own-history:hover { b
 
 /* Print uses a separate sheet, never the interactive/sortable registry table. */
 @media print {
-  @page { size: auto; margin: 8mm; }
-  body,
-  .packet { background: #fff !important; }
-  .packet > * { display: none !important; }
-  .packet .packet-main,
-  .packet .revenue-admin-register,
-  .packet .revenue-print-sheet { display: block !important; margin: 0 !important; padding: 0 !important; border: 0 !important; background: #fff !important; box-shadow: none !important; }
-  .packet .packet-main > :not(.revenue-admin-register) { display: none !important; }
-  .packet .revenue-admin-register > :not(.revenue-print-sheet) { display: none !important; }
-  .packet .revenue-print-sheet { color: #000; font-family: Arial, sans-serif; font-size: 9pt; line-height: 1.2; }
-  .packet .revenue-print-sheet > p { margin: 0 0 5pt; color: #000; font-family: "Arial Black", Arial, sans-serif; font-size: 9pt; font-weight: 900; text-align: center; }
-  .packet .revenue-print-table { width: 100%; border-collapse: collapse; color: #000; font-family: Arial, sans-serif; font-size: 9pt; }
-  .packet .revenue-print-table :is(th, td) { padding: 3pt 4pt; border: 1px solid #555; color: #000; font: 9pt/1.2 Arial, sans-serif; vertical-align: top; }
-  .packet .revenue-print-table thead th { background: #e2e2e2 !important; font-family: "Arial Black", Arial, sans-serif; font-weight: 900; text-align: center; }
-  .packet .revenue-print-table tbody td { background: #fff !important; }
-  .packet .revenue-print-table tbody tr:nth-child(even) td { background: #f0f0f0 !important; }
-  .packet .revenue-print-table tbody td:first-child,
-  .packet .revenue-print-table tfoot th,
-  .packet .revenue-print-table tfoot td { font-family: "Arial Black", Arial, sans-serif; font-weight: 900; }
-  .packet .revenue-print-table tfoot :is(th, td) { background: #d8d8d8 !important; }
-  .packet .revenue-print-comments { display: grid; gap: 3pt; margin-top: 6pt; break-inside: avoid; }
-  .packet .revenue-print-comments p { margin: 0; color: #000; font: 9pt/1.25 Arial, sans-serif; }
-  .packet .revenue-print-comments strong { font-family: "Arial Black", Arial, sans-serif; font-weight: 900; }
+  @page { size: A4 landscape; margin: 7mm; }
+  body { background: #fff !important; }
+  body > :not(#revenue-print-root) { display: none !important; }
+  body > #revenue-print-root { display: block !important; width: 100%; margin: 0; padding: 0; border: 0; outline: 0; background: #fff; color: #000; box-shadow: none; font-family: Arial, sans-serif; font-size: 9pt; line-height: 1.2; }
+  #revenue-print-root > p { margin: 0 0 5pt; color: #000; font-family: "Arial Black", Arial, sans-serif; font-size: 9pt; font-weight: 900; text-align: center; }
+  #revenue-print-root .revenue-print-table { width: 100%; border-collapse: collapse; table-layout: auto; color: #000; font-family: Arial, sans-serif; font-size: 9pt; }
+  #revenue-print-root .revenue-print-table :is(th, td) { padding: 3pt 4pt; border: 1px solid #555; color: #000; font: 9pt/1.2 Arial, sans-serif; vertical-align: middle; white-space: nowrap; }
+  #revenue-print-root .revenue-print-table thead th { background: #e2e2e2 !important; font-family: "Arial Black", Arial, sans-serif; font-weight: 900; text-align: center; }
+  #revenue-print-root .revenue-print-table tbody td { background: #fff !important; }
+  #revenue-print-root .revenue-print-table tbody tr:nth-child(even) td { background: #f0f0f0 !important; }
+  #revenue-print-root .revenue-print-table tbody td:first-child,
+  #revenue-print-root .revenue-print-table tfoot :is(th, td) { font-family: "Arial Black", Arial, sans-serif; font-weight: 900; }
+  #revenue-print-root .revenue-print-table tfoot th { text-align: left; }
+  #revenue-print-root .revenue-print-table tfoot :is(th, td) { background: #d8d8d8 !important; }
+  #revenue-print-root .revenue-print-comments { display: grid; gap: 3pt; margin-top: 6pt; break-inside: avoid; }
+  #revenue-print-root .revenue-print-comments p { margin: 0; color: #000; font: 9pt/1.25 Arial, sans-serif; }
+  #revenue-print-root .revenue-print-comments strong { font-family: "Arial Black", Arial, sans-serif; font-weight: 900; }
 }
