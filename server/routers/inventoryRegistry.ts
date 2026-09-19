@@ -27,6 +27,7 @@ import {
   getOperationalStoreRequestDetail,
   getOperationalStoreRequestPrintProjection,
   getOperationalRequestPrintSettings,
+  getOperationalEvotorSyncStatus,
   listOperationalEvotorSalesAnalytics,
   listOperationalPriceTypes,
   listOperationalCatalogCategoryNames,
@@ -364,6 +365,11 @@ export const inventoryRegistryRouter = router({
     if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Показатели чеков Эвотор доступны только администратору." });
     if (input.from > input.to) throw new TRPCError({ code: "BAD_REQUEST", message: "Дата начала не может быть позже даты окончания." });
     return listOperationalEvotorSalesAnalytics(input);
+  }),
+  evotorSyncStatus: protectedProcedure.query(async ({ ctx }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Статус загрузки чеков Эвотор доступен только администратору." });
+    return getOperationalEvotorSyncStatus();
   }),
   requestStores: protectedProcedure.query(async ({ ctx }) => {
     const actor = await localActor(ctx.user.openId);

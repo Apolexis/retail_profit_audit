@@ -48,14 +48,22 @@ describe("страница «Ритм»", () => {
     expect(page).toContain('<tfoot><tr className="table-total"><th scope="row">Итого</th>');
   });
 
-  it("строит режим «Ряды» для чеков Эвотор по витрине чеков, а не по Excel", () => {
+	  it("строит режим «Ряды» для чеков Эвотор по витрине чеков, а не по Excel", () => {
     expect(page).toContain('if (metric.startsWith("evotor"))');
-    expect(page).toContain("for (const point of evotorTimeline)");
-    expect(page).toContain("metric === \"evotorCash\" ? point.cashAmount");
-    expect(page).toContain("metric === \"evotorChecks\" ? point.checks");
-    expect(page).toContain("const evotorTimeline = demoMode ? []");
-    expect(page).toContain("суточная загрузка обходит одну точку за callback");
-  });
+	    expect(page).toContain("for (const point of evotorTimeline)");
+	    expect(page).toContain("metric === \"evotorCash\" ? point.cashAmount");
+	    expect(page).toContain("metric === \"evotorChecks\" ? point.checks");
+	    expect(page).toContain("const evotorTimeline = demoMode ? []");
+	    expect(page).toContain("Один callback читает одну точку и одну API-страницу");
+	  });
+
+	  it("разделяет coverage выбранного периода и минутный current-day обход", () => {
+	    expect(page).toContain("trpc.inventoryRegistry.evotorSyncStatus.useQuery");
+	    expect(page).toContain("это coverage выбранного периода, не прогресс минутного обхода");
+	    expect(page).toContain("Один callback читает одну точку и одну API-страницу");
+	    expect(page).toContain("Следующие страницы текущего дня завершаются до перехода к архиву с");
+	    expect(page).toContain('className="packet-note cadence-evotor-sync-note"');
+	  });
 
   it("выделяет наличные расходы и НДФЛ 22% в понятную группу", () => {
     expect(page).toContain("Наличные расходы и налоги");

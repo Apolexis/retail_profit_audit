@@ -16,6 +16,7 @@ import {
   operationalPrintGroups,
   operationalProductSalePrices,
   operationalRequestPrintSettings,
+  operationalScheduledSyncJobs,
   operationalStockMovements,
   operationalStoreMappings,
   operationalStorePriceTypes,
@@ -1153,6 +1154,63 @@ function evotorSalesInterval(value: string, granularity: EvotorSalesGranularity)
 }
 
 export const __evotorSalesTestUtils = { evotorSalesInterval };
+
+/**
+ * Compact, non-sensitive status of the rolling receipt import. It intentionally
+ * exposes no store identifier, document, cursor, payment or credential data.
+ */
+export async function getOperationalEvotorSyncStatus() {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const businessDate = moscowBusinessDate();
+  const mappedRows = await db
+    .select({ storeId: stores.id })
+    .from(stores)
+    .innerJoin(operationalStoreMappings, eq(operationalStoreMappings.storeId, stores.id))
+    .where(eq(stores.isHidden, false));
+  const storeIds = Array.from(new Set(mappedRows.map(row => row.storeId)));
+  const [documentJob] = await db
+    .select({ isActive: operationalScheduledSyncJobs.isActive, lastCompletedAt: operationalScheduledSyncJobs.lastCompletedAt, hasError: operationalScheduledSyncJobs.lastError })
+    .from(operationalScheduledSyncJobs)
+    .where(eq(operationalScheduledSyncJobs.kind, "evotor_documents"))
+    .limit(1);
+  if (!storeIds.length) {
+    return {
+      businessDate,
+      mappedStores: 0,
+      currentDay: { startedStores: 0, completedStores: 0, runningStores: 0, failedStores: 0 },
+      documentJob: { active: Boolean(documentJob?.isActive), lastCompletedAt: documentJob?.lastCompletedAt ?? null, hasError: Boolean(documentJob?.hasError) },
+      retentionStart: EVOTOR_DOCUMENT_RETENTION_START,
+    };
+  }
+  const syncs = await db
+    .select({ storeId: operationalEvotorDocumentSyncs.storeId, status: operationalEvotorDocumentSyncs.status, startedAt: operationalEvotorDocumentSyncs.startedAt })
+    .from(operationalEvotorDocumentSyncs)
+    .where(and(
+      inArray(operationalEvotorDocumentSyncs.storeId, storeIds),
+      eq(operationalEvotorDocumentSyncs.syncMode, "current_day"),
+      eq(operationalEvotorDocumentSyncs.requestedTo, businessDate),
+    ))
+    .orderBy(desc(operationalEvotorDocumentSyncs.startedAt))
+    .limit(2_000);
+  const latestByStore = new Map<number, "running" | "completed" | "failed">();
+  for (const sync of syncs) {
+    if (!latestByStore.has(sync.storeId)) latestByStore.set(sync.storeId, sync.status);
+  }
+  const states = Array.from(latestByStore.values());
+  return {
+    businessDate,
+    mappedStores: storeIds.length,
+    currentDay: {
+      startedStores: latestByStore.size,
+      completedStores: states.filter(status => status === "completed").length,
+      runningStores: states.filter(status => status === "running").length,
+      failedStores: states.filter(status => status === "failed").length,
+    },
+    documentJob: { active: Boolean(documentJob?.isActive), lastCompletedAt: documentJob?.lastCompletedAt ?? null, hasError: Boolean(documentJob?.hasError) },
+    retentionStart: EVOTOR_DOCUMENT_RETENTION_START,
+  };
+}
 
 /**
  * Read-only sales view over normalized Evotor receipts and positions. This does

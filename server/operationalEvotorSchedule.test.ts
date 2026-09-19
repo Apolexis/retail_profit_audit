@@ -31,7 +31,7 @@ describe("планировщик read-only синхронизации Эвото
     expect(registry).toContain("await forEachBoundedBatch(preview.products, 12");
   });
 
-  it("сохраняет отдельные cursor-цепочки для сегодняшнего окна и архива 2025+", () => {
+	  it("сохраняет отдельные cursor-цепочки для сегодняшнего окна и архива 2025+", () => {
     expect(registry).toContain('mode?: "historical" | "current_day"');
     expect(registry).toContain('syncMode === "current_day" ? businessDate : EVOTOR_DOCUMENT_RETENTION_START');
     expect(registry).toContain('syncMode === "current_day" && activeSync && activeSync.requestedTo !== businessDate');
@@ -41,8 +41,15 @@ describe("планировщик read-only синхронизации Эвото
     expect(scheduler).toContain('mode: "current_day"');
     expect(scheduler).toContain('importWindow: target.mode');
     expect(scheduler).toContain("oldest-page round robin");
-    expect(scheduler).toContain("Start every mapped store before taking a second cursor page");
-  });
+	    expect(scheduler).toContain("Start every mapped store before taking a second cursor page");
+	  });
+
+	  it("дает Ритму только безопасный агрегированный статус current-day обхода", () => {
+	    expect(registry).toContain("export async function getOperationalEvotorSyncStatus()");
+	    expect(registry).toContain("currentDay: { startedStores: 0, completedStores: 0, runningStores: 0, failedStores: 0 }");
+	    expect(registry).toContain("const latestByStore = new Map<number, \"running\" | \"completed\" | \"failed\">();");
+	    expect(registry).toContain("retentionStart: EVOTOR_DOCUMENT_RETENTION_START");
+	  });
 
   it("фиксирует только числовые сведения о квоте без реквизитов запроса", () => {
     expect(client).toContain('numberHeader("X-RateLimit-Limit")');
