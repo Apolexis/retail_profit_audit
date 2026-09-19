@@ -1,4 +1,4 @@
-import { Boxes, ChevronDown, ClipboardList, Eye, FilePlus2, Minus, Plus, Printer, Trash2, X } from "lucide-react";
+import { Boxes, ChevronDown, ClipboardList, Eye, FilePlus2, Minus, Plus, Printer, Save, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AuditShell } from "@/components/AuditShell";
@@ -260,10 +260,14 @@ export default function StoreRequests() {
     setStoreId(String(item.storeId));
     setBusinessDate(item.businessDate);
   };
-  const saveComment = (slot: 1 | 2) => {
-    if (!active) return;
-    const draft = commentDrafts[slot];
-    upsertRequestComment.mutate({ requestId: active.id, slot, text: draft.text });
+  const saveDraftComments = async () => {
+    if (!active || active.status !== "draft") return;
+    try {
+      await Promise.all(([1, 2] as const).map(slot => upsertRequestComment.mutateAsync({ requestId: active.id, slot, text: commentDrafts[slot].text })));
+      toast.success("Черновик сохранен");
+    } catch {
+      // Each mutation provides its own actionable error toast.
+    }
   };
 
   if (!me.isLoading && !isSeller && !isManager && !isAdmin) return <AuditShell kicker="30 / ЗАЯВКИ" title="Заявки магазинов"><section className="empty-state"><ClipboardList size={28}/><h2>Нет операционного доступа</h2><p>Заявки доступны назначенному продавцу, руководителю или администратору.</p></section></AuditShell>;
@@ -288,7 +292,7 @@ export default function StoreRequests() {
 
     {active && <section className="packet-card request-draft-card">
       <div className="card-title request-draft-title"><div><span>{active.status === "draft" ? "СОХРАНЕННАЯ ЗАЯВКА" : "ЗАКРЫТАЯ ЗАЯВКА"}</span><h3>{active.storeName} · {displayDate(active.businessDate)}</h3></div></div>
-      {active.status === "draft" && <div className="request-actions"><ConfirmDangerDialog trigger={<button type="button" className="subtle-button subtle-danger request-delete-draft" disabled={deleteDraft.isPending}><Trash2 size={14}/>{deleteDraft.isPending ? "Удаляем…" : "Удалить черновик"}</button>} title="Удалить черновик заявки?" description="Черновик и его строки будут удалены. Закрытые заявки и печатные подборки не изменятся; событие останется в общем журнале." confirmLabel="Удалить черновик" disabled={deleteDraft.isPending} onConfirm={() => deleteDraft.mutate({ requestId: active.id })}/><button type="button" className="subtle-button request-cancel-draft" onClick={() => setActiveRequestId(undefined)}><X size={14}/>Отмена</button></div>}
+      {active.status === "draft" && <div className="request-actions"><ConfirmDangerDialog trigger={<button type="button" className="subtle-button subtle-danger request-delete-draft" disabled={deleteDraft.isPending}><Trash2 size={14}/>{deleteDraft.isPending ? "Удаляем…" : "Удалить черновик"}</button>} title="Удалить черновик заявки?" description="Черновик и его строки будут удалены. Закрытые заявки и печатные подборки не изменятся; событие останется в общем журнале." confirmLabel="Удалить черновик" disabled={deleteDraft.isPending} onConfirm={() => deleteDraft.mutate({ requestId: active.id })}/><button type="button" className="subtle-button request-save-draft" disabled={upsertRequestComment.isPending} onClick={saveDraftComments}><Save size={14}/>{upsertRequestComment.isPending ? "Сохраняем…" : "Сохранить"}</button><button type="button" className="subtle-button request-cancel-draft" onClick={() => setActiveRequestId(undefined)}><X size={14}/>Отмена</button></div>}
       {active.status === "draft" ? <>
         <div className="request-search-row"><label>Поиск товара<input value={query} onChange={event => setQuery(event.target.value)} placeholder="Название или код" autoComplete="off"/></label><span>{products.length} позиций</span></div>
         {requestProducts.isLoading ? <p className="packet-note">Загружаем доступную номенклатуру…</p> : <div className="request-catalog" aria-label="Категории товаров для заявки">{groupedProducts.map(([category, categoryProducts]) => {
@@ -306,7 +310,7 @@ export default function StoreRequests() {
           </section>;
         })}</div>}
         {!groupedProducts.length && <div className="request-empty-lines"><Boxes size={24}/><div><strong>Ничего не найдено</strong><p>Измените запрос: в заявке доступны только товары общего справочника.</p></div></div>}
-        <section className="request-comments" aria-label="Комментарии к печати"><div><span>КОММЕНТАРИИ</span><small>Сохраняются при выходе из поля</small></div>{([1, 2] as const).map(slot => <div key={slot}><label>{slot === 1 ? "Комментарий к Мороженной продукции" : "Комментарий к Копченой продукции"}<textarea value={commentDrafts[slot].text} onChange={event => setCommentDrafts(current => ({ ...current, [slot]: { ...current[slot], text: event.target.value } }))} onBlur={() => saveComment(slot)} maxLength={2_000} placeholder={slot === 1 ? "Пожелания к мороженной продукции" : "Пожелания к копченой продукции"}/></label>{upsertRequestComment.isPending && <small className="request-comment-status">Сохраняем…</small>}</div>)}</section>
+        <section className="request-comments" aria-label="Комментарии к печати"><div><span>КОММЕНТАРИИ</span><small>Сохраняются общей кнопкой «Сохранить» в черновике</small></div>{([1, 2] as const).map(slot => <div key={slot}><label>{slot === 1 ? "Комментарий к Мороженной продукции" : "Комментарий к Копченой продукции"}<textarea value={commentDrafts[slot].text} onChange={event => setCommentDrafts(current => ({ ...current, [slot]: { ...current[slot], text: event.target.value } }))} maxLength={2_000} placeholder={slot === 1 ? "Пожелания к мороженной продукции" : "Пожелания к копченой продукции"}/></label></div>)}</section>
         <div className="request-chosen-lines"><div><span>В ЗАЯВКЕ</span><strong>{active.lines.length} поз.</strong></div>{active.lines.length ? <div>{active.lines.map(line => <article key={line.id}><span>{line.catalogNumber ? `№ ${line.catalogNumber}` : "вручную"}</span><strong>{line.productName}</strong><b>{quantityText(line.requestedQuantity)} {unitLabel[line.unit]}</b><button type="button" className="subtle-button subtle-danger" aria-label={`Убрать ${line.productName}`} disabled={removeLine.isPending} onClick={() => removeLine.mutate({ requestId: active.id, lineId: line.id })}><Trash2 size={14}/></button></article>)}</div> : <p>Добавьте товары из раскрытой категории.</p>}</div>
         <div className="request-draft-footer"><span>Заполнение сохраняется в черновике. Руководитель или администратор закроет его перед печатью.</span></div>
       </> : <div className="request-closed-lines">{active.lines.map(line => <article key={line.id}><span>{line.catalogNumber ? `№ ${line.catalogNumber}` : "вручную"}</span><strong>{line.productName}</strong><b>{quantityText(line.requestedQuantity)} {unitLabel[line.unit]}</b></article>)}</div>}

@@ -5,7 +5,15 @@
 .packet .evotor-sales-chart-card,
 .packet .evotor-sales-table-card { margin-bottom: 18px; }
 .packet .evotor-product-metric-control { width: fit-content; max-width: 100%; margin: 14px 0; flex-wrap: wrap; }
-.packet .evotor-product-metrics-picker { margin: 0 0 14px; }
+.packet .evotor-product-picker { margin: 0 0 14px; }
+.packet .evotor-product-picker > summary { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; cursor: pointer; list-style: none; }
+.packet .evotor-product-picker > summary::-webkit-details-marker { display: none; }
+.packet .evotor-product-picker > summary > span { color: var(--ink); font-size: 13px; font-weight: 800; }
+.packet .evotor-product-picker > summary > b { min-width: 0; max-width: min(420px, 38vw); overflow: hidden; color: var(--muted); font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.packet .evotor-product-picker > summary > small { color: var(--packet-accent); font-size: 11px; font-weight: 800; }
+.packet .evotor-product-picker > div { display: grid; gap: 10px; padding-top: 12px; }
+.packet .evotor-product-picker > div > p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.packet .evotor-product-picker .cadence-metric-group { margin: 0; }
 .packet .evotor-sales-table .numeric-column { text-align: right; font-variant-numeric: tabular-nums; }
 
 @media (max-width: 1024px) {
@@ -38,5 +46,7 @@
   .packet .evotor-sales-chart-card,
   .packet .evotor-sales-table-card { margin-bottom: 14px; }
   .packet .evotor-product-metric-control { width: 100%; }
+  .packet .evotor-product-picker > summary { grid-template-columns: minmax(0, 1fr) auto; }
+  .packet .evotor-product-picker > summary > b { grid-column: 1 / -1; grid-row: 2; max-width: none; }
   .packet .evotor-sales-chart-card .chart-view-button { min-width: 0; padding-inline: 8px; font-size: 11px; }
 }

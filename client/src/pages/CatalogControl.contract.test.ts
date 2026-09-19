@@ -121,4 +121,11 @@ describe("общий операционный справочник", () => {
 		expect(page).toContain('fraction: "кг"');
 		expect(editor).not.toContain('<option value="kg">кг</option>');
 	});
+
+	it("держит справочник категорий свернутым и открывает форму создания только явным действием", () => {
+		expect(page).toContain('const [showCategoryCreate, setShowCategoryCreate] = useState(false)');
+		expect(page).toContain('className="catalog-category-create-action"');
+		expect(page).toContain("showCategoryCreate && <form className=\"catalog-category-create\"");
+		expect(css).toContain(".packet .catalog-category-create-action");
+	});
 });

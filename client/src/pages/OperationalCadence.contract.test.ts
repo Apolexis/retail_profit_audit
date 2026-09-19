@@ -22,6 +22,14 @@ describe("страница «Ритм»", () => {
     expect(page).toContain("current.cashlessAmount += Number(row.cashlessAmount ?? 0)");
   });
 
+  it("не читает и не выводит реальные чековые факты при демо-режиме", () => {
+    expect(page).toContain("const { selectedStore, range, rangeLabel, demoMode } = useAudit();");
+    expect(page).toContain("const needsEvotorFacts = selectedMetrics.some(metric => metric.startsWith(\"evotor\"));");
+    expect(page).toContain("enabled: !demoMode && needsEvotorFacts && range.to >= \"2025-01-01\"");
+    expect(page).toContain("const evotorTimeline = demoMode ? []");
+    expect(page).toContain("visibleMetricGroups");
+  });
+
   it("добавляет компактную детализацию по месяцам, неделям и дням", () => {
     expect(page).toContain('aria-label="Детализация ритма"');
     expect(page).toContain('"Дни" : level === "week" ? "Недели" : "Месяцы"');
@@ -38,6 +46,15 @@ describe("страница «Ритм»", () => {
     expect(page).toContain('active={showStoreSeries}');
     expect(page).toContain("const chartTableTotals");
     expect(page).toContain('<tfoot><tr className="table-total"><th scope="row">Итого</th>');
+  });
+
+  it("строит режим «Ряды» для чеков Эвотор по витрине чеков, а не по Excel", () => {
+    expect(page).toContain('if (metric.startsWith("evotor"))');
+    expect(page).toContain("for (const point of evotorTimeline)");
+    expect(page).toContain("metric === \"evotorCash\" ? point.cashAmount");
+    expect(page).toContain("metric === \"evotorChecks\" ? point.checks");
+    expect(page).toContain("const evotorTimeline = demoMode ? []");
+    expect(page).toContain("суточная загрузка обходит одну точку за callback");
   });
 
   it("выделяет наличные расходы и НДФЛ 22% в понятную группу", () => {

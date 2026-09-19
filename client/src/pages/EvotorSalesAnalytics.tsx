@@ -4,7 +4,7 @@ import { AuditShell } from "@/components/AuditShell";
 import { MetricLineChart, StoreSeriesModeToggle } from "@/components/AuditCharts";
 import { DateRangeControl } from "@/components/DateRangeControl";
 import { FactsLoader } from "@/components/OceanLoader";
-import { type DateRangeValue } from "@/contexts/AuditContext";
+import { useAudit, type DateRangeValue } from "@/contexts/AuditContext";
 import { trpc } from "@/lib/trpc";
 import "@/evotor-sales-analytics.css";
 
@@ -105,6 +105,7 @@ function selectedProductStoreTimeline(rows: ProductTimelineRow[], product: Produ
 }
 
 export default function EvotorSalesAnalytics() {
+  const { demoMode } = useAudit();
   const stores = trpc.audit.stores.useQuery(undefined, { retry: false });
   const [granularity, setGranularity] = useState<Granularity>("week");
   const [selectedStores, setSelectedStores] = useState<number[]>([]);
@@ -121,8 +122,9 @@ export default function EvotorSalesAnalytics() {
     granularity,
     storeIds: allStoresSelected ? undefined : selectedStores,
   }), [allStoresSelected, granularity, salesRange.from, salesRange.to, selectedStores]);
-  const query = trpc.inventoryRegistry.evotorSalesAnalytics.useQuery(queryInput, { retry: false });
-  const data = query.data as AnalyticsData | undefined;
+  // Synthetic demo periods must not be paired with real receipt rows or query cache.
+  const query = trpc.inventoryRegistry.evotorSalesAnalytics.useQuery(queryInput, { retry: false, enabled: !demoMode });
+  const data = demoMode ? undefined : query.data as AnalyticsData | undefined;
   const productRows = data?.products ?? [];
   const productKeySet = useMemo(() => new Set(productRows.map(product => product.key)), [productRows]);
 
@@ -163,12 +165,12 @@ export default function EvotorSalesAnalytics() {
 
     <details className="cadence-store-picker evotor-sales-store-picker"><summary><span>Магазины для суммарного среза</span><b>{scope}</b><small>выбрать</small></summary><div><p>Выберите магазины для общего ряда. Режим «Ряды» доступен для одного товара и показывает каждую точку отдельной линией.</p><button type="button" aria-pressed={allStoresSelected} onClick={() => setSelectedStores([])} className={allStoresSelected ? "cadence-metric-chip active" : "cadence-metric-chip"}>Вся сеть</button>{visibleStores.map(store => <button type="button" key={store.id} aria-pressed={selectedStores.includes(store.id)} onClick={() => toggleStore(store.id)} className={selectedStores.includes(store.id) ? "cadence-metric-chip active" : "cadence-metric-chip"}>{store.name}</button>)}</div></details>
 
-    {query.isLoading ? <FactsLoader /> : query.isError ? <section className="empty-state live-empty"><ReceiptText size={30}/><h2>Проданные товары недоступны</h2><p>{query.error.message}</p></section> : noData ? <section className="empty-state live-empty"><ReceiptText size={30}/><h2>В выбранном срезе нет проданных товаров</h2><p>{coverageText ? `Витрина уже содержит период ${coverageText}; выберите дату внутри этого диапазона.` : "Товары появятся после автоматической read-only загрузки чеков Эвотор."} Нули не подставляются.</p></section> : data && <>
+    {demoMode ? <section className="empty-state live-empty"><ReceiptText size={30}/><h2>Проданные товары отключены в демо‑режиме</h2><p>Демо использует только синтетические финансовые периоды. Факты чеков Эвотор не читаются и не смешиваются с ними.</p></section> : query.isLoading ? <FactsLoader /> : query.isError ? <section className="empty-state live-empty"><ReceiptText size={30}/><h2>Проданные товары недоступны</h2><p>{query.error.message}</p></section> : noData ? <section className="empty-state live-empty"><ReceiptText size={30}/><h2>В выбранном срезе нет проданных товаров</h2><p>{coverageText ? `Витрина уже содержит период ${coverageText}; выберите дату внутри этого диапазона.` : "Товары появятся после автоматической read-only загрузки чеков Эвотор."} Нули не подставляются.</p></section> : data && <>
       <section className="packet-kpis equal cadence-kpis evotor-sales-kpis"><article className="packet-kpi cadence-primary-kpi"><span>Количество проданного · {scope}</span><strong>{numberText(data.summary.quantity)}</strong><small>{rangeText(salesRange)} · сумма количеств товаров</small></article><article className="packet-kpi"><span>Наименований</span><strong>{numberText(productRows.length)}</strong><small>по названию и единице Эвотор</small></article><article className="packet-kpi"><span>Сумма проданного</span><strong>{moneyText(productRows.reduce((sum, row) => sum + row.amount, 0))}</strong><small>сумма товарных строк</small></article></section>
 
       <section className="packet-card cadence-chart-card evotor-sales-chart-card"><div className="card-title"><div><span>ДИНАМИКА ТОВАРОВ · {scope}</span><h3>{granularityLabels[granularity]} · {perStoreData ? `${effectiveProducts[0]?.productName}: каждый магазин отдельно` : productMetrics[productMetric].label}</h3></div><div className="chart-controls"><div className="chart-view-control" aria-label="Детализация товаров Эвотор">{(["month", "week", "day", "hour"] as Granularity[]).map(level => <button type="button" key={level} className={granularity === level ? "chart-view-button active" : "chart-view-button"} onClick={() => setGranularity(level)}>{granularityLabels[level]}</button>)}</div>{allowStoreSeries && <StoreSeriesModeToggle active={showStoreSeries} onChange={() => setShowStoreSeries(current => !current)} />}</div></div>
         <div className="chart-view-control evotor-product-metric-control" aria-label="Факт выбранных товаров">{(Object.keys(productMetrics) as ProductMetric[]).map(metric => <button type="button" key={metric} className={productMetric === metric ? "chart-view-button active" : "chart-view-button"} aria-pressed={productMetric === metric} onClick={() => setProductMetric(metric)}>{productMetrics[metric].label}</button>)}</div>
-        <div className="cadence-metrics-picker evotor-product-metrics-picker" aria-label="Товары для графика"><div className="cadence-picker-heading"><span>Товары для графика</span><small>без лимита; минимум один</small></div><div className="cadence-metric-group"><div>{productRows.map((product, index) => { const selected = selectedProductKeys.includes(product.key); return <button type="button" key={product.key} aria-pressed={selected} onClick={() => toggleProduct(product.key)} className={selected ? "cadence-metric-chip active" : "cadence-metric-chip"}><i style={{ background: productColors[index % productColors.length] }}/>{product.productName}</button>; })}</div></div></div>
+        <details className="cadence-store-picker evotor-product-picker" aria-label="Товары для графика"><summary><span>Товары для графика</span><b>{effectiveProducts.length === 1 ? effectiveProducts[0]?.productName : `${effectiveProducts.length} товара`}</b><small>выбрать</small></summary><div><p>Выберите товары для сравнения. Цвет маркера совпадает с линией на графике; минимум один товар остается выбранным.</p><div className="cadence-metric-group"><div>{productRows.map((product, index) => { const selected = selectedProductKeys.includes(product.key); return <button type="button" key={product.key} aria-pressed={selected} onClick={() => toggleProduct(product.key)} className={selected ? "cadence-metric-chip active" : "cadence-metric-chip"}><i style={{ background: productColors[index % productColors.length] }}/>{product.productName}</button>; })}</div></div></div></details>
         <MetricLineChart data={chartData} lines={productChartLines} displayMode={productDisplayMode} chartTitle="Проданные товары Эвотор" />
         <p className="packet-note"><ShoppingBasket size={15}/> {perStoreData ? "Каждый выбранный магазин показан отдельным рядом. Отключите режим «Ряды», чтобы сопоставить товары." : effectiveProducts.length === 1 ? productMetrics[productMetric].note : `На графике и в таблице показаны одни и те же ${effectiveProducts.length} выбранных товара.`}</p></section>
 

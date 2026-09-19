@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildDemoPeriods, demoStoreNames } from "./useImportedAudit";
 
@@ -18,5 +20,11 @@ describe("демонстрационные факты", () => {
   });
   it("дает другой демонстрационный набор при другом зерне", () => {
     expect(buildDemoPeriods([range], 101)[0].metrics.revenue).not.toBe(buildDemoPeriods([range], 202)[0].metrics.revenue);
+  });
+
+  it("не выполняет запрос реальных финансовых фактов в демо-режиме", () => {
+    const hook = readFileSync(resolve(process.cwd(), "client/src/hooks/useImportedAudit.ts"), "utf8");
+    expect(hook).toContain("enabled:!demoMode");
+    expect(hook).toContain("synthetic: it neither reads nor renders a cached");
   });
 });

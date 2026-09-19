@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, Calculator, FileSpreadsheet, Layers3 } from "lucide-react";
 import { AuditShell } from "@/components/AuditShell";
 import { MetricLineChart, StoreSeriesModeToggle, formatK, formatTableAmount } from "@/components/AuditCharts";
@@ -71,7 +71,7 @@ const cashlessBreakdownMetrics: CadenceMetric[] = ["cashlessOperatingCosts", "dr
 
 export default function OperationalCadence() {
   const facts = useAuditFacts();
-  const { selectedStore, range, rangeLabel } = useAudit();
+  const { selectedStore, range, rangeLabel, demoMode } = useAudit();
   const [granularity, setGranularity] = useState<Granularity>("week");
   const [selectedMetrics, setSelectedMetrics] = useState<CadenceMetric[]>(["netProfit"]);
   const [showStoreSeries, setShowStoreSeries] = useState(false);
@@ -87,10 +87,17 @@ export default function OperationalCadence() {
     .map(storeName => facts.summaries.find(summary => summary.store === storeName)?.storeId)
     .filter((storeId): storeId is number => Number.isInteger(storeId)), [facts.summaries, networkSelected, selectedConcreteStores]);
   const evotorRange = useMemo(() => ({ from: range.from < "2025-01-01" ? "2025-01-01" : range.from, to: range.to }), [range.from, range.to]);
-  const evotorFacts = trpc.inventoryRegistry.evotorSalesAnalytics.useQuery({ ...evotorRange, granularity, storeIds: evotorStoreIds }, { retry: false, enabled: range.to >= "2025-01-01" });
+  const needsEvotorFacts = selectedMetrics.some(metric => metric.startsWith("evotor"));
+  // Demo mode is wholly synthetic: receipt facts and cached data are not read.
+  // Receipt rows are loaded only when a receipt fact is selected. This prevents a
+  // large read-only receipt aggregation from delaying the initial financial Rhythm
+  // screen, whose default metric comes entirely from the imported workbook.
+  const evotorFacts = trpc.inventoryRegistry.evotorSalesAnalytics.useQuery({ ...evotorRange, granularity, storeIds: evotorStoreIds }, { retry: false, enabled: !demoMode && needsEvotorFacts && range.to >= "2025-01-01" });
+  const evotorTimeline = demoMode ? [] : evotorFacts.data?.timeline ?? [];
+  const evotorSummary = demoMode ? { checks: 0 } : evotorFacts.data?.summary ?? { checks: 0 };
   const mergedSource = useMemo(() => {
     const byKey = new Map<string, { amount: number; cashAmount: number; cashlessAmount: number; checks: number }>();
-    for (const row of evotorFacts.data?.timeline ?? []) {
+    for (const row of evotorTimeline) {
       const current = byKey.get(row.key) ?? { amount: 0, cashAmount: 0, cashlessAmount: 0, checks: 0 };
       current.amount += Number(row.amount ?? 0);
       current.cashAmount += Number(row.cashAmount ?? 0);
@@ -102,7 +109,7 @@ export default function OperationalCadence() {
       const receipts = byKey.get(point.date) ?? { amount: 0, cashAmount: 0, cashlessAmount: 0, checks: 0 };
       return { ...point, evotorAmount: receipts.amount, evotorCash: receipts.cashAmount, evotorCashless: receipts.cashlessAmount, evotorChecks: receipts.checks, evotorAverage: receipts.checks ? receipts.amount / receipts.checks : 0 };
     });
-  }, [evotorFacts.data?.timeline, source]);
+  }, [evotorTimeline, source]);
   const primaryMetric = selectedMetrics[0] ?? "netProfit";
   const visibleSource = mergedSource.filter(point => selectedMetrics.some(metric => point[metric] !== 0));
   const data = visibleSource.map(point => ({ month: point.month, ...Object.fromEntries(selectedMetrics.map(metric => [metric, point[metric] / 1000])) }));
@@ -110,6 +117,28 @@ export default function OperationalCadence() {
     if (!showStoreSeries || seriesStores.length < 2 || selectedMetrics.length !== 1) return null;
     const metric = selectedMetrics[0];
     const byPeriod = new Map<string, Record<string, string | number>>();
+
+    // The Rhythm's "Ряды" mode must retain the source of the selected fact.
+    // Financial facts come from the imported workbook, whereas receipt facts
+    // come only from the read-only Evotor timeline already loaded for this view.
+    if (metric.startsWith("evotor")) {
+      for (const point of evotorTimeline) {
+        if (!seriesStores.includes(point.storeName)) continue;
+        const rawValue = metric === "evotorAmount" ? point.amount
+          : metric === "evotorCash" ? point.cashAmount
+          : metric === "evotorCashless" ? point.cashlessAmount
+          : metric === "evotorChecks" ? point.checks
+          : point.checks ? point.amount / point.checks : 0;
+        if (!rawValue) continue;
+        const current = byPeriod.get(point.key) ?? { month: point.label };
+        // All Rhythm chart series are scaled in thousands. Counts use the same
+        // internal scale and receive their own number formatter in the table.
+        current[point.storeName] = rawValue / 1000;
+        byPeriod.set(point.key, current);
+      }
+      return Array.from(byPeriod.entries()).sort(([left], [right]) => left.localeCompare(right)).map(([, value]) => value);
+    }
+
     seriesStores.forEach(storeName => {
       const storeCadence = buildOperationalCadence(facts.rowsFor(storeName), range);
       const storeSource = granularity === "month" ? storeCadence.monthly : granularity === "week" ? storeCadence.weekly : storeCadence.daily;
@@ -120,7 +149,7 @@ export default function OperationalCadence() {
       });
     });
     return Array.from(byPeriod.entries()).sort(([left], [right]) => left.localeCompare(right)).map(([, value]) => value);
-  }, [facts.rowsFor, granularity, range, selectedMetrics, seriesStores, showStoreSeries]);
+  }, [evotorTimeline, facts.rowsFor, granularity, range, selectedMetrics, seriesStores, showStoreSeries]);
   const chartData = perStoreData ?? data;
   const chartLines = perStoreData ? seriesStores.map((storeName, index) => ({ key: storeName, name: storeName, color: Object.values(metrics)[index % Object.keys(metrics).length].color })) : selectedMetrics.map(metric => ({ key: metric, name: metrics[metric].label, color: metrics[metric].color }));
   const total = mergedSource.reduce((sum, point) => sum + point[primaryMetric], 0);
@@ -146,6 +175,18 @@ export default function OperationalCadence() {
     return [...current, metric];
   });
 
+  useEffect(() => {
+    if (!demoMode) return;
+    setSelectedMetrics(current => {
+      const nonEvotor = current.filter(metric => !metric.startsWith("evotor"));
+      return nonEvotor.length ? nonEvotor : ["netProfit"];
+    });
+  }, [demoMode]);
+
+  const visibleMetricGroups = useMemo(() => demoMode
+    ? metricGroups.map(group => ({ ...group, keys: group.keys.filter(metric => !metric.startsWith("evotor")) })).filter(group => group.keys.length)
+    : metricGroups, [demoMode]);
+
   const toggleStore = (store: string) => setSelectedStores(current => {
     if (store === "__all__") return ["__all__"];
     const concrete = current.filter(value => value !== "__all__");
@@ -157,8 +198,8 @@ export default function OperationalCadence() {
     {facts.loading ? <FactsLoader/> : !facts.available ? <section className="empty-state live-empty"><FileSpreadsheet size={30}/><h2>Нет фактов для расчетного среза</h2><p>Подтвердите импорт Excel, чтобы увидеть месячную, недельную и дневную динамику.</p></section> : <>
       <section className="page-lede"><div><h2>Операционный ритм по фактическим дням</h2><p>Продажи, закупки, списания и остальные операционные показатели берутся из <b>первичных дневных строк</b> книги. Согласованные ежемесячные статьи уже материализованы по календарным дням во время импорта. НДФЛ 22%, банк и налоги остаются на фактической дате. Остатки здесь не распределяются.</p></div></section>
       <details className="cadence-store-picker"><summary><span>Магазины для суммарного среза</span><b>{scope}</b><small>выбрать</small></summary><div><p>Выберите нужные магазины: их первичные факты суммируются в одном ряду. Для сопоставления точек между собой используйте раздел «Сравнить».</p><button type="button" aria-pressed={networkSelected} onClick={() => toggleStore("__all__")} className={networkSelected ? "cadence-metric-chip active" : "cadence-metric-chip"}>Вся сеть</button>{facts.storeNames.map(store => { const selected = selectedConcreteStores.includes(store); return <button type="button" key={store} aria-pressed={selected} onClick={() => toggleStore(store)} className={selected ? "cadence-metric-chip active" : "cadence-metric-chip"}>{store}</button>; })}</div></details>
-      <section className="packet-kpis equal cadence-kpis"><article className="packet-kpi cadence-primary-kpi"><span>{metrics[primaryMetric].label} · {scope}</span><strong>{formatCadenceKpi(total, primaryMetric)}</strong><small>{rangeLabel}{selectedMetrics.length > 1 ? ` · в графике ${selectedMetrics.length} показателя` : ""}</small></article><article className="packet-kpi"><span>Наличные + НДФЛ 22%</span><strong>{formatK(cashTotal / 1000)}</strong><small>{cashShare.toFixed(1)}% выручки · контроль сокращения</small></article><article className="packet-kpi"><span>Чеки Эвотор в срезе</span><strong>{new Intl.NumberFormat("ru-RU").format(evotorFacts.data?.summary.checks ?? 0)}</strong><small>только уже загруженные документы продажи</small></article><article className="packet-kpi"><span>Магазины с чеками Эвотор</span><strong>{new Set((evotorFacts.data?.timeline ?? []).map(row => row.storeId)).size}</strong><small>из выбранного среза; нули не подставляются</small></article></section>
-      <section className="packet-card cadence-chart-card"><div className="card-title"><div><span>РАСЧЕТНАЯ ДИНАМИКА · {scope}</span><h3>{detailLabel} · {perStoreData ? `${title}: каждый магазин отдельно` : title}</h3></div><div className="chart-controls"><div className="chart-view-control" aria-label="Детализация ритма">{(["month", "week", "day"] as Granularity[]).map(level => <button type="button" key={level} className={granularity === level ? "chart-view-button active" : "chart-view-button"} onClick={() => setGranularity(level)}>{level === "day" ? "Дни" : level === "week" ? "Недели" : "Месяцы"}</button>)}</div>{seriesStores.length > 1 && selectedMetrics.length === 1 && <StoreSeriesModeToggle active={showStoreSeries} onChange={() => setShowStoreSeries(current => !current)}/>}</div></div><div className="cadence-metrics-picker" aria-label="Выберите показатели для сравнения"><div className="cadence-picker-heading"><span>Показатели для сравнения</span><small>без лимита; минимум один</small></div>{metricGroups.map(group => <div className={`cadence-metric-group ${group.label === "Наличные расходы и налоги" ? "cash-control-group" : ""}`} key={group.label}><div className="cadence-group-label"><span>{group.label}</span></div><div>{group.keys.map(metric => { const selected = selectedMetrics.includes(metric); return <button type="button" key={metric} aria-pressed={selected} onClick={() => toggleMetric(metric)} className={selected ? "cadence-metric-chip active" : "cadence-metric-chip"}><i style={{ background: metrics[metric].color }}/>{metrics[metric].label}</button>; })}</div></div>)}</div><MetricLineChart data={chartData} lines={chartLines}/><p className="packet-note"><Calculator size={15}/> {perStoreData ? `${metrics[primaryMetric].label}: на графике и в таблице каждая точка показана отдельным рядом.` : selectedMetrics.length === 1 ? metrics[primaryMetric].note : "Сопоставляйте показатели одной операционной задачи. При большом числе рядов выбирайте режим «Наложение» и опирайтесь на таблицу под графиком."} {!perStoreData && "Выбранные магазины суммируются до построения ряда."}</p></section>
+      <section className="packet-kpis equal cadence-kpis"><article className="packet-kpi cadence-primary-kpi"><span>{metrics[primaryMetric].label} · {scope}</span><strong>{formatCadenceKpi(total, primaryMetric)}</strong><small>{rangeLabel}{selectedMetrics.length > 1 ? ` · в графике ${selectedMetrics.length} показателя` : ""}</small></article><article className="packet-kpi"><span>Наличные + НДФЛ 22%</span><strong>{formatK(cashTotal / 1000)}</strong><small>{cashShare.toFixed(1)}% выручки · контроль сокращения</small></article><article className="packet-kpi"><span>Чеки Эвотор в срезе</span><strong>{needsEvotorFacts ? new Intl.NumberFormat("ru-RU").format(evotorSummary.checks) : "—"}</strong><small>{demoMode ? "в демо режиме реальные чеки не читаются" : needsEvotorFacts ? "только уже загруженные документы продажи" : "выберите факт Эвотор для загрузки"}</small></article><article className="packet-kpi"><span>Магазины с чеками Эвотор</span><strong>{needsEvotorFacts ? `${new Set(evotorTimeline.map(row => row.storeId)).size} / ${demoMode ? 0 : evotorFacts.data?.stores.length ?? 0}` : "—"}</strong><small>{demoMode ? "в демо режиме реальные точки не читаются" : needsEvotorFacts ? "в выбранном срезе; суточная загрузка обходит одну точку за callback" : "появятся для выбранного факта Эвотор"}</small></article></section>
+      <section className="packet-card cadence-chart-card"><div className="card-title"><div><span>РАСЧЕТНАЯ ДИНАМИКА · {scope}</span><h3>{detailLabel} · {perStoreData ? `${title}: каждый магазин отдельно` : title}</h3></div><div className="chart-controls"><div className="chart-view-control" aria-label="Детализация ритма">{(["month", "week", "day"] as Granularity[]).map(level => <button type="button" key={level} className={granularity === level ? "chart-view-button active" : "chart-view-button"} onClick={() => setGranularity(level)}>{level === "day" ? "Дни" : level === "week" ? "Недели" : "Месяцы"}</button>)}</div>{seriesStores.length > 1 && selectedMetrics.length === 1 && <StoreSeriesModeToggle active={showStoreSeries} onChange={() => setShowStoreSeries(current => !current)}/>}</div></div><div className="cadence-metrics-picker" aria-label="Выберите показатели для сравнения"><div className="cadence-picker-heading"><span>Показатели для сравнения</span><small>без лимита; минимум один</small></div>{visibleMetricGroups.map(group => <div className={`cadence-metric-group ${group.label === "Наличные расходы и налоги" ? "cash-control-group" : ""}`} key={group.label}><div className="cadence-group-label"><span>{group.label}</span></div><div>{group.keys.map(metric => { const selected = selectedMetrics.includes(metric); return <button type="button" key={metric} aria-pressed={selected} onClick={() => toggleMetric(metric)} className={selected ? "cadence-metric-chip active" : "cadence-metric-chip"}><i style={{ background: metrics[metric].color }}/>{metrics[metric].label}</button>; })}</div></div>)}</div><MetricLineChart data={chartData} lines={chartLines}/><p className="packet-note"><Calculator size={15}/> {perStoreData ? `${metrics[primaryMetric].label}: на графике и в таблице каждая точка показана отдельным рядом.` : selectedMetrics.length === 1 ? metrics[primaryMetric].note : "Сопоставляйте показатели одной операционной задачи. При большом числе рядов выбирайте режим «Наложение» и опирайтесь на таблицу под графиком."} {!perStoreData && "Выбранные магазины суммируются до построения ряда."}</p></section>
       <section className="packet-card cadence-detail-table"><div className="card-title"><div><span>ДАННЫЕ ПОД ГРАФИКОМ · {scope}</span><h3>{perStoreData ? `${title}: каждый магазин отдельно` : "Все интервалы активного среза"}</h3></div><small>{granularity === "month" ? "месяцы" : granularity === "week" ? "недели" : "дни"}</small></div><div className="data-table-wrap cadence-full-table"><table className="data-table"><thead><tr><th>{granularity === "month" ? "Месяц" : granularity === "week" ? "Неделя" : "Дата"}</th>{chartLines.map(line => <th className="numeric-column" key={line.key}>{line.name}</th>)}</tr></thead><tbody>{chartData.map((point, index) => { const values = point as Record<string, string | number | undefined>; return <tr key={`${String(point.month)}-${index}`}><td>{String(point.month)}</td>{chartLines.map(line => <td className="numeric-column" key={line.key}>{formatCadenceValue(Number(values[line.key] ?? 0) * 1_000, perStoreData ? primaryMetric : line.key as CadenceMetric)}</td>)}</tr>; })}</tbody><tfoot><tr className="table-total"><th scope="row">Итого</th>{chartTableTotals.map((value, index) => <td className="numeric-column" key={chartLines[index].key}>{formatCadenceValue(value * 1_000, perStoreData ? primaryMetric : chartLines[index].key as CadenceMetric)}</td>)}</tr></tfoot></table></div><p className="packet-note">Таблица повторяет каждый интервал, построенный в графике. Нажмите на заголовок столбца, чтобы отсортировать данные.</p></section>
       {selectedMetrics.includes("cashExpenses") && <section className="packet-card cash-breakdown-card"><div className="card-title"><div><span>СОСТАВ ТРАТ НАЛ · {scope}</span><h3>Какие наличные статьи формируют расход</h3><small>Каждая линия — отдельная исходная статья, без включения НДФЛ 22%</small></div></div><MetricLineChart data={cashBreakdown} lines={[{key:"household",name:"Хоз. нужды нал",color:"#ff8b6f"},{key:"delivery",name:"Доставка нал",color:"#ffbf69"},{key:"cleaning",name:"Уборка нал",color:"#7dcbff"},{key:"bonus",name:"Премия нал",color:"#e88af0"},{key:"seniority",name:"Выслуга нал",color:"#b49bff"},{key:"supplement",name:"Доплата нал",color:"#ff7f9d"},{key:"driverCash",name:"Водитель нал",color:"#67d6b5"},{key:"utilitiesCash",name:"Ком. плат. нал",color:"#6ba4ff"},{key:"operatingCosts",name:"Расходы нал",color:"#d9d75c"}]}/><p className="packet-note"><Calculator size={15}/> Цель — снизить управляемые наличные траты и связанный с ними НДФЛ 22%, не теряя необходимых операционных действий.</p></section>}
       {selectedMetrics.includes("expenses") && <section className="packet-card expense-breakdown-card"><div className="card-title"><div><span>СОСТАВ РАСХОДОВ · {scope}</span><h3>Какие исходные статьи формируют общую расходную нагрузку</h3><small className="expense-breakdown-note">Показаны отдельные фактические статьи без строки «Расходы» и без двойного учета агрегатов.</small></div></div><MetricLineChart data={expenseBreakdown} lines={expenseBreakdownLines}/><div className="data-table-wrap"><table className="data-table"><thead><tr><th>Исходная статья</th><th className="numeric-column">Сумма</th></tr></thead><tbody>{expenseBreakdownLedger.map(row => <tr key={row.metric}><td>{row.label}</td><td className="numeric-column">{formatK(row.amount / 1000)}</td></tr>)}</tbody><tfoot><tr className="table-total"><th scope="row">Итого</th><td className="numeric-column">{formatK(expenseBreakdownTotal / 1000)}</td></tr></tfoot></table></div><p className="packet-note"><Calculator size={15}/> Используйте состав для проверки источника расхода: наличные, безналичные, ФОТ, налоги, аренда, банк и прочие статьи остаются отдельными рядами.</p></section>}

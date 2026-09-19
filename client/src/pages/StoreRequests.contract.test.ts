@@ -66,6 +66,14 @@ describe("заявки магазинов: экран", () => {
     expect(page).not.toContain("Комментарий к заявке");
     expect(page).not.toContain("Общее примечание к заказу");
   });
+
+  it("сохраняет оба комментария единым действием черновика, а не при выходе из каждого поля", () => {
+    expect(page).toContain("const saveDraftComments = async () =>");
+    expect(page).toContain("upsertRequestComment.mutateAsync");
+    expect(page).toContain('<Save size={14}/>');
+    expect(page).toContain("Сохраняются общей кнопкой «Сохранить» в черновике");
+    expect(page).not.toContain("onBlur={() => saveComment(slot)}");
+  });
 });
 
 describe("заявки магазинов: адаптивность и печать", () => {

@@ -117,4 +117,14 @@ describe("матрица доступа к импорту",()=>{
     expect(page).toContain('role: selectedRole');
     expect(overrides).toContain('.packet .account-role-change');
   });
+
+  it("сохраняет выбор магазина сразу через существующую журналируемую мутацию",()=>{
+    const page=readFileSync(resolve(process.cwd(),"client/src/pages/AccessAdmin.tsx"),"utf8");
+    expect(page).toContain("const setStoreGrant = (storeId: number, accessLevel?: Level)");
+    expect(page).toContain("const accessSaveQueue = useRef<Promise<void>>(Promise.resolve())");
+    expect(page).toContain("saveAccess.mutateAsync({ accountId, grants: grantsSnapshot })");
+    expect(page).toContain("older request can never overwrite a newer selection");
+    expect(page).toContain("Выбор сохраняется сразу");
+    expect(page).not.toContain(">Сохранить права магазинов</button>");
+  });
 });

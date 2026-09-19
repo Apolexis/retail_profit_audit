@@ -32,16 +32,22 @@ describe("проданные товары Эвотор", () => {
     expect(page).toContain("function retainedRange");
   });
 
-  it("выбирает товары встроенными цветными чипами без поиска, скролла и массового выбора", () => {
-    expect(page).toContain('className="cadence-metrics-picker evotor-product-metrics-picker"');
+  it("не читает витрину реальных товаров в демо-режиме", () => {
+    expect(page).toContain("const { demoMode } = useAudit();");
+    expect(page).toContain("enabled: !demoMode");
+    expect(page).toContain("Проданные товары отключены в демо‑режиме");
+  });
+
+  it("выбирает товары во встроенном компактном раскрывающемся контроле без поиска, скролла и массового выбора", () => {
+    expect(page).toContain('className="cadence-store-picker evotor-product-picker"');
     expect(page).toContain("selectedProductKeys");
     expect(page).toContain("productTimeline");
     expect(page).toContain("selectedProductTimeline");
     expect(page).toContain("productColors[index % productColors.length]");
     expect(page).not.toContain("Выбрать все");
     expect(page).not.toContain("Товарные позиции");
-    expect(page).not.toContain("evotor-product-picker");
-    expect(css).not.toContain("evotor-product-picker");
+    expect(page).toContain("Товары для графика");
+    expect(css).toContain("evotor-product-picker > summary");
     expect(css).not.toContain("max-height");
   });
 
