@@ -989,7 +989,7 @@ export async function syncOperationalEvotorDocumentPage(input: { storeId: number
       failureMessage: "Серия перезапущена с границы хранения 2025-01-01.",
     }).where(eq(operationalEvotorDocumentSyncs.id, activeSync.id));
   }
-  if (syncMode === "current_day" && activeSync?.requestedTo !== businessDate) {
+  if (syncMode === "current_day" && activeSync && activeSync.requestedTo !== businessDate) {
     await db.update(operationalEvotorDocumentSyncs).set({
       status: "completed",
       completedAt: new Date(),

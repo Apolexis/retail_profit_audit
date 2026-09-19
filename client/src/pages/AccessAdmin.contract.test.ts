@@ -93,15 +93,17 @@ describe("матрица доступа к импорту",()=>{
     expect(page).toContain('ключ доступа для магазина отключен');
   });
 
-  it("дает администратору заменить серверный ключ Эвотор без вывода секрета",()=>{
+  it("дает администратору заменить и явно показать серверный ключ Эвотор",()=>{
     const page=readFileSync(resolve(process.cwd(),"client/src/pages/AccessAdmin.tsx"),"utf8");
     const router=readFileSync(resolve(process.cwd(),"server/routers/localAuth.ts"),"utf8");
     expect(page).toContain("Серверный ключ Cloud API V2");
     expect(page).toContain("Заменить ключ");
-    expect(page).toContain("Его значение не выводится");
-    expect(page).not.toContain("revealEvotorCredential");
+    expect(page).toContain("раскрывается по явной кнопке, как пароль");
+    expect(page).toContain("Показать ключ");
+    expect(page).toContain("Скрыть ключ");
+    expect(page).toContain("revealEvotorCredential");
     expect(router).toContain("replaceEvotorCredential");
-    expect(router).not.toContain("revealEvotorCredential");
+    expect(router).toContain("revealEvotorCredential: adminProcedure.mutation");
   });
 
   it("объединяет аналитика в одну роль и дает администратору сменить роль выбранной записи",()=>{

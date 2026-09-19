@@ -5,7 +5,7 @@ import { adminProcedure, protectedProcedure, publicProcedure, router } from "../
 import { adminResetLocalPassword, authenticateLocalAccount, changeLocalPassword, createLocalAccount, createLocalSession, deleteLocalAccount, deleteLocalSessionFromCookie, formatRussianPhone, getLocalAccountByOpenId, getLocalSessionFromCookie, listLocalAccounts, LOCAL_SESSION_COOKIE, recordChange, updateLocalAccount } from "../localAuth";
 import { getAccessibleStoreIds, listAccountStoreAccess, replaceAccountStoreAccess } from "../accessControl";
 import { getImportThresholdBreachPage, listAuditStores } from "../audit";
-import { getEvotorCredentialStatus, replaceEvotorApiToken } from "../evotorCredentials";
+import { getEvotorCredentialStatus, replaceEvotorApiToken, revealEvotorApiToken } from "../evotorCredentials";
 import { createNotifications, getNotificationSummary, getPushStatus, hasNotificationEntityAccess, listMyNotifications, markAllNotificationsRead, markNotificationRead, removePushSubscription, savePushSubscription } from "../notifications";
 import { PASSKEY_ATTEMPT_COOKIE, beginPasskeyAuthentication, beginPasskeyRegistration, deleteAccountPasskey, finishPasskeyAuthentication, finishPasskeyRegistration, listAccountPasskeys } from "../passkeys";
 
@@ -118,6 +118,12 @@ export const localAuthRouter = router({
   evotorCredentialStatus: adminProcedure.query(async ({ ctx }) => {
     await localAdminFromContext(ctx.user?.openId);
     return getEvotorCredentialStatus();
+  }),
+  revealEvotorCredential: adminProcedure.mutation(async ({ ctx }) => {
+    await localAdminFromContext(ctx.user?.openId);
+    // The value is returned only to the current administrator on explicit
+    // demand. It is intentionally not sent to recordChange or any log.
+    return { token: await revealEvotorApiToken() };
   }),
   replaceEvotorCredential: adminProcedure.input(z.object({ token: z.string().trim().min(16).max(4096) })).mutation(async ({ input, ctx }) => {
     const actor = await localAdminFromContext(ctx.user?.openId);

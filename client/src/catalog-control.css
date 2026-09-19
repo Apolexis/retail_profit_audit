@@ -175,7 +175,9 @@ html[data-audit-theme="dark"] .packet .catalog-working-card:hover { border-color
 /* Card actions are compact, semantic controls; no checkbox layout is used for visibility flags. */
 .packet .catalog-editor-card .card-title { align-items: flex-start; }
 .packet .catalog-editor-title-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 7px; }
+.packet .catalog-editor-action-group { display: inline-flex; flex: 0 1 auto; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 7px; }
 .packet .catalog-editor-title-actions .subtle-button { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; margin: 0; }
+.packet .catalog-editor-save { width: auto; min-width: 0; min-height: 34px; padding-inline: 12px; }
 .packet .catalog-visibility-button.is-on { border-color: var(--catalog-accent); color: var(--catalog-accent); }
 .packet .catalog-editor-grid { grid-template-columns: minmax(220px, 1.2fr) minmax(170px, .75fr) minmax(120px, .55fr) minmax(160px, .7fr); }
 .packet .catalog-editor-grid > label:first-child { grid-column: span 2; }
@@ -184,7 +186,7 @@ html[data-audit-theme="dark"] .packet .catalog-working-card:hover { border-color
 .packet .catalog-table td:nth-child(2) strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 760px) {
   .packet .catalog-editor-title-actions { width: 100%; justify-content: flex-start; }
-  .packet .catalog-editor-title-actions .packet-link { margin-left: auto; }
+  .packet .catalog-editor-action-group { width: 100%; justify-content: flex-start; }
   .packet .catalog-editor-grid,
   .packet .catalog-editor-price-grid { grid-template-columns: minmax(0, 1fr); }
   .packet .catalog-editor-grid > label:first-child,
@@ -206,16 +208,16 @@ html[data-audit-theme="dark"] .packet .catalog-working-card:hover { border-color
   gap: 6px;
 }
 .packet .catalog-editor-grid {
-  grid-template-columns: minmax(300px, 1.45fr) minmax(210px, .95fr) 112px 112px;
+  grid-template-columns: minmax(230px, 1.35fr) minmax(180px, .9fr) minmax(112px, .5fr) minmax(112px, .5fr);
 }
 .packet .catalog-editor-grid > label:first-child { grid-column: auto; }
 .packet .catalog-editor-grid > label.catalog-editor-barcodes { grid-column: span 2; }
-.packet .catalog-editor-grid > label.catalog-alcohol-code { grid-column: span 2; }
+.packet .catalog-editor-grid > label.catalog-alcohol-code { grid-column: auto; max-width: 320px; }
 .packet .catalog-editor-grid > label:nth-child(4) { max-width: 112px; }
 .packet .catalog-editor-grid > label.catalog-editor-barcodes.is-expanded { grid-column: span 2; }
-.packet .catalog-editor-grid > label.catalog-alcohol-kind { grid-column: 3; }
-.packet .catalog-editor-grid > label.catalog-alcohol-strength { grid-column: 4; }
-.packet .catalog-editor-grid > label.catalog-alcohol-volume { grid-column: 3 / span 2; max-width: 250px; }
+.packet .catalog-editor-grid > label.catalog-alcohol-kind,
+.packet .catalog-editor-grid > label.catalog-alcohol-strength,
+.packet .catalog-editor-grid > label.catalog-alcohol-volume { grid-column: auto; max-width: none; }
 .packet .catalog-grow-control { position: relative; display: block; min-width: 0; }
 .packet .catalog-grow-control textarea {
   width: 100%; min-width: 0; min-height: 46px; max-height: 220px; padding: 11px 42px 9px 11px;
@@ -247,7 +249,7 @@ html[data-audit-theme="dark"] .packet .catalog-working-card:hover { border-color
   .packet .catalog-lede .subtle-button { width: auto; }
 }
 
-.packet .catalog-business-id { display: inline-flex; width: fit-content; margin-top: 5px; padding: 3px 7px; border: 1px solid var(--catalog-line); border-radius: 7px; background: var(--catalog-panel); color: var(--muted); font-size: 11px; font-weight: 700; line-height: 1.35; }
+.packet .catalog-business-id { display: inline-flex; flex: 0 0 auto; align-self: flex-start; width: max-content; max-width: 100%; margin-top: 5px; padding: 3px 7px; border: 1px solid var(--catalog-line); border-radius: 7px; background: var(--catalog-panel); color: var(--muted); font-size: 11px; font-weight: 700; line-height: 1.35; white-space: nowrap; }
 
 /* The catalog uses the blue surface hierarchy around the table, not blue-filled data rows. */
 html[data-audit-theme="light"] .packet .packet-card.catalog-working-card {

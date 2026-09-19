@@ -169,7 +169,7 @@ html[data-audit-theme="dark"] .packet {
 }
 
 @media print {
-  @page { size: A4 portrait; margin: 12mm; }
+  @page { size: A4 portrait; margin: 4mm; }
   html, body, #root { width: auto !important; min-height: 0 !important; background: #fff !important; color: #000 !important; }
   .packet { display: block !important; width: auto !important; min-height: 0 !important; background: #fff !important; color: #000 !important; }
   .packet > :not(.packet-main), .packet-main > :not(.store-request-print) { display: none !important; }
@@ -194,7 +194,6 @@ html[data-audit-theme="dark"] .packet {
 
 /* Request print uses the same strictly white portrait A4 contract. */
 @media print {
-  @page { size: A4 portrait; margin: 4mm; }
   .store-request-print,
   .store-request-print-sheet,
   .store-request-print-sheet table,

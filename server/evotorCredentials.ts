@@ -72,6 +72,15 @@ export async function getEvotorCredentialStatus() {
   };
 }
 
+/**
+ * Returns the active key only to the authenticated administrator endpoint.
+ * The caller keeps it ephemeral; this service does not log, audit, cache or
+ * persist the plaintext outside the existing encrypted credential record.
+ */
+export async function revealEvotorApiToken() {
+  return getEvotorApiToken();
+}
+
 function normalizedReplacement(token: string) {
   const value = token.trim();
   if (value.length < 16 || value.length > 4096) throw new Error("Введите корректный ключ Эвотор.");

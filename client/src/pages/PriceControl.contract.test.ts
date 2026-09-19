@@ -200,10 +200,11 @@ describe("страница «Прайс‑контроль»", () => {
     expect(page).toContain("Добавить состав мест");
   });
 
-  it("не выводит весь справочник сразу и сохраняет единый выбор с preview", () => {
-    expect(page).toContain("directoryProductLimit");
-    expect(page).toContain("visibleDirectoryProducts");
-    expect(page).toContain("Показать еще");
+  it("показывает весь отфильтрованный общий справочник без постраничной кнопки", () => {
+    expect(page).not.toContain("directoryProductLimit");
+    expect(page).not.toContain("visibleDirectoryProducts");
+    expect(page).toContain("directoryProducts.map((product, position)");
+    expect(page).toContain("comparisonByProductId");
     expect(page).toContain("price-directory-selection-marker");
     expect(page).toContain('className="price-preview-check"');
     expect(page).toContain("bulkSetProductActive");

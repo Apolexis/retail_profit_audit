@@ -817,7 +817,6 @@ export default function PriceControl({
   const [directoryTab, setDirectoryTab] = useState<DirectoryTab>("products");
   const [directoryProductSearch, setDirectoryProductSearch] = useState("");
   const [directoryCategoryPresence, setDirectoryCategoryPresence] = useState<"all" | "assigned" | "unassigned">("all");
-  const [directoryProductLimit, setDirectoryProductLimit] = useState(60);
   const [directoryCategorySearch, setDirectoryCategorySearch] = useState("");
   const [directoryLinkSearch, setDirectoryLinkSearch] = useState("");
   const [directoryLinkLimit, setDirectoryLinkLimit] = useState(40);
@@ -947,7 +946,10 @@ export default function PriceControl({
       return matchesSearch && matchesCategoryPresence && matchesVisibility(product);
     });
   }, [catalogProducts, directoryProductSearch, directoryCategoryPresence, visibilityFilter]);
-  const visibleDirectoryProducts = directoryProducts.slice(0, directoryProductLimit);
+  const comparisonByProductId = useMemo(
+    () => new Map((overview.data?.comparisons ?? []).map(item => [item.product.id, item])),
+    [overview.data?.comparisons]
+  );
   const selectedDirectoryProducts = catalogProducts.filter(product => selectedDirectoryProductIds.includes(product.id));
   const selectedDirectoryProductsHaveActive = selectedDirectoryProducts.some(product => product.isActive);
   const selectedDirectoryProductsHaveHidden = selectedDirectoryProducts.some(product => !product.isActive);
@@ -3827,20 +3829,14 @@ export default function PriceControl({
                 <Search size={15} aria-hidden="true" />
                 <input
                   value={directoryProductSearch}
-                  onChange={event => {
-                    setDirectoryProductSearch(event.target.value);
-                    setDirectoryProductLimit(60);
-                  }}
+                  onChange={event => setDirectoryProductSearch(event.target.value)}
                   placeholder="Поиск товара, коду или категории"
                   aria-label="Поиск товаров"
                 />
               </label>
               <PriceSelect
                 value={directoryCategoryPresence}
-                onValueChange={value => {
-                  setDirectoryCategoryPresence(value as "all" | "assigned" | "unassigned");
-                  setDirectoryProductLimit(60);
-                }}
+                onValueChange={value => setDirectoryCategoryPresence(value as "all" | "assigned" | "unassigned")}
                 placeholder="Категории"
                 options={[
                   { value: "all", label: "Все категории" },
@@ -3925,7 +3921,7 @@ export default function PriceControl({
               </div>
             )}
             <div className="price-directory-list">
-              {visibleDirectoryProducts.map((product, position) => (
+              {directoryProducts.map((product, position) => (
                 <article key={product.id}>
                   {canEdit && (
                     <div className="price-directory-selection-marker">
@@ -3954,7 +3950,7 @@ export default function PriceControl({
                         : "Параметры не уточнены"}
                     </small>
                     {(() => {
-                      const offers = overview.data?.comparisons.find(item => item.product.id === product.id)?.offers ?? [];
+                      const offers = comparisonByProductId.get(product.id)?.offers ?? [];
                       const lowest = offers.reduce<number | null>((minimum, offer) => minimum === null || offer.normalizedPrice < minimum ? offer.normalizedPrice : minimum, null);
                       return (
                         <small className="price-directory-prices">
@@ -4000,18 +3996,7 @@ export default function PriceControl({
                   )}
                 </article>
               ))}
-              {directoryProducts.length > visibleDirectoryProducts.length && (
-                <button
-                  type="button"
-                  className="packet-link price-directory-show-more"
-                  onClick={() => setDirectoryProductLimit(current => Math.min(current + 60, directoryProducts.length))}
-                >
-                  Показать еще · {Math.min(60, directoryProducts.length - visibleDirectoryProducts.length)}
-                </button>
-              )}
-              {directoryProducts.length > 60 && visibleDirectoryProducts.length === directoryProducts.length && (
-                <small className="price-directory-all-shown">Показаны все {directoryProducts.length} товаров по текущему фильтру.</small>
-              )}
+              {directoryProducts.length > 60 && <small className="price-directory-all-shown">Показаны все {directoryProducts.length} товаров по текущему фильтру.</small>}
               {!directoryProducts.length && (
                 <div className="empty-state compact">
                   <Search size={22} />

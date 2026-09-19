@@ -15,12 +15,13 @@ describe("серверный ключ Эвотор", () => {
     expect(credentials).toContain("evotor_credential.replace");
   });
 
-  it("позволяет администратору заменить ключ, но не возвращает его через tRPC или UI", () => {
+  it("позволяет только администратору заменить и по явной команде показать ключ", () => {
     expect(router).toContain("replaceEvotorCredential");
-    expect(router).not.toContain("revealEvotorCredential");
-    expect(credentials).not.toContain("revealEvotorApiToken");
+    expect(router).toContain("revealEvotorCredential: adminProcedure.mutation");
+    expect(credentials).toContain("export async function revealEvotorApiToken()");
     expect(accessPage).toContain("Заменить ключ");
-    expect(accessPage).toContain("Его значение не выводится");
-    expect(accessPage).not.toContain("Показать ключ");
+    expect(accessPage).toContain("Показать ключ");
+    expect(accessPage).toContain("Скрыть ключ");
+    expect(credentials).toContain("does not log, audit, cache");
   });
 });

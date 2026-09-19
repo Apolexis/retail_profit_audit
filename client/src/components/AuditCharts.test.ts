@@ -46,15 +46,15 @@ describe("форматирование денежных показателей",
     const lines=[{key:"driverCash",name:"Водитель нал",color:"#111"},{key:"cash",name:"Траты нал",color:"#222"}];
     expect(nonZeroLines([{driverCash:0,cash:120},{driverCash:0,cash:-30}],lines).map(line=>line.key)).toEqual(["cash"]);
   });
-  it("принудительно использует столбец и скрывает смысл выбора вида для единственной точки", () => {
-    expect(resolveMetricChartView(1,"line")).toBe("bar");
-    expect(resolveMetricChartView(0,"line")).toBe("bar");
+  it("сохраняет выбранный вид и для короткого временного среза", () => {
+    expect(resolveMetricChartView(1,"line")).toBe("line");
+    expect(resolveMetricChartView(0,"line")).toBe("line");
     expect(resolveMetricChartView(2,"line")).toBe("line");
     expect(resolveMetricChartView(2,"bar")).toBe("bar");
   });
-  it("для одного периода по нескольким магазинам выбирает горизонтальные столбцы", () => {
-    expect(resolveMetricChartLayout(1, 4)).toBe("single-period-comparison");
-    expect(resolveMetricChartLayout(1, 1)).toBe("single-value");
+  it("не переворачивает график для одного периода или нескольких рядов", () => {
+    expect(resolveMetricChartLayout(1, 4)).toBe("timeline");
+    expect(resolveMetricChartLayout(1, 1)).toBe("timeline");
     expect(resolveMetricChartLayout(2, 4)).toBe("timeline");
   });
   it("сохраняет волну как базовое представление динамики", () => {
@@ -62,11 +62,11 @@ describe("форматирование денежных показателей",
   });
   it("сохраняет наложенные столбцы отдельным режимом для многоточечного ряда", () => {
     expect(resolveMetricChartView(3, "overlay")).toBe("overlay");
-    expect(resolveMetricChartView(1, "overlay")).toBe("bar");
+    expect(resolveMetricChartView(1, "overlay")).toBe("overlay");
   });
-  it("дает многоточечному общему графику все три доступных представления", () => {
+  it("дает каждому общему графику все три доступных представления", () => {
     const source = require("node:fs").readFileSync(new URL("./AuditCharts.tsx", import.meta.url), "utf8");
-    expect(source).toContain("{showViewControls&&data.length>1&&<ChartViewControls");
+    expect(source).toContain("{showViewControls&&<ChartViewControls");
     expect(source).toContain(">Волна</button>");
     expect(source).toContain(">Столбцы</button>");
     expect(source).toContain(">Наложение</button>");
@@ -85,9 +85,9 @@ describe("форматирование денежных показателей",
     expect(source).toContain("initialView?:MetricChartView");
     expect(source).toContain("useState<MetricChartView>(initialView)");
     expect(source).toContain("initialView={expandedView} expanded showViewControls={false}");
-    expect(source).toContain("{showViewControls&&data.length>1&&<ChartViewControls view={chartView}");
+    expect(source).toContain("{showViewControls&&<ChartViewControls view={chartView}");
     expect(source).toContain('className="chart-expand-view-control"');
-    expect(source).toContain("showViewControls={data.length>1}");
+    expect(source).toContain("showViewControls touchModeControl={data.length>1}");
   });
   it("масштабирует домен и видимый срез данных, а не SVG-поверхность", () => {
     expect(clampChartZoom(.5)).toBe(1);
@@ -196,7 +196,7 @@ describe("форматирование денежных показателей",
     expect(source).toContain('compactChart?322:306');
     expect(source).toContain('<ChartPanZoomSurface compact touchModeControl={data.length>1}>{compactViewport=><MetricLineChart');
     expect(source).toContain('<ChartPanZoomSurface compact touchModeControl mouseVerticalPanDirection={-1} touchVerticalPanDirection={-1}>{compactViewport=><BenchmarkBars');
-    expect(source).toContain('<ChartExpandButton title={chartTitle} initialView={chartView} showViewControls={data.length>1} touchModeControl={data.length>1} protectGeneralChartSurface>');
+    expect(source).toContain('<ChartExpandButton title={chartTitle} initialView={chartView} showViewControls touchModeControl={data.length>1} protectGeneralChartSurface>');
     expect(source).not.toContain('<ChartPanZoomSurface compact touchModeControl={true}>');
     expect(source).toContain("Сброс");
     expect(source).toContain('const medianColor=palette.median');

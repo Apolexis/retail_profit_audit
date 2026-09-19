@@ -34,6 +34,7 @@ describe("планировщик read-only синхронизации Эвото
   it("сохраняет отдельные cursor-цепочки для сегодняшнего окна и архива 2025+", () => {
     expect(registry).toContain('mode?: "historical" | "current_day"');
     expect(registry).toContain('syncMode === "current_day" ? businessDate : EVOTOR_DOCUMENT_RETENTION_START');
+    expect(registry).toContain('syncMode === "current_day" && activeSync && activeSync.requestedTo !== businessDate');
     expect(registry).toContain("since: sync.cursor ? undefined : sync.requestedFrom");
     expect(registry).toContain("until: sync.cursor ? undefined : sync.requestedTo");
     expect(scheduler).toContain("async function nextDocumentSyncTarget");

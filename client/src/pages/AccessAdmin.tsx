@@ -29,6 +29,7 @@ export default function AccessAdmin() {
   const [selectedRole, setSelectedRole] = useState<AccountRole>("analyst");
   const [draft, setDraft] = useState<Record<number, Level>>({});
   const [evotorToken, setEvotorToken] = useState("");
+  const [evotorTokenRevealed, setEvotorTokenRevealed] = useState(false);
   const access = trpc.localAuth.storeAccess.useQuery({ accountId: selectedAccountId ?? 0 }, { enabled: Boolean(selectedAccountId), retry: false });
   const evotorCredential = trpc.localAuth.evotorCredentialStatus.useQuery(undefined, { retry: false, staleTime: 0 });
 
@@ -50,8 +51,12 @@ export default function AccessAdmin() {
   const adminResetPassword = trpc.localAuth.adminResetPassword.useMutation({ onSuccess: () => { setResetPassword(""); utils.localAuth.list.invalidate(); utils.audit.changes.invalidate(); toast.success("Пароль успешно изменен", { description: "Все активные сессии этой учетной записи завершены." }); }, onError: error => toast.error("Пароль не изменен", { description: error.message }) });
   const saveAccess = trpc.localAuth.replaceStoreAccess.useMutation({ onSuccess: () => { utils.localAuth.storeAccess.invalidate(); utils.localAuth.notifications.invalidate(); } });
   const replaceEvotorCredential = trpc.localAuth.replaceEvotorCredential.useMutation({
-    onSuccess: () => { setEvotorToken(""); utils.localAuth.evotorCredentialStatus.invalidate(); utils.audit.changes.invalidate(); toast.success("Ключ Эвотор заменен", { description: "Следующие read-only обращения будут использовать новый ключ." }); },
+    onSuccess: () => { setEvotorToken(""); setEvotorTokenRevealed(false); utils.localAuth.evotorCredentialStatus.invalidate(); utils.audit.changes.invalidate(); toast.success("Ключ Эвотор заменен", { description: "Следующие read-only обращения будут использовать новый ключ." }); },
     onError: error => toast.error("Ключ Эвотор не заменен", { description: error.message }),
+  });
+  const revealEvotorCredential = trpc.localAuth.revealEvotorCredential.useMutation({
+    onSuccess: ({ token }) => { setEvotorToken(token); setEvotorTokenRevealed(true); },
+    onError: error => toast.error("Ключ Эвотор не показан", { description: error.message }),
   });
   const grants = useMemo(() => Object.entries(draft).map(([storeId, accessLevel]) => ({ storeId: Number(storeId), accessLevel })), [draft]);
 
@@ -60,10 +65,11 @@ export default function AccessAdmin() {
   return <AuditShell kicker="12 / ДОСТУП" title="Пользователи и права">
     <section className="page-lede"><div><span>МАТРИЦА ДОСТУПА</span><h2>Роли и магазины</h2><p>Для администратора, аналитика и руководителя используйте номер телефона; для продавца — логин магазина. Затем назначьте точку: продавцу доступна ровно одна операционная точка.</p></div></section>
     <section className="packet-card access-evotor-credential" aria-label="Серверный ключ Эвотор">
-      <div><span className="card-eyebrow">ДОСТУП ЭВОТОР</span><h3>Серверный ключ Cloud API V2</h3><p className="packet-note">Ключ хранится только на сервере. Его значение не выводится в интерфейсе, ответах и журнале; при необходимости замените ключ новым.</p></div>
+      <div><span className="card-eyebrow">ДОСТУП ЭВОТОР</span><h3>Серверный ключ Cloud API V2</h3><p className="packet-note">Ключ доступен только администратору: он раскрывается по явной кнопке, как пароль, и не записывается в журнал изменений.</p></div>
       <div className="access-evotor-status"><strong>{evotorCredential.data?.configured ? "Ключ настроен" : "Ключ не настроен"}</strong><small>{evotorCredential.data?.source === "managed" ? "Управляемый ключ" : evotorCredential.data?.source === "environment" ? "Серверная конфигурация" : "Требуется ключ Cloud API V2"}</small></div>
       <div className="access-evotor-actions">
-        <label>Новый ключ Эвотор<PasswordInput value={evotorToken} onChange={event => setEvotorToken(event.target.value)} autoComplete="new-password" placeholder="Оставьте пустым, чтобы не менять" /></label>
+        <label>{evotorTokenRevealed ? "Ключ Эвотор" : "Новый ключ Эвотор"}<PasswordInput value={evotorToken} onChange={event => { setEvotorToken(event.target.value); setEvotorTokenRevealed(false); }} autoComplete="new-password" placeholder="Оставьте пустым, чтобы не менять" /></label>
+        <button type="button" className="subtle-button" disabled={revealEvotorCredential.isPending} onClick={() => { if (evotorTokenRevealed) { setEvotorToken(""); setEvotorTokenRevealed(false); } else revealEvotorCredential.mutate(); }}><Eye size={15}/>{evotorTokenRevealed ? "Скрыть ключ" : revealEvotorCredential.isPending ? "Показываем…" : "Показать ключ"}</button>
         <button type="button" className="subtle-button" disabled={evotorToken.trim().length < 16 || replaceEvotorCredential.isPending} onClick={() => replaceEvotorCredential.mutate({ token: evotorToken })}><KeyRound size={15}/>{replaceEvotorCredential.isPending ? "Сохраняем…" : "Заменить ключ"}</button>
       </div>
     </section>

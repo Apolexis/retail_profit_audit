@@ -25,7 +25,7 @@ describe("общий операционный справочник", () => {
     expect(page).toContain("Заявки");
     expect(page).toContain("Выключена");
     expect(editor).toContain("В заявках");
-    expect(editor).toContain("Эвотор: не подключено");
+    expect(editor).toContain("Не выгружать в Эвотор");
     expect(editor).toContain("aria-pressed={visibleInRequests}");
   });
 
@@ -53,12 +53,11 @@ describe("общий операционный справочник", () => {
   });
 
   it("не выдает read-only интеграцию Эвотор за работающую выгрузку", () => {
-    expect(editor).toContain("Эвотор: не подключено");
+    expect(editor).toContain("Не выгружать в Эвотор");
     expect(editor).toContain("Обратная запись в Эвотор пока не подключена");
   });
 
   it("объединяет штрихкоды в одном поле и раскрывает алкогольные поля для алкоголя и маркированного пива", () => {
-    expect(editor).toContain("Эвотор и ручные, строго через ;");
     expect(editor).not.toContain("Штрихкоды Эвотор");
     expect(editor).toContain('marking === "alcohol" || marking === "beer_marked"');
     expect(editor).toContain("Алкокод");
@@ -76,10 +75,13 @@ describe("общий операционный справочник", () => {
 		  expect(editor).not.toContain('<option value="">Не задан</option>');
 		  expect(editor).toContain('catalog-alcohol-code catalog-grow-field${alcoholCodeExpanded');
 		  expect(editor).toContain('placeholder="Например: 0,5"');
-		  expect(editor).toContain("Справочное соответствие V2 · без выгрузки");
-		  expect(editor).toContain('ThemedSelect value={evotorProductTypeByMarking[marking]} disabled');
-		  expect(editor).toContain("catalog-grow-expand");
-		  expect(css).toContain(".catalog-editor-barcodes.is-expanded");
+      expect(editor).not.toContain("Справочное соответствие V2 · без выгрузки");
+      expect(editor).toContain('value={evotorProductTypeByMarking[marking]} readOnly');
+      expect(editor).toContain('aria-readonly="true"');
+      expect(editor).toContain("catalog-grow-expand");
+      expect(css).toContain(".catalog-editor-barcodes.is-expanded");
+      expect(css).toContain(".catalog-editor-grid > label.catalog-alcohol-code { grid-column: auto; max-width: 320px; }");
+      expect(css).toContain(".packet .catalog-editor-action-group");
 		});
 
 	it("использует обычные ссылки для самостоятельных маршрутов номенклатуры", () => {
