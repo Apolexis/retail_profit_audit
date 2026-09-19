@@ -9,7 +9,7 @@ describe("read-only показатели продаж Эвотор", () => {
   it("группирует документ по московскому календарю, включая время", () => {
     expect(__evotorSalesTestUtils.evotorSalesInterval("2026-09-18T00:30:00.000Z", "hour")).toMatchObject({ key: "2026-09-18T03", label: "18.09.2026 · 03:00" });
     expect(__evotorSalesTestUtils.evotorSalesInterval("2026-09-18T00:30:00.000Z", "day")).toMatchObject({ key: "2026-09-18", label: "18.09.2026" });
-    expect(__evotorSalesTestUtils.evotorSalesInterval("2026-09-18T00:30:00.000Z", "week")).toMatchObject({ key: "2026-09-14", label: "Неделя с 14.09.2026" });
+    expect(__evotorSalesTestUtils.evotorSalesInterval("2026-09-18T00:30:00.000Z", "week")).toMatchObject({ key: "2026-38", label: "Нед. 38 · 2026" });
   });
 
   it("доступен только администратору, принимает только календарный диапазон и не обращается к Эвотор", () => {

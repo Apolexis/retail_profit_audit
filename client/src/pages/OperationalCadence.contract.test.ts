@@ -88,7 +88,7 @@ describe("страница «Ритм»", () => {
   });
 
   it("не добавляет пустые нулевые интервалы в график, таблицу и последние карточки", () => {
-    expect(page).toContain("const visibleSource = source.filter(point => selectedMetrics.some(metric => point[metric] !== 0));");
+    expect(page).toContain("const visibleSource = mergedSource.filter(point => selectedMetrics.some(metric => point[metric] !== 0));");
     expect(page).toContain("const data = visibleSource.map(point");
     expect(page).toContain("const perStoreData = useMemo");
     expect(page).toContain("const intervalRows = [...visibleSource].slice(-8).reverse();");

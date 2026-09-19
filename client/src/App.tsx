@@ -48,6 +48,13 @@ import "./ios-light-theme.css";
 import "./design-system.css";
 import "./final-overrides.css";
 
+/** The receipt metrics now live as additional facts in «Ритм». */
+function EvotorMetricsRedirect() {
+  const [, setLocation] = useLocation();
+  useEffect(() => { setLocation("/cadence"); }, [setLocation]);
+  return <div className="app-loading"><OceanLoader overlay label="Открываем «Ритм»…" /></div>;
+}
+
 function Router() {
   return (
     <Switch>
@@ -82,8 +89,8 @@ function Router() {
       <Route path="/warehouse-control" component={WarehouseControl} />
       <Route path="/print-settings" component={PrintSettings} />
       <Route path="/requests" component={StoreRequests} />
-      <Route path="/evotor-sales/metrics"><EvotorSalesAnalytics kind="metrics" /></Route>
-      <Route path="/evotor-sales/products"><EvotorSalesAnalytics kind="products" /></Route>
+      <Route path="/evotor-sales/metrics" component={EvotorMetricsRedirect} />
+      <Route path="/evotor-sales/products" component={EvotorSalesAnalytics} />
       <Route path="/import" component={ImportData} />
       <Route path="/manage" component={ManageData} />
       <Route path="/profile" component={Profile} />

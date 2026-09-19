@@ -19,8 +19,8 @@ type NavSection = { title: string; groups: readonly NavGroup[] };
 
 const navSections: readonly NavSection[] = [
   { title: "УПРАВЛЕНИЕ МАГАЗИНАМИ", groups: [{ items: [["/revenue", "23", "Выручка", "revenue"], ["/stock-control", "24", "Остатки", "operations"], ["/inventory-control", "25", "Инвентаризации", "operations"], ["/catalog-control", "26", "Номенклатура", true], ["/warehouse-control", "27", "Склады", true], ["/print-settings", "31", "Настройки печати", true], ["/requests", "30", "Заявки", "operations"]] }] },
-  { title: "АНАЛИЗ МАГАЗИНОВ", groups: [
-    { title: "АНАЛИТИКА", items: [["/", "00", "Сводка", false], ["/months", "01", "Месяцы", false], ["/pricing", "02", "Цены", false], ["/expenses", "03", "Расходы", false], ["/inventory", "04", "Остатки", false], ["/stores", "05", "Магазины", false], ["/compare", "06", "Сравнить", false], ["/evotor-sales/metrics", "28", "Показатели Эвотор", true], ["/evotor-sales/products", "29", "Проданные товары", true]] },
+    { title: "АНАЛИЗ МАГАЗИНОВ", groups: [
+      { title: "АНАЛИТИКА", items: [["/", "00", "Сводка", false], ["/months", "01", "Месяцы", false], ["/pricing", "02", "Цены", false], ["/expenses", "03", "Расходы", false], ["/inventory", "04", "Остатки", false], ["/stores", "05", "Магазины", false], ["/compare", "06", "Сравнить", false], ["/evotor-sales/products", "29", "Проданные товары", true]] },
     { title: "РЕШЕНИЯ", items: [["/control", "07", "Динамика", false], ["/cadence", "08", "Ритм", false], ["/portfolio", "09", "Портфель", false], ["/pilot", "10", "Пилот", false], ["/forecast", "19", "Прогноз", false], ["/planfact", "11", "План‑факт", false]] },
     { title: "УПРАВЛЕНИЕ", items: [["/import", "12", "Импорт", true], ["/manage", "13", "База", true]] },
   ] },

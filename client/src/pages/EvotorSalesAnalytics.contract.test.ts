@@ -6,66 +6,40 @@ const css = readFileSync(new URL("../evotor-sales-analytics.css", import.meta.ur
 const shell = readFileSync(new URL("../components/AuditShell.tsx", import.meta.url), "utf8");
 const app = readFileSync(new URL("../App.tsx", import.meta.url), "utf8");
 
-// These contracts protect the two independent read-only views from drifting away
-// from the interaction vocabulary of «Ритм» while avoiding UI-only API writes.
-describe("страницы продаж Эвотор", () => {
-  it("разделяет показатели чеков и проданные товары на два маршрута", () => {
-    expect(app).toContain('path="/evotor-sales/metrics"');
-    expect(app).toContain('path="/evotor-sales/products"');
-    expect(shell).toContain('"Показатели Эвотор", true');
+describe("проданные товары Эвотор", () => {
+  it("оставляет отдельную товарную витрину и возвращает старый маршрут показателей в Ритм", () => {
+    expect(app).toContain('path="/evotor-sales/metrics" component={EvotorMetricsRedirect}');
+    expect(app).toContain('path="/evotor-sales/products" component={EvotorSalesAnalytics}');
+    expect(shell).not.toContain('"Показатели Эвотор", true');
     expect(shell).toContain('"Проданные товары", true');
-    expect(page).toContain('kind === "metrics" ? "Показатели Эвотор" : "Проданные товары"');
   });
 
-  it("повторяет контролы Ритма и не смешивается с финансовым P&L", () => {
+  it("повторяет контролы Ритма и не смешивается с P&L", () => {
     expect(page).toContain('["month", "week", "day", "hour"]');
-    expect(page).toContain("Все магазины");
     expect(page).toContain("StoreSeriesModeToggle");
     expect(page).toContain("MetricLineChart");
-    expect(page).toContain("cadence-chart-card evotor-sales-chart-card");
-    expect(page).toContain("cadence-detail-table evotor-sales-table-card");
-    expect(page).toContain("cadence-full-table evotor-sales-table-wrap");
-    expect(page).toContain('<tfoot><tr className="table-total"><th scope="row">Итого</th>');
+    expect(page).toContain('forceTimeline');
     expect(page).toContain("ДАННЫЕ ПОД ГРАФИКОМ");
-    expect(page).toContain("ТОВАРЫ ПОД ГРАФИКОМ");
-    expect(page).toContain("не является финансовым P&L");
+    expect(page).toContain("СОСТАВ ПРОДАЖ");
+    expect(page).toContain("read-only");
     expect(page).not.toContain("confirmEvotorCatalog");
-    expect(page).not.toContain("syncEvotorDocumentPage");
   });
 
-  it("начинает аналитику с 2025 года и использует компактный общий контрол периода", () => {
-    expect(page).toContain("DateRangeControl");
-    expect(page).toContain("ПЕРИОД ДОКУМЕНТОВ ЭВОТОР");
+  it("ограничивает факты 2025 годом и не скрывает ограничение покрытия", () => {
     expect(page).toContain('const EVOTOR_ANALYTICS_START = "2025-01-01"');
-    expect(page).toContain("from: from < EVOTOR_ANALYTICS_START ? EVOTOR_ANALYTICS_START : from");
-    expect(page).toContain("const defaultSalesRange");
-    expect(page).toContain("В аналитике учитываются только документы начиная с 2025 года.");
-    expect(page).toContain("Факты продажи сейчас загружены для");
-    expect(page).toContain("selectedStoreCount");
+    expect(page).toContain("DateRangeControl");
+    expect(page).toContain("Точки с фактами продажи в выбранном срезе");
     expect(page).toContain("function retainedRange");
-    expect(page).toContain('className="analysis-filter evotor-sales-period"');
-    expect(css).toContain(".packet .evotor-sales-period { margin-bottom: 18px; }");
-    expect(css).not.toContain("packet-card evotor-sales-period");
   });
 
-  it("не вводит отдельную оранжевую палитру и перестраивает таблицу на средней ширине", () => {
-    expect(css).not.toContain("#ff765f");
-    expect(css).not.toContain("#f7fbff");
-    expect(css).toContain(".evotor-sales-table.data-table tbody tr");
-    expect(css).toContain("content: attr(data-label)");
-    expect(css).toContain("@media (max-width: 1024px)");
-    expect(css).toContain("overflow: visible");
-  });
-
-  it("дает выбрать сами товары для графика и показывает количество прежде суммы", () => {
-    expect(page).toContain('useState<ProductMetric>("quantity")');
-    expect(page).toContain('unit === "fraction" || unit === "дроб"');
-    expect(page).toContain('return "кг"');
-    expect(page).toContain("Товары для сравнения");
+  it("выбирает товары через раскрывающийся selector без внутреннего скролла", () => {
+    expect(page).toContain("Выбрать все");
     expect(page).toContain("selectedProductKeys");
     expect(page).toContain("productTimeline");
     expect(page).toContain("selectedProductTimeline");
-    expect(page).toContain('data-label="Продано"');
-    expect(page).toContain("unitLabel(row.unit)");
+    expect(page).toContain("Товарные позиции");
+    expect(css).toContain(".packet .evotor-product-picker");
+    expect(css).toContain("max-height: none");
+    expect(css).toContain("overflow: visible");
   });
 });

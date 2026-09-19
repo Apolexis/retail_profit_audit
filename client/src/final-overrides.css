@@ -5206,3 +5206,9 @@ html[data-audit-theme="dark"] .packet :is(.inventory-layout, .inventory-history,
     justify-self: start;
   }
 }
+
+/* Confirmation cancellation is a real interactive action in both themes. */
+button[data-slot="alert-dialog-cancel"] { transition: background-color 150ms var(--ease-out, ease), border-color 150ms var(--ease-out, ease), color 150ms var(--ease-out, ease), transform 150ms var(--ease-out, ease) !important; }
+html[data-audit-theme="light"] button[data-slot="alert-dialog-cancel"]:hover { border-color: #0A84FF !important; background: rgba(10,132,255,.08) !important; color: #076fd5 !important; }
+html[data-audit-theme="dark"] button[data-slot="alert-dialog-cancel"]:hover { border-color: #ff765f !important; background: rgba(255,118,95,.12) !important; color: #ffd7cf !important; }
+button[data-slot="alert-dialog-cancel"]:active { transform: scale(.97); }

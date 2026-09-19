@@ -1098,11 +1098,14 @@ function evotorSalesInterval(value: string, granularity: EvotorSalesGranularity)
   if (granularity === "hour") return { key: `${dateKey}T${String(hour).padStart(2, "0")}`, label: `${dateLabel} · ${String(hour).padStart(2, "0")}:00` };
   if (granularity === "day") return { key: dateKey, label: dateLabel };
   if (granularity === "month") return { key: dateKey.slice(0, 7), label: new Intl.DateTimeFormat("ru-RU", { month: "short", year: "numeric", timeZone: "Europe/Moscow" }).format(date) };
-  const weekStart = new Date(Date.UTC(year, month - 1, day));
-  const weekday = (weekStart.getUTCDay() + 6) % 7;
-  weekStart.setUTCDate(weekStart.getUTCDate() - weekday);
-  const weekKey = `${weekStart.getUTCFullYear()}-${String(weekStart.getUTCMonth() + 1).padStart(2, "0")}-${String(weekStart.getUTCDate()).padStart(2, "0")}`;
-  return { key: weekKey, label: `Неделя с ${String(weekStart.getUTCDate()).padStart(2, "0")}.${String(weekStart.getUTCMonth() + 1).padStart(2, "0")}.${weekStart.getUTCFullYear()}` };
+  // The Rhythm screen uses ISO week identity. Reuse the same key/label so a
+  // receipt fact is overlaid on the exact same week rather than a parallel row.
+  const weekDate = new Date(Date.UTC(year, month - 1, day));
+  weekDate.setUTCDate(weekDate.getUTCDate() + 4 - (weekDate.getUTCDay() || 7));
+  const weekYear = weekDate.getUTCFullYear();
+  const weekStart = Date.UTC(weekYear, 0, 1);
+  const week = Math.ceil((((weekDate.getTime() - weekStart) / 86_400_000) + 1) / 7);
+  return { key: `${weekYear}-${String(week).padStart(2, "0")}`, label: `Нед. ${week} · ${weekYear}` };
 }
 
 export const __evotorSalesTestUtils = { evotorSalesInterval };
