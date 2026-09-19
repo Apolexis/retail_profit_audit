@@ -139,10 +139,15 @@ describe("общий операционный справочник", () => {
 		expect(editor).not.toContain('<option value="kg">кг</option>');
 	});
 
-	it("держит справочник категорий свернутым и открывает форму создания только явным действием", () => {
-		expect(page).toContain('const [showCategoryCreate, setShowCategoryCreate] = useState(false)');
-		expect(page).toContain('className="catalog-category-create-action"');
-		expect(page).toContain("showCategoryCreate && <form className=\"catalog-category-create\"");
-		expect(css).toContain(".packet .catalog-category-create-action");
-	});
+		it("держит справочник категорий свернутым и открывает форму создания только явным действием", () => {
+			expect(page).toContain('const [showCategoryCreate, setShowCategoryCreate] = useState(false)');
+			expect(page).toContain('className="catalog-category-create-action"');
+			expect(page).toContain("showCategoryCreate && <form className=\"catalog-category-create\"");
+			expect(page).toContain('className="catalog-price-create"');
+			expect(page).toContain('<X size={14}/>Скрыть форму');
+			expect(page).toContain('<X size={14}/>Отменить');
+			expect(css).toContain(".packet .catalog-category-create-action");
+			expect(css).toContain(".packet .catalog-price-secondary form { display: grid; grid-template-columns: minmax(210px, 1fr) auto; gap: 10px; align-items: end; width: min(100%, 640px); min-width: 0; }");
+			expect(css).toContain("@media (hover: hover) and (pointer: fine)");
+		});
 });
