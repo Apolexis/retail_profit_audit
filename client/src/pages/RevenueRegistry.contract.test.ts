@@ -126,16 +126,10 @@ describe("контракт страницы Выручка", () => {
     expect(page).toContain('className="revenue-register-actions"');
   });
 
-  it("сверяет только переданные продажи с нормализованными чеками Эвотор без записи в кассу", () => {
-    expect(page).toContain("trpc.revenueRegistry.reconciliation.useQuery");
-    expect(page).toContain("СВЕРКА С ЧЕКАМИ ЭВОТОР");
-    expect(page).toContain("Нал + Б/Нал");
-    expect(router).toContain("reconciliation: protectedProcedure");
-    expect(router).toContain("Сверка выручки доступна только административному персоналу");
-    expect(revenueService).toContain("listRevenueEvotorReconciliation");
-    expect(revenueService).toContain('eq(operationalEvotorDocuments.documentType, "SELL")');
-    expect(revenueService).toContain("const reportedSales = Number(record.cash) + Number(record.cashless)");
-    expect(revenueService).toContain("missing_receipts");
+  it("не размещает факты Эвотор в операционном реестре выручки", () => {
+    expect(page).not.toContain("trpc.revenueRegistry.reconciliation.useQuery");
+    expect(page).not.toContain("СВЕРКА С ЧЕКАМИ ЭВОТОР");
+    expect(page).not.toContain("revenue-reconciliation");
     expect(revenueService).not.toMatch(/(?:POST|PUT|PATCH|DELETE)\s+https?:\/\/[^\n]*evotor/i);
   });
 

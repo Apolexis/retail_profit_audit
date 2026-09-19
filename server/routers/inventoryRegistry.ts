@@ -423,19 +423,21 @@ export const inventoryRegistryRouter = router({
     await recordChange({ actorId: actor.id, action: "store_request.draft.delete", entityType: "operational_store_request", entityId: String(input.requestId), beforeState: { requestNumber: result.before.requestNumber, storeName: detail.storeName, businessDate: result.before.businessDate, lineCount: result.lineCount }, afterState: { deleted: true } });
     return result;
   }),
-  printRequests: protectedProcedure.input(z.object({ businessDate: dateInput, printGroupIds: z.array(z.number().int().positive()).max(100).optional(), printCategoryGroupIds: z.array(z.number().int().positive()).max(200).optional() })).mutation(async ({ ctx, input }) => {
+  printRequests: protectedProcedure.input(z.object({ businessDate: dateInput, storeId: z.number().int().positive().optional(), printGroupIds: z.array(z.number().int().positive()).max(100).optional(), printCategoryGroupIds: z.array(z.number().int().positive()).max(200).optional() })).mutation(async ({ ctx, input }) => {
     const actor = await localActor(ctx.user.openId);
     if (actor.role !== "admin" && actor.role !== "manager") throw new TRPCError({ code: "FORBIDDEN", message: "Печать заявок доступна только руководителю или администратору." });
-    const storeIds = actor.role === "admin" ? null : await getAccessibleStoreIds(ctx.user.openId);
+    if (input.storeId) await requireInventoryStoreAccess(ctx.user.openId, input.storeId, "view");
+    const storeIds = input.storeId ? [input.storeId] : actor.role === "admin" ? null : await getAccessibleStoreIds(ctx.user.openId);
     if (Array.isArray(storeIds) && !storeIds.length) throw new TRPCError({ code: "FORBIDDEN", message: "Нет доступных магазинов для печати заявок." });
     const projection = await getOperationalStoreRequestPrintProjection({ ...input, storeIds });
-    await recordChange({ actorId: actor.id, action: "store_request.print", entityType: "operational_store_request_print", entityId: input.businessDate, afterState: { businessDate: input.businessDate, printGroupIds: input.printGroupIds ?? "all", printCategoryGroupIds: input.printCategoryGroupIds ?? "all_active", sheets: projection.sheets.length, source: "closed_request_snapshots" } });
+    await recordChange({ actorId: actor.id, action: "store_request.print", entityType: "operational_store_request_print", entityId: input.businessDate, afterState: { businessDate: input.businessDate, storeId: input.storeId ?? "all_accessible", printGroupIds: input.printGroupIds ?? "all", printCategoryGroupIds: input.printCategoryGroupIds ?? "all_active", sheets: projection.sheets.length, source: "closed_request_snapshots" } });
     return projection;
   }),
-  requestPrintCandidates: protectedProcedure.input(z.object({ businessDate: dateInput })).query(async ({ ctx, input }) => {
+  requestPrintCandidates: protectedProcedure.input(z.object({ businessDate: dateInput, storeId: z.number().int().positive().optional() })).query(async ({ ctx, input }) => {
     const actor = await localActor(ctx.user.openId);
     if (actor.role !== "admin" && actor.role !== "manager") throw new TRPCError({ code: "FORBIDDEN", message: "Закрытие заявок доступно только руководителю или администратору." });
-    const storeIds = actor.role === "admin" ? null : await getAccessibleStoreIds(ctx.user.openId);
+    if (input.storeId) await requireInventoryStoreAccess(ctx.user.openId, input.storeId, "view");
+    const storeIds = input.storeId ? [input.storeId] : actor.role === "admin" ? null : await getAccessibleStoreIds(ctx.user.openId);
     return { count: await countOperationalStoreRequestPrintCandidates({ businessDate: input.businessDate, storeIds }) };
   }),
   closeRequestsForPrint: protectedProcedure.input(z.object({ businessDate: dateInput })).mutation(async ({ ctx, input }) => {

@@ -205,3 +205,26 @@ html[data-audit-theme="dark"] .packet {
   .store-request-print-sheet th,
   .store-request-print-sheet td { padding: 1.2mm 1.5mm; border-color: #777; overflow-wrap: anywhere; }
 }
+
+/* The opened draft has an explicit exit action; deletion remains visually secondary to cancel. */
+.packet .request-actions { justify-content: flex-end; }
+.packet .request-delete-draft { margin-right: 0; }
+.packet .request-cancel-draft { min-width: 112px; }
+.packet .request-history .card-title { align-items: center; gap: 12px; }
+.packet .request-history .card-title > select { width: min(100%, 240px); min-width: 170px; }
+.packet .request-comments > div > strong { display: none; }
+@media (max-width: 760px) {
+  .packet .request-history .card-title { align-items: stretch; }
+  .packet .request-history .card-title > select { width: 100%; }
+  .packet .request-actions { justify-content: stretch; }
+}
+
+.packet .request-history-list > article { position: relative; }
+.packet .request-history-delete { position: absolute; right: 11px; top: 50%; z-index: 2; min-height: 30px; margin: 0; padding-inline: 8px; transform: translateY(-50%); }
+.packet .request-history-list > article:has(.request-history-delete) .request-history-select { padding-right: 104px; }
+@media (max-width: 760px) {
+  .packet .request-history-delete { top: 11px; transform: none; }
+  .packet .request-history-list > article:has(.request-history-delete) .request-history-select { padding-right: 90px; }
+  .packet .request-history-delete span { display: none; }
+  .packet .request-history-delete { width: 32px; min-width: 32px; padding: 0; justify-content: center; }
+}

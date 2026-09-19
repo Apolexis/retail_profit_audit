@@ -5212,3 +5212,27 @@ button[data-slot="alert-dialog-cancel"] { transition: background-color 150ms var
 html[data-audit-theme="light"] button[data-slot="alert-dialog-cancel"]:hover { border-color: #0A84FF !important; background: rgba(10,132,255,.08) !important; color: #076fd5 !important; }
 html[data-audit-theme="dark"] button[data-slot="alert-dialog-cancel"]:hover { border-color: #ff765f !important; background: rgba(255,118,95,.12) !important; color: #ffd7cf !important; }
 button[data-slot="alert-dialog-cancel"]:active { transform: scale(.97); }
+
+/* Confirmation cancellation follows the established outlined action pattern. */
+button[data-slot="alert-dialog-cancel"] {
+  transition: border-color 160ms var(--audit-hover-ease), background-color 160ms var(--audit-hover-ease), color 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease) !important;
+}
+html[data-audit-theme="light"] button[data-slot="alert-dialog-cancel"]:hover,
+html[data-audit-theme="light"] button[data-slot="alert-dialog-cancel"]:focus-visible {
+  border-color: #0a84ff !important;
+  background: #f2f8ff !important;
+  color: #0a84ff !important;
+  box-shadow: 0 0 0 2px rgba(10, 132, 255, .14) !important;
+  outline: none;
+  transform: none !important;
+}
+html[data-audit-theme="dark"] button[data-slot="alert-dialog-cancel"]:hover,
+html[data-audit-theme="dark"] button[data-slot="alert-dialog-cancel"]:focus-visible {
+  border-color: #ff765f !important;
+  background: #21151d !important;
+  color: #ff9a88 !important;
+  box-shadow: 0 0 0 2px rgba(255, 118, 95, .14) !important;
+  outline: none;
+  transform: none !important;
+}
+button[data-slot="alert-dialog-cancel"]:active { transform: scale(.98) !important; }

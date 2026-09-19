@@ -1,9 +1,52 @@
-.packet .print-settings-card { display: grid; gap: 15px; }
-.packet .print-settings-store-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 9px; }
+/* Consolidated print settings use dense operating rows rather than broad tile grids. */
+.packet .print-settings-card { display: grid; gap: 15px; min-width: 0; }
+.packet .print-settings-store-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
 .packet .print-settings-store-list > label { display: grid; gap: 6px; min-width: 0; padding: 10px 11px; border: 1px solid var(--warehouse-line); border-radius: 10px; background: var(--warehouse-panel); }
 .packet .print-settings-store-list strong { overflow-wrap: anywhere; font-size: 13px; }
 .packet .print-settings-store-list select { min-width: 0; }
 .packet .print-settings-lede { margin-bottom: 16px; }
+
+/* The group name is visibly an edit control even before hover. */
+.packet .print-settings-card .warehouse-print-group-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--warehouse-accent);
+  border-radius: 9px;
+  background: var(--warehouse-accent-faint);
+  color: var(--warehouse-accent);
+  font: 750 12px Manrope, Arial, sans-serif;
+}
+.packet .print-settings-card .warehouse-print-group-chip svg { color: var(--warehouse-accent); }
+.packet .print-settings-card .warehouse-print-group-chip:hover,
+.packet .print-settings-card .warehouse-print-group-chip:focus-visible { border-color: var(--warehouse-accent); box-shadow: 0 0 0 1px var(--warehouse-accent-faint); outline: none; transform: none; }
+
+/* A category is one readable unit: its memberships, then two add rows. */
+.packet .print-settings-card .warehouse-category-print-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.packet .print-settings-card .warehouse-category-print-groups > article { min-width: 0; padding: 14px; }
+.packet .print-settings-card .warehouse-category-group-heading { align-items: flex-start; }
+.packet .print-settings-card .warehouse-category-group-heading > div { min-width: 0; }
+.packet .print-settings-card .warehouse-category-print-mode { margin-top: 2px; }
+.packet .print-settings-card .warehouse-category-member-list { min-height: 30px; }
+.packet .print-settings-card .warehouse-category-add { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.packet .print-settings-card .warehouse-category-add .subtle-button { min-width: 0; padding-inline: 10px; }
+.packet .print-settings-card .warehouse-category-add > :nth-child(3) { grid-column: 1; }
+.packet .print-settings-card .warehouse-category-add > :nth-child(4) { grid-column: 2; }
+
+@media (max-width: 1400px) {
+  .packet .print-settings-store-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 1040px) {
+  .packet .print-settings-store-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .packet .print-settings-card .warehouse-category-print-groups { grid-template-columns: 1fr; }
+}
 @media (max-width: 620px) {
   .packet .print-settings-store-list { grid-template-columns: 1fr; }
+  .packet .print-settings-card .warehouse-category-add { grid-template-columns: 1fr; }
+  .packet .print-settings-card .warehouse-category-add > :nth-child(3),
+  .packet .print-settings-card .warehouse-category-add > :nth-child(4) { grid-column: auto; }
+  .packet .print-settings-card .warehouse-category-add .subtle-button { width: 100%; justify-content: center; }
 }

@@ -22,13 +22,13 @@ describe("заявки магазинов: экран", () => {
     expect(page).not.toContain("evotorCostPrice");
   });
 
-  it("меняет количество прямо в строке, дает ручную request-only строку и показывает расчеты", () => {
+  it("меняет количество прямо в строке и показывает расчеты без создания товара из заявки", () => {
     expect(page).toContain("upsertRequestLine");
     expect(page).toContain("removeRequestLine");
     expect(page).toContain("changeProductQuantity");
     expect(page).toContain("request-quantity-stepper");
-    expect(page).toContain("addRequestManualLine");
-    expect(page).toContain("manualPrintCategoryGroupId");
+    expect(page).not.toContain("addRequestManualLine");
+    expect(page).not.toContain("Не нашли товар? Добавить строку");
     expect(page).toContain("Рекомендуем заказать");
     expect(page).toContain("средняя продажа за день + запас");
     expect(page).toContain("product.supplyStockState");
@@ -40,7 +40,7 @@ describe("заявки магазинов: экран", () => {
     expect(page).toContain('toast.success(result.created ? "Черновик заявки открыт" : "Открыт существующий черновик")');
     expect(page).toContain("requestPrintCandidates");
     expect(page).toContain("closeRequestsForPrint");
-    expect(page).toContain("Распечатать и закрыть все");
+    expect(page).toContain("Распечатать и закрыть");
     expect(page).not.toContain('>Закрыть заявку<');
     expect(page).toContain("const canPrintRequests = Boolean(isManager || isAdmin);");
   });
@@ -48,18 +48,19 @@ describe("заявки магазинов: экран", () => {
   it("печатает все активные группы без пользовательского выбора подборки", () => {
     expect(page).toContain("printRequests");
     expect(page).not.toContain("printCategoryGroupIds");
-    expect(page).toContain("Все настроенные группы");
+    expect(page).toContain("Все доступные магазины");
     expect(page).toContain("store-request-print-sheet");
     expect(page).toContain("ПЕЧАТЬ ЗАЯВОК");
     expect(page).toContain("const canPrintRequests = Boolean(isManager || isAdmin);");
     expect(page).toContain('{canPrintRequests && <section className="packet-card request-print-config">');
+    expect(page).toContain("isAllStoresScope && (printCandidates.data?.count ?? 0) > 0");
   });
 
   it("не возвращает общий комментарий и оставляет два комментария к категориям печати", () => {
     expect(page).not.toContain("Комментарий к заявке");
     expect(printSettings).toContain("requestCommentSlot");
-    expect(printSettings).toContain("Комментарий 1");
-    expect(printSettings).toContain("Комментарий 2");
+    expect(printSettings).toContain("Комментарий к Мороженной продукции");
+    expect(printSettings).toContain("Комментарий к Копченой продукции");
     expect(printSettings).toContain("категория печати");
     expect(page).not.toContain("Комментарий к заявке");
     expect(page).not.toContain("Общее примечание к заказу");
