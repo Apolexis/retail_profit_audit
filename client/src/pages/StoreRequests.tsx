@@ -1,9 +1,9 @@
-import { Boxes, ChevronDown, ClipboardList, FilePlus2, Minus, Plus, Printer, Trash2, X } from "lucide-react";
+import { Boxes, ChevronDown, ClipboardList, Eye, FilePlus2, Minus, Plus, Printer, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AuditShell } from "@/components/AuditShell";
 import { ConfirmDangerDialog } from "@/components/ConfirmDangerDialog";
-import { ExactDateControl } from "@/components/DateRangeControl";
+import { DateRangeControl, ExactDateControl } from "@/components/DateRangeControl";
 import { ThemedSelect } from "@/components/ui/themed-select";
 import { normalizeDecimalInputText } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
@@ -58,6 +58,7 @@ type RequestListItem = Omit<RequestDetail, "lines" | "comments" | "closedAt"> & 
 type PrintGroup = { id: number; name: string; isActive: boolean };
 type PrintProjection = {
   businessDate: string;
+  zebraMode: "none" | "rows" | "columns";
   totalRequests: number;
   totalLines: number;
   sheets: Array<{
@@ -82,8 +83,13 @@ const toMoscowDate = () => {
   return `${value("year")}-${value("month")}-${value("day")}`;
 };
 const displayDate = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString("ru-RU", { day: "2-digit", month: "long", year: "numeric" });
-const quantityText = (value: string | number) => String(Math.round(Number(value) * 1_000) / 1_000);
-const normalizeQuantity = (value: string) => normalizeDecimalInputText(value).replace(/[^0-9.]/g, "");
+const quantityText = (value: string | number) => String(Math.round(Number(value) * 10) / 10);
+const normalizeQuantity = (value: string) => {
+  const normalized = normalizeDecimalInputText(value).replace(/[^0-9.]/g, "");
+  const [whole, ...fractionParts] = normalized.split(".");
+  if (!fractionParts.length) return whole;
+  return `${whole}.${fractionParts.join("").slice(0, 1)}`;
+};
 const stockLabel: Record<StockState, string> = { unknown: "остаток не уточнен", low: "мало", sufficient: "достаточно", high: "много" };
 
 function orderSignal(product: RequestProduct, rawQuantity: string) {
@@ -106,6 +112,10 @@ export default function StoreRequests() {
   const canPrintRequests = Boolean(isManager || isAdmin);
   const [storeId, setStoreId] = useState("");
   const [businessDate, setBusinessDate] = useState(toMoscowDate);
+  const [historyRange, setHistoryRange] = useState(() => {
+    const today = toMoscowDate();
+    return { from: `${today.slice(0, 4)}-01-01`, to: today };
+  });
   const [activeRequestId, setActiveRequestId] = useState<number>();
   const [query, setQuery] = useState("");
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
@@ -118,7 +128,7 @@ export default function StoreRequests() {
 
   const selectedStoreId = Number(storeId);
   const requestProducts = trpc.inventoryRegistry.requestProducts.useQuery({ storeId: selectedStoreId || 0 }, { enabled: Boolean(selectedStoreId), retry: false });
-  const requestListInput = useMemo(() => ({ storeId: selectedStoreId || undefined, limit: isSeller ? 10 : 100 }), [isSeller, selectedStoreId]);
+  const requestListInput = useMemo(() => ({ storeId: selectedStoreId || undefined, from: isSeller ? undefined : historyRange.from, to: isSeller ? undefined : historyRange.to, limit: isSeller ? 10 : 100 }), [historyRange.from, historyRange.to, isSeller, selectedStoreId]);
   const requestList = trpc.inventoryRegistry.requestList.useQuery(requestListInput, { enabled: Boolean(me.data), retry: false });
   const requestDetail = trpc.inventoryRegistry.requestDetail.useQuery({ requestId: activeRequestId ?? 0 }, { enabled: Boolean(activeRequestId), retry: false });
   const printCandidates = trpc.inventoryRegistry.requestPrintCandidates.useQuery({ businessDate, storeId: selectedStoreId || undefined }, { enabled: canPrintRequests, retry: false });
@@ -172,7 +182,7 @@ export default function StoreRequests() {
     onSuccess: async result => {
       setActiveRequestId(result.request?.id);
       await refresh();
-      toast.success(result.created ? "Черновик заявки открыт" : "Открыт существующий черновик");
+      toast.success(result.created ? "Заявка сохранена" : "Открыта сохраненная заявка");
     },
     onError: error => toast.error("Заявка не открыта", { description: error.message }),
   });
@@ -203,8 +213,13 @@ export default function StoreRequests() {
   });
   const printRequests = trpc.inventoryRegistry.printRequests.useMutation({
     onSuccess: result => {
-      setPrintProjection(result as PrintProjection);
-      window.setTimeout(() => window.print(), 80);
+      const projection = result as PrintProjection;
+      if (!projection.sheets.length) {
+        toast.error("Нет строк для печати", { description: "Проверьте строки заявки, назначение магазина группе печати и состав активных категорий." });
+        return;
+      }
+      setPrintProjection(projection);
+      requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
     },
     onError: error => toast.error("Подборка для печати недоступна", { description: error.message }),
   });
@@ -232,8 +247,8 @@ export default function StoreRequests() {
   };
   const changeProductQuantity = (product: RequestProduct, delta: number) => {
     const current = Number(normalizeQuantity(quantityDrafts[product.id] ?? quantityText(productLines.get(product.id)?.requestedQuantity ?? 0))) || 0;
-    const step = product.baseUnit === "fraction" ? 0.1 : 1;
-    persistProductQuantity(product, Math.max(0, Math.round((current + delta * step) * 1_000) / 1_000));
+    const step = product.baseUnit === "fraction" ? 0.5 : 1;
+    persistProductQuantity(product, Math.max(0, Math.round((current + delta * step) * 10) / 10));
   };
   const toggleCategory = (category: string) => setExpandedCategories(current => {
     const next = new Set(current);
@@ -256,21 +271,23 @@ export default function StoreRequests() {
   return <AuditShell kicker="30 / ЗАЯВКИ" title="Заявки магазинов">
     <section className="page-lede request-lede"><div><span>УПРАВЛЕНИЕ МАГАЗИНАМИ</span><h2>Заявка магазина</h2><p>Соберите потребность по категориям. В заявку попадают только название и количество; цены и себестоимость не раскрываются.</p></div></section>
 
+    {!isSeller && <section className="packet-card request-scope-control"><label>Магазин для заявки и списка<ThemedSelect value={storeId} onChange={event => setStoreId(event.target.value)} aria-label="Выбрать магазин для заявок"><option value="">Все магазины</option>{accessibleStores.map(store => <option value={store.id} key={store.id}>{store.name}</option>)}</ThemedSelect></label><small>Для новой заявки выберите одну точку; «Все магазины» оставляет сводный список.</small></section>}
+
     {!active && <section className="packet-card request-create-card">
-      <div className="card-title"><div><span>НОВАЯ ЗАЯВКА</span><h3>Открыть черновик</h3></div><ClipboardList size={20}/></div>
+      <div className="card-title"><div><span>НОВАЯ ЗАЯВКА</span><h3>Создать заявку</h3></div><ClipboardList size={20}/></div>
       <form className="request-open-form" onSubmit={openRequest}>
         <label>Дата заявки
           {isSeller ? <strong className="request-today">{displayDate(businessDate)}</strong> : <ExactDateControl value={businessDate} onChange={setBusinessDate} title="ДАТА ЗАЯВКИ" ariaLabel="Выбрать дату заявки"/>}
         </label>
         <label>Магазин
-          {isSeller && accessibleStores.length === 1 ? <strong className="request-store-fixed">{accessibleStores[0].name}</strong> : <ThemedSelect value={storeId} onChange={event => setStoreId(event.target.value)} required><option value="">Выберите магазин</option>{accessibleStores.map(store => <option value={store.id} key={store.id}>{store.name}</option>)}</ThemedSelect>}
+          {isSeller && accessibleStores.length === 1 ? <strong className="request-store-fixed">{accessibleStores[0].name}</strong> : <strong className="request-store-fixed">{accessibleStores.find(store => store.id === selectedStoreId)?.name ?? "Выберите магазин выше"}</strong>}
         </label>
         <button className="subtle-button request-open-action" disabled={!selectedStoreId || createRequest.isPending}><FilePlus2 size={16}/>{createRequest.isPending ? "Открываем…" : "Открыть заявку"}</button>
       </form>
     </section>}
 
     {active && <section className="packet-card request-draft-card">
-      <div className="card-title request-draft-title"><div><span>{active.status === "draft" ? "ЧЕРНОВИК ЗАЯВКИ" : "ЗАКРЫТАЯ ЗАЯВКА"}</span><h3>{active.storeName} · {displayDate(active.businessDate)}</h3></div></div>
+      <div className="card-title request-draft-title"><div><span>{active.status === "draft" ? "СОХРАНЕННАЯ ЗАЯВКА" : "ЗАКРЫТАЯ ЗАЯВКА"}</span><h3>{active.storeName} · {displayDate(active.businessDate)}</h3></div></div>
       {active.status === "draft" && <div className="request-actions"><ConfirmDangerDialog trigger={<button type="button" className="subtle-button subtle-danger request-delete-draft" disabled={deleteDraft.isPending}><Trash2 size={14}/>{deleteDraft.isPending ? "Удаляем…" : "Удалить черновик"}</button>} title="Удалить черновик заявки?" description="Черновик и его строки будут удалены. Закрытые заявки и печатные подборки не изменятся; событие останется в общем журнале." confirmLabel="Удалить черновик" disabled={deleteDraft.isPending} onConfirm={() => deleteDraft.mutate({ requestId: active.id })}/><button type="button" className="subtle-button request-cancel-draft" onClick={() => setActiveRequestId(undefined)}><X size={14}/>Отмена</button></div>}
       {active.status === "draft" ? <>
         <div className="request-search-row"><label>Поиск товара<input value={query} onChange={event => setQuery(event.target.value)} placeholder="Название или код" autoComplete="off"/></label><span>{products.length} позиций</span></div>
@@ -295,10 +312,10 @@ export default function StoreRequests() {
       </> : <div className="request-closed-lines">{active.lines.map(line => <article key={line.id}><span>{line.catalogNumber ? `№ ${line.catalogNumber}` : "вручную"}</span><strong>{line.productName}</strong><b>{quantityText(line.requestedQuantity)} {unitLabel[line.unit]}</b></article>)}</div>}
     </section>}
 
-    <section className="packet-card request-history"><div className="card-title"><div><span>{isSeller ? "МОИ ЗАЯВКИ" : "ИСТОРИЯ ЗАЯВОК"}</span><h3>{isSeller ? "Последние заявки точки" : selectedStoreId ? "Заявки выбранного магазина" : "Заявки всех доступных магазинов"}</h3></div>{!isSeller && <ThemedSelect value={storeId} onChange={event => setStoreId(event.target.value)} aria-label="Выбрать магазин для списка заявок"><option value="">Все магазины</option>{accessibleStores.map(store => <option value={store.id} key={store.id}>{store.name}</option>)}</ThemedSelect>}</div>{requestList.isLoading ? <p className="packet-note">Загружаем заявки…</p> : (requestList.data as RequestListItem[] | undefined)?.length ? <div className="request-history-list">{(requestList.data as RequestListItem[]).map(item => <article key={item.id} className={item.id === activeRequestId ? "selected" : ""}><button type="button" className="request-history-select" onClick={() => openFromHistory(item)}><span>{displayDate(item.businessDate)}</span><strong>{item.storeName}</strong><small>{item.status === "closed" ? "Подборка подготовлена" : "Доступно изменение"}</small><b className={item.status === "closed" ? "closed" : "draft"}>{item.status === "closed" ? "Готово к печати" : "Черновик"}</b></button>{item.status === "draft" && <ConfirmDangerDialog trigger={<button type="button" className="subtle-button subtle-danger request-history-delete" disabled={deleteDraft.isPending}><Trash2 size={14}/><span>Удалить</span></button>} title="Удалить черновик заявки?" description="Черновик и его строки будут удалены. Закрытые заявки и печатные подборки не изменятся; событие останется в общем журнале." confirmLabel="Удалить черновик" disabled={deleteDraft.isPending} onConfirm={() => deleteDraft.mutate({ requestId: item.id })}/>}</article>)}</div> : <div className="empty-state compact"><ClipboardList size={25}/><h2>Заявок пока нет</h2><p>После открытия первого черновика здесь появится история выбранного магазина.</p></div>}</section>
+    <section className="packet-card request-history"><div className="card-title"><div><span>{isSeller ? "МОИ ЗАЯВКИ" : "ИСТОРИЯ ЗАЯВОК"}</span><h3>{isSeller ? "Последние заявки точки" : selectedStoreId ? "Заявки выбранного магазина" : "Заявки всех доступных магазинов"}</h3></div>{!isSeller && <DateRangeControl value={historyRange} onChange={setHistoryRange} title="ПЕРИОД СПИСКА ЗАЯВОК" ariaLabel="Выбрать период списка заявок"/>}</div>{requestList.isLoading ? <p className="packet-note">Загружаем заявки…</p> : (requestList.data as RequestListItem[] | undefined)?.length ? <div className="request-history-list">{(requestList.data as RequestListItem[]).map(item => <article key={item.id} className={item.id === activeRequestId ? "selected" : ""}><button type="button" className="request-history-select" onClick={() => openFromHistory(item)}><span>{displayDate(item.businessDate)}</span><strong>{item.storeName}</strong><small>{item.status === "closed" ? "Нажмите, чтобы открыть сохраненную подборку" : "Можно изменить и распечатать"}</small><b className={item.status === "closed" ? "closed" : "draft"}>{item.status === "closed" ? "Закрыта" : "Заявка"}</b></button>{item.status === "closed" && <button type="button" className="subtle-button request-history-open" onClick={() => openFromHistory(item)}><Eye size={14}/><span>Открыть</span></button>}{item.status === "draft" && <ConfirmDangerDialog trigger={<button type="button" className="subtle-button subtle-danger request-history-delete" disabled={deleteDraft.isPending}><Trash2 size={14}/><span>Удалить</span></button>} title="Удалить сохраненную заявку?" description="Заявка и ее строки будут удалены. Закрытые заявки и печатные подборки не изменятся; событие останется в общем журнале." confirmLabel="Удалить заявку" disabled={deleteDraft.isPending} onConfirm={() => deleteDraft.mutate({ requestId: item.id })}/>}</article>)}</div> : <div className="empty-state compact"><ClipboardList size={25}/><h2>Заявок пока нет</h2><p>После открытия первого черновика здесь появится история выбранного магазина.</p></div>}</section>
 
-    {canPrintRequests && <section className="packet-card request-print-config"><div className="card-title"><div><span>ПЕЧАТЬ ЗАЯВОК</span><h3>{isAllStoresScope ? "Все доступные магазины" : "Выбранный магазин"}</h3></div><Printer size={20}/></div><label className="request-print-date">Дата заявок<ExactDateControl value={businessDate} onChange={setBusinessDate} title="ДАТА ПЕЧАТИ ЗАЯВОК" ariaLabel="Выбрать дату заявок для печати"/></label><div className="request-print-actions"><button type="button" className="subtle-button" disabled={printRequests.isPending} onClick={() => printRequests.mutate({ businessDate, storeId: selectedStoreId || undefined })}><Printer size={16}/>{printRequests.isPending ? "Готовим…" : isAllStoresScope ? "Распечатать заявки" : "Распечатать"}</button>{isAllStoresScope && (printCandidates.data?.count ?? 0) > 0 && <ConfirmDangerDialog trigger={<button type="button" className="subtle-button" disabled={closeRequestsForPrint.isPending || printRequests.isPending}><Printer size={16}/>{closeRequestsForPrint.isPending || printRequests.isPending ? "Готовим…" : "Распечатать и закрыть"}</button>} title="Распечатать и закрыть все заявки?" description={`Будут закрыты все непустые черновики на выбранную дату (${printCandidates.data?.count ?? 0}); затем сформируется печать всех активных групп.`} confirmLabel="Распечатать и закрыть" disabled={closeRequestsForPrint.isPending || printRequests.isPending} onConfirm={() => closeRequestsForPrint.mutate({ businessDate })}/>}<small>Печатаются все активные группы магазинов и категории, в которых есть закрытые заявки.</small></div></section>}
+    {canPrintRequests && <section className="packet-card request-print-config"><div className="card-title"><div><span>ПЕЧАТЬ ЗАЯВОК</span><h3>{isAllStoresScope ? "Все доступные магазины" : "Выбранный магазин"}</h3></div><Printer size={20}/></div><label className="request-print-date">Дата заявок<ExactDateControl value={businessDate} onChange={setBusinessDate} title="ДАТА ПЕЧАТИ ЗАЯВОК" ariaLabel="Выбрать дату заявок для печати"/></label><div className="request-print-actions"><button type="button" className="subtle-button" disabled={printRequests.isPending} onClick={() => printRequests.mutate({ businessDate, storeId: selectedStoreId || undefined })}><Printer size={16}/>{printRequests.isPending ? "Готовим…" : isAllStoresScope ? "Распечатать заявки" : "Распечатать"}</button>{isAllStoresScope && (printCandidates.data?.count ?? 0) > 0 && <ConfirmDangerDialog trigger={<button type="button" className="subtle-button" disabled={closeRequestsForPrint.isPending || printRequests.isPending}><Printer size={16}/>{closeRequestsForPrint.isPending || printRequests.isPending ? "Готовим…" : "Распечатать и закрыть"}</button>} title="Распечатать и закрыть все заявки?" description={`Будут закрыты все непустые черновики на выбранную дату (${printCandidates.data?.count ?? 0}); затем сформируется печать всех активных групп.`} confirmLabel="Распечатать и закрыть" disabled={closeRequestsForPrint.isPending || printRequests.isPending} onConfirm={() => closeRequestsForPrint.mutate({ businessDate })}/>}<small>Печатаются все активные группы магазинов и категории для сохраненных и уже закрытых заявок.</small></div></section>}
 
-    {printProjection && <section className="store-request-print" aria-label="Печатная разметка заявок">{printProjection.sheets.map(sheet => <article className="store-request-print-sheet" key={sheet.id}><header><span>ЗАЯВКИ МАГАЗИНОВ</span><strong>{displayDate(printProjection.businessDate)}</strong><small>{sheet.storeGroupName} · {sheet.categoryGroupName}</small></header>{sheet.stores.map(store => <section key={store.storeId}><h1>{store.storeName}</h1><table><thead><tr><th>№</th><th>Товар</th><th>Количество</th>{sheet.printMode === "grouped_stores" && <th>Заявка</th>}</tr></thead><tbody>{store.lines.map(line => <tr key={`${store.storeId}:${line.id}`}><td>{line.catalogNumber || "—"}</td><td>{line.productName}</td><td>{quantityText(line.requestedQuantity)} {unitLabel[line.unit]}</td>{sheet.printMode === "grouped_stores" && <td>№ {line.requestNumber}</td>}</tr>)}</tbody></table>{store.comments.length > 0 && <div className="store-request-print-comments">{store.comments.map(comment => <p key={comment.id}>{comment.text}</p>)}</div>}</section>)}</article>)}</section>}
+    {printProjection && <section className="store-request-print" data-zebra-mode={printProjection.zebraMode} aria-label="Печатная разметка заявок">{printProjection.sheets.map(sheet => <article className="store-request-print-sheet" key={sheet.id}><header><span>ЗАЯВКИ МАГАЗИНОВ</span><strong>{displayDate(printProjection.businessDate)}</strong><small>{sheet.storeGroupName} · {sheet.categoryGroupName}</small></header>{sheet.stores.map(store => <section key={store.storeId}><h1>{store.storeName}</h1><table><thead><tr><th>№</th><th>Товар</th><th>Количество</th>{sheet.printMode === "grouped_stores" && <th>Заявка</th>}</tr></thead><tbody>{store.lines.map(line => <tr key={`${store.storeId}:${line.id}`}><td>{line.catalogNumber || "—"}</td><td>{line.productName}</td><td>{quantityText(line.requestedQuantity)} {unitLabel[line.unit]}</td>{sheet.printMode === "grouped_stores" && <td>№ {line.requestNumber}</td>}</tr>)}</tbody></table>{store.comments.length > 0 && <div className="store-request-print-comments">{store.comments.map(comment => <p key={comment.id}>{comment.text}</p>)}</div>}</section>)}</article>)}</section>}
   </AuditShell>;
 }

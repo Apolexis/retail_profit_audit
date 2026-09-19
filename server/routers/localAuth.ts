@@ -5,6 +5,7 @@ import { adminProcedure, protectedProcedure, publicProcedure, router } from "../
 import { adminResetLocalPassword, authenticateLocalAccount, changeLocalPassword, createLocalAccount, createLocalSession, deleteLocalAccount, deleteLocalSessionFromCookie, formatRussianPhone, getLocalAccountByOpenId, getLocalSessionFromCookie, listLocalAccounts, LOCAL_SESSION_COOKIE, recordChange, updateLocalAccount } from "../localAuth";
 import { getAccessibleStoreIds, listAccountStoreAccess, replaceAccountStoreAccess } from "../accessControl";
 import { getImportThresholdBreachPage, listAuditStores } from "../audit";
+import { getEvotorCredentialStatus, replaceEvotorApiToken } from "../evotorCredentials";
 import { createNotifications, getNotificationSummary, getPushStatus, hasNotificationEntityAccess, listMyNotifications, markAllNotificationsRead, markNotificationRead, removePushSubscription, savePushSubscription } from "../notifications";
 import { PASSKEY_ATTEMPT_COOKIE, beginPasskeyAuthentication, beginPasskeyRegistration, deleteAccountPasskey, finishPasskeyAuthentication, finishPasskeyRegistration, listAccountPasskeys } from "../passkeys";
 
@@ -113,6 +114,14 @@ export const localAuthRouter = router({
   adminResetPassword: adminProcedure.input(z.object({ id: z.number().int(), nextPassword: password })).mutation(async ({ input, ctx }) => {
     const actor = await localAccountFromContext(ctx.user?.openId);
     return adminResetLocalPassword(input.id, input.nextPassword, actor.id);
+  }),
+  evotorCredentialStatus: adminProcedure.query(async ({ ctx }) => {
+    await localAdminFromContext(ctx.user?.openId);
+    return getEvotorCredentialStatus();
+  }),
+  replaceEvotorCredential: adminProcedure.input(z.object({ token: z.string().trim().min(16).max(4096) })).mutation(async ({ input, ctx }) => {
+    const actor = await localAdminFromContext(ctx.user?.openId);
+    return replaceEvotorApiToken(input.token, actor.id);
   }),
   storeAccess: adminProcedure.input(z.object({ accountId: z.number().int() })).query(async ({ input, ctx }) => {
     await localAccountFromContext(ctx.user?.openId);

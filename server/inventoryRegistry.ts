@@ -15,6 +15,7 @@ import {
   operationalPrintCategoryGroups,
   operationalPrintGroups,
   operationalProductSalePrices,
+  operationalRequestPrintSettings,
   operationalStockMovements,
   operationalStoreMappings,
   operationalStorePriceTypes,
@@ -342,8 +343,8 @@ function isRetainedEvotorDocument(document: { closedAt: string | null; createdAt
 }
 
 export const validateStoreRequestQuantity = (value: number) => {
-  if (!Number.isFinite(value) || value <= 0 || value > 1_000_000 || Math.round(value * 1_000) !== value * 1_000) {
-    throw new Error("Количество в заявке должно быть больше нуля и содержать не более трех знаков после точки.");
+  if (!Number.isFinite(value) || value <= 0 || value > 1_000_000 || Math.round(value * 10) !== value * 10) {
+    throw new Error("Количество в заявке должно быть больше нуля и содержать не более одного знака после точки.");
   }
   return Math.round(value * 1_000) / 1_000;
 };
@@ -588,13 +589,15 @@ export async function listOperationalStoreRequestStores(input: { storeIds?: numb
     .limit(100);
 }
 
-export async function listOperationalStoreRequests(input: { storeIds?: number[] | null; storeId?: number; status?: StoreRequestStatus; limit?: number }) {
+export async function listOperationalStoreRequests(input: { storeIds?: number[] | null; storeId?: number; status?: StoreRequestStatus; from?: string; to?: string; limit?: number }) {
   const db = await getDb();
   if (!db || (Array.isArray(input.storeIds) && !input.storeIds.length)) return [];
   const conditions = [
     input.storeId ? eq(operationalStoreRequests.storeId, input.storeId) : undefined,
     Array.isArray(input.storeIds) ? inArray(operationalStoreRequests.storeId, input.storeIds) : undefined,
     input.status ? eq(operationalStoreRequests.status, input.status) : undefined,
+    input.from ? gte(operationalStoreRequests.businessDate, validateInventoryDate(input.from)) : undefined,
+    input.to ? lte(operationalStoreRequests.businessDate, validateInventoryDate(input.to)) : undefined,
   ].filter(Boolean);
   const requests = await db.select().from(operationalStoreRequests).where(and(...conditions)).orderBy(desc(operationalStoreRequests.updatedAt), desc(operationalStoreRequests.id)).limit(Math.min(Math.max(input.limit ?? 30, 1), 100));
   if (!requests.length) return [];
@@ -734,7 +737,7 @@ export async function upsertOperationalStoreRequestLine(input: { requestId: numb
     productName: product.canonicalName,
     catalogCategoryId: product.catalogCategoryId,
     categoryName: product.managedCategoryName ?? product.evotorCategoryName,
-    requestedQuantity: requestedQuantity.toFixed(3),
+    requestedQuantity: requestedQuantity.toFixed(1),
     unit: inventoryUnitFromCatalogUnit(product.baseUnit),
     note,
   };
@@ -774,7 +777,7 @@ export async function addOperationalStoreRequestManualLine(input: { requestId: n
     manualProductName: productName,
     categoryName: "Не найдено в справочнике",
     manualPrintCategoryGroupId: printCategoryGroup.id,
-    requestedQuantity: requestedQuantity.toFixed(3),
+    requestedQuantity: requestedQuantity.toFixed(1),
     unit: input.unit,
     note,
   }).$returningId();
@@ -895,11 +898,12 @@ function expandPrintCategoryNames(groupId: number, groups: Array<typeof operatio
   return expandPrintCategoryReferences(groupId, groups, members).categoryNames;
 }
 
-/** Builds a reproducible, read-only print projection from closed request snapshots. */
+/** Builds a reproducible, read-only print projection from saved or closed request snapshots. */
 export async function getOperationalStoreRequestPrintProjection(input: { businessDate: string; printGroupIds?: number[]; printCategoryGroupIds?: number[]; storeIds?: number[] | null }) {
   const db = await getDb();
   if (!db) throw new Error("База данных недоступна");
   const businessDate = validateInventoryDate(input.businessDate);
+  const printSettings = await getOperationalRequestPrintSettings();
   const [allPrintGroups, allCategoryGroups, members] = await Promise.all([
     db.select().from(operationalPrintGroups).where(eq(operationalPrintGroups.isActive, true)).orderBy(operationalPrintGroups.name).limit(100),
     db.select().from(operationalPrintCategoryGroups).where(eq(operationalPrintCategoryGroups.isActive, true)).orderBy(operationalPrintCategoryGroups.name).limit(200),
@@ -921,7 +925,7 @@ export async function getOperationalStoreRequestPrintProjection(input: { busines
     : groupedStoreIds;
   const [visibleStores, requests] = scopedStoreIds.length ? await Promise.all([
     db.select({ id: stores.id, name: stores.name }).from(stores).where(and(inArray(stores.id, scopedStoreIds), eq(stores.isHidden, false))).orderBy(stores.name),
-    db.select().from(operationalStoreRequests).where(and(inArray(operationalStoreRequests.storeId, scopedStoreIds), eq(operationalStoreRequests.businessDate, businessDate), eq(operationalStoreRequests.status, "closed"))).orderBy(operationalStoreRequests.storeName, operationalStoreRequests.id).limit(2_000),
+    db.select().from(operationalStoreRequests).where(and(inArray(operationalStoreRequests.storeId, scopedStoreIds), eq(operationalStoreRequests.businessDate, businessDate), inArray(operationalStoreRequests.status, ["draft", "closed"]))).orderBy(operationalStoreRequests.storeName, operationalStoreRequests.id).limit(2_000),
   ]) : [[], [] as Array<typeof operationalStoreRequests.$inferSelect>];
   const requestIds = requests.map(request => request.id);
   const [lines, comments] = requestIds.length ? await Promise.all([
@@ -955,7 +959,7 @@ export async function getOperationalStoreRequestPrintProjection(input: { busines
     if (categoryGroup.printMode === "grouped_stores") return [{ id: `${storeGroup.id}:${categoryGroup.id}:grouped`, storeGroupName: storeGroup.name, categoryGroupName: categoryGroup.name, printMode: categoryGroup.printMode, stores: storesInGroup }];
     return storesInGroup.map(store => ({ id: `${storeGroup.id}:${categoryGroup.id}:${store.storeId}`, storeGroupName: storeGroup.name, categoryGroupName: categoryGroup.name, printMode: categoryGroup.printMode, stores: [store] }));
   }));
-  return { businessDate, sheets, totalRequests: requestById.size, totalLines: lines.length };
+  return { businessDate, zebraMode: printSettings.zebraMode, sheets, totalRequests: requestById.size, totalLines: lines.length };
 }
 
 /**
@@ -1439,6 +1443,34 @@ export async function listOperationalPrintGroups(includeInactive = false) {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(operationalPrintGroups).where(includeInactive ? undefined : eq(operationalPrintGroups.isActive, true)).orderBy(operationalPrintGroups.name).limit(100);
+}
+
+export type RequestPrintZebraMode = "none" | "rows" | "columns";
+
+/** The singleton deliberately defaults to blank paper until an admin chooses a neutral zebra. */
+export async function getOperationalRequestPrintSettings() {
+  const db = await getDb();
+  if (!db) return { zebraMode: "none" as const };
+  const [settings] = await db.select().from(operationalRequestPrintSettings)
+    .orderBy(desc(operationalRequestPrintSettings.id)).limit(1);
+  return settings ?? { zebraMode: "none" as const };
+}
+
+export async function updateOperationalRequestPrintSettings(input: { zebraMode: RequestPrintZebraMode; actorId: number }) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const [before] = await db.select().from(operationalRequestPrintSettings)
+    .orderBy(desc(operationalRequestPrintSettings.id)).limit(1);
+  if (before) {
+    await db.update(operationalRequestPrintSettings)
+      .set({ zebraMode: input.zebraMode, updatedByAccountId: input.actorId })
+      .where(eq(operationalRequestPrintSettings.id, before.id));
+  } else {
+    await db.insert(operationalRequestPrintSettings).values({ zebraMode: input.zebraMode, updatedByAccountId: input.actorId });
+  }
+  const [after] = await db.select().from(operationalRequestPrintSettings)
+    .orderBy(desc(operationalRequestPrintSettings.id)).limit(1);
+  return { before: before ?? null, after: after! };
 }
 
 export async function createOperationalPrintGroup(input: { name: string }) {

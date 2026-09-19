@@ -50,3 +50,9 @@
   .packet .print-settings-card .warehouse-category-add > :nth-child(4) { grid-column: auto; }
   .packet .print-settings-card .warehouse-category-add .subtle-button { width: 100%; justify-content: center; }
 }
+
+.packet .print-paper-settings .card-title { align-items: end; }
+.packet .print-paper-settings label { display: grid; gap: 6px; min-width: min(100%, 245px); }
+@media (max-width: 680px) {
+  .packet .print-paper-settings .card-title { display: grid; gap: 12px; }
+}

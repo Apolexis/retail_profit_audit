@@ -402,6 +402,16 @@ export const operationalPrintGroups = mysqlTable("operational_print_groups", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => [unique("operational_print_group_name_uq").on(table.normalizedName)]);
 
+/** One network-wide, admin-only print preference row. The default keeps paper entirely white. */
+export const operationalRequestPrintSettings = mysqlTable("operational_request_print_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  /** No color is the default; a restrained neutral zebra may be selected for dense paper tables. */
+  zebraMode: mysqlEnum("zebraMode", ["none", "rows", "columns"]).default("none").notNull(),
+  updatedByAccountId: int("updatedByAccountId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 /** One optional warehouse setup per existing internal store; hiding a store remains governed by audit_stores.isHidden. */
 export const operationalWarehouseSettings = mysqlTable("operational_warehouse_settings", {
   id: int("id").autoincrement().primaryKey(),
@@ -508,6 +518,23 @@ export const operationalScheduledSyncJobs = mysqlTable("operational_scheduled_sy
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => [unique("operational_scheduled_sync_kind_uq").on(table.kind)]);
+
+/**
+ * Optional encrypted override of the server-supplied Evotor token. Plaintext is
+ * never stored, audited or returned by ordinary status queries.
+ */
+export const operationalEvotorCredentials = mysqlTable("operational_evotor_credentials", {
+  id: int("id").autoincrement().primaryKey(),
+  credentialKey: varchar("credentialKey", { length: 64 }).notNull(),
+  encryptedToken: varchar("encryptedToken", { length: 4096 }).notNull(),
+  initializationVector: varchar("initializationVector", { length: 64 }).notNull(),
+  authenticationTag: varchar("authenticationTag", { length: 64 }).notNull(),
+  /** A non-reversible fingerprint is for rotation/audit metadata only. */
+  fingerprint: varchar("fingerprint", { length: 64 }).notNull(),
+  updatedByAccountId: int("updatedByAccountId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [unique("operational_evotor_credential_key_uq").on(table.credentialKey)]);
 
 /** Normalized, non-fiscal document facts read from a fixed Evotor store mapping. */
 export const operationalEvotorDocuments = mysqlTable("operational_evotor_documents", {

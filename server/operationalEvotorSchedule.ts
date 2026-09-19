@@ -104,14 +104,17 @@ async function nextDocumentSyncTarget(): Promise<{ storeId: number; mode: Operat
     .where(inArray(operationalEvotorDocumentSyncs.storeId, storeIds))
     .orderBy(desc(operationalEvotorDocumentSyncs.startedAt))
     .limit(2_000);
-  const runningToday = syncs.find(sync => sync.syncMode === "current_day" && sync.status === "running" && sync.requestedTo === businessDate);
-  if (runningToday) return { storeId: runningToday.storeId, mode: "current_day" };
   const currentDone = new Set(syncs.filter(sync => sync.syncMode === "current_day" && sync.status === "completed" && sync.requestedTo === businessDate).map(sync => sync.storeId));
   const currentStartedAt = new Map<number, number>();
   for (const sync of syncs) {
     if (sync.syncMode === "current_day" && sync.requestedTo === businessDate && !currentStartedAt.has(sync.storeId)) currentStartedAt.set(sync.storeId, sync.startedAt.getTime());
   }
-  const nextCurrentStore = storeIds.filter(storeId => !currentDone.has(storeId)).sort((left, right) => (currentStartedAt.get(left) ?? 0) - (currentStartedAt.get(right) ?? 0))[0];
+  // Start every mapped store before taking a second cursor page from any one
+  // of them. Thereafter this is an oldest-page round robin: a busy terminal
+  // cannot delay today’s facts for the rest of the network.
+  const nextCurrentStore = storeIds
+    .filter(storeId => !currentDone.has(storeId))
+    .sort((left, right) => (currentStartedAt.get(left) ?? 0) - (currentStartedAt.get(right) ?? 0))[0];
   if (nextCurrentStore !== undefined) return { storeId: nextCurrentStore, mode: "current_day" };
   const historicalStoreId = await nextMappedStoreId("evotor_documents");
   return historicalStoreId === null ? null : { storeId: historicalStoreId, mode: "historical" };

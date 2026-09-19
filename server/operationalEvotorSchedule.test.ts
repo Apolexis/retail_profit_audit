@@ -39,6 +39,8 @@ describe("планировщик read-only синхронизации Эвото
     expect(scheduler).toContain("async function nextDocumentSyncTarget");
     expect(scheduler).toContain('mode: "current_day"');
     expect(scheduler).toContain('importWindow: target.mode');
+    expect(scheduler).toContain("oldest-page round robin");
+    expect(scheduler).toContain("Start every mapped store before taking a second cursor page");
   });
 
   it("фиксирует только числовые сведения о квоте без реквизитов запроса", () => {

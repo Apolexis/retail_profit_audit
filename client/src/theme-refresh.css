@@ -6,3 +6,34 @@ html[data-audit-theme="light"]{color-scheme:light}html[data-audit-theme="light"]
 
 @media(max-width:900px){.role-guide{grid-template-columns:1fr}.analysis-filter{align-items:flex-start;flex-direction:column}.access-store-list>div{align-items:flex-start;flex-direction:column}.access-switch{align-self:stretch}.access-switch button{flex:1}.notification-item{grid-template-columns:38px minmax(0,1fr)}.notification-item>.subtle-button{grid-column:2;justify-self:start;margin-top:0}}
 @media(max-width:720px){.analysis-filter{margin-bottom:18px;padding:12px}.analysis-filter>div{grid-template-columns:1fr;gap:4px}.analysis-filter small{display:none}.analysis-filter .date-range-control{width:100%;justify-content:space-between}.mobile-drawer{padding-bottom:10px!important}.drawer-scroll{padding-bottom:8px!important}.drawer-period{position:relative!important;flex:0 0 auto;margin:6px 2px 0!important;padding:9px 5px 0!important;line-height:1.35!important;background:none!important}.drawer-period strong{display:block;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.alert-link{width:37px;height:37px}.role-guide article{padding:14px}.access-switch{width:100%}.access-switch button{padding:8px 5px}.notification-title{align-items:flex-start;flex-direction:column;gap:4px}.notification-item p{font-size:11px}}
+
+
+/* Server credential controls use the same restrained operational cards and contour actions. */
+.packet .access-evotor-credential {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(150px, .55fr) minmax(280px, 1fr);
+  gap: 14px 18px;
+  align-items: end;
+}
+.packet .access-evotor-credential h3 { margin: 4px 0 6px; }
+.packet .access-evotor-status { display: grid; gap: 3px; align-self: center; }
+.packet .access-evotor-status small,
+.packet .access-evotor-revealed { color: var(--muted); }
+.packet .access-evotor-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: end; }
+.packet .access-evotor-actions label,
+.packet .access-evotor-revealed { display: grid; gap: 6px; min-width: 0; }
+.packet .access-evotor-actions .subtle-button { min-height: 38px; white-space: nowrap; }
+.packet .access-evotor-revealed { grid-column: 1 / -1; max-width: 640px; }
+@media (max-width: 1080px) {
+  .packet .access-evotor-credential { grid-template-columns: minmax(0, 1fr) minmax(180px, .6fr); }
+  .packet .access-evotor-actions { grid-column: 1 / -1; }
+}
+@media (max-width: 680px) {
+  .packet .access-evotor-credential { grid-template-columns: minmax(0, 1fr); }
+  .packet .access-evotor-actions { grid-template-columns: minmax(0, 1fr); }
+  .packet .access-evotor-actions .subtle-button { width: max-content; }
+}
+
+/* The four concise signal cards remain a readable 2×2 operating grid on any medium or wide canvas. */
+.packet .notification-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+@media (max-width: 560px) { .packet .notification-kpis { grid-template-columns: minmax(0, 1fr) !important; } }

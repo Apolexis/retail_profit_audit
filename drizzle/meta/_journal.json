@@ -400,6 +400,13 @@
       "when": 1789810034787,
       "tag": "0056_old_bastion",
       "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "5",
+      "when": 1789821844843,
+      "tag": "0057_special_fenris",
+      "breakpoints": true
     }
   ]
 }

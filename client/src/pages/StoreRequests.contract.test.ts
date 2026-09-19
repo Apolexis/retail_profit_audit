@@ -37,7 +37,8 @@ describe("заявки магазинов: экран", () => {
   });
 
   it("возвращает пользователя в уже открытый черновик и закрывает весь печатный запуск только уполномоченному персоналу", () => {
-    expect(page).toContain('toast.success(result.created ? "Черновик заявки открыт" : "Открыт существующий черновик")');
+    expect(page).toContain('toast.success(result.created ? "Заявка сохранена" : "Открыта сохраненная заявка")');
+    expect(page).toContain('<Eye size={14}/><span>Открыть</span>');
     expect(page).toContain("requestPrintCandidates");
     expect(page).toContain("closeRequestsForPrint");
     expect(page).toContain("Распечатать и закрыть");

@@ -41,15 +41,15 @@ describe("операционная инвентаризация: закрыти�
 });
 
 describe("заявки магазинов: количество", () => {
-  it("принимает только положительное количество с точностью до грамма", () => {
+  it("принимает только положительное количество с точностью до 0,1", () => {
     expect(validateStoreRequestQuantity(1)).toBe(1);
-    expect(validateStoreRequestQuantity(2.345)).toBe(2.345);
+    expect(validateStoreRequestQuantity(2.5)).toBe(2.5);
   });
 
   it("не подменяет отсутствие или отрицательное количество строкой заявки", () => {
     expect(() => validateStoreRequestQuantity(0)).toThrow("больше нуля");
     expect(() => validateStoreRequestQuantity(-0.1)).toThrow("больше нуля");
-    expect(() => validateStoreRequestQuantity(1.2345)).toThrow("трех знаков");
+    expect(() => validateStoreRequestQuantity(1.23)).toThrow("одного знака");
   });
 });
 

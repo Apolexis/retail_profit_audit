@@ -28,8 +28,8 @@ describe("заявки магазинов: серверный контракт",
     expect(service).toContain("status: \"closed\"");
   });
 
-  it("строит печать только из закрытых заявок, исключая скрытые магазины", () => {
-    expect(service).toContain("eq(operationalStoreRequests.status, \"closed\")");
+  it("строит печать из сохраненных и закрытых заявок, исключая скрытые магазины", () => {
+    expect(service).toContain('inArray(operationalStoreRequests.status, ["draft", "closed"])');
     expect(service).toContain("eq(stores.isHidden, false)");
     expect(service).toContain("expandPrintCategoryReferences(categoryGroup.id, allCategoryGroups, members)");
     expect(service).toContain("storeIds?: number[] | null");

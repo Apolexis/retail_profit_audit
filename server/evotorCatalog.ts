@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { operationalStoreMappings, stores } from "../drizzle/schema";
 import { getDb } from "./db";
+import { getEvotorApiToken } from "./evotorCredentials";
 
 const EVOTOR_API_BASE_URL = "https://api.evotor.ru";
 const EVOTOR_MEDIA_TYPE = "application/vnd.evotor.v2+json";
@@ -200,9 +201,8 @@ function normalizeEvotorProductGroup(value: unknown): EvotorProductGroup | null 
   return { id, name, parentId: text(record.parent_id) };
 }
 
-function evotorHeaders() {
-  const token = process.env.EVOTOR_API_TOKEN?.trim();
-  if (!token) throw new Error("Не настроен серверный доступ Эвотор для preview каталога.");
+async function evotorHeaders() {
+  const token = await getEvotorApiToken();
   return {
     Authorization: `Bearer ${token}`,
     Accept: EVOTOR_MEDIA_TYPE,
@@ -222,7 +222,7 @@ async function fetchEvotorPage(path: string, cursor?: string, documentWindow?: E
     if (documentWindow.since) url.searchParams.set("since", String(new Date(`${documentWindow.since}T00:00:00+03:00`).getTime()));
     if (documentWindow.until) url.searchParams.set("until", String(new Date(`${documentWindow.until}T23:59:59.999+03:00`).getTime()));
   }
-  const response = await fetch(url, { headers: evotorHeaders(), signal: AbortSignal.timeout(8_000) });
+  const response = await fetch(url, { headers: await evotorHeaders(), signal: AbortSignal.timeout(8_000) });
   if (!response.ok) throw new Error(`Эвотор не отдал preview каталога (HTTP ${response.status}).`);
   const page = await response.json() as EvotorPage;
   const numberHeader = (name: string) => {

@@ -26,6 +26,7 @@ import {
   getInventoryDetail,
   getOperationalStoreRequestDetail,
   getOperationalStoreRequestPrintProjection,
+  getOperationalRequestPrintSettings,
   listOperationalEvotorSalesAnalytics,
   listOperationalPriceTypes,
   listOperationalCatalogCategoryNames,
@@ -57,6 +58,7 @@ import {
   updateOperationalCatalogCost,
   updateOperationalPrintCategoryGroup,
   updateOperationalPrintGroup,
+  updateOperationalRequestPrintSettings,
   updateOperationalPriceType,
   upsertOperationalStoreRequestComment,
   upsertInventoryLine,
@@ -184,6 +186,18 @@ export const inventoryRegistryRouter = router({
     const actor = await localActor(ctx.user.openId);
     if (actor.role !== "admin" && actor.role !== "manager") throw new TRPCError({ code: "FORBIDDEN", message: "Группы печати доступны только руководителю или администратору." });
     return listOperationalPrintGroups(true);
+  }),
+  requestPrintSettings: protectedProcedure.query(async ({ ctx }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Настройки печати доступны только администратору." });
+    return getOperationalRequestPrintSettings();
+  }),
+  updateRequestPrintSettings: protectedProcedure.input(z.object({ zebraMode: z.enum(["none", "rows", "columns"]) })).mutation(async ({ ctx, input }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Настройки печати может менять только администратор." });
+    const result = await updateOperationalRequestPrintSettings({ ...input, actorId: actor.id });
+    await recordChange({ actorId: actor.id, action: "operational_request_print_settings.update", entityType: "operational_request_print_settings", entityId: "network", beforeState: { zebraMode: result.before?.zebraMode ?? "none" }, afterState: { zebraMode: result.after.zebraMode } });
+    return result.after;
   }),
   catalogCategoryNames: protectedProcedure.query(async ({ ctx }) => {
     const actor = await localActor(ctx.user.openId);
@@ -360,9 +374,10 @@ export const inventoryRegistryRouter = router({
     const actor = await requireInventoryStoreAccess(ctx.user.openId, input.storeId, "view");
     return listOperationalStoreRequestProducts({ ...input, includeHidden: actor.role === "admin" });
   }),
-  requestList: protectedProcedure.input(z.object({ storeId: z.number().int().positive().optional(), status: z.enum(["draft", "closed"]).optional(), limit: z.number().int().min(1).max(100).optional() }).optional()).query(async ({ ctx, input }) => {
+  requestList: protectedProcedure.input(z.object({ storeId: z.number().int().positive().optional(), status: z.enum(["draft", "closed"]).optional(), from: dateInput.optional(), to: dateInput.optional(), limit: z.number().int().min(1).max(100).optional() }).optional()).query(async ({ ctx, input }) => {
     const actor = await localActor(ctx.user.openId);
     if (input?.storeId) await requireInventoryStoreAccess(ctx.user.openId, input.storeId, "view");
+    if (input?.from && input?.to && input.from > input.to) throw new TRPCError({ code: "BAD_REQUEST", message: "Начало периода не может быть позже конца." });
     const storeIds = actor.role === "admin" ? null : await getAccessibleStoreIds(ctx.user.openId);
     return listOperationalStoreRequests({ ...input, storeIds, limit: actor.role === "seller" ? Math.min(input?.limit ?? 10, 10) : input?.limit });
   }),

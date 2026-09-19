@@ -2212,7 +2212,7 @@ export default function PriceControl({
                           </button>
                         )}
                       </div>
-                      {selected.recommendation ? (
+                      {selected.recommendation && (
                         <aside className="price-winner">
                           <span>ВЫГОДНЕЕ КУПИТЬ</span>
                           <strong>
@@ -2225,16 +2225,9 @@ export default function PriceControl({
                             ({selected.recommendation.savingsPercent}%)
                           </small>
                         </aside>
-                      ) : (
-                        <aside className="price-winner neutral">
-                          <span>НУЖНА СВЕРКА</span>
-                          <strong>Недостаточно сопоставимых цен</strong>
-                          <small>
-                            Проверьте вариант, фасовку или цену за единицу.
-                          </small>
-                        </aside>
                       )}
                     </div>
+                    {!selected.recommendation && <aside className="price-winner neutral price-reconciliation-notice"><span>НУЖНА СВЕРКА</span><strong>Недостаточно сопоставимых цен</strong><small>Проверьте вариант, фасовку или цену за единицу.</small></aside>}
                     {comparisonManualDraft && (
                       <section className="price-comparison-manual-offer" aria-label="Добавить цену в историю">
                         <div>
@@ -3259,18 +3252,11 @@ export default function PriceControl({
                       <span className="price-saved-import-number" aria-label={`Позиция ${position + 1}`}>№ {position + 1}</span>
                       <div className="price-saved-import-main">
                         <strong>{row.rawName}</strong>
-                        <span>
-                          {row.rawCategory || "Без категории"} · {row.rawPackaging || "фасовка не указана"}
-                        </span>
+                        {row.productName && <small className="price-saved-import-linked">Имя связи: {row.linkGroupCode ? `${row.linkGroupCode} · ` : ""}{row.linkGroupName ?? row.productName}</small>}
                       </div>
                       <b>
                         {row.priceAmount === null ? "цена не указана" : `${formatMoney(row.priceAmount)} ₽`}
                       </b>
-                      <small className={row.productName ? "price-saved-import-linked" : "price-saved-import-unlinked"}>
-                        {row.productName
-                          ? `Имя связи: ${row.linkGroupCode ? `${row.linkGroupCode} · ` : ""}${row.linkGroupName ?? row.productName}`
-                          : "Имя связи будет создано при изменении"}
-                      </small>
                       {canEdit && (
                         <div className="price-saved-import-actions">
                           <button
