@@ -414,11 +414,15 @@ export async function listOperationalStoreRequestProducts(input: { storeId: numb
   if (!products.length) return [];
 
   const productIds = products.map(product => product.id);
-  const [accounting, links] = await Promise.all([
+  const [accounting, links, categoryGroups, categoryMembers, warehouseSettings, visibleSourceStores] = await Promise.all([
     getInventoryAccountingQuantities(input.storeId, productIds),
     db.select({ productId: operationalEvotorProductLinks.productId, evotorProductId: operationalEvotorProductLinks.evotorProductId })
       .from(operationalEvotorProductLinks)
       .where(and(eq(operationalEvotorProductLinks.storeId, input.storeId), inArray(operationalEvotorProductLinks.productId, productIds))),
+    db.select().from(operationalPrintCategoryGroups).where(and(eq(operationalPrintCategoryGroups.isActive, true), isNotNull(operationalPrintCategoryGroups.supplyPrintGroupId))).orderBy(operationalPrintCategoryGroups.name),
+    db.select().from(operationalPrintCategoryGroupMembers).limit(2_000),
+    db.select({ storeId: operationalWarehouseSettings.storeId, printGroupId: operationalWarehouseSettings.printGroupId }).from(operationalWarehouseSettings),
+    db.select({ id: stores.id, name: stores.name }).from(stores).where(eq(stores.isHidden, false)),
   ]);
   const productIdByEvotorId = new Map(links.map(link => [link.evotorProductId, link.productId]));
   const sevenDaysAgo = new Date(Date.now() - 6 * 24 * 60 * 60 * 1_000).toISOString().slice(0, 10);
@@ -447,6 +451,55 @@ export async function listOperationalStoreRequestProducts(input: { storeId: numb
     }
   }
 
+  // A category may point to its replenishment group (for example, БМ or СРС).
+  // Requests receive only the resulting qualitative state, never a source count.
+  const visibleStoreIds = new Set(visibleSourceStores.map(store => store.id));
+  const printGroupByStore = new Map(warehouseSettings
+    .filter(setting => setting.printGroupId !== null && visibleStoreIds.has(setting.storeId))
+    .map(setting => [setting.storeId, setting.printGroupId!]));
+  const sourceStoreIds = Array.from(printGroupByStore.keys());
+  const sourceNamesByPrintGroup = new Map<number, string>(categoryGroups
+    .filter(group => group.supplyPrintGroupId !== null)
+    .map(group => [group.supplyPrintGroupId!, group.name]));
+  const sourceQuantities = new Map<string, number>();
+  const knownSourceQuantities = new Set<string>();
+  if (sourceStoreIds.length) {
+    const [sourceSnapshots, sourceMovements] = await Promise.all([
+      db.select({ storeId: operationalEvotorProductLinks.storeId, productId: operationalEvotorProductLinks.productId, quantity: operationalEvotorProductLinks.evotorQuantitySnapshot })
+        .from(operationalEvotorProductLinks)
+        .where(and(inArray(operationalEvotorProductLinks.storeId, sourceStoreIds), inArray(operationalEvotorProductLinks.productId, productIds))),
+      db.select({ storeId: operationalStockMovements.storeId, productId: operationalStockMovements.productId, quantityDelta: operationalStockMovements.quantityDelta })
+        .from(operationalStockMovements)
+        .where(and(inArray(operationalStockMovements.storeId, sourceStoreIds), inArray(operationalStockMovements.productId, productIds))),
+    ]);
+    for (const snapshot of sourceSnapshots) {
+      if (snapshot.quantity === null) continue;
+      const key = `${snapshot.storeId}:${snapshot.productId}`;
+      sourceQuantities.set(key, Number(snapshot.quantity));
+      knownSourceQuantities.add(key);
+    }
+    for (const movement of sourceMovements) {
+      const key = `${movement.storeId}:${movement.productId}`;
+      sourceQuantities.set(key, (sourceQuantities.get(key) ?? 0) + Number(movement.quantityDelta));
+      knownSourceQuantities.add(key);
+    }
+  }
+  const supplySettingsForCategory = new Map<string, { printGroupId: number; maxStoreCoverDays: number }>();
+  for (const group of categoryGroups) {
+    if (group.supplyPrintGroupId === null) continue;
+    for (const category of Array.from(expandPrintCategoryNames(group.id, categoryGroups, categoryMembers))) {
+      if (!supplySettingsForCategory.has(category)) supplySettingsForCategory.set(category, {
+        printGroupId: group.supplyPrintGroupId,
+        maxStoreCoverDays: Math.min(14, Math.max(1, group.maxStoreCoverDays ?? 2)),
+      });
+    }
+  }
+  const supplyQuantity = (printGroupId: number, productId: number) => {
+    const keys = sourceStoreIds.filter(storeId => printGroupByStore.get(storeId) === printGroupId).map(storeId => `${storeId}:${productId}`);
+    if (!keys.some(key => knownSourceQuantities.has(key))) return null;
+    return Math.max(0, Math.round(keys.reduce((sum, key) => sum + (sourceQuantities.get(key) ?? 0), 0) * 1_000) / 1_000);
+  };
+
   return products.map(product => {
     const quantity = accounting.get(product.id);
     const weeklySold = Math.round((weeklySoldByProduct.get(product.id) ?? 0) * 1_000) / 1_000;
@@ -456,20 +509,42 @@ export async function listOperationalStoreRequestProducts(input: { storeId: numb
     const daysCover = quantity !== undefined && dailySold && quantity < 100_000
       ? Math.max(0, Math.round(quantity / dailySold))
       : null;
-    const stockState = quantity === undefined
+    const storeStockState = quantity === undefined
       ? "unknown"
       : daysCover !== null
         ? daysCover <= 3 ? "low" : daysCover <= 10 ? "sufficient" : "high"
         : quantity <= 0 ? "low" : "high";
-    const recommendedQuantity = quantity !== undefined && dailySold !== null && dailySold > 0 && quantity < 100_000
-      ? Math.max(0, Math.ceil((dailySold * 7 - quantity) * 1_000) / 1_000)
+    const categorySupplySettings = product.categoryName ? supplySettingsForCategory.get(product.categoryName) : undefined;
+    const maxStoreCoverDays = categorySupplySettings?.maxStoreCoverDays ?? 2;
+    const baselineOrderQuantity = dailySold !== null && dailySold > 0
+      ? Math.ceil(dailySold + (product.baseUnit === "fraction" ? 2 : 1))
       : null;
+    // Daily delivery remains fresh only when the configurable category cover is
+    // respected. When an exact local stock is known, fill only the daily sale
+    // plus the unit buffer rather than stacking another full order on top.
+    const recommendedQuantity = baselineOrderQuantity === null
+      ? null
+      : daysCover !== null && daysCover >= maxStoreCoverDays
+        ? 0
+        : Math.max(0, baselineOrderQuantity - (quantity !== undefined && quantity < 100_000 ? Math.max(0, quantity) : 0));
+    const supplyPrintGroupId = categorySupplySettings?.printGroupId ?? null;
+    const supplyQuantityValue = supplyPrintGroupId ? supplyQuantity(supplyPrintGroupId, product.id) : null;
+    const supplyStockState = supplyQuantityValue === null
+      ? "unknown"
+      : supplyQuantityValue <= 0 || (dailySold !== null && supplyQuantityValue < dailySold)
+        ? "low"
+        : dailySold !== null && supplyQuantityValue < dailySold * 4
+          ? "sufficient"
+          : "high";
     return {
       ...product,
       weeklySold,
       dailySold,
       daysCover,
-      stockState,
+      storeStockState,
+      supplyStockState,
+      supplyGroupName: supplyPrintGroupId ? sourceNamesByPrintGroup.get(supplyPrintGroupId) ?? null : null,
+      maxStoreCoverDays,
       recommendedQuantity,
       recommendation: daysCover !== null && daysCover <= 3
         ? "order_soon"
@@ -566,11 +641,10 @@ export async function createOperationalStoreRequest(input: { storeId: number; bu
   }
 }
 
-/** Each request has two optional comments bound to the selected print category. */
+/** Each request has two optional comments whose destination is configured on the print category. */
 export async function upsertOperationalStoreRequestComment(input: {
   requestId: number;
   slot: 1 | 2;
-  printCategoryGroupId: number;
   text: string;
   actorId: number;
 }) {
@@ -580,9 +654,9 @@ export async function upsertOperationalStoreRequestComment(input: {
   const [categoryGroup] = await db
     .select({ id: operationalPrintCategoryGroups.id, name: operationalPrintCategoryGroups.name, isActive: operationalPrintCategoryGroups.isActive })
     .from(operationalPrintCategoryGroups)
-    .where(eq(operationalPrintCategoryGroups.id, input.printCategoryGroupId))
+    .where(and(eq(operationalPrintCategoryGroups.requestCommentSlot, input.slot === 1 ? "slot_1" : "slot_2"), eq(operationalPrintCategoryGroups.isActive, true)))
     .limit(1);
-  if (!categoryGroup || !categoryGroup.isActive) throw new Error("Категория печати недоступна.");
+  if (!categoryGroup || !categoryGroup.isActive) throw new Error(`Для комментария ${input.slot} настройте категорию печати в разделе «Состав печатных подборок».`);
   const text = normalizedText(input.text).slice(0, 2_000);
   const [before] = await db.select().from(operationalStoreRequestComments)
     .where(and(eq(operationalStoreRequestComments.requestId, input.requestId), eq(operationalStoreRequestComments.slot, input.slot)))
@@ -711,6 +785,55 @@ export async function closeOperationalStoreRequest(input: { requestId: number; c
   await db.update(operationalStoreRequests).set({ status: "closed", draftStoreKey: null, closedByAccountId: input.closedByAccountId, closedAt: new Date() }).where(eq(operationalStoreRequests.id, input.requestId));
   const after = await requireStoreRequest(input.requestId);
   return { before, after, lineCount: lines.length };
+}
+
+/** Closes every non-empty visible draft in the authorized print run before a single print projection is built. */
+export async function closeOperationalStoreRequestsForPrint(input: { businessDate: string; closedByAccountId: number; storeIds?: number[] | null }) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const businessDate = validateInventoryDate(input.businessDate);
+  if (Array.isArray(input.storeIds) && !input.storeIds.length) return { businessDate, requests: [] as Array<{ id: number; requestNumber: number; storeName: string; lineCount: number }> };
+  const drafts = await db
+    .select({ id: operationalStoreRequests.id, requestNumber: operationalStoreRequests.requestNumber, storeName: operationalStoreRequests.storeName })
+    .from(operationalStoreRequests)
+    .innerJoin(stores, eq(stores.id, operationalStoreRequests.storeId))
+    .where(and(
+      eq(operationalStoreRequests.businessDate, businessDate),
+      eq(operationalStoreRequests.status, "draft"),
+      eq(stores.isHidden, false),
+      Array.isArray(input.storeIds) ? inArray(operationalStoreRequests.storeId, input.storeIds) : undefined,
+    ))
+    .limit(2_000);
+  if (!drafts.length) return { businessDate, requests: [] as Array<{ id: number; requestNumber: number; storeName: string; lineCount: number }> };
+  const draftIds = drafts.map(draft => draft.id);
+  const lines = await db.select({ requestId: operationalStoreRequestLines.requestId }).from(operationalStoreRequestLines).where(inArray(operationalStoreRequestLines.requestId, draftIds)).limit(20_000);
+  const lineCounts = new Map<number, number>();
+  for (const line of lines) lineCounts.set(line.requestId, (lineCounts.get(line.requestId) ?? 0) + 1);
+  const closable = drafts.filter(draft => (lineCounts.get(draft.id) ?? 0) > 0);
+  if (closable.length) {
+    await db.update(operationalStoreRequests).set({ status: "closed", draftStoreKey: null, closedByAccountId: input.closedByAccountId, closedAt: new Date() }).where(inArray(operationalStoreRequests.id, closable.map(draft => draft.id)));
+  }
+  return { businessDate, requests: closable.map(draft => ({ ...draft, lineCount: lineCounts.get(draft.id) ?? 0 })) };
+}
+
+/** Lightweight gate for hiding the print-and-close action when the run has no non-empty drafts. */
+export async function countOperationalStoreRequestPrintCandidates(input: { businessDate: string; storeIds?: number[] | null }) {
+  const db = await getDb();
+  if (!db || (Array.isArray(input.storeIds) && !input.storeIds.length)) return 0;
+  const businessDate = validateInventoryDate(input.businessDate);
+  const rows = await db
+    .select({ requestId: operationalStoreRequestLines.requestId })
+    .from(operationalStoreRequestLines)
+    .innerJoin(operationalStoreRequests, eq(operationalStoreRequests.id, operationalStoreRequestLines.requestId))
+    .innerJoin(stores, eq(stores.id, operationalStoreRequests.storeId))
+    .where(and(
+      eq(operationalStoreRequests.businessDate, businessDate),
+      eq(operationalStoreRequests.status, "draft"),
+      eq(stores.isHidden, false),
+      Array.isArray(input.storeIds) ? inArray(operationalStoreRequests.storeId, input.storeIds) : undefined,
+    ))
+    .limit(2_000);
+  return new Set(rows.map(row => row.requestId)).size;
 }
 
 export async function deleteOperationalStoreRequestDraft(requestId: number) {
@@ -1019,11 +1142,11 @@ export async function listOperationalEvotorSalesAnalytics(input: {
   }
   const documentIds = documents.map(document => document.id);
   const positions = [] as Array<{ documentId: number; productName: string | null; unit: string | null; quantity: string | null; resultSum: string | null }>;
-  for (let start = 0; start < documentIds.length; start += 500) {
+  for (let start = 0; start < documentIds.length; start += 5_000) {
     positions.push(...await db
       .select({ documentId: operationalEvotorDocumentPositions.documentId, productName: operationalEvotorDocumentPositions.productName, unit: operationalEvotorDocumentPositions.unit, quantity: operationalEvotorDocumentPositions.quantity, resultSum: operationalEvotorDocumentPositions.resultSum })
       .from(operationalEvotorDocumentPositions)
-      .where(inArray(operationalEvotorDocumentPositions.documentId, documentIds.slice(start, start + 500))));
+      .where(inArray(operationalEvotorDocumentPositions.documentId, documentIds.slice(start, start + 5_000))));
   }
   const productMap = new Map<string, { key: string; productName: string; unit: string | null; amount: number; quantity: number; positions: number; stores: Set<number> }>();
   const productTimelineMap = new Map<string, { key: string; label: string; productKey: string; productName: string; unit: string | null; amount: number; quantity: number; positions: number }>();
@@ -1293,7 +1416,13 @@ export async function listOperationalPrintCategoryGroups() {
   return groups.map(group => ({ ...group, members: members.filter(member => member.groupId === group.id).map(member => ({ id: member.id, memberType: member.memberType, catalogCategory: member.catalogCategory, childGroupId: member.childGroupId, childGroupName: member.childGroupId ? names.get(member.childGroupId) ?? null : null })) }));
 }
 
-export async function createOperationalPrintCategoryGroup(input: { name: string; actorId: number; printMode?: PrintCategoryMode }) {
+function normalizeMaxStoreCoverDays(value: number | undefined) {
+  const days = value ?? 2;
+  if (!Number.isInteger(days) || days < 1 || days > 14) throw new Error("Норму запаса задайте целым числом от 1 до 14 дней.");
+  return days;
+}
+
+export async function createOperationalPrintCategoryGroup(input: { name: string; actorId: number; printMode?: PrintCategoryMode; supplyPrintGroupId?: number | null; requestCommentSlot?: "slot_1" | "slot_2" | null; maxStoreCoverDays?: number }) {
   const db = await getDb();
   if (!db) throw new Error("База данных недоступна");
   const name = normalizedText(input.name);
@@ -1301,13 +1430,17 @@ export async function createOperationalPrintCategoryGroup(input: { name: string;
   const normalizedName = normalizedKey(name);
   const [existing] = await db.select().from(operationalPrintCategoryGroups).where(eq(operationalPrintCategoryGroups.normalizedName, normalizedName)).limit(1);
   if (existing) throw new Error("Такая категория печати уже существует.");
-  await db.insert(operationalPrintCategoryGroups).values({ name, normalizedName, printMode: input.printMode ?? "per_store", createdByAccountId: input.actorId });
+  if (input.requestCommentSlot) {
+    const [slotAlreadyUsed] = await db.select({ id: operationalPrintCategoryGroups.id }).from(operationalPrintCategoryGroups).where(eq(operationalPrintCategoryGroups.requestCommentSlot, input.requestCommentSlot)).limit(1);
+    if (slotAlreadyUsed) throw new Error("Этот комментарий уже назначен другой категории печати.");
+  }
+  await db.insert(operationalPrintCategoryGroups).values({ name, normalizedName, printMode: input.printMode ?? "per_store", supplyPrintGroupId: input.supplyPrintGroupId ?? null, requestCommentSlot: input.requestCommentSlot ?? null, maxStoreCoverDays: normalizeMaxStoreCoverDays(input.maxStoreCoverDays), createdByAccountId: input.actorId });
   const [after] = await db.select().from(operationalPrintCategoryGroups).where(eq(operationalPrintCategoryGroups.normalizedName, normalizedName)).limit(1);
   return after!;
 }
 
 /** Print-category groups are user-managed configuration, separate from immutable order history. */
-export async function updateOperationalPrintCategoryGroup(input: { id: number; name: string; printMode: PrintCategoryMode }) {
+export async function updateOperationalPrintCategoryGroup(input: { id: number; name: string; printMode: PrintCategoryMode; supplyPrintGroupId: number | null; requestCommentSlot: "slot_1" | "slot_2" | null; maxStoreCoverDays: number }) {
   const db = await getDb();
   if (!db) throw new Error("База данных недоступна");
   const [before] = await db.select().from(operationalPrintCategoryGroups).where(eq(operationalPrintCategoryGroups.id, input.id)).limit(1);
@@ -1317,7 +1450,11 @@ export async function updateOperationalPrintCategoryGroup(input: { id: number; n
   const normalizedName = normalizedKey(name);
   const [sameName] = await db.select().from(operationalPrintCategoryGroups).where(and(eq(operationalPrintCategoryGroups.normalizedName, normalizedName), ne(operationalPrintCategoryGroups.id, input.id))).limit(1);
   if (sameName) throw new Error("Такая категория печати уже существует.");
-  await db.update(operationalPrintCategoryGroups).set({ name, normalizedName, printMode: input.printMode }).where(eq(operationalPrintCategoryGroups.id, input.id));
+  if (input.requestCommentSlot) {
+    const [slotAlreadyUsed] = await db.select({ id: operationalPrintCategoryGroups.id }).from(operationalPrintCategoryGroups).where(and(eq(operationalPrintCategoryGroups.requestCommentSlot, input.requestCommentSlot), ne(operationalPrintCategoryGroups.id, input.id))).limit(1);
+    if (slotAlreadyUsed) throw new Error("Этот комментарий уже назначен другой категории печати.");
+  }
+  await db.update(operationalPrintCategoryGroups).set({ name, normalizedName, printMode: input.printMode, supplyPrintGroupId: input.supplyPrintGroupId, requestCommentSlot: input.requestCommentSlot, maxStoreCoverDays: normalizeMaxStoreCoverDays(input.maxStoreCoverDays) }).where(eq(operationalPrintCategoryGroups.id, input.id));
   const [after] = await db.select().from(operationalPrintCategoryGroups).where(eq(operationalPrintCategoryGroups.id, input.id)).limit(1);
   return { before, after: after! };
 }

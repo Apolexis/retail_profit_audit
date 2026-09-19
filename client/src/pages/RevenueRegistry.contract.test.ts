@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const page = readFileSync(new URL("./RevenueRegistry.tsx", import.meta.url), "utf8");
 const router = readFileSync(new URL("../../../server/routers/revenueRegistry.ts", import.meta.url), "utf8");
+const revenueService = readFileSync(new URL("../../../server/revenueRegistry.ts", import.meta.url), "utf8");
 const accessRouter = readFileSync(new URL("../../../server/routers/localAuth.ts", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../revenue-registry.css", import.meta.url), "utf8");
 
@@ -115,7 +116,8 @@ describe("контракт страницы Выручка", () => {
     expect(router).toContain('if (!isRevenueAdministrativeRole(actor.role)) throw new TRPCError({ code: "FORBIDDEN", message: "Печать реестра доступна только административному персоналу" });');
     expect(router).toContain('const storeIds = await getAccessibleStoreIds(ctx.user?.openId);');
     expect(page).toContain('const isAdministrative = isAdmin || me.data?.role === "analyst" || isManager;');
-    expect(page).toContain('const permittedRevenueStores = isAdmin ? (stores.data ?? []) : (revenueStores.data ?? []);');
+    expect(page).toContain('const permittedRevenueStores = isAdmin ? (stores.data ?? []).filter(store => !store.isHidden) : (revenueStores.data ?? []);');
+    expect(revenueService).toContain('eq(stores.isHidden, false)');
     expect(page).toContain('const canSubmitRevenue = isSeller || isAdmin;');
     expect(page).toContain('{canSubmitRevenue && <section className="revenue-layout">');
     expect(page).toContain('{isSeller && <section className="packet-card revenue-own-history">');

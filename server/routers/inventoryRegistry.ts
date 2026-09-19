@@ -6,6 +6,8 @@ import {
   addOperationalStoreRequestManualLine,
   closeInventory,
   closeOperationalStoreRequest,
+  closeOperationalStoreRequestsForPrint,
+  countOperationalStoreRequestPrintCandidates,
   createOperationalPrintGroup,
   createOperationalPrintCategoryGroup,
   createOperationalStoreRequest,
@@ -210,18 +212,18 @@ export const inventoryRegistryRouter = router({
     await recordChange({ actorId: actor.id, action: "operational_print_group.delete", entityType: "operational_print_group", entityId: String(input.id), beforeState: { name: result.before.name, isActive: result.before.isActive }, afterState: { deleted: true, detachedWarehouses: result.detachedWarehouses } });
     return result;
   }),
-  createPrintCategoryGroup: protectedProcedure.input(z.object({ name: z.string().trim().min(1).max(128), printMode: z.enum(["per_store", "grouped_stores"]).optional() })).mutation(async ({ ctx, input }) => {
+  createPrintCategoryGroup: protectedProcedure.input(z.object({ name: z.string().trim().min(1).max(128), printMode: z.enum(["per_store", "grouped_stores"]).optional(), supplyPrintGroupId: z.number().int().positive().nullable().optional(), requestCommentSlot: z.enum(["slot_1", "slot_2"]).nullable().optional(), maxStoreCoverDays: z.number().int().min(1).max(14).optional() })).mutation(async ({ ctx, input }) => {
     const actor = await localActor(ctx.user.openId);
     if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Настраивать категории печати может только администратор." });
     const after = await createOperationalPrintCategoryGroup({ ...input, actorId: actor.id });
-    await recordChange({ actorId: actor.id, action: "operational_print_category_group.create", entityType: "operational_print_category_group", entityId: String(after.id), afterState: { name: after.name, printMode: after.printMode } });
+    await recordChange({ actorId: actor.id, action: "operational_print_category_group.create", entityType: "operational_print_category_group", entityId: String(after.id), afterState: { name: after.name, printMode: after.printMode, supplyPrintGroupId: after.supplyPrintGroupId, requestCommentSlot: after.requestCommentSlot, maxStoreCoverDays: after.maxStoreCoverDays } });
     return after;
   }),
-  updatePrintCategoryGroup: protectedProcedure.input(z.object({ id: z.number().int().positive(), name: z.string().trim().min(1).max(128), printMode: z.enum(["per_store", "grouped_stores"]) })).mutation(async ({ ctx, input }) => {
+  updatePrintCategoryGroup: protectedProcedure.input(z.object({ id: z.number().int().positive(), name: z.string().trim().min(1).max(128), printMode: z.enum(["per_store", "grouped_stores"]), supplyPrintGroupId: z.number().int().positive().nullable(), requestCommentSlot: z.enum(["slot_1", "slot_2"]).nullable(), maxStoreCoverDays: z.number().int().min(1).max(14) })).mutation(async ({ ctx, input }) => {
     const actor = await localActor(ctx.user.openId);
     if (actor.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Настраивать категории печати может только администратор." });
     const result = await updateOperationalPrintCategoryGroup(input);
-    await recordChange({ actorId: actor.id, action: "operational_print_category_group.update", entityType: "operational_print_category_group", entityId: String(input.id), beforeState: { name: result.before.name, printMode: result.before.printMode }, afterState: { name: result.after.name, printMode: result.after.printMode } });
+    await recordChange({ actorId: actor.id, action: "operational_print_category_group.update", entityType: "operational_print_category_group", entityId: String(input.id), beforeState: { name: result.before.name, printMode: result.before.printMode, supplyPrintGroupId: result.before.supplyPrintGroupId, requestCommentSlot: result.before.requestCommentSlot, maxStoreCoverDays: result.before.maxStoreCoverDays }, afterState: { name: result.after.name, printMode: result.after.printMode, supplyPrintGroupId: result.after.supplyPrintGroupId, requestCommentSlot: result.after.requestCommentSlot, maxStoreCoverDays: result.after.maxStoreCoverDays } });
     return result;
   }),
   deletePrintCategoryGroup: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
@@ -347,7 +349,7 @@ export const inventoryRegistryRouter = router({
     if (result.created) await recordChange({ actorId: actor.id, action: "store_request.create", entityType: "operational_store_request", entityId: String(result.request.id), afterState: { requestNumber: result.request.requestNumber, storeName: result.request.storeName, businessDate: result.request.businessDate, status: result.request.status } });
     return { created: result.created, request: await getOperationalStoreRequestDetail(result.request.id) };
   }),
-  upsertRequestComment: protectedProcedure.input(z.object({ requestId: z.number().int().positive(), slot: z.union([z.literal(1), z.literal(2)]), printCategoryGroupId: z.number().int().positive(), text: z.string().max(2_000) })).mutation(async ({ ctx, input }) => {
+  upsertRequestComment: protectedProcedure.input(z.object({ requestId: z.number().int().positive(), slot: z.union([z.literal(1), z.literal(2)]), text: z.string().max(2_000) })).mutation(async ({ ctx, input }) => {
     const { actor } = await storeRequestDetailWithPermission(ctx.user.openId, input.requestId, "edit");
     const result = await upsertOperationalStoreRequestComment({ ...input, actorId: actor.id });
     await recordChange({
@@ -399,6 +401,20 @@ export const inventoryRegistryRouter = router({
     const projection = await getOperationalStoreRequestPrintProjection({ ...input, storeIds });
     await recordChange({ actorId: actor.id, action: "store_request.print", entityType: "operational_store_request_print", entityId: input.businessDate, afterState: { businessDate: input.businessDate, printGroupIds: input.printGroupIds ?? "all", printCategoryGroupIds: input.printCategoryGroupIds ?? "all_active", sheets: projection.sheets.length, source: "closed_request_snapshots" } });
     return projection;
+  }),
+  requestPrintCandidates: protectedProcedure.input(z.object({ businessDate: dateInput })).query(async ({ ctx, input }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin" && actor.role !== "manager") throw new TRPCError({ code: "FORBIDDEN", message: "Закрытие заявок доступно только руководителю или администратору." });
+    const storeIds = actor.role === "admin" ? null : await getAccessibleStoreIds(ctx.user.openId);
+    return { count: await countOperationalStoreRequestPrintCandidates({ businessDate: input.businessDate, storeIds }) };
+  }),
+  closeRequestsForPrint: protectedProcedure.input(z.object({ businessDate: dateInput })).mutation(async ({ ctx, input }) => {
+    const actor = await localActor(ctx.user.openId);
+    if (actor.role !== "admin" && actor.role !== "manager") throw new TRPCError({ code: "FORBIDDEN", message: "Закрытие заявок доступно только руководителю или администратору." });
+    const storeIds = actor.role === "admin" ? null : await getAccessibleStoreIds(ctx.user.openId);
+    const result = await closeOperationalStoreRequestsForPrint({ businessDate: input.businessDate, storeIds, closedByAccountId: actor.id });
+    if (result.requests.length) await recordChange({ actorId: actor.id, action: "store_request.close_for_print", entityType: "operational_store_request_print", entityId: input.businessDate, afterState: { businessDate: input.businessDate, requests: result.requests.map(request => ({ requestNumber: request.requestNumber, storeName: request.storeName, lineCount: request.lineCount })) } });
+    return result;
   }),
   list: protectedProcedure.input(z.object({ storeId: z.number().int().positive().optional(), limit: z.number().int().min(1).max(30).optional() }).optional()).query(async ({ ctx, input }) => {
     const actor = await localActor(ctx.user.openId);

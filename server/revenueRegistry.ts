@@ -140,6 +140,7 @@ export async function listRevenueRecords(input: RevenueRegistryFilter = {}) {
   if (Array.isArray(input.storeIds) && !input.storeIds.length) return [];
   const conditions = [
     eq(operationalRevenueRecords.isVoided, false),
+    eq(stores.isHidden, false),
     input.from ? gte(operationalRevenueRecords.businessDate, input.from) : undefined,
     input.to ? lte(operationalRevenueRecords.businessDate, input.to) : undefined,
     input.storeId ? eq(operationalRevenueRecords.storeId, input.storeId) : undefined,

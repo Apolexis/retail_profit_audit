@@ -1,0 +1,1 @@
+ALTER TABLE `operational_print_category_groups` ADD `maxStoreCoverDays` int DEFAULT 2 NOT NULL;

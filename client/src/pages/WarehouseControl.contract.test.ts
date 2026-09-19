@@ -20,8 +20,7 @@ describe("warehouse control contract", () => {
 	  expect(page).toContain("safeEvotorStoreLabel");
 	  expect(page).toContain("Cloud preview can append a street address");
 	  expect(page).toContain("Запись в Эвотор исключена");
-	  expect(page).toContain("Автоматическая read-only синхронизация");
-	  expect(page).toContain("каждую минуту, по одному закрепленному складу");
+	  expect(page).toContain("Синхронизация Эвотор выполняется автоматически и только на чтение.");
 	  expect(page).not.toContain("syncEvotorDocumentPage.useMutation");
 	  expect(page).not.toContain("Загрузить документы");
 	  expect(page).not.toContain("Обновить данные Эвотор");
@@ -47,10 +46,17 @@ describe("warehouse control contract", () => {
 	});
 
 	it("allows print categories to be renamed and deleted without changing goods", () => {
-    expect(page).toContain("updatePrintCategoryGroup.useMutation");
-    expect(page).toContain("deletePrintCategoryGroup.useMutation");
-    expect(page).toContain("Категория печати сохранена");
-	  expect(page).toContain("Товары не изменятся, а вложенные связи будут отсоединены.");
+	    expect(page).toContain("updatePrintCategoryGroup.useMutation");
+	    expect(page).toContain("deletePrintCategoryGroup.useMutation");
+	    expect(page).toContain("Категория печати сохранена");
+		  expect(page).toContain("Товары не изменятся, а вложенные связи будут отсоединены.");
+	});
+
+	it("keeps print mode as a separate compact category annotation and configures freshness", () => {
+		expect(page).toContain('className="warehouse-category-print-mode"');
+		expect(page).toContain("Макс. запас в магазине, дни");
+		expect(page).toContain("maxStoreCoverDays");
+		expect(styles).toContain(".warehouse-category-print-mode { display: block");
 	});
 
 	it("stacks warehouse data into labelled cards on narrow screens", () => {

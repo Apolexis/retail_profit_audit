@@ -42,8 +42,18 @@ describe("заявки магазинов: серверный контракт",
     expect(router).toContain("Группы печати доступны только руководителю или администратору.");
   });
 
+  it("закрывает перед печатью все непустые черновики видимых точек выбранного дня", () => {
+    expect(service).toContain("closeOperationalStoreRequestsForPrint");
+    expect(service).toContain("countOperationalStoreRequestPrintCandidates");
+    expect(service).toContain('eq(operationalStoreRequests.status, "draft")');
+    expect(service).toContain("eq(stores.isHidden, false)");
+    expect(router).toContain("closeRequestsForPrint: protectedProcedure");
+    expect(router).toContain("requestPrintCandidates: protectedProcedure");
+    expect(router).toContain('action: "store_request.close_for_print"');
+  });
+
   it("фиксирует каждую постоянную операцию существующим audit", () => {
-    for (const action of ["store_request.create", "store_request.line.upsert", "store_request.line.remove", "store_request.close", "store_request.draft.delete", "store_request.print"]) {
+    for (const action of ["store_request.create", "store_request.line.upsert", "store_request.line.remove", "store_request.close", "store_request.close_for_print", "store_request.draft.delete", "store_request.print"]) {
       expect(router).toContain(action);
     }
     expect(router).toContain("recordChange");
@@ -51,5 +61,12 @@ describe("заявки магазинов: серверный контракт",
 
   it("не содержит внешней записи в Эвотор", () => {
     expect(service).not.toMatch(/(?:POST|PUT|PATCH|DELETE)\s+https?:\/\/[^\n]*evotor/i);
+  });
+
+  it("соблюдает настраиваемую норму свежего запаса по категории", () => {
+    expect(service).toContain("maxStoreCoverDays");
+    expect(service).toContain("supplySettingsForCategory");
+    expect(service).toContain("Норму запаса задайте целым числом от 1 до 14 дней.");
+    expect(router).toContain("maxStoreCoverDays: z.number().int().min(1).max(14)");
   });
 });

@@ -1,0 +1,2 @@
+CREATE INDEX `operational_evotor_position_document_idx` ON `operational_evotor_document_positions` (`documentId`);--> statement-breakpoint
+CREATE INDEX `operational_evotor_document_sales_time_idx` ON `operational_evotor_documents` (`storeId`,`documentType`,`occurredAt`);

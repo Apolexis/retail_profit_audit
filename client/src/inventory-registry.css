@@ -37,7 +37,7 @@
 .packet .inventory-note-form textarea { min-height: 70px; width: 100%; resize: vertical; padding: 8px 10px; border: 1px solid var(--inventory-line); border-radius: 9px; background: var(--inventory-input); color: var(--ink); font: 650 12px Manrope, Arial, sans-serif; letter-spacing: normal; outline: none; text-transform: none; }
 .packet .inventory-note textarea:focus-visible,
 .packet .inventory-note-form textarea:focus-visible,
-.packet .inventory-line-create input:focus-visible { border-color: var(--inventory-accent); outline: 2px solid var(--inventory-accent); outline-offset: 1px; box-shadow: none; }
+.packet .inventory-line-create input:focus-visible { border-color: var(--inventory-accent); outline: none; box-shadow: none; }
 .packet .inventory-create-actions { display: flex; justify-content: flex-end; }
 .packet .inventory-table-actions { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
 .packet .inventory-table-actions .subtle-button { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; margin: 0; white-space: nowrap; }
@@ -52,10 +52,12 @@
 .packet .inventory-note-form .subtle-button,
 .packet .inventory-line-create .packet-link { display: inline-flex; align-items: center; gap: 7px; min-height: 38px; margin: 0; white-space: nowrap; }
 .packet .inventory-add-product-link { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; margin: 0; white-space: nowrap; }
-.packet .inventory-line-create { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(210px, 1.1fr) minmax(130px, .6fr) minmax(150px, .65fr) auto auto; gap: 12px; align-items: end; padding: 14px; border: 1px solid var(--inventory-quiet-line); border-radius: 13px; background: var(--inventory-panel); }
+.packet .inventory-line-create { display: grid; grid-template-columns: minmax(260px, 1.35fr) minmax(130px, .6fr) minmax(150px, .65fr) auto auto; gap: 12px; align-items: end; padding: 14px; border: 1px solid var(--inventory-quiet-line); border-radius: 13px; background: var(--inventory-panel); }
 .packet .inventory-search { position: relative; display: grid; align-items: center; }
 .packet .inventory-search svg { position: absolute; right: 10px; color: var(--faint); pointer-events: none; }
 .packet .inventory-line-create input { width: 100%; min-width: 0; height: 40px; padding: 0 10px; border: 1px solid var(--inventory-line); border-radius: 9px; background: var(--inventory-field); color: var(--ink); font: 700 13px Manrope, Arial, sans-serif; outline: none; }
+.packet .inventory-line-create .free-scroll-select-trigger { width: 100%; min-height: 40px; border-color: var(--inventory-line); border-radius: 9px; background: var(--inventory-field); color: var(--ink); }
+.packet .inventory-line-create .free-scroll-select-trigger:focus-visible { border-color: var(--inventory-accent); box-shadow: 0 0 0 1px var(--inventory-accent-faint); outline: none; }
 .packet .inventory-search input { padding-right: 31px; }
 .packet .inventory-accounting-readout { display: grid; align-content: center; min-height: 40px; gap: 3px; padding: 7px 10px; border: 1px solid var(--inventory-line); border-radius: 9px; background: var(--inventory-field); }
 .packet .inventory-accounting-readout > span { color: var(--muted); font: 800 9px Manrope, Arial, sans-serif; letter-spacing: .07em; text-transform: uppercase; }
@@ -73,7 +75,7 @@
 .packet .inventory-lines td:last-child { white-space: nowrap; }
 .packet .inventory-inline-quantity { position: relative; display: grid; align-items: center; width: min(142px, 100%); }
 .packet .inventory-inline-quantity input { width: 100%; min-width: 0; height: 34px; padding: 0 36px 0 9px; border: 1px solid var(--inventory-line); border-radius: 8px; background: var(--inventory-field); color: var(--ink); font: 750 12px Manrope, Arial, sans-serif; outline: none; }
-.packet .inventory-inline-quantity input:focus-visible { border-color: var(--inventory-accent); outline: 2px solid var(--inventory-accent); outline-offset: 1px; }
+.packet .inventory-inline-quantity input:focus-visible { border-color: var(--inventory-accent); outline: none; box-shadow: none; }
 .packet .inventory-inline-quantity small { position: absolute; right: 9px; margin: 0 !important; color: var(--muted); font-size: 11px; pointer-events: none; }
 .packet .inventory-empty-lines { display: flex; align-items: flex-start; gap: 11px; padding: 14px; border: 1px dashed var(--inventory-line); border-radius: 12px; color: var(--muted); }
 .packet .inventory-empty-lines svg { color: var(--inventory-accent); flex: 0 0 auto; }
@@ -91,6 +93,8 @@
 .packet .inventory-history-select { display: grid; grid-template-columns: minmax(110px, .6fr) minmax(180px, 1.25fr) minmax(170px, 1fr) auto; gap: 10px; align-items: center; width: 100%; min-width: 0; padding: 12px 13px; border: 0; background: transparent; color: var(--ink); text-align: left; }
 .packet .inventory-history-list > article.selected { border-color: var(--inventory-accent); background: var(--inventory-field); }
 .packet .inventory-history-list > article:hover { border-color: var(--inventory-accent); box-shadow: inset 0 0 0 1px var(--inventory-accent-faint); }
+.packet .inventory-history-select:hover,
+.packet .inventory-history-select:focus-visible { transform: none !important; border-color: transparent !important; background: transparent !important; box-shadow: none !important; outline: none; }
 .packet .inventory-history-list > article .subtle-button { display: inline-flex; align-items: center; gap: 6px; margin: 0; white-space: nowrap; }
 .packet .inventory-history-list span,
 .packet .inventory-history-list small { color: var(--muted); font-size: 11px; }
@@ -155,19 +159,19 @@ html[data-audit-theme="dark"] .packet .packet-card.inventory-rule-disclosure { b
 html[data-audit-theme="light"] .packet .packet-card.inventory-create-card:hover,
 html[data-audit-theme="light"] .packet .packet-card.inventory-draft-card:hover,
 html[data-audit-theme="light"] .packet .packet-card.inventory-history:hover,
-html[data-audit-theme="light"] .packet .packet-card.inventory-rule-disclosure:hover { border-color: var(--inventory-accent) !important; background: var(--inventory-card) !important; box-shadow: 0 0 0 1px rgba(10, 132, 255, .14), 0 10px 22px rgba(10, 94, 180, .08) !important; transform: none !important; }
+html[data-audit-theme="light"] .packet .packet-card.inventory-rule-disclosure:hover { border-color: var(--inventory-accent) !important; background: var(--inventory-card) !important; box-shadow: none !important; transform: none !important; }
 html[data-audit-theme="dark"] .packet .packet-card.inventory-create-card:hover,
 html[data-audit-theme="dark"] .packet .packet-card.inventory-draft-card:hover,
 html[data-audit-theme="dark"] .packet .packet-card.inventory-history:hover,
-html[data-audit-theme="dark"] .packet .packet-card.inventory-rule-disclosure:hover { border-color: var(--inventory-accent) !important; background: var(--inventory-card) !important; box-shadow: 0 0 0 1px rgba(255, 118, 95, .12), inset 0 1px 0 rgba(255, 255, 255, .025) !important; transform: none !important; }
+html[data-audit-theme="dark"] .packet .packet-card.inventory-rule-disclosure:hover { border-color: var(--inventory-accent) !important; background: var(--inventory-card) !important; box-shadow: none !important; transform: none !important; }
 html[data-audit-theme="light"] .packet .packet-card.inventory-create-card:focus-within,
 html[data-audit-theme="light"] .packet .packet-card.inventory-draft-card:focus-within,
 html[data-audit-theme="light"] .packet .packet-card.inventory-history:focus-within,
-html[data-audit-theme="light"] .packet .packet-card.inventory-rule-disclosure:focus-within { border-color: var(--inventory-accent) !important; background: var(--inventory-card) !important; box-shadow: 0 0 0 1px rgba(10, 132, 255, .14), 0 10px 22px rgba(10, 94, 180, .08) !important; }
+html[data-audit-theme="light"] .packet .packet-card.inventory-rule-disclosure:focus-within { border-color: var(--inventory-accent) !important; background: var(--inventory-card) !important; box-shadow: none !important; }
 html[data-audit-theme="dark"] .packet .packet-card.inventory-create-card:focus-within,
 html[data-audit-theme="dark"] .packet .packet-card.inventory-draft-card:focus-within,
 html[data-audit-theme="dark"] .packet .packet-card.inventory-history:focus-within,
-html[data-audit-theme="dark"] .packet .packet-card.inventory-rule-disclosure:focus-within { border-color: var(--inventory-accent) !important; background: var(--inventory-card) !important; box-shadow: 0 0 0 1px rgba(255, 118, 95, .12), inset 0 1px 0 rgba(255, 255, 255, .025) !important; }
+html[data-audit-theme="dark"] .packet .packet-card.inventory-rule-disclosure:focus-within { border-color: var(--inventory-accent) !important; background: var(--inventory-card) !important; box-shadow: none !important; }
 
 @media (max-width: 760px) {
   .packet .inventory-meta-grid,

@@ -101,7 +101,7 @@ export default function RevenueRegistry() {
   const isManager = me.data?.role === "manager";
   const isAdministrative = isAdmin || me.data?.role === "analyst" || isManager;
   const canSubmitRevenue = isSeller || isAdmin;
-  const permittedRevenueStores = isAdmin ? (stores.data ?? []) : (revenueStores.data ?? []);
+  const permittedRevenueStores = isAdmin ? (stores.data ?? []).filter(store => !store.isHidden) : (revenueStores.data ?? []);
   const adminFilter = useMemo(() => ({ from: registryDate, to: registryDate, storeId: adminStoreId ? Number(adminStoreId) : undefined }), [registryDate, adminStoreId]);
   const myRecords = trpc.revenueRegistry.myLatest.useQuery(undefined, { retry: false, enabled: isSeller || isAdmin });
   const adminRecords = trpc.revenueRegistry.adminList.useQuery(adminFilter, { retry: false, enabled: isAdministrative });

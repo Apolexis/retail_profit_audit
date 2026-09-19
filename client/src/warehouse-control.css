@@ -190,3 +190,22 @@ html[data-audit-theme="dark"] .packet .warehouse-table.data-table tbody td { bor
   .packet .warehouse-settings-actions { gap: 8px; }
   .packet .warehouse-settings-note { overflow-wrap: anywhere; }
 }
+
+/* Print categories are configuration cards, not compressed table cells. */
+.packet .warehouse-category-group-heading > div { display: grid; min-width: 0; gap: 4px; }
+.packet .warehouse-category-group-heading > div > small,
+.packet .warehouse-category-print-mode { display: block; color: var(--muted); font-size: 10px; line-height: 1.35; }
+.packet .warehouse-category-group-editor { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; }
+.packet .warehouse-category-group-editor input { width: 100%; min-width: 0; min-height: 40px; box-sizing: border-box; padding: 0 10px; border: 1px solid var(--warehouse-line); border-radius: 9px; background: var(--warehouse-card); color: var(--ink); }
+.packet .warehouse-category-group-editor input:focus-visible { border-color: var(--warehouse-accent); outline: none; box-shadow: none; }
+.packet .warehouse-category-add { grid-template-columns: minmax(0, 1fr) auto; gap: 8px 10px; }
+.packet .warehouse-category-add .subtle-button { min-width: 172px; justify-content: center; }
+.packet .warehouse-settings-grid > .warehouse-settings-note { grid-column: 1 / -1; margin: 0; padding-top: 2px; }
+@media (max-width: 980px) {
+  .packet .warehouse-category-group-editor { grid-template-columns: minmax(0, 1fr); }
+  .packet .warehouse-category-add { grid-template-columns: minmax(0, 1fr); }
+  .packet .warehouse-category-add .subtle-button { width: fit-content; min-width: 0; }
+}
+@media (max-width: 520px) {
+  .packet .warehouse-category-add .subtle-button { width: 100%; }
+}

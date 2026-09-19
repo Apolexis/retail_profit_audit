@@ -43,11 +43,12 @@
 .packet .request-category:focus-within { border-color: var(--request-accent); box-shadow: inset 0 0 0 1px var(--request-accent-faint); }
 .packet .request-category-trigger { display: grid; grid-template-columns: minmax(0, 1fr) auto 18px; align-items: center; gap: 10px; width: 100%; min-height: 43px; padding: 0 13px; border: 0; border-bottom: 1px solid transparent; background: transparent; color: var(--ink); font: 750 14px Manrope, Arial, sans-serif; text-align: left; }
 .packet .request-category-trigger[aria-expanded="true"] { border-bottom-color: var(--request-line); }
+.packet .request-category-trigger:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--request-accent-faint); }
 .packet .request-category-trigger > small { color: var(--muted); font-size: 11px; font-weight: 700; }
 .packet .request-category-trigger svg { color: var(--request-accent); transition: transform 160ms var(--audit-hover-ease); }
 .packet .request-category-trigger[aria-expanded="true"] svg { transform: rotate(180deg); }
 .packet .request-category-products { display: grid; }
-.packet .request-product-row { display: grid; grid-template-columns: minmax(0, 1fr) 152px; gap: 14px; align-items: center; padding: 11px 13px; border-top: 1px solid var(--request-line); }
+.packet .request-product-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 9px; align-items: start; padding: 11px 13px; border-top: 1px solid var(--request-line); }
 .packet .request-product-name { display: grid; min-width: 0; gap: 3px; }
 .packet .request-product-name > span { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .06em; }
 .packet .request-product-name > strong { overflow-wrap: anywhere; color: var(--ink); font-size: 13px; line-height: 1.35; }
@@ -56,11 +57,11 @@
 .packet .request-product-signals small { color: var(--muted); font-size: 10px; }
 .packet .request-product-signals b { color: var(--request-accent); font-size: 10px; }
 .packet .request-stock { display: inline-flex; align-items: center; min-height: 18px; padding: 2px 6px; border: 1px solid var(--request-line); border-radius: 999px; font-size: 9px; font-style: normal; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
-.packet .request-stock.low { border-color: #b94e5b; color: #dd6872; }
-.packet .request-stock.sufficient { border-color: #49826a; color: #4b9a75; }
-.packet .request-stock.high { border-color: #397ec3; color: #3d86cb; }
+.packet .request-stock.low { border-color: #c9545d; color: #d96069; }
+.packet .request-stock.sufficient { border-color: #c49335; color: #c78d22; }
+.packet .request-stock.high { border-color: #43846a; color: #4c9a72; }
 .packet .request-stock.unknown { color: var(--muted); }
-.packet .request-quantity-stepper { display: grid; grid-template-columns: 34px minmax(0, 1fr) 34px; align-items: stretch; min-width: 0; }
+.packet .request-quantity-stepper { display: grid; grid-template-columns: 34px minmax(0, 1fr) 34px; align-items: stretch; width: min(100%, 208px); min-width: 0; }
 .packet .request-quantity-stepper .subtle-button { display: grid; place-items: center; width: 34px; min-width: 34px; min-height: 36px; margin: 0; padding: 0; border-radius: 9px; }
 .packet .request-quantity-stepper label { position: relative; min-width: 0; }
 .packet .request-quantity-stepper input { box-sizing: border-box; width: 100%; min-width: 0; height: 36px; padding: 0 31px 0 8px; border: 1px solid var(--request-line); border-radius: 9px; background: var(--request-panel); color: var(--ink); font: 800 13px Manrope, Arial, sans-serif; outline: none; text-align: center; }
@@ -79,7 +80,7 @@
 .packet .request-comments > div > span,
 .packet .request-chosen-lines > div:first-child span { color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .08em; }
 .packet .request-comments > div > strong { color: var(--ink); font: 700 12px Manrope, Arial, sans-serif; }
-.packet .request-comments form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(190px, .42fr) auto; align-items: end; gap: 9px; padding-top: 9px; border-top: 1px solid var(--request-line); }
+.packet .request-comments form { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 9px; padding-top: 9px; border-top: 1px solid var(--request-line); }
 .packet .request-chosen-lines > div:first-child { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .packet .request-chosen-lines > div:first-child strong { color: var(--ink); font-size: 12px; }
 .packet .request-chosen-lines > div:last-child,

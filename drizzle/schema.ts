@@ -1,4 +1,4 @@
-import { boolean, decimal, int, json, mysqlEnum, mysqlTable, text, timestamp, unique, varchar } from "drizzle-orm/mysql-core";
+import { boolean, decimal, index, int, json, mysqlEnum, mysqlTable, text, timestamp, unique, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -406,6 +406,12 @@ export const operationalPrintCategoryGroups = mysqlTable("operational_print_cate
   normalizedName: varchar("normalizedName", { length: 160 }).notNull(),
   /** Per-store gives one sheet per store; grouped stores consolidate a category group on one sheet. */
   printMode: mysqlEnum("printMode", ["per_store", "grouped_stores"]).default("per_store").notNull(),
+  /** The configured warehouse print group is the qualitative supply-stock source for this product category. */
+  supplyPrintGroupId: int("supplyPrintGroupId"),
+  /** A request comment slot is configured once here, not selected separately in every request. */
+  requestCommentSlot: mysqlEnum("requestCommentSlot", ["slot_1", "slot_2"]),
+  /** Store stock above this category-specific cover is not recommended for fresh daily replenishment. */
+  maxStoreCoverDays: int("maxStoreCoverDays").default(2).notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   createdByAccountId: int("createdByAccountId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -496,7 +502,7 @@ export const operationalEvotorDocuments = mysqlTable("operational_evotor_documen
   occurredAt: varchar("occurredAt", { length: 64 }),
   total: decimal("total", { precision: 18, scale: 2 }),
   importedAt: timestamp("importedAt").defaultNow().notNull(),
-}, table => [unique("operational_evotor_document_uq").on(table.storeId, table.evotorDocumentId)]);
+}, table => [unique("operational_evotor_document_uq").on(table.storeId, table.evotorDocumentId), index("operational_evotor_document_sales_time_idx").on(table.storeId, table.documentType, table.occurredAt)]);
 
 /** Normalized document position. Fiscal identifiers, device data, payment requisites and raw payloads are excluded. */
 export const operationalEvotorDocumentPositions = mysqlTable("operational_evotor_document_positions", {
@@ -510,7 +516,7 @@ export const operationalEvotorDocumentPositions = mysqlTable("operational_evotor
   settlementMethod: varchar("settlementMethod", { length: 64 }),
   resultSum: decimal("resultSum", { precision: 18, scale: 2 }),
   importedAt: timestamp("importedAt").defaultNow().notNull(),
-}, table => [unique("operational_evotor_document_position_uq").on(table.documentId, table.evotorProductId, table.productName)]);
+}, table => [unique("operational_evotor_document_position_uq").on(table.documentId, table.evotorProductId, table.productName), index("operational_evotor_position_document_idx").on(table.documentId)]);
 
 /** A zero is valid: absence must never be represented by silently omitting a counted product. */
 export const operationalInventoryLines = mysqlTable("operational_inventory_lines", {

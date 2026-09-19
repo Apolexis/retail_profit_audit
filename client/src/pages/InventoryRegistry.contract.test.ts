@@ -65,8 +65,10 @@ describe("интерфейс операционной инвентаризаци
     expect(router).toContain('action: "inventory.lines.fill_from_accounting"');
   });
 
-  it("ставит иконку поиска справа, а интерактивная история не содержит вложенных кнопок", () => {
-    expect(css).toContain('.packet .inventory-search svg { position: absolute; right: 10px;');
+	it("переносит поиск товара в селект, а интерактивная история не содержит вложенных кнопок", () => {
+	    expect(page).toContain("FreeScrollSelect");
+	    expect(page).toContain('searchPlaceholder="Название, № или категория"');
+	    expect(page).not.toContain('label>Поиск товара');
     expect(css).toContain('.packet .inventory-history-list > article { display: grid;');
     expect(css).toContain('.packet .inventory-history-select { display: grid;');
     expect(page).not.toContain('<button type="button" className={item.id === activeInventoryId');

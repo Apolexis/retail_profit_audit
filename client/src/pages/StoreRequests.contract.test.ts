@@ -28,17 +28,20 @@ describe("заявки магазинов: экран", () => {
     expect(page).toContain("request-quantity-stepper");
     expect(page).toContain("addRequestManualLine");
     expect(page).toContain("manualPrintCategoryGroupId");
-    expect(page).toContain("рекомендуем заказать");
-    expect(page).toContain("ориентир заказа:");
-    expect(page).toContain("остаток: {stockLabel[product.stockState]}");
+    expect(page).toContain("Рекомендуем заказать");
+    expect(page).toContain("средняя продажа за день + запас");
+    expect(page).toContain("product.supplyStockState");
+    expect(page).toContain("maxStoreCoverDays");
+    expect(page).toContain("норма категории");
   });
 
-  it("возвращает пользователя в уже открытый черновик и показывает закрытие только уполномоченному персоналу", () => {
+  it("возвращает пользователя в уже открытый черновик и закрывает весь печатный запуск только уполномоченному персоналу", () => {
     expect(page).toContain('toast.success(result.created ? "Черновик заявки открыт" : "Открыт существующий черновик")');
-    expect(page).toContain("canCloseRequest && active.lines.length > 0");
-    expect(page).toContain("Распечатать и закрыть");
+    expect(page).toContain("requestPrintCandidates");
+    expect(page).toContain("closeRequestsForPrint");
+    expect(page).toContain("Распечатать и закрыть все");
     expect(page).not.toContain('>Закрыть заявку<');
-    expect(page).toContain("const canCloseRequest = Boolean(isManager || isAdmin);");
+    expect(page).toContain("const canPrintRequests = Boolean(isManager || isAdmin);");
   });
 
   it("печатает все активные группы без пользовательского выбора подборки", () => {
@@ -46,13 +49,13 @@ describe("заявки магазинов: экран", () => {
     expect(page).not.toContain("printCategoryGroupIds");
     expect(page).toContain("Все настроенные группы");
     expect(page).toContain("store-request-print-sheet");
-    expect(page).toContain("ПЕЧАТЬ ЗАКРЫТЫХ ЗАЯВОК");
+    expect(page).toContain("ПЕЧАТЬ ЗАЯВОК");
     expect(page).toContain("const canPrintRequests = Boolean(isManager || isAdmin);");
     expect(page).toContain('{canPrintRequests && <section className="packet-card request-print-config">');
   });
 
   it("не возвращает общий комментарий и оставляет два комментария к категориям печати", () => {
-    expect(page).toContain("До двух комментариев к печатным категориям");
+    expect(page).toContain("До двух комментариев; категория печати настраивается в «Складах»");
     expect(page).toContain("([1, 2] as const).map(slot");
     expect(page).toContain("Комментарий {slot}");
     expect(page).not.toContain("Комментарий к заявке");

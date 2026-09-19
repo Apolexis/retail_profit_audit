@@ -37,8 +37,11 @@ describe("страницы продаж Эвотор", () => {
     expect(page).toContain("DateRangeControl");
     expect(page).toContain("ПЕРИОД ДОКУМЕНТОВ ЭВОТОР");
     expect(page).toContain('const EVOTOR_ANALYTICS_START = "2025-01-01"');
-    expect(page).toContain("from: EVOTOR_ANALYTICS_START");
+    expect(page).toContain("from: from < EVOTOR_ANALYTICS_START ? EVOTOR_ANALYTICS_START : from");
+    expect(page).toContain("const defaultSalesRange");
     expect(page).toContain("В аналитике учитываются только документы начиная с 2025 года.");
+    expect(page).toContain("Факты продажи сейчас загружены для");
+    expect(page).toContain("selectedStoreCount");
     expect(page).toContain("function retainedRange");
     expect(page).toContain('className="analysis-filter evotor-sales-period"');
     expect(css).toContain(".packet .evotor-sales-period { margin-bottom: 18px; }");
@@ -56,7 +59,8 @@ describe("страницы продаж Эвотор", () => {
 
   it("дает выбрать сами товары для графика и показывает количество прежде суммы", () => {
     expect(page).toContain('useState<ProductMetric>("quantity")');
-    expect(page).toContain('const unitLabel = (value: string | null) => value === "fraction" ? "кг"');
+    expect(page).toContain('unit === "fraction" || unit === "дроб"');
+    expect(page).toContain('return "кг"');
     expect(page).toContain("Товары для сравнения");
     expect(page).toContain("selectedProductKeys");
     expect(page).toContain("productTimeline");

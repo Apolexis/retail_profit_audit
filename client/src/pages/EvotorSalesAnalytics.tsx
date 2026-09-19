@@ -67,11 +67,28 @@ const productMetrics: Record<ProductMetric, { label: string; color: string; note
 };
 
 const todayIso = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Moscow" }).format(new Date());
+const defaultSalesRange = (): DateRangeValue => {
+  const to = todayIso();
+  const date = new Date(`${to}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() - 30);
+  const from = date.toISOString().slice(0, 10);
+  return { from: from < EVOTOR_ANALYTICS_START ? EVOTOR_ANALYTICS_START : from, to };
+};
 const rangeText = (value: DateRangeValue) => `${new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${value.from}T12:00:00Z`))} — ${new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${value.to}T12:00:00Z`))}`;
 const trimNumber = (value: number, digits = 3) => Number.isFinite(value) ? value.toFixed(digits).replace(/\.?0+$/, "") : "—";
-const numberText = (value: number, digits = 3) => trimNumber(value, digits).replace(/(?<!^)(?=(\d{3})+(?:\.|$))/g, " ");
+const numberText = (value: number, digits = 3) => {
+  const [integer, fraction] = trimNumber(value, digits).split(".");
+  const groupedInteger = integer.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  return fraction ? `${groupedInteger}.${fraction}` : groupedInteger;
+};
 const moneyText = (value: number) => `${numberText(value, 2)} ₽`;
-const unitLabel = (value: string | null) => value === "fraction" ? "кг" : value === "piece" ? "шт." : value === "l" ? "л" : value || "—";
+const unitLabel = (value: string | null) => {
+  const unit = value?.trim().toLocaleLowerCase("ru-RU") ?? "";
+  if (unit === "fraction" || unit === "дроб" || unit === "fractional") return "кг";
+  if (unit === "piece" || unit === "шт" || unit === "штука") return "шт.";
+  if (unit === "l" || unit === "литр") return "л";
+  return value || "—";
+};
 const compactDate = (value: string) => value.charAt(0).toLocaleUpperCase("ru-RU") + value.slice(1);
 
 function retainedRange(value: DateRangeValue): DateRangeValue {
@@ -148,7 +165,7 @@ export default function EvotorSalesAnalytics({ kind }: { kind: PageKind }) {
   const [selectedProductKeys, setSelectedProductKeys] = useState<string[]>([]);
   const [productSearch, setProductSearch] = useState("");
   const [visibleProductCount, setVisibleProductCount] = useState(48);
-  const [salesRange, setSalesRange] = useState<DateRangeValue>(() => ({ from: EVOTOR_ANALYTICS_START, to: todayIso() }));
+  const [salesRange, setSalesRange] = useState<DateRangeValue>(defaultSalesRange);
 
   const visibleStores = useMemo(() => (stores.data ?? []).filter(store => !store.isHidden), [stores.data]);
   const allStoresSelected = selectedStores.length === 0;
@@ -186,6 +203,7 @@ export default function EvotorSalesAnalytics({ kind }: { kind: PageKind }) {
   const productChartLines = effectiveProducts.map((product, index) => ({ key: product.key, name: `${product.productName} · ${unitLabel(product.unit)}`, color: ["#0A84FF", "#34C759", "#5E5CE6", "#FF453A", "#64D2FF", "#FF9F0A"][index % 6] }));
   const scope = allStoresSelected ? "Все магазины" : data?.stores.length === 1 ? data.stores[0].name : `${data?.stores.length ?? selectedStores.length} магазина`;
   const importedStoreCount = new Set((data?.timeline ?? []).map(row => row.storeId)).size;
+  const selectedStoreCount = allStoresSelected ? visibleStores.length : selectedStores.length;
   const noData = !query.isLoading && !query.isError && data && data.summary.checks === 0;
   const coverageText = data?.coverage.from && data.coverage.to ? rangeText({ from: data.coverage.from, to: data.coverage.to }) : null;
   const normalizedProductSearch = productSearch.trim().toLocaleLowerCase("ru-RU");
@@ -205,14 +223,14 @@ export default function EvotorSalesAnalytics({ kind }: { kind: PageKind }) {
 
   return <AuditShell kicker={kicker} title={title}>
     <section className="analysis-filter evotor-sales-period">
-      <div className="analysis-filter-copy"><span>ПЕРИОД ДОКУМЕНТОВ ЭВОТОР</span><strong>{rangeText(salesRange)}</strong><small>{coverageText ? `В загруженной витрине: ${coverageText}` : "В аналитике учитываются только документы начиная с 2025 года."}{data ? ` Факты продажи сейчас загружены для ${importedStoreCount} из ${data.stores.length} выбранных магазинов; очередь продолжает read-only загрузку.` : ""} Это независимая read-only витрина и не является финансовым P&L.</small></div>
+      <div className="analysis-filter-copy"><span>ПЕРИОД ДОКУМЕНТОВ ЭВОТОР</span><strong>{rangeText(salesRange)}</strong><small>{coverageText ? `В загруженной витрине: ${coverageText}` : "В аналитике учитываются только документы начиная с 2025 года."}{data ? ` Факты продажи сейчас загружены для ${importedStoreCount} из ${selectedStoreCount} выбранных магазинов; очередь продолжает read-only загрузку.` : ""} Это независимая read-only витрина и не является финансовым P&L.</small></div>
       <DateRangeControl value={salesRange} onChange={value => setSalesRange(retainedRange(value))} title="ПЕРИОД ЧЕКОВ ЭВОТОР" ariaLabel="Изменить период чеков Эвотор" />
     </section>
 
     <details className="cadence-store-picker evotor-sales-store-picker"><summary><span>Магазины для суммарного среза</span><b>{scope}</b><small>выбрать</small></summary><div><p>Выберите магазины для общего ряда. При одном выбранном показателе режим «Магазины» показывает отдельную линию каждой точки.</p><button type="button" aria-pressed={allStoresSelected} onClick={() => setSelectedStores([])} className={allStoresSelected ? "cadence-metric-chip active" : "cadence-metric-chip"}>Вся сеть</button>{visibleStores.map(store => <button type="button" key={store.id} aria-pressed={selectedStores.includes(store.id)} onClick={() => toggleStore(store.id)} className={selectedStores.includes(store.id) ? "cadence-metric-chip active" : "cadence-metric-chip"}>{store.name}</button>)}</div></details>
 
     {query.isLoading ? <FactsLoader /> : query.isError ? <section className="empty-state live-empty"><ReceiptText size={30}/><h2>Показатели чеков недоступны</h2><p>{query.error.message}</p></section> : noData ? <section className="empty-state live-empty"><ReceiptText size={30}/><h2>В выбранном срезе нет чеков продажи</h2><p>{coverageText ? `Витрина уже содержит период ${coverageText}; выберите дату внутри этого диапазона.` : "Здесь появятся результаты после автоматической read-only загрузки чеков Эвотор."} Ручной импорт и запись в Эвотор на этом экране недоступны.</p></section> : data && <>
-      {kind === "metrics" ? <section className="packet-kpis equal cadence-kpis evotor-sales-kpis"><article className="packet-kpi cadence-primary-kpi"><span>Сумма чеков · {scope}</span><strong>{moneyText(data.summary.amount)}</strong><small>{rangeText(salesRange)} · чеки продажи Эвотор</small></article><article className="packet-kpi"><span>Чеки</span><strong>{numberText(data.summary.checks)}</strong><small>закрытые чеки продажи</small></article><article className="packet-kpi"><span>Средний чек</span><strong>{moneyText(data.summary.checks ? data.summary.amount / data.summary.checks : 0)}</strong><small>сумма чеков / число чеков</small></article><article className="packet-kpi"><span>Магазины с чеками</span><strong>{numberText(importedStoreCount)}</strong><small>из {data.stores.length} в выбранном срезе</small></article></section> : <section className="packet-kpis equal cadence-kpis evotor-sales-kpis"><article className="packet-kpi cadence-primary-kpi"><span>Продано товаров · {scope}</span><strong>{numberText(data.summary.quantity)}</strong><small>{rangeText(salesRange)} · строки чеков продажи</small></article><article className="packet-kpi"><span>Наименований</span><strong>{numberText(productRows.length)}</strong><small>по названию и единице Эвотор</small></article><article className="packet-kpi"><span>Товарных строк</span><strong>{numberText(data.summary.positions)}</strong><small>в сохраненных чеках продажи</small></article><article className="packet-kpi"><span>Сумма продаж</span><strong>{moneyText(data.summary.positionAmount)}</strong><small>сумма товарных строк Эвотор</small></article></section>}
+          {kind === "metrics" ? <section className="packet-kpis equal cadence-kpis evotor-sales-kpis"><article className="packet-kpi cadence-primary-kpi"><span>Сумма чеков · {scope}</span><strong>{moneyText(data.summary.amount)}</strong><small>{rangeText(salesRange)} · чеки продажи Эвотор</small></article><article className="packet-kpi"><span>Чеки</span><strong>{numberText(data.summary.checks)}</strong><small>закрытые чеки продажи</small></article><article className="packet-kpi"><span>Средний чек</span><strong>{moneyText(data.summary.checks ? data.summary.amount / data.summary.checks : 0)}</strong><small>сумма чеков / число чеков</small></article><article className="packet-kpi"><span>Магазины с чеками</span><strong>{numberText(importedStoreCount)}</strong><small>из {selectedStoreCount} в выбранном срезе</small></article></section> : <section className="packet-kpis equal cadence-kpis evotor-sales-kpis"><article className="packet-kpi cadence-primary-kpi"><span>Продано товаров · {scope}</span><strong>{numberText(data.summary.quantity)}</strong><small>{rangeText(salesRange)} · строки чеков продажи</small></article><article className="packet-kpi"><span>Наименований</span><strong>{numberText(productRows.length)}</strong><small>по названию и единице Эвотор</small></article><article className="packet-kpi"><span>Товарных строк</span><strong>{numberText(data.summary.positions)}</strong><small>в сохраненных чеках продажи</small></article><article className="packet-kpi"><span>Сумма продаж</span><strong>{moneyText(data.summary.positionAmount)}</strong><small>сумма товарных строк Эвотор</small></article></section>}
 
       {kind === "metrics" ? <>
         <section className="packet-card cadence-chart-card evotor-sales-chart-card"><div className="card-title"><div><span>ДИНАМИКА ЧЕКОВ · {scope}</span><h3>{granularityLabels[granularity]} · {perStoreData ? `${salesMetrics[selectedSalesMetrics[0]].label}: каждый магазин отдельно` : selectedSalesMetrics.length === 1 ? salesMetrics[selectedSalesMetrics[0]].label : `${selectedSalesMetrics.length} показателя`}</h3></div><div className="chart-controls"><div className="chart-view-control" aria-label="Детализация чеков Эвотор">{(["month", "week", "day", "hour"] as Granularity[]).map(level => <button type="button" key={level} className={granularity === level ? "chart-view-button active" : "chart-view-button"} onClick={() => setGranularity(level)}>{granularityLabels[level]}</button>)}</div>{allowStoreSeries && <StoreSeriesModeToggle active={showStoreSeries} onChange={() => setShowStoreSeries(current => !current)} />}</div></div><div className="cadence-metrics-picker"><div className="cadence-picker-heading"><span>Показатели для сравнения</span><small>минимум один</small></div><div className="cadence-metric-group"><div>{(Object.keys(salesMetrics) as SalesMetric[]).map(metric => <button type="button" key={metric} aria-pressed={selectedSalesMetrics.includes(metric)} onClick={() => { toggleSalesMetric(metric); setShowStoreSeries(false); }} className={selectedSalesMetrics.includes(metric) ? "cadence-metric-chip active" : "cadence-metric-chip"}><i style={{ background: salesMetrics[metric].color }}/>{salesMetrics[metric].label}</button>)}</div></div></div><MetricLineChart data={metricChartData} lines={metricChartLines} displayMode={metricDisplayMode} chartTitle={`${title}: чеки`} /><p className="packet-note"><BarChart3 size={15}/> {perStoreData ? "Каждый выбранный магазин показан отдельным рядом. Отключите режим «Магазины», чтобы увидеть общий результат." : selectedSalesMetrics.length === 1 ? salesMetrics[selectedSalesMetrics[0]].note : "Выбранные показатели повторяются в таблице непосредственно под графиком."}</p></section>

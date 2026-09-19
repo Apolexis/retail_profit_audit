@@ -4708,12 +4708,14 @@ html[data-audit-theme] .packet .packet-card:is(.price-upload, .price-import-guid
 .packet .price-directory-show-more { display: flex; width: 100%; justify-content: center; margin-top: 9px; }
 .packet .price-directory-all-shown { display: block; padding: 10px 2px 0; color: var(--price-muted); font-size: 10px; text-align: center; }
 
-@media (max-width: 720px) {
+@media (max-width: 1280px) {
   .packet .price-import-preview .price-preview-table > .price-saved-import-row { grid-template-columns: 30px minmax(0, 1fr) auto; gap: 6px 8px; }
   .packet .price-saved-import-main { grid-column: 2; }
+  .packet .price-saved-import-main strong,
+  .packet .price-saved-import-main span { overflow: visible; text-overflow: clip; white-space: normal; overflow-wrap: anywhere; }
   .packet .price-saved-import-row > b { grid-column: 2; }
   .packet .price-saved-import-row > small { grid-column: 2 / -1; white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
-  .packet .price-saved-import-actions { grid-column: 3; grid-row: 1; align-self: start; flex-direction: column; }
+  .packet .price-saved-import-actions { grid-column: 3; grid-row: 1; align-self: start; flex-direction: row; }
   .packet .price-saved-import-editor { grid-column: 1 / -1; grid-template-columns: 1fr; }
   .packet .price-saved-import-editor > div { justify-content: flex-start; }
   .packet .price-saved-import-editor-actions { grid-template-columns: minmax(0, 1fr); }
@@ -5055,8 +5057,8 @@ html[data-audit-theme] .packet .packet-card:is(.price-upload, .price-import-guid
 @media (max-width: 460px) { .packet .price-link-new-product { grid-template-columns: minmax(0, 1fr); } .packet .price-link-products > div { grid-template-columns: minmax(0, 1fr); } .packet .price-link-product-actions { grid-column: 1; grid-row: auto; justify-content: flex-start; } }
 
 /* Operational row triggers keep the parent card contour; inherited generic button hover must not paint a second blue rectangle. */
-html[data-audit-theme="dark"] .packet .inventory-history-select:hover,
-html[data-audit-theme="dark"] .packet .inventory-history-select:focus-visible {
+.packet .inventory-history-select:hover,
+.packet .inventory-history-select:focus-visible {
   transform: none !important;
   border-color: transparent !important;
   background: transparent !important;
@@ -5149,20 +5151,20 @@ html[data-audit-theme="dark"] .packet :is(.revenue-registry, .inventory-layout, 
 }
 .packet :is(.inventory-create-actions, .inventory-draft-actions, .inventory-table-actions, .inventory-note-form, .inventory-close-actions, .price-directory-actions, .warehouse-row-actions, .catalog-editor-actions) :is(.packet-link, .subtle-button) svg,
 .packet :is(.catalog-back, .warehouse-edit) svg { flex: 0 0 auto; order: -1; }
-/* Operating actions follow their own accepted palette after historical global layers. */
+/* Operating actions use the same restrained contour as Rhythm, rather than a second primary-button palette. */
 html[data-audit-theme="light"] .packet :is(.inventory-layout, .inventory-history, .stock-table-card, .catalog-working-card, .catalog-editor-card, .warehouse-table-card) .packet-link {
-  border-color: #0a84ff !important;
-  background: #0a84ff !important;
-  color: #ffffff !important;
-  box-shadow: 0 7px 18px rgba(10, 132, 255, .20) !important;
+  border-color: #bdd9f6 !important;
+  background: #ffffff !important;
+  color: #075dbb !important;
+  box-shadow: none !important;
 }
 html[data-audit-theme="light"] .packet :is(.inventory-layout, .inventory-history, .stock-table-card, .catalog-working-card, .catalog-editor-card, .warehouse-table-card) .packet-link:hover,
 html[data-audit-theme="light"] .packet :is(.inventory-layout, .inventory-history, .stock-table-card, .catalog-working-card, .catalog-editor-card, .warehouse-table-card) .packet-link:focus-visible {
   transform: none !important;
-  border-color: #075dbb !important;
-  background: #075dbb !important;
-  color: #ffffff !important;
-  box-shadow: 0 0 0 2px rgba(10, 132, 255, .18) !important;
+  border-color: #0a84ff !important;
+  background: #eef7ff !important;
+  color: #075dbb !important;
+  box-shadow: 0 0 0 1px rgba(10, 132, 255, .18) !important;
 }
 html[data-audit-theme="light"] .packet :is(.inventory-layout, .inventory-history, .stock-table-card, .catalog-working-card, .catalog-editor-card, .warehouse-table-card) .subtle-button {
   border-color: #bdd9f6 !important;
@@ -5170,18 +5172,18 @@ html[data-audit-theme="light"] .packet :is(.inventory-layout, .inventory-history
   color: #075dbb !important;
 }
 html[data-audit-theme="dark"] .packet :is(.inventory-layout, .inventory-history, .stock-table-card, .catalog-working-card, .catalog-editor-card, .warehouse-table-card) .packet-link {
-  border-color: #ff765f !important;
+  border-color: #5d3547 !important;
   background: #1b141c !important;
-  color: var(--ink) !important;
-  box-shadow: 0 7px 18px rgba(0, 0, 0, .22) !important;
+  color: #eac0d1 !important;
+  box-shadow: none !important;
 }
 html[data-audit-theme="dark"] .packet :is(.inventory-layout, .inventory-history, .stock-table-card, .catalog-working-card, .catalog-editor-card, .warehouse-table-card) .packet-link:hover,
 html[data-audit-theme="dark"] .packet :is(.inventory-layout, .inventory-history, .stock-table-card, .catalog-working-card, .catalog-editor-card, .warehouse-table-card) .packet-link:focus-visible {
   transform: none !important;
   border-color: #ff765f !important;
   background: #1b141c !important;
-  color: var(--ink) !important;
-  box-shadow: 0 0 0 2px rgba(255, 118, 95, .18) !important;
+  color: #f4c4d2 !important;
+  box-shadow: 0 0 0 1px rgba(255, 118, 95, .16) !important;
 }
 @media (max-width: 640px) {
   .packet .inventory-history-list article { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
