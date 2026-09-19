@@ -386,6 +386,20 @@
       "when": 1789805019610,
       "tag": "0054_sour_red_ghost",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "5",
+      "when": 1789809248434,
+      "tag": "0055_dizzy_wonder_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "5",
+      "when": 1789810034787,
+      "tag": "0056_old_bastion",
+      "breakpoints": true
     }
   ]
 }

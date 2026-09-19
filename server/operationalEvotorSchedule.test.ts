@@ -3,17 +3,13 @@ import { describe, expect, it } from "vitest";
 import { operationalEvotorScheduleDefinitions } from "./operationalEvotorSchedule";
 
 const registry = readFileSync(new URL("./inventoryRegistry.ts", import.meta.url), "utf8");
+const scheduler = readFileSync(new URL("./operationalEvotorSchedule.ts", import.meta.url), "utf8");
+const client = readFileSync(new URL("./evotorCatalog.ts", import.meta.url), "utf8");
 
 describe("планировщик read-only синхронизации Эвотор", () => {
   it("ограничивает каждый scheduled запуск одним складом на минимальном допустимом интервале", () => {
-    expect(operationalEvotorScheduleDefinitions.evotor_catalog).toMatchObject({
-      cron: "0 * * * * *",
-      path: "/api/scheduled/operational-evotor-catalog",
-    });
-    expect(operationalEvotorScheduleDefinitions.evotor_documents).toMatchObject({
-      cron: "0 * * * * *",
-      path: "/api/scheduled/operational-evotor-documents",
-    });
+    expect(operationalEvotorScheduleDefinitions.evotor_catalog).toMatchObject({ cron: "0 * * * * *", path: "/api/scheduled/operational-evotor-catalog" });
+    expect(operationalEvotorScheduleDefinitions.evotor_documents).toMatchObject({ cron: "0 * * * * *", path: "/api/scheduled/operational-evotor-documents" });
     expect(operationalEvotorScheduleDefinitions.evotor_catalog.description).toContain("одного закрепленного склада");
     expect(operationalEvotorScheduleDefinitions.evotor_documents.description).toContain("следующей страницы");
   });
@@ -23,20 +19,31 @@ describe("планировщик read-only синхронизации Эвото
     expect(operationalEvotorScheduleDefinitions.evotor_documents.path).toMatch(/^\/api\/scheduled\//);
   });
 
-	it("сохраняет страницу документов пакетно, чтобы callback завершался в лимите", () => {
-		expect(registry).toContain("const uniqueDocuments = Array.from(new Map(page.documents");
-		expect(registry).toContain("const existingIds = uniqueDocuments.length");
-		expect(registry).toContain("for (let start = 0; start < newDocuments.length; start += 20)");
-		expect(registry).toContain("await db.insert(operationalEvotorDocuments).values(batch.map");
-		expect(registry).toContain("await db.insert(operationalEvotorDocumentPositions).values(positions)");
-		expect(registry).toContain("await forEachBoundedBatch(preview.products, 12");
-	});
+  it("сохраняет страницу документов пакетно и гидратирует только агрегаты оплат", () => {
+    expect(registry).toContain("const uniqueDocuments = Array.from(new Map(page.documents");
+    expect(registry).toContain("const existingByExternalId = uniqueDocuments.length");
+    expect(registry).toContain("for (let start = 0; start < newDocuments.length; start += 20)");
+    expect(registry).toContain("await db.insert(operationalEvotorDocuments).values(batch.map");
+    expect(registry).toContain("await db.insert(operationalEvotorDocumentPositions).values(positions)");
+    expect(registry).toContain("paymentCaptureStatus: document.paymentSummary.captureStatus");
+    expect(scheduler).toContain("paymentHeadersHydrated: result.hydratedPaymentDocuments");
+    expect(registry).toContain("await forEachBoundedBatch(preview.products, 12");
+  });
 
-	it("начинает новую серию документов с 2025 года и продолжает ее только opaque cursor", () => {
-		expect(registry).toContain("requestedFrom: EVOTOR_DOCUMENT_RETENTION_START");
-		expect(registry).toContain("requestedTo: moscowBusinessDate()");
-		expect(registry).toContain("Серия перезапущена с границы хранения 2025-01-01.");
-		expect(registry).toContain("since: sync.cursor ? undefined : sync.requestedFrom");
-		expect(registry).toContain("until: sync.cursor ? undefined : sync.requestedTo");
-	});
+  it("сохраняет отдельные cursor-цепочки для сегодняшнего окна и архива 2025+", () => {
+    expect(registry).toContain('mode?: "historical" | "current_day"');
+    expect(registry).toContain('syncMode === "current_day" ? businessDate : EVOTOR_DOCUMENT_RETENTION_START');
+    expect(registry).toContain("since: sync.cursor ? undefined : sync.requestedFrom");
+    expect(registry).toContain("until: sync.cursor ? undefined : sync.requestedTo");
+    expect(scheduler).toContain("async function nextDocumentSyncTarget");
+    expect(scheduler).toContain('mode: "current_day"');
+    expect(scheduler).toContain('importWindow: target.mode');
+  });
+
+  it("фиксирует только числовые сведения о квоте без реквизитов запроса", () => {
+    expect(client).toContain('numberHeader("X-RateLimit-Limit")');
+    expect(client).toContain('numberHeader("X-RateLimit-Remaining")');
+    expect(scheduler).toContain("rateLimit: result.rateLimit");
+    expect(client).not.toContain("Authorization: token");
+  });
 });

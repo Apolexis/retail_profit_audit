@@ -262,8 +262,8 @@ html[data-audit-theme="dark"] .packet .packet-card.revenue-own-history:hover { b
   .packet .revenue-register-table tfoot tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: hidden; border: 1px solid var(--revenue-accent-soft); border-radius: 11px; background: var(--revenue-total-surface); }
   .packet .revenue-register-table tfoot :is(th, td) { display: none; border: 0 !important; background: transparent !important; }
   .packet .revenue-register-table tfoot th { display: block; grid-column: 1 / -1; padding: 9px 11px; color: var(--ink); text-align: left; }
-  .packet .revenue-register-table tfoot td:nth-last-child(3) { display: block; padding: 0 11px 9px; color: var(--ink); font-weight: 800; }
-  .packet .revenue-register-table tfoot td:nth-last-child(3)::before { content: "Итого"; display: block; margin-bottom: 2px; color: var(--muted); font: 800 9px/1.15 Manrope,Arial,sans-serif; letter-spacing: .07em; text-transform: uppercase; }
+  .packet .revenue-register-table tfoot .revenue-total-cell { display: block; padding: 0 11px 9px; color: var(--ink); font-weight: 800; }
+  .packet .revenue-register-table tfoot .revenue-total-cell::before { content: "Итого"; display: block; margin-bottom: 2px; color: var(--muted); font: 800 9px/1.15 Manrope,Arial,sans-serif; letter-spacing: .07em; text-transform: uppercase; }
 }
 @media (max-width: 440px) {
   .packet .revenue-register-table tbody tr { grid-template-columns: 1fr; }

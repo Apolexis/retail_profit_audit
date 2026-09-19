@@ -9,6 +9,8 @@ const MAX_PAGES_PER_PREVIEW = 5;
 type EvotorPage = {
   items?: unknown[];
   paging?: { next_cursor?: unknown };
+  /** Numeric response headers only; no token, terminal or request identity is retained. */
+  rateLimit?: { limit: number | null; remaining: number | null; reset: string | null };
 };
 
 type EvotorRecord = Record<string, unknown>;
@@ -46,6 +48,15 @@ export type EvotorDocumentPreview = {
   createdAt: string | null;
   closedAt: string | null;
   total: number | null;
+  /** Aggregate-only payment projection. Individual instruments and requisites never leave the source payload. */
+  paymentSummary: {
+    cashAmount: number | null;
+    cashlessAmount: number | null;
+    otherPaymentAmount: number | null;
+    unknownPaymentAmount: number | null;
+    captureStatus: "unavailable" | "complete" | "unreconciled" | "malformed";
+    reconciliationDelta: number | null;
+  };
   positions: Array<{
     productId: string | null;
     productName: string | null;
@@ -80,6 +91,51 @@ function finiteNumberLike(value: unknown): number | null {
   if (typeof value !== "string" || !value.trim()) return null;
   const parsed = Number(value.replace(",", "."));
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+const unavailablePaymentSummary = () => ({
+  cashAmount: null,
+  cashlessAmount: null,
+  otherPaymentAmount: null,
+  unknownPaymentAmount: null,
+  captureStatus: "unavailable" as const,
+  reconciliationDelta: null,
+});
+
+/**
+ * Keeps only safe payment totals. It deliberately discards ids, payment-system
+ * names, parts, change and every other payment requisite from the V2 response.
+ */
+function normalizeEvotorPaymentSummary(value: unknown, documentTotal: number | null) {
+  if (!Array.isArray(value)) return unavailablePaymentSummary();
+  let cashCents = 0;
+  let cashlessCents = 0;
+  let otherCents = 0;
+  let unknownCents = 0;
+  for (const rawPayment of value) {
+    const payment = asRecord(rawPayment);
+    const type = text(payment?.type)?.toUpperCase();
+    const amount = finiteNumberLike(payment?.sum);
+    if (!payment || !type || amount === null || amount < 0) {
+      return { ...unavailablePaymentSummary(), captureStatus: "malformed" as const };
+    }
+    const cents = Math.round(amount * 100);
+    if (type === "CASH") cashCents += cents;
+    else if (type === "ELECTRON") cashlessCents += cents;
+    else if (type === "UNKNOWN") unknownCents += cents;
+    else otherCents += cents;
+  }
+  const paymentsCents = cashCents + cashlessCents + otherCents + unknownCents;
+  const totalCents = documentTotal === null ? null : Math.round(documentTotal * 100);
+  const deltaCents = totalCents === null ? null : paymentsCents - totalCents;
+  return {
+    cashAmount: cashCents / 100,
+    cashlessAmount: cashlessCents / 100,
+    otherPaymentAmount: otherCents / 100,
+    unknownPaymentAmount: unknownCents / 100,
+    captureStatus: deltaCents === null || Math.abs(deltaCents) <= 1 ? "complete" as const : "unreconciled" as const,
+    reconciliationDelta: deltaCents === null ? null : deltaCents / 100,
+  };
 }
 
 function codeValue(value: unknown): string | null {
@@ -168,7 +224,19 @@ async function fetchEvotorPage(path: string, cursor?: string, documentWindow?: E
   }
   const response = await fetch(url, { headers: evotorHeaders(), signal: AbortSignal.timeout(8_000) });
   if (!response.ok) throw new Error(`Эвотор не отдал preview каталога (HTTP ${response.status}).`);
-  return response.json() as Promise<EvotorPage>;
+  const page = await response.json() as EvotorPage;
+  const numberHeader = (name: string) => {
+    const parsed = Number(response.headers.get(name));
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+  return {
+    ...page,
+    rateLimit: {
+      limit: numberHeader("X-RateLimit-Limit"),
+      remaining: numberHeader("X-RateLimit-Remaining"),
+      reset: response.headers.get("X-RateLimit-Reset"),
+    },
+  };
 }
 
 export function normalizeEvotorDocumentPreview(value: unknown): EvotorDocumentPreview | null {
@@ -178,6 +246,7 @@ export function normalizeEvotorDocumentPreview(value: unknown): EvotorDocumentPr
   const type = text(record.type);
   if (!id || !type) return null;
   const body = asRecord(record.body);
+  const total = finiteNumberLike(body?.result_sum) ?? finiteNumberLike(body?.sum);
   const positions = Array.isArray(body?.positions) ? body.positions.flatMap(position => {
     const line = asRecord(position);
     if (!line) return [];
@@ -197,7 +266,8 @@ export function normalizeEvotorDocumentPreview(value: unknown): EvotorDocumentPr
     type,
     createdAt: text(record.created_at),
     closedAt: text(record.close_date),
-    total: finiteNumber(body?.result_sum) ?? finiteNumber(body?.sum),
+    total,
+    paymentSummary: normalizeEvotorPaymentSummary(body?.payments, total),
     positions,
   };
 }
@@ -293,5 +363,6 @@ export async function listEvotorDocumentsPreviewForOperationalStore(input: { sto
     storeId: input.storeId,
     documents: (page.items ?? []).map(normalizeEvotorDocumentPreview).filter((item): item is EvotorDocumentPreview => Boolean(item)),
     nextCursor: text(page.paging?.next_cursor),
+    rateLimit: page.rateLimit ?? { limit: null, remaining: null, reset: null },
   };
 }

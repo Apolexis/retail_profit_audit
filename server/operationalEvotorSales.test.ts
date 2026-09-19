@@ -30,10 +30,16 @@ describe("read-only показатели продаж Эвотор", () => {
     expect(service).toContain("input.from < EVOTOR_DOCUMENT_RETENTION_START");
   });
 
-  it("отбирает только чеки продажи и отдает временной ряд самих товаров", () => {
+  it("отбирает только чеки продажи, оплаты и временной ряд товаров по магазинам", () => {
     expect(service).toContain('eq(operationalEvotorDocuments.documentType, "SELL")');
+    expect(service).toContain("cashAmount: operationalEvotorDocuments.cashAmount");
+    expect(service).toContain("cashlessAmount: operationalEvotorDocuments.cashlessAmount");
     expect(service).toContain("productTimelineMap");
     expect(service).toContain("productTimeline: Array.from(productTimelineMap.values())");
+    expect(service).toContain("storeId: document.storeId");
+    expect(service).toContain("storeName: document.storeName");
+    expect(service).toContain("${document.intervalKey}\\u0000${document.storeId}\\u0000${key}");
     expect(service).toContain("productKey: key");
+    expect(service).not.toContain('summary: { checks, amount: Math.round(amount * 100) / 100, positions:');
   });
 });

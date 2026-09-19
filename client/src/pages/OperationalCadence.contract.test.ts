@@ -12,6 +12,16 @@ describe("страница «Ритм»", () => {
     expect(page).toContain("selectedMetrics.map(metric");
   });
 
+  it("встраивает read-only факты чеков Эвотор в ту же группу выручки", () => {
+    expect(page).toContain('evotorAmount: { label: "Выручка общая Эвотор"');
+    expect(page).toContain('evotorCash: { label: "Выручка нал Эвотор"');
+    expect(page).toContain('evotorCashless: { label: "Выручка б/нал Эвотор"');
+    expect(page).toContain('evotorChecks: { label: "Чеки Эвотор"');
+    expect(page).toContain('evotorAverage: { label: "Средний чек Эвотор"');
+    expect(page).toContain("current.cashAmount += Number(row.cashAmount ?? 0)");
+    expect(page).toContain("current.cashlessAmount += Number(row.cashlessAmount ?? 0)");
+  });
+
   it("добавляет компактную детализацию по месяцам, неделям и дням", () => {
     expect(page).toContain('aria-label="Детализация ритма"');
     expect(page).toContain('"Дни" : level === "week" ? "Недели" : "Месяцы"');

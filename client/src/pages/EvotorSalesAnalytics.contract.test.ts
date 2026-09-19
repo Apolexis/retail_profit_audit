@@ -14,32 +14,40 @@ describe("проданные товары Эвотор", () => {
     expect(shell).toContain('"Проданные товары", true');
   });
 
-  it("повторяет контролы Ритма и не смешивается с P&L", () => {
+  it("повторяет контролы, график и одну таблицу Ритма", () => {
     expect(page).toContain('["month", "week", "day", "hour"]');
     expect(page).toContain("StoreSeriesModeToggle");
     expect(page).toContain("MetricLineChart");
-    expect(page).toContain('forceTimeline');
+    expect(page).not.toContain("forceTimeline");
     expect(page).toContain("ДАННЫЕ ПОД ГРАФИКОМ");
-    expect(page).toContain("СОСТАВ ПРОДАЖ");
+    expect(page).not.toContain("СОСТАВ ПРОДАЖ");
     expect(page).toContain("read-only");
     expect(page).not.toContain("confirmEvotorCatalog");
   });
 
-  it("ограничивает факты 2025 годом и не скрывает ограничение покрытия", () => {
+  it("ограничивает факты 2025 годом и показывает реальный охват", () => {
     expect(page).toContain('const EVOTOR_ANALYTICS_START = "2025-01-01"');
     expect(page).toContain("DateRangeControl");
     expect(page).toContain("Точки с фактами продажи в выбранном срезе");
     expect(page).toContain("function retainedRange");
   });
 
-  it("выбирает товары через раскрывающийся selector без внутреннего скролла", () => {
-    expect(page).toContain("Выбрать все");
+  it("выбирает товары встроенными цветными чипами без поиска, скролла и массового выбора", () => {
+    expect(page).toContain('className="cadence-metrics-picker evotor-product-metrics-picker"');
     expect(page).toContain("selectedProductKeys");
     expect(page).toContain("productTimeline");
     expect(page).toContain("selectedProductTimeline");
-    expect(page).toContain("Товарные позиции");
-    expect(css).toContain(".packet .evotor-product-picker");
-    expect(css).toContain("max-height: none");
-    expect(css).toContain("overflow: visible");
+    expect(page).toContain("productColors[index % productColors.length]");
+    expect(page).not.toContain("Выбрать все");
+    expect(page).not.toContain("Товарные позиции");
+    expect(page).not.toContain("evotor-product-picker");
+    expect(css).not.toContain("evotor-product-picker");
+    expect(css).not.toContain("max-height");
+  });
+
+  it("сохраняет режим рядов при смене факта или товара и строит строки по магазину", () => {
+    expect(page).not.toContain("setShowStoreSeries(false)");
+    expect(page).toContain("selectedProductStoreTimeline");
+    expect(page).toContain("row.storeName");
   });
 });

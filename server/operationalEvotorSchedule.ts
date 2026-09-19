@@ -15,6 +15,7 @@ import {
 import { createHeartbeatJob } from "./_core/heartbeat";
 
 export type OperationalEvotorScheduledKind = "evotor_catalog" | "evotor_documents";
+type OperationalEvotorDocumentMode = "historical" | "current_day";
 
 const SYNC_JOBS: Record<OperationalEvotorScheduledKind, { name: string; cron: string; path: string; description: string }> = {
   // One mapped store per call. The platform's minimum supported interval is one
@@ -49,6 +50,8 @@ async function mappedActiveStoreIds(): Promise<number[]> {
   return Array.from(new Set(rows.map(row => row.storeId)));
 }
 
+const moscowSchedulerDate = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Moscow" }).format(new Date());
+
 /** Select the least recently started mapped store, retaining a running cursor until it is complete. */
 async function nextMappedStoreId(kind: OperationalEvotorScheduledKind): Promise<number | null> {
   const storeIds = await mappedActiveStoreIds();
@@ -69,18 +72,48 @@ async function nextMappedStoreId(kind: OperationalEvotorScheduledKind): Promise<
   const db = await getDb();
   if (!db) throw new Error("База данных недоступна");
   const syncs = await db
-    .select({ storeId: operationalEvotorDocumentSyncs.storeId, startedAt: operationalEvotorDocumentSyncs.startedAt, status: operationalEvotorDocumentSyncs.status })
+    .select({ storeId: operationalEvotorDocumentSyncs.storeId, startedAt: operationalEvotorDocumentSyncs.startedAt, status: operationalEvotorDocumentSyncs.status, syncMode: operationalEvotorDocumentSyncs.syncMode })
     .from(operationalEvotorDocumentSyncs)
     .where(inArray(operationalEvotorDocumentSyncs.storeId, storeIds))
     .orderBy(desc(operationalEvotorDocumentSyncs.startedAt))
     .limit(1_000);
-  const running = syncs.find(sync => sync.status === "running" && storeIds.includes(sync.storeId));
+  const running = syncs.find(sync => sync.syncMode === "historical" && sync.status === "running" && storeIds.includes(sync.storeId));
   if (running) return running.storeId;
   const lastStartedByStore = new Map<number, number>();
   for (const sync of syncs) {
+    if (sync.syncMode !== "historical") continue;
     if (!lastStartedByStore.has(sync.storeId)) lastStartedByStore.set(sync.storeId, sync.startedAt.getTime());
   }
   return [...storeIds].sort((left, right) => (lastStartedByStore.get(left) ?? 0) - (lastStartedByStore.get(right) ?? 0))[0] ?? null;
+}
+
+/**
+ * A fresh day is read across every mapped point before the long 2025+ cursor
+ * resumes. Each callback still contacts exactly one store and exactly one page.
+ */
+async function nextDocumentSyncTarget(): Promise<{ storeId: number; mode: OperationalEvotorDocumentMode } | null> {
+  const storeIds = await mappedActiveStoreIds();
+  if (!storeIds.length) return null;
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  const businessDate = moscowSchedulerDate();
+  const syncs = await db
+    .select({ storeId: operationalEvotorDocumentSyncs.storeId, startedAt: operationalEvotorDocumentSyncs.startedAt, status: operationalEvotorDocumentSyncs.status, syncMode: operationalEvotorDocumentSyncs.syncMode, requestedTo: operationalEvotorDocumentSyncs.requestedTo })
+    .from(operationalEvotorDocumentSyncs)
+    .where(inArray(operationalEvotorDocumentSyncs.storeId, storeIds))
+    .orderBy(desc(operationalEvotorDocumentSyncs.startedAt))
+    .limit(2_000);
+  const runningToday = syncs.find(sync => sync.syncMode === "current_day" && sync.status === "running" && sync.requestedTo === businessDate);
+  if (runningToday) return { storeId: runningToday.storeId, mode: "current_day" };
+  const currentDone = new Set(syncs.filter(sync => sync.syncMode === "current_day" && sync.status === "completed" && sync.requestedTo === businessDate).map(sync => sync.storeId));
+  const currentStartedAt = new Map<number, number>();
+  for (const sync of syncs) {
+    if (sync.syncMode === "current_day" && sync.requestedTo === businessDate && !currentStartedAt.has(sync.storeId)) currentStartedAt.set(sync.storeId, sync.startedAt.getTime());
+  }
+  const nextCurrentStore = storeIds.filter(storeId => !currentDone.has(storeId)).sort((left, right) => (currentStartedAt.get(left) ?? 0) - (currentStartedAt.get(right) ?? 0))[0];
+  if (nextCurrentStore !== undefined) return { storeId: nextCurrentStore, mode: "current_day" };
+  const historicalStoreId = await nextMappedStoreId("evotor_documents");
+  return historicalStoreId === null ? null : { storeId: historicalStoreId, mode: "historical" };
 }
 
 async function findJob(kind: OperationalEvotorScheduledKind) {
@@ -173,15 +206,15 @@ export async function runScheduledEvotorDocuments(taskUid: string) {
   const job = await assertExpectedCallback(taskUid, "evotor_documents");
   await setJobState(job.id, { started: true, error: null });
   try {
-    const storeId = await nextMappedStoreId("evotor_documents");
-    if (storeId === null) return { storeCount: 0, documentsRead: 0, positionsRead: 0 };
-    const result = await syncOperationalEvotorDocumentPage({ storeId, actorId: null });
+    const target = await nextDocumentSyncTarget();
+    if (!target) return { storeCount: 0, documentsRead: 0, positionsRead: 0 };
+    const result = await syncOperationalEvotorDocumentPage({ storeId: target.storeId, actorId: null, mode: target.mode });
     await setJobState(job.id, { completed: true, error: null });
     await recordChange({
       action: "operational_evotor.documents_scheduled_sync",
       entityType: "operational_sync",
       entityId: "evotor_documents",
-      afterState: { warehouseCount: 1, documentsRead: result.readDocuments, positionsRead: result.readPositions, mode: "read_only" },
+      afterState: { warehouseCount: 1, documentsRead: result.readDocuments, positionsRead: result.readPositions, paymentHeadersHydrated: result.hydratedPaymentDocuments, rateLimit: result.rateLimit, importWindow: target.mode, mode: "read_only" },
     });
     return { storeCount: 1, documentsRead: result.readDocuments, positionsRead: result.readPositions };
   } catch (error) {

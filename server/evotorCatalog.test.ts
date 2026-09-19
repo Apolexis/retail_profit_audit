@@ -9,17 +9,7 @@ describe("Эвотор V2: preview номенклатуры", () => {
 
   it("сохраняет в preview идентификаторы и товарные признаки без цены и себестоимости", () => {
     const preview = normalizeEvotorCatalogPreviewItem({
-      id: "product-1",
-      name: "Форель",
-      code: "F-1",
-      barcodes: ["123", "123", "456"],
-      quantity: 2.5,
-      measure_name: "дроб",
-      tax: "vat10",
-      type: "commodity",
-      parent_id: "group-1",
-      price: 1000,
-      cost_price: 700,
+      id: "product-1", name: "Форель", code: "F-1", barcodes: ["123", "123", "456"], quantity: 2.5, measure_name: "дроб", tax: "vat10", type: "commodity", parent_id: "group-1", price: 1000, cost_price: 700,
     });
     expect(preview).toEqual({ id: "product-1", name: "Форель", code: "F-1", barcodes: ["123", "456"], quantity: 2.5, unit: "дроб", tax: "vat10", vatRate: "VAT_10", type: "commodity", parentId: "group-1", categoryName: null, alcoholCode: null, alcoholTypeCode: null, alcoholStrengthPercent: null, alcoholVolumeLiters: null });
     expect(preview).not.toHaveProperty("price");
@@ -36,12 +26,31 @@ describe("Эвотор V2: preview номенклатуры", () => {
     expect(preview).not.toHaveProperty("price");
   });
 
-  it("нормализует только необходимые поля документа и строки без фискальных реквизитов", () => {
+  it("агрегирует CASH и ELECTRON без реквизитов, частей и сдачи", () => {
     const preview = normalizeEvotorDocumentPreview({
       id: "doc-1", type: "SELL", created_at: "2026-09-18T10:00:00Z", close_date: "2026-09-18T10:01:00Z", device_id: "private-device",
-      body: { result_sum: 500, payments: [{ merchant_info: "private" }], positions: [{ uuid: "product-1", product_name: "Форель", quantity: 2, initial_quantity: 8, measure_name: "кг", result_sum: 500, settlement_method: { type: "CHECKOUT_FULL" }, fiscal_sign: "private" }] },
+      body: {
+        result_sum: 500,
+        payments: [
+          { type: "CASH", sum: "120.50", change: 20, merchant_info: "private" },
+          { type: "ELECTRON", sum: 379.5, parts: [{ part_sum: 379.5, app_id: "private" }] },
+        ],
+        positions: [{ uuid: "product-1", product_name: "Форель", quantity: 2, initial_quantity: 8, measure_name: "кг", result_sum: 500, settlement_method: { type: "CHECKOUT_FULL" }, fiscal_sign: "private" }],
+      },
     });
-    expect(preview).toEqual({ id: "doc-1", type: "SELL", createdAt: "2026-09-18T10:00:00Z", closedAt: "2026-09-18T10:01:00Z", total: 500, positions: [{ productId: "product-1", productName: "Форель", quantity: 2, initialQuantity: 8, unit: "кг", settlementMethod: "CHECKOUT_FULL", resultSum: 500 }] });
+    expect(preview).toEqual({
+      id: "doc-1", type: "SELL", createdAt: "2026-09-18T10:00:00Z", closedAt: "2026-09-18T10:01:00Z", total: 500,
+      paymentSummary: { cashAmount: 120.5, cashlessAmount: 379.5, otherPaymentAmount: 0, unknownPaymentAmount: 0, captureStatus: "complete", reconciliationDelta: 0 },
+      positions: [{ productId: "product-1", productName: "Форель", quantity: 2, initialQuantity: 8, unit: "кг", settlementMethod: "CHECKOUT_FULL", resultSum: 500 }],
+    });
     expect(JSON.stringify(preview)).not.toContain("private");
+    expect(JSON.stringify(preview)).not.toContain("change");
+    expect(JSON.stringify(preview)).not.toContain("part_sum");
+  });
+
+  it("не превращает отсутствующие, неизвестные или некорректные оплаты в наличные", () => {
+    expect(normalizeEvotorDocumentPreview({ id: "none", type: "SELL", body: { result_sum: 10 } })?.paymentSummary).toEqual({ cashAmount: null, cashlessAmount: null, otherPaymentAmount: null, unknownPaymentAmount: null, captureStatus: "unavailable", reconciliationDelta: null });
+    expect(normalizeEvotorDocumentPreview({ id: "other", type: "SELL", body: { result_sum: 10, payments: [{ type: "UNKNOWN", sum: 10 }] } })?.paymentSummary).toEqual({ cashAmount: 0, cashlessAmount: 0, otherPaymentAmount: 0, unknownPaymentAmount: 10, captureStatus: "complete", reconciliationDelta: 0 });
+    expect(normalizeEvotorDocumentPreview({ id: "bad", type: "SELL", body: { result_sum: 10, payments: [{ type: "CASH" }] } })?.paymentSummary.captureStatus).toBe("malformed");
   });
 });

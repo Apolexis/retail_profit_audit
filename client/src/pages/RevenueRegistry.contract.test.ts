@@ -53,6 +53,8 @@ describe("контракт страницы Выручка", () => {
 	  expect(styles).toContain('.packet .revenue-register-table.data-table tbody tr:nth-child(even) td { background: var(--revenue-table-zebra); }');
 	  expect(styles).toContain('@media (max-width: 1400px)');
 	  expect(styles).toContain('.packet .data-table-wrap.revenue-register-table-wrap { overflow: visible !important; cursor: default !important;');
+	  expect(page).toContain('className="revenue-total-cell numeric-column"');
+	  expect(styles).toContain('.packet .revenue-register-table tfoot .revenue-total-cell');
 	});
 
   it("раскрывает редактор при изменении записи из реестра", () => {

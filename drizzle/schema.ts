@@ -476,6 +476,8 @@ export const operationalEvotorProductLinks = mysqlTable("operational_evotor_prod
 export const operationalEvotorDocumentSyncs = mysqlTable("operational_evotor_document_syncs", {
   id: int("id").autoincrement().primaryKey(),
   storeId: int("storeId").notNull(),
+  /** Current-day refresh is deliberately separate from the one-time 2025+ backfill cursor. */
+  syncMode: mysqlEnum("syncMode", ["historical", "current_day"]).default("historical").notNull(),
   status: mysqlEnum("status", ["running", "completed", "failed"]).default("running").notNull(),
   cursor: varchar("cursor", { length: 512 }),
   /** The fixed first-page window. Cursor calls continue this exact bounded series. */
@@ -516,6 +518,14 @@ export const operationalEvotorDocuments = mysqlTable("operational_evotor_documen
   documentType: varchar("documentType", { length: 64 }).notNull(),
   occurredAt: varchar("occurredAt", { length: 64 }),
   total: decimal("total", { precision: 18, scale: 2 }),
+  /** Only aggregate V2 payment facts; no payment identifiers, parts, change or requisites are retained. */
+  cashAmount: decimal("cashAmount", { precision: 18, scale: 2 }),
+  cashlessAmount: decimal("cashlessAmount", { precision: 18, scale: 2 }),
+  otherPaymentAmount: decimal("otherPaymentAmount", { precision: 18, scale: 2 }),
+  unknownPaymentAmount: decimal("unknownPaymentAmount", { precision: 18, scale: 2 }),
+  /** `unavailable` is distinct from zero: it means the source did not yield a usable payment array. */
+  paymentCaptureStatus: mysqlEnum("paymentCaptureStatus", ["unavailable", "complete", "unreconciled", "malformed"]).default("unavailable").notNull(),
+  paymentReconciliationDelta: decimal("paymentReconciliationDelta", { precision: 18, scale: 2 }),
   importedAt: timestamp("importedAt").defaultNow().notNull(),
 }, table => [unique("operational_evotor_document_uq").on(table.storeId, table.evotorDocumentId), index("operational_evotor_document_sales_time_idx").on(table.storeId, table.documentType, table.occurredAt)]);
 

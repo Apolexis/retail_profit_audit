@@ -959,42 +959,55 @@ export async function getOperationalStoreRequestPrintProjection(input: { busines
 }
 
 /**
- * Imports exactly one cursor page on each call. This keeps the external request bounded,
- * retains no raw or fiscal payload and never writes back to Evotor.
+ * Imports exactly one cursor page on each call. The current-day refresh and the
+ * 2025+ historical backfill keep independent cursors so fresh facts are not
+ * blocked by a long archive chain. The operation retains no raw or fiscal payload
+ * and never writes back to Evotor.
  */
-export async function syncOperationalEvotorDocumentPage(input: { storeId: number; actorId: number | null }) {
+export async function syncOperationalEvotorDocumentPage(input: { storeId: number; actorId: number | null; mode?: "historical" | "current_day" }) {
   const db = await getDb();
   if (!db) throw new Error("База данных недоступна");
+  const syncMode = input.mode ?? "historical";
+  const businessDate = moscowBusinessDate();
   const [activeSync] = await db
     .select()
     .from(operationalEvotorDocumentSyncs)
-    .where(and(eq(operationalEvotorDocumentSyncs.storeId, input.storeId), eq(operationalEvotorDocumentSyncs.status, "running")))
+    .where(and(eq(operationalEvotorDocumentSyncs.storeId, input.storeId), eq(operationalEvotorDocumentSyncs.syncMode, syncMode), eq(operationalEvotorDocumentSyncs.status, "running")))
     .orderBy(desc(operationalEvotorDocumentSyncs.id))
     .limit(1);
   // A legacy cursor without a declared window could still be traversing older
   // records. Close that series without deleting its existing facts and start the
   // next first-page request at the approved 2025 retention boundary.
-  if (activeSync && !activeSync.requestedFrom) {
+  if (syncMode === "historical" && activeSync && !activeSync.requestedFrom) {
     await db.update(operationalEvotorDocumentSyncs).set({
       status: "failed",
       completedAt: new Date(),
       failureMessage: "Серия перезапущена с границы хранения 2025-01-01.",
     }).where(eq(operationalEvotorDocumentSyncs.id, activeSync.id));
   }
-  const sync = activeSync?.requestedFrom
+  if (syncMode === "current_day" && activeSync?.requestedTo !== businessDate) {
+    await db.update(operationalEvotorDocumentSyncs).set({
+      status: "completed",
+      completedAt: new Date(),
+      failureMessage: "Текущий день сменился; следующий запуск начинает новое суточное окно.",
+    }).where(eq(operationalEvotorDocumentSyncs.id, activeSync.id));
+  }
+  const canReuseActive = Boolean(activeSync?.requestedFrom && (syncMode !== "current_day" || activeSync.requestedTo === businessDate));
+  const sync = canReuseActive
     ? activeSync
     : (await db.insert(operationalEvotorDocumentSyncs).values({
       storeId: input.storeId,
+      syncMode,
       startedByAccountId: input.actorId,
-      requestedFrom: EVOTOR_DOCUMENT_RETENTION_START,
-      requestedTo: moscowBusinessDate(),
+      requestedFrom: syncMode === "current_day" ? businessDate : EVOTOR_DOCUMENT_RETENTION_START,
+      requestedTo: businessDate,
     }).$returningId()).map(({ id }) => ({
       id,
       documentsRead: 0,
       positionsRead: 0,
       cursor: null,
-      requestedFrom: EVOTOR_DOCUMENT_RETENTION_START,
-      requestedTo: moscowBusinessDate(),
+      requestedFrom: syncMode === "current_day" ? businessDate : EVOTOR_DOCUMENT_RETENTION_START,
+      requestedTo: businessDate,
     }))[0];
   const page = await listEvotorDocumentsPreviewForOperationalStore({
     storeId: input.storeId,
@@ -1004,19 +1017,20 @@ export async function syncOperationalEvotorDocumentPage(input: { storeId: number
   });
   let insertedDocuments = 0;
   let insertedPositions = 0;
+  let hydratedPaymentDocuments = 0;
   // Keep advancing the opaque external cursor through legacy records without
   // persisting them, so the retained 2025+ analytical window is eventually reached.
   const uniqueDocuments = Array.from(new Map(page.documents
     .filter(isRetainedEvotorDocument)
     .map(document => [document.id, document])).values());
-  const existingIds = uniqueDocuments.length
-    ? new Set((await db
-      .select({ evotorDocumentId: operationalEvotorDocuments.evotorDocumentId })
+  const existingByExternalId = uniqueDocuments.length
+    ? new Map((await db
+      .select({ id: operationalEvotorDocuments.id, evotorDocumentId: operationalEvotorDocuments.evotorDocumentId })
       .from(operationalEvotorDocuments)
       .where(and(eq(operationalEvotorDocuments.storeId, input.storeId), inArray(operationalEvotorDocuments.evotorDocumentId, uniqueDocuments.map(document => document.id))))
-    ).map(row => row.evotorDocumentId))
-    : new Set<string>();
-  const newDocuments = uniqueDocuments.filter(document => !existingIds.has(document.id));
+    ).map(row => [row.evotorDocumentId, row.id]))
+    : new Map<string, number>();
+  const newDocuments = uniqueDocuments.filter(document => !existingByExternalId.has(document.id));
 
   // Each batch becomes one document insert and one position insert. On a retry,
   // the unique store/document key makes already persisted rows a safe no-op.
@@ -1031,6 +1045,12 @@ export async function syncOperationalEvotorDocumentPage(input: { storeId: number
       documentType: document.type,
       occurredAt: document.closedAt ?? document.createdAt,
       total: document.total === null ? null : document.total.toFixed(2),
+      cashAmount: document.paymentSummary.cashAmount === null ? null : document.paymentSummary.cashAmount.toFixed(2),
+      cashlessAmount: document.paymentSummary.cashlessAmount === null ? null : document.paymentSummary.cashlessAmount.toFixed(2),
+      otherPaymentAmount: document.paymentSummary.otherPaymentAmount === null ? null : document.paymentSummary.otherPaymentAmount.toFixed(2),
+      unknownPaymentAmount: document.paymentSummary.unknownPaymentAmount === null ? null : document.paymentSummary.unknownPaymentAmount.toFixed(2),
+      paymentCaptureStatus: document.paymentSummary.captureStatus,
+      paymentReconciliationDelta: document.paymentSummary.reconciliationDelta === null ? null : document.paymentSummary.reconciliationDelta.toFixed(2),
     }))).$returningId();
     const insertedIdByExternalId = new Map(batch.map((document, index) => [document.id, inserted[index]?.id]).filter((entry): entry is [string, number] => Number.isFinite(entry[1])));
     const positions = batch.flatMap(document => {
@@ -1051,6 +1071,26 @@ export async function syncOperationalEvotorDocumentPage(input: { storeId: number
     insertedDocuments += batch.length;
     insertedPositions += positions.length;
   }
+  // Existing headers did not retain payment totals before this extension. A
+  // repeated cursor page can therefore hydrate only aggregate amounts, without
+  // re-reading or duplicating positions and without retaining any payment
+  // requisites. Updates are bounded to keep the scheduled callback predictable.
+  const existingDocuments = uniqueDocuments.filter(document => existingByExternalId.has(document.id));
+  for (let start = 0; start < existingDocuments.length; start += 25) {
+    await Promise.all(existingDocuments.slice(start, start + 25).map(async document => {
+      const documentId = existingByExternalId.get(document.id);
+      if (!documentId) return;
+      await db.update(operationalEvotorDocuments).set({
+        cashAmount: document.paymentSummary.cashAmount === null ? null : document.paymentSummary.cashAmount.toFixed(2),
+        cashlessAmount: document.paymentSummary.cashlessAmount === null ? null : document.paymentSummary.cashlessAmount.toFixed(2),
+        otherPaymentAmount: document.paymentSummary.otherPaymentAmount === null ? null : document.paymentSummary.otherPaymentAmount.toFixed(2),
+        unknownPaymentAmount: document.paymentSummary.unknownPaymentAmount === null ? null : document.paymentSummary.unknownPaymentAmount.toFixed(2),
+        paymentCaptureStatus: document.paymentSummary.captureStatus,
+        paymentReconciliationDelta: document.paymentSummary.reconciliationDelta === null ? null : document.paymentSummary.reconciliationDelta.toFixed(2),
+      }).where(eq(operationalEvotorDocuments.id, documentId));
+      hydratedPaymentDocuments += 1;
+    }));
+  }
   const completed = !page.nextCursor;
   await db.update(operationalEvotorDocumentSyncs).set({
     cursor: page.nextCursor,
@@ -1060,7 +1100,7 @@ export async function syncOperationalEvotorDocumentPage(input: { storeId: number
     completedAt: completed ? new Date() : null,
     failureMessage: null,
   }).where(eq(operationalEvotorDocumentSyncs.id, sync.id));
-  return { syncId: sync.id, storeId: input.storeId, readDocuments: page.documents.length, readPositions: page.documents.reduce((total, document) => total + document.positions.length, 0), insertedDocuments, insertedPositions, completed };
+  return { syncId: sync.id, storeId: input.storeId, readDocuments: page.documents.length, readPositions: page.documents.reduce((total, document) => total + document.positions.length, 0), insertedDocuments, insertedPositions, hydratedPaymentDocuments, completed, rateLimit: page.rateLimit };
 }
 
 async function forEachBoundedBatch<T>(items: readonly T[], size: number, work: (item: T) => Promise<void>) {
@@ -1125,7 +1165,7 @@ export async function listOperationalEvotorSalesAnalytics(input: {
   if (!db) throw new Error("База данных недоступна");
   const from = input.from < EVOTOR_DOCUMENT_RETENTION_START ? EVOTOR_DOCUMENT_RETENTION_START : input.from;
   if (input.to < EVOTOR_DOCUMENT_RETENTION_START) {
-    return { stores: [], timeline: [], products: [], productTimeline: [], summary: { checks: 0, amount: 0, positions: 0, positionAmount: 0, quantity: 0 }, coverage: { from: null, to: null } };
+    return { stores: [], timeline: [], products: [], productTimeline: [], summary: { checks: 0, amount: 0, cashAmount: 0, cashlessAmount: 0, quantity: 0 }, coverage: { from: null, to: null } };
   }
   const allVisibleStores = await db
     .select({ id: stores.id, name: stores.name })
@@ -1134,7 +1174,7 @@ export async function listOperationalEvotorSalesAnalytics(input: {
     .orderBy(stores.name);
   const requestedStoreIds = input.storeIds?.length ? new Set(input.storeIds) : null;
   const scopedStores = requestedStoreIds ? allVisibleStores.filter(store => requestedStoreIds.has(store.id)) : allVisibleStores;
-  if (!scopedStores.length) return { stores: [], timeline: [], products: [], productTimeline: [], summary: { checks: 0, amount: 0, positions: 0, positionAmount: 0, quantity: 0 }, coverage: { from: null, to: null } };
+  if (!scopedStores.length) return { stores: [], timeline: [], products: [], productTimeline: [], summary: { checks: 0, amount: 0, cashAmount: 0, cashlessAmount: 0, quantity: 0 }, coverage: { from: null, to: null } };
   const storeIds = scopedStores.map(store => store.id);
   const storeNameById = new Map(scopedStores.map(store => [store.id, store.name]));
   const [firstDocument, lastDocument, documents] = await Promise.all([
@@ -1146,6 +1186,8 @@ export async function listOperationalEvotorSalesAnalytics(input: {
       storeId: operationalEvotorDocuments.storeId,
       occurredAt: operationalEvotorDocuments.occurredAt,
       total: operationalEvotorDocuments.total,
+      cashAmount: operationalEvotorDocuments.cashAmount,
+      cashlessAmount: operationalEvotorDocuments.cashlessAmount,
     })
     .from(operationalEvotorDocuments)
       .where(and(
@@ -1160,22 +1202,28 @@ export async function listOperationalEvotorSalesAnalytics(input: {
     from: firstDocument[0]?.occurredAt?.slice(0, 10) ?? null,
     to: lastDocument[0]?.occurredAt?.slice(0, 10) ?? null,
   };
-  const timelineMap = new Map<string, { key: string; label: string; storeId: number; storeName: string; checks: number; amount: number; positions: number; positionAmount: number; quantity: number }>();
+  const timelineMap = new Map<string, { key: string; label: string; storeId: number; storeName: string; checks: number; amount: number; cashAmount: number; cashlessAmount: number; quantity: number }>();
   const documentById = new Map<number, { storeId: number; storeName: string; intervalKey: string; intervalLabel: string; timelineKey: string }>();
   let checks = 0;
   let amount = 0;
+  let cashAmount = 0;
+  let cashlessAmount = 0;
   for (const document of documents) {
     const interval = document.occurredAt ? evotorSalesInterval(document.occurredAt, input.granularity) : null;
     const storeName = storeNameById.get(document.storeId);
     if (!interval || !storeName) continue;
     const aggregateKey = `${interval.key}:${document.storeId}`;
-    const aggregate = timelineMap.get(aggregateKey) ?? { key: interval.key, label: interval.label, storeId: document.storeId, storeName, checks: 0, amount: 0, positions: 0, positionAmount: 0, quantity: 0 };
+    const aggregate = timelineMap.get(aggregateKey) ?? { key: interval.key, label: interval.label, storeId: document.storeId, storeName, checks: 0, amount: 0, cashAmount: 0, cashlessAmount: 0, quantity: 0 };
     aggregate.checks += 1;
     aggregate.amount += Number(document.total ?? 0);
+    aggregate.cashAmount += Number(document.cashAmount ?? 0);
+    aggregate.cashlessAmount += Number(document.cashlessAmount ?? 0);
     timelineMap.set(aggregateKey, aggregate);
     documentById.set(document.id, { storeId: document.storeId, storeName, intervalKey: interval.key, intervalLabel: interval.label, timelineKey: aggregateKey });
     checks += 1;
     amount += Number(document.total ?? 0);
+    cashAmount += Number(document.cashAmount ?? 0);
+    cashlessAmount += Number(document.cashlessAmount ?? 0);
   }
   const documentIds = documents.map(document => document.id);
   const positions = [] as Array<{ documentId: number; productName: string | null; unit: string | null; quantity: string | null; resultSum: string | null }>;
@@ -1185,52 +1233,47 @@ export async function listOperationalEvotorSalesAnalytics(input: {
       .from(operationalEvotorDocumentPositions)
       .where(inArray(operationalEvotorDocumentPositions.documentId, documentIds.slice(start, start + 5_000))));
   }
-  const productMap = new Map<string, { key: string; productName: string; unit: string | null; amount: number; quantity: number; positions: number; stores: Set<number> }>();
-  const productTimelineMap = new Map<string, { key: string; label: string; productKey: string; productName: string; unit: string | null; amount: number; quantity: number; positions: number }>();
+  const productMap = new Map<string, { key: string; productName: string; unit: string | null; amount: number; quantity: number; stores: Set<number> }>();
+  const productTimelineMap = new Map<string, { key: string; label: string; storeId: number; storeName: string; productKey: string; productName: string; unit: string | null; amount: number; quantity: number }>();
   let quantity = 0;
-  let positionAmount = 0;
   for (const position of positions) {
     const document = documentById.get(position.documentId);
     if (!document) continue;
     const productName = normalizedText(position.productName ?? "") || "Товар без названия";
     const key = `${productName}\u0000${position.unit ?? ""}`;
-    const product = productMap.get(key) ?? { key, productName, unit: position.unit, amount: 0, quantity: 0, positions: 0, stores: new Set<number>() };
+    const product = productMap.get(key) ?? { key, productName, unit: position.unit, amount: 0, quantity: 0, stores: new Set<number>() };
     const lineQuantity = Number(position.quantity ?? 0);
     product.amount += Number(position.resultSum ?? 0);
     product.quantity += lineQuantity;
-    product.positions += 1;
     if (document) product.stores.add(document.storeId);
     productMap.set(key, product);
     quantity += lineQuantity;
-    positionAmount += Number(position.resultSum ?? 0);
     const timeline = document ? timelineMap.get(document.timelineKey) : undefined;
     if (timeline) {
-      timeline.positions += 1;
-      timeline.positionAmount += Number(position.resultSum ?? 0);
       timeline.quantity += lineQuantity;
     }
-    const productTimelineKey = `${document.intervalKey}\u0000${key}`;
+    const productTimelineKey = `${document.intervalKey}\u0000${document.storeId}\u0000${key}`;
     const productTimeline = productTimelineMap.get(productTimelineKey) ?? {
       key: document.intervalKey,
       label: document.intervalLabel,
+      storeId: document.storeId,
+      storeName: document.storeName,
       productKey: key,
       productName,
       unit: position.unit,
       amount: 0,
       quantity: 0,
-      positions: 0,
     };
     productTimeline.amount += Number(position.resultSum ?? 0);
     productTimeline.quantity += lineQuantity;
-    productTimeline.positions += 1;
     productTimelineMap.set(productTimelineKey, productTimeline);
   }
   return {
     stores: scopedStores,
-    timeline: Array.from(timelineMap.values()).map(row => ({ ...row, amount: Math.round(row.amount * 100) / 100, positionAmount: Math.round(row.positionAmount * 100) / 100, quantity: Math.round(row.quantity * 1_000) / 1_000 })).sort((left, right) => left.key.localeCompare(right.key) || left.storeName.localeCompare(right.storeName, "ru")),
-    products: Array.from(productMap.values()).map(product => ({ key: product.key, productName: product.productName, unit: product.unit, amount: Math.round(product.amount * 100) / 100, quantity: Math.round(product.quantity * 1_000) / 1_000, positions: product.positions, stores: product.stores.size })).sort((left, right) => right.amount - left.amount || left.productName.localeCompare(right.productName, "ru")),
+    timeline: Array.from(timelineMap.values()).map(row => ({ ...row, amount: Math.round(row.amount * 100) / 100, cashAmount: Math.round(row.cashAmount * 100) / 100, cashlessAmount: Math.round(row.cashlessAmount * 100) / 100, quantity: Math.round(row.quantity * 1_000) / 1_000 })).sort((left, right) => left.key.localeCompare(right.key) || left.storeName.localeCompare(right.storeName, "ru")),
+    products: Array.from(productMap.values()).map(product => ({ key: product.key, productName: product.productName, unit: product.unit, amount: Math.round(product.amount * 100) / 100, quantity: Math.round(product.quantity * 1_000) / 1_000, stores: product.stores.size })).sort((left, right) => right.amount - left.amount || left.productName.localeCompare(right.productName, "ru")),
     productTimeline: Array.from(productTimelineMap.values()).map(row => ({ ...row, amount: Math.round(row.amount * 100) / 100, quantity: Math.round(row.quantity * 1_000) / 1_000 })).sort((left, right) => left.key.localeCompare(right.key) || left.productName.localeCompare(right.productName, "ru")),
-    summary: { checks, amount: Math.round(amount * 100) / 100, positions: positions.length, positionAmount: Math.round(positionAmount * 100) / 100, quantity: Math.round(quantity * 1_000) / 1_000 },
+    summary: { checks, amount: Math.round(amount * 100) / 100, cashAmount: Math.round(cashAmount * 100) / 100, cashlessAmount: Math.round(cashlessAmount * 100) / 100, quantity: Math.round(quantity * 1_000) / 1_000 },
     coverage,
   };
 }

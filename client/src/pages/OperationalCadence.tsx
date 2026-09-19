@@ -49,13 +49,15 @@ const metrics: Record<CadenceMetric, { label: string; color: string; note: strin
   writeoffFrozen: { label: "Списания М.", color: "#e978ff", note: "Прямой расход по мороженой продукции." },
   movement: { label: "Перемещения", color: "#73d5b1", note: "Перемещения товарного запаса между точками." },
   discount: { label: "Уценка", color: "#e69a7c", note: "Уценка как управляемая корректировка товарного потока." },
-  evotorAmount: { label: "Выручка Эвотор", color: "#0A84FF", note: "Сумма закрытых чеков продажи из уже загруженной read-only витрины Эвотор." },
-  evotorChecks: { label: "Количество чеков Эвотор", color: "#34C759", note: "Количество закрытых документов продажи Эвотор; это не сумма выручки." },
+  evotorAmount: { label: "Выручка общая Эвотор", color: "#0A84FF", note: "Сумма закрытых чеков продажи из уже загруженной read-only витрины Эвотор." },
+  evotorCash: { label: "Выручка нал Эвотор", color: "#55b6ff", note: "Сумма оплат типа CASH из чеков Эвотор. Реквизиты платежей не сохраняются." },
+  evotorCashless: { label: "Выручка б/нал Эвотор", color: "#61d9b5", note: "Сумма оплат типа ELECTRON из чеков Эвотор. Реквизиты платежей не сохраняются." },
+  evotorChecks: { label: "Чеки Эвотор", color: "#34C759", note: "Количество закрытых документов продажи Эвотор; это не сумма выручки." },
   evotorAverage: { label: "Средний чек Эвотор", color: "#5E5CE6", note: "Выручка Эвотор, деленная на количество закрытых чеков." },
 };
 
 const metricGroups: Array<{ label: string; keys: CadenceMetric[] }> = [
-  { label: "Выручка, результат и товар", keys: ["receiptsTotal", "cashRevenue", "cashlessRevenue", "revenue", "evotorAmount", "evotorChecks", "evotorAverage", "grossProfit", "netProfit", "purchases", "purchaseSmoked", "purchaseFrozen", "salesSmoked", "salesFrozen"] },
+  { label: "Выручка, результат и товар", keys: ["receiptsTotal", "cashRevenue", "cashlessRevenue", "revenue", "evotorAmount", "evotorCash", "evotorCashless", "evotorChecks", "evotorAverage", "grossProfit", "netProfit", "purchases", "purchaseSmoked", "purchaseFrozen", "salesSmoked", "salesFrozen"] },
   { label: "Итоговые расходы", keys: ["expenses", "cashExpenses", "cashlessExpenses"] },
   { label: "Наличные расходы и налоги", keys: ["cashTaxes", "household", "delivery", "cleaning", "bonus", "seniority", "supplement", "driverCash", "utilitiesCash", "operatingCosts"] },
   { label: "Безналичные", keys: ["cashlessOperatingCosts", "driverCashless", "utilitiesCashless", "rent", "bankFee", "grossProfitTax"] },
@@ -87,16 +89,18 @@ export default function OperationalCadence() {
   const evotorRange = useMemo(() => ({ from: range.from < "2025-01-01" ? "2025-01-01" : range.from, to: range.to }), [range.from, range.to]);
   const evotorFacts = trpc.inventoryRegistry.evotorSalesAnalytics.useQuery({ ...evotorRange, granularity, storeIds: evotorStoreIds }, { retry: false, enabled: range.to >= "2025-01-01" });
   const mergedSource = useMemo(() => {
-    const byKey = new Map<string, { amount: number; checks: number }>();
+    const byKey = new Map<string, { amount: number; cashAmount: number; cashlessAmount: number; checks: number }>();
     for (const row of evotorFacts.data?.timeline ?? []) {
-      const current = byKey.get(row.key) ?? { amount: 0, checks: 0 };
+      const current = byKey.get(row.key) ?? { amount: 0, cashAmount: 0, cashlessAmount: 0, checks: 0 };
       current.amount += Number(row.amount ?? 0);
+      current.cashAmount += Number(row.cashAmount ?? 0);
+      current.cashlessAmount += Number(row.cashlessAmount ?? 0);
       current.checks += Number(row.checks ?? 0);
       byKey.set(row.key, current);
     }
     return source.map(point => {
-      const receipts = byKey.get(point.date) ?? { amount: 0, checks: 0 };
-      return { ...point, evotorAmount: receipts.amount, evotorChecks: receipts.checks, evotorAverage: receipts.checks ? receipts.amount / receipts.checks : 0 };
+      const receipts = byKey.get(point.date) ?? { amount: 0, cashAmount: 0, cashlessAmount: 0, checks: 0 };
+      return { ...point, evotorAmount: receipts.amount, evotorCash: receipts.cashAmount, evotorCashless: receipts.cashlessAmount, evotorChecks: receipts.checks, evotorAverage: receipts.checks ? receipts.amount / receipts.checks : 0 };
     });
   }, [evotorFacts.data?.timeline, source]);
   const primaryMetric = selectedMetrics[0] ?? "netProfit";
