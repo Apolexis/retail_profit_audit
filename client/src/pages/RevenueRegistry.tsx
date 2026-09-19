@@ -36,6 +36,7 @@ type RevenueRecord = Record<AmountField, number> & {
   createdAt: Date | string;
   updatedAt: Date | string;
 };
+type RevenueReconciliation = { storeId: number; storeName: string; businessDate: string; reportedSales: number | null; evotorSales: number | null; receiptCount: number; difference: number | null; status: "matched" | "underreported" | "overreported" | "missing_receipts" | "not_reported" };
 
 const fields: Array<{ key: AmountField; label: string; kind: "receipt" | "expense" }> = [
   { key: "cash", label: "Нал", kind: "receipt" },
@@ -78,6 +79,7 @@ const toMoscowDate = () => {
 };
 const displayDate = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString("ru-RU", { day: "2-digit", month: "long", year: "numeric" });
 const displayMoscowTimestamp = (value: Date | string) => new Intl.DateTimeFormat("ru-RU", { timeZone: "Europe/Moscow", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
+const reconciliationLabel: Record<RevenueReconciliation["status"], string> = { matched: "Совпадает", underreported: "Передано меньше чека", overreported: "Передано больше чека", missing_receipts: "Нет фактов чеков", not_reported: "Нет передачи" };
 
 export default function RevenueRegistry() {
   const utils = trpc.useUtils();
@@ -105,6 +107,7 @@ export default function RevenueRegistry() {
   const adminFilter = useMemo(() => ({ from: registryDate, to: registryDate, storeId: adminStoreId ? Number(adminStoreId) : undefined }), [registryDate, adminStoreId]);
   const myRecords = trpc.revenueRegistry.myLatest.useQuery(undefined, { retry: false, enabled: isSeller || isAdmin });
   const adminRecords = trpc.revenueRegistry.adminList.useQuery(adminFilter, { retry: false, enabled: isAdministrative });
+  const reconciliation = trpc.revenueRegistry.reconciliation.useQuery(adminFilter, { retry: false, enabled: isAdministrative });
   const currentRecords = ((isAdministrative ? adminRecords.data : myRecords.data) ?? []) as RevenueRecord[];
   const visibleExpenseFields = fields.filter(field => field.kind === "expense" && (printCoreExpenseFields.has(field.key as ExpenseField) || currentRecords.some(record => record[field.key] !== 0)));
   const printComments = currentRecords.flatMap(record => fields.filter(field => field.kind === "expense" && record[field.key] > 0 && record.expenseComments[field.key as ExpenseField]).map(field => ({ record, field })));
@@ -138,7 +141,7 @@ export default function RevenueRegistry() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const refresh = async () => {
-    await Promise.all([utils.revenueRegistry.myLatest.invalidate(), utils.revenueRegistry.adminList.invalidate(), utils.audit.changes.invalidate()]);
+    await Promise.all([utils.revenueRegistry.myLatest.invalidate(), utils.revenueRegistry.adminList.invalidate(), utils.revenueRegistry.reconciliation.invalidate(), utils.audit.changes.invalidate()]);
   };
   const create = trpc.revenueRegistry.create.useMutation({
     onSuccess: async () => { await refresh(); resetForm(); entryCardRef.current?.removeAttribute("open"); toast.success("Выручка передана", { description: "Операционная запись сохранена отдельно от финансового факта." }); },
@@ -229,6 +232,7 @@ export default function RevenueRegistry() {
         {printSheet}
       </> : <div className="empty-state compact"><ReceiptText size={25}/><h2>Записей пока нет</h2><p>Переданные продавцами или администратором дневные суммы появятся здесь.</p></div>}
     </section>}
+    {isAdministrative && <section className="packet-card revenue-reconciliation"><div className="card-title"><div><span>СВЕРКА С ЧЕКАМИ ЭВОТОР</span><h3>Передача за день и read-only факты</h3><small>Сравниваются только Нал + Б/Нал с суммой нормализованных чеков SELL. Расходы, P&L и запись в Эвотор не затрагиваются.</small></div></div>{reconciliation.isLoading ? <p className="packet-note">Сверяем доступные чеки…</p> : ((reconciliation.data ?? []) as RevenueReconciliation[]).length ? <div className="data-table-wrap revenue-reconciliation-wrap"><table className="data-table revenue-reconciliation-table"><thead><tr><th>Дата</th><th>Магазин</th><th className="numeric-column">Передано</th><th className="numeric-column">По чекам Эвотор</th><th className="numeric-column">Разница</th><th>Статус</th></tr></thead><tbody>{((reconciliation.data ?? []) as RevenueReconciliation[]).map(row => <tr key={`${row.storeId}:${row.businessDate}`}><td data-label="Дата">{displayDate(row.businessDate)}</td><td data-label="Магазин"><strong>{row.storeName}</strong></td><td data-label="Передано" className="numeric-column">{row.reportedSales === null ? "—" : formatAmount(row.reportedSales)}</td><td data-label="По чекам Эвотор" className="numeric-column">{row.evotorSales === null ? "—" : formatAmount(row.evotorSales)}</td><td data-label="Разница" className="numeric-column">{row.difference === null ? "—" : formatAmount(row.difference)}</td><td data-label="Статус"><span className={`reconciliation-status is-${row.status}`}>{reconciliationLabel[row.status]}{row.receiptCount ? ` · ${row.receiptCount} чек.` : ""}</span></td></tr>)}</tbody></table></div> : <div className="empty-state compact"><ReceiptText size={25}/><h2>Для выбранной даты нет сопоставимых данных</h2><p>Сверка появится, когда по одной видимой точке и дате есть передача либо нормализованные чеки Эвотор.</p></div>}</section>}
     {isSeller && <section className="packet-card revenue-own-history"><div className="card-title"><div><span>МОИ ПОСЛЕДНИЕ ПЕРЕДАЧИ</span><h3>До пяти собственных записей</h3></div></div>{myRecords.isLoading ? <p className="packet-note">Загружаем ваши записи…</p> : currentRecords.length ? <div className="revenue-history-list">{currentRecords.map(record => <article key={record.id}><div><span>{displayDate(record.businessDate)}</span><strong>{record.storeName}</strong><small>Нал {formatAmount(record.cash)} · Б/Нал {formatAmount(record.cashless)} · Расходы {formatAmount(expenseTotal(record))}</small><small>Передано {displayMoscowTimestamp(record.createdAt)} МСК</small></div><b>{formatAmount(record.total)}</b></article>)}</div> : <div className="empty-state compact"><ReceiptText size={25}/><h2>Передач еще нет</h2><p>После первой передачи здесь будут показаны пять последних записей этой учетной записи.</p></div>}</section>}
     <AlertDialog open={Boolean(voidCandidate)} onOpenChange={open => { if (!open) { setVoidCandidate(null); setVoidReason(""); } }}><AlertDialogContent className="danger-confirm-dialog"><AlertDialogHeader><AlertDialogTitle>Удалить передачу из реестра?</AlertDialogTitle><AlertDialogDescription>Запись за {voidCandidate ? displayDate(voidCandidate.businessDate) : "выбранную дату"} исчезнет из рабочего реестра. Ее исходная версия и причина удаления останутся в общем журнале и истории версий.</AlertDialogDescription></AlertDialogHeader><label className="revenue-void-reason"><span>Причина удаления</span><textarea value={voidReason} onChange={event => setVoidReason(event.target.value)} maxLength={500} required placeholder="Почему запись нужно удалить из рабочего реестра"/></label><AlertDialogFooter><AlertDialogCancel>Отмена</AlertDialogCancel><AlertDialogAction className="danger-confirm-action" disabled={!voidCandidate || !voidReason.trim() || voidRevenue.isPending} onClick={() => { if (voidCandidate) voidRevenue.mutate({ recordId: voidCandidate.id, reason: voidReason }); }}>{voidRevenue.isPending ? "Удаляем…" : "Удалить из реестра"}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </AuditShell>;

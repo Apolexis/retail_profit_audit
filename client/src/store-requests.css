@@ -191,3 +191,17 @@ html[data-audit-theme="dark"] .packet {
   .store-request-print-comments { display: grid; gap: 2mm; margin-top: 3mm; }
   .store-request-print-comments p { margin: 0; font: 9pt/1.35 Arial, sans-serif; }
 }
+
+/* Request print uses the same strictly white portrait A4 contract. */
+@media print {
+  @page { size: A4 portrait; margin: 4mm; }
+  .store-request-print,
+  .store-request-print-sheet,
+  .store-request-print-sheet table,
+  .store-request-print-sheet :is(thead, tbody, tfoot) :is(th, td) { background: #fff !important; color: #000 !important; }
+  .store-request-print-sheet { min-height: 0; }
+  .store-request-print-sheet > header { margin-bottom: 4mm; }
+  .store-request-print-sheet section { margin-bottom: 4mm; }
+  .store-request-print-sheet th,
+  .store-request-print-sheet td { padding: 1.2mm 1.5mm; border-color: #777; overflow-wrap: anywhere; }
+}

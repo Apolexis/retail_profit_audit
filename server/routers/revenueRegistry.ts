@@ -3,7 +3,7 @@ import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getCurrentLocalAccount, getAccessibleStoreIds, hasStoreAccess } from "../accessControl";
 import { recordChange } from "../localAuth";
-import { REVENUE_AMOUNT_FIELDS, REVENUE_EXPENSE_FIELDS, correctRevenueRecord, createRevenueRecord, getRevenueRecord, listRevenueRecordVersions, listRevenueRecords, voidRevenueRecord, type RevenueAmountField, type RevenueExpenseField } from "../revenueRegistry";
+import { REVENUE_AMOUNT_FIELDS, REVENUE_EXPENSE_FIELDS, correctRevenueRecord, createRevenueRecord, getRevenueRecord, listRevenueEvotorReconciliation, listRevenueRecordVersions, listRevenueRecords, voidRevenueRecord, type RevenueAmountField, type RevenueExpenseField } from "../revenueRegistry";
 
 const businessDate = z.string().regex(/^20\d{2}-\d{2}-\d{2}$/, "Выберите дату в формате ГГГГ-ММ-ДД");
 const money = z.number().finite().min(0).multipleOf(0.01, "Сумма допускает не более двух знаков после точки");
@@ -59,6 +59,13 @@ export const revenueRegistryRouter = router({
     const storeIds = await getAccessibleStoreIds(ctx.user?.openId);
     if (input.storeId && storeIds && !storeIds.includes(input.storeId)) throw new TRPCError({ code: "FORBIDDEN", message: "Нет назначенного доступа к этому магазину" });
     return listRevenueRecords({ ...input, storeIds, limit: 500 });
+  }),
+  reconciliation: protectedProcedure.input(z.object({ from: businessDate.optional(), to: businessDate.optional(), storeId: z.number().int().positive().optional() }).refine(input => !input.from || !input.to || input.from <= input.to, { message: "Дата начала не может быть позже даты окончания" })).query(async ({ input, ctx }) => {
+    const actor = await requireOperationalActor(ctx.user?.openId);
+    if (!isRevenueAdministrativeRole(actor.role)) throw new TRPCError({ code: "FORBIDDEN", message: "Сверка выручки доступна только административному персоналу" });
+    const storeIds = await getAccessibleStoreIds(ctx.user?.openId);
+    if (input.storeId && storeIds && !storeIds.includes(input.storeId)) throw new TRPCError({ code: "FORBIDDEN", message: "Нет назначенного доступа к этому магазину" });
+    return listRevenueEvotorReconciliation({ ...input, storeIds, limit: 500 });
   }),
   print: protectedProcedure.input(z.object({ from: businessDate.optional(), to: businessDate.optional(), storeId: z.number().int().positive().optional() }).refine(input => !input.from || !input.to || input.from <= input.to, { message: "Дата начала не может быть позже даты окончания" })).mutation(async ({ input, ctx }) => {
     const actor = await requireOperationalActor(ctx.user?.openId);

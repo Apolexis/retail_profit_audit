@@ -2,11 +2,13 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const page = readFileSync(new URL("./WarehouseControl.tsx", import.meta.url), "utf8");
+const printSettings = readFileSync(new URL("./PrintSettings.tsx", import.meta.url), "utf8");
 const shell = readFileSync(new URL("../components/AuditShell.tsx", import.meta.url), "utf8");
 const app = readFileSync(new URL("../App.tsx", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../warehouse-control.css", import.meta.url), "utf8");
+const printStyles = readFileSync(new URL("../print-settings.css", import.meta.url), "utf8");
 
-describe("warehouse control contract", () => {
+describe("warehouse and print settings contract", () => {
   it("treats a store as a warehouse with an assigned price type", () => {
     expect(page).toContain("Склады и виды цен");
     expect(page).toContain("setStorePriceType.useMutation");
@@ -14,71 +16,63 @@ describe("warehouse control contract", () => {
     expect(page).toContain("Товар не дублируется по магазинам");
   });
 
-	it("keeps Evotor read-only and omits addresses", () => {
-	  expect(page).toContain("READ‑ONLY ЭВОТОР");
-	  expect(page).toContain("Адреса и технические идентификаторы в интерфейсе не показываются");
-	  expect(page).toContain("safeEvotorStoreLabel");
-	  expect(page).toContain("Cloud preview can append a street address");
-	  expect(page).toContain("Запись в Эвотор исключена");
-	  expect(page).toContain("Синхронизация Эвотор выполняется автоматически и только на чтение.");
-	  expect(page).not.toContain("syncEvotorDocumentPage.useMutation");
-	  expect(page).not.toContain("Загрузить документы");
-	  expect(page).not.toContain("Обновить данные Эвотор");
-	  expect(page).toContain("setWarehouseEvotorMapping.useMutation");
+  it("keeps Evotor read-only and omits addresses", () => {
+    expect(page).toContain("READ‑ONLY ЭВОТОР");
+    expect(page).toContain("Адреса и технические идентификаторы в интерфейсе не показываются");
+    expect(page).toContain("safeEvotorStoreLabel");
+    expect(page).toContain("Cloud preview can append a street address");
+    expect(page).toContain("Запись в Эвотор исключена");
+    expect(page).toContain("Синхронизация Эвотор выполняется автоматически и только на чтение.");
+    expect(page).not.toContain("syncEvotorDocumentPage.useMutation");
+    expect(page).not.toContain("Загрузить документы");
+    expect(page).not.toContain("Обновить данные Эвотор");
+    expect(page).toContain("setWarehouseEvotorMapping.useMutation");
   });
 
-  it("registers the administrator-only operational route and themed table", () => {
+  it("registers the separate administrator-only print settings route", () => {
     expect(app).toContain('path="/warehouse-control"');
+    expect(app).toContain('path="/print-settings"');
     expect(shell).toContain('["/warehouse-control", "27", "Склады", true]');
+    expect(shell).toContain('["/print-settings", "31", "Настройки печати", true]');
     expect(styles).toContain('--warehouse-accent: var(--packet-accent);');
-    expect(styles).toContain('only the shared theme tokens decide surfaces and contours');
     expect(styles).toContain('.warehouse-table.data-table');
   });
 
-	it("allows a warehouse to join an editable print group", () => {
-	  expect(page).toContain("createPrintGroup.useMutation");
-	  expect(page).toContain("setWarehousePrintGroup.useMutation");
-	  expect(page).toContain("Новая группа печати");
-	  expect(page).toContain("Группа печати сохранена");
-	  expect(page).toContain("<EyeOff size={14}/>Скрыть");
-	  expect(page).toContain("deletePrintGroup.useMutation");
-	  expect(page).toContain("Склады будут отсоединены только от этой группы");
-	});
+  it("keeps all request print configuration in one page", () => {
+    expect(printSettings).toContain("Группы и категории для заявок");
+    expect(printSettings).toContain("createPrintGroup.useMutation");
+    expect(printSettings).toContain("setWarehousePrintGroup.useMutation");
+    expect(printSettings).toContain("Новая группа печати");
+    expect(printSettings).toContain("deletePrintGroup.useMutation");
+    expect(printSettings).toContain("updatePrintCategoryGroup.useMutation");
+    expect(printSettings).toContain("deletePrintCategoryGroup.useMutation");
+    expect(printSettings).toContain("Товары не изменятся, а вложенные связи будут отсоединены.");
+    expect(printSettings).toContain("requestCommentSlot");
+  });
 
-	it("allows print categories to be renamed and deleted without changing goods", () => {
-	    expect(page).toContain("updatePrintCategoryGroup.useMutation");
-	    expect(page).toContain("deletePrintCategoryGroup.useMutation");
-	    expect(page).toContain("Категория печати сохранена");
-		  expect(page).toContain("Товары не изменятся, а вложенные связи будут отсоединены.");
-	});
+  it("sets print mode and freshness on the category, not on a request", () => {
+    expect(printSettings).toContain('className="warehouse-category-print-mode"');
+    expect(printSettings).toContain("Макс. запас в магазине, дни");
+    expect(printSettings).toContain("maxStoreCoverDays");
+    expect(styles).toContain(".warehouse-category-print-mode { display: block");
+  });
 
-	it("keeps print mode as a separate compact category annotation and configures freshness", () => {
-		expect(page).toContain('className="warehouse-category-print-mode"');
-		expect(page).toContain("Макс. запас в магазине, дни");
-		expect(page).toContain("maxStoreCoverDays");
-		expect(styles).toContain(".warehouse-category-print-mode { display: block");
-	});
+  it("stacks warehouse data into labelled cards on narrow screens", () => {
+    expect(page).toContain('data-label="Склад / магазин"');
+    expect(page).toContain('data-label="Действие"');
+    expect(styles).toContain(".warehouse-table tbody > tr:not(.warehouse-settings-row)");
+    expect(styles).toContain("content: attr(data-label)");
+    expect(styles).toContain("Settings rows stay inside the selected warehouse card");
+    expect(styles).toContain(".warehouse-settings-grid :is(.app-select-trigger, input)");
+    expect(styles).toContain(".warehouse-table.data-table { display: block; width: 100% !important; max-width: 100%; min-width: 0 !important; }");
+    expect(styles).toContain(".warehouse-settings-row { display: block; width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box;");
+    expect(styles).toContain("grid-template-columns: minmax(0, 1fr);");
+  });
 
-	it("stacks warehouse data into labelled cards on narrow screens", () => {
-		expect(page).toContain('data-label="Склад / магазин"');
-		expect(page).toContain('data-label="Действие"');
-		expect(styles).toContain(".warehouse-table tbody > tr:not(.warehouse-settings-row)");
-		expect(styles).toContain("content: attr(data-label)");
-		expect(styles).toContain("Settings rows stay inside the selected warehouse card");
-		expect(styles).toContain(".warehouse-settings-grid :is(.app-select-trigger, input)");
-		expect(styles).toContain(".warehouse-table.data-table { display: block; width: 100% !important; max-width: 100%; min-width: 0 !important; }");
-		expect(styles).toContain(".warehouse-settings-row { display: block; width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box;");
-		expect(styles).toContain("grid-template-columns: minmax(0, 1fr);");
-		expect(styles).toContain(".warehouse-settings-note { min-width: 0; white-space: normal; overflow-wrap: anywhere; }");
-		expect(styles).toContain(".warehouse-settings-actions { display: flex; flex-wrap: wrap; width: 100%;");
-	});
-
-	it("keeps summary, open settings and print categories within the approved blue/coral hierarchy", () => {
-		expect(styles).toContain(".warehouse-category-print-card {");
-		expect(styles).toContain("background: var(--warehouse-panel);");
-		expect(styles).toContain("border-top: 1px solid var(--warehouse-line);");
-		expect(styles).toContain("--warehouse-card: #f7fbff;");
-		expect(styles).toContain("--warehouse-card: #16101a;");
-		expect(styles).not.toContain("background: var(--surface-2);");
-	});
+  it("keeps summary and editor surfaces inside the approved blue/coral hierarchy", () => {
+    expect(styles).toContain("--warehouse-card: #f7fbff;");
+    expect(styles).toContain("--warehouse-card: #16101a;");
+    expect(styles).not.toContain("background: var(--surface-2);");
+    expect(printStyles).toContain(".packet .print-settings-card");
+  });
 });

@@ -1,5 +1,5 @@
-import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
-import { localAccounts, operationalRevenueRecords, operationalRevenueRecordVersions, stores } from "../drizzle/schema";
+import { and, desc, eq, gte, inArray, isNotNull, lte } from "drizzle-orm";
+import { localAccounts, operationalEvotorDocuments, operationalRevenueRecords, operationalRevenueRecordVersions, stores } from "../drizzle/schema";
 import { getDb } from "./db";
 
 export const REVENUE_AMOUNT_FIELDS = [
@@ -182,6 +182,56 @@ export async function listRevenueRecords(input: RevenueRegistryFilter = {}) {
     const amounts = Object.fromEntries(REVENUE_AMOUNT_FIELDS.map(field => [field, Number(row[field])])) as RevenueAmounts;
     return { ...row, ...amounts, expenseComments: (row.expenseComments ?? {}) as RevenueExpenseComments, total: calculateOperationalRevenueTotal(amounts) };
   });
+}
+
+/**
+ * Strictly read-only operational comparison: submitted sales components
+ * (cash + cashless) versus the normalized total of SELL documents. Cash
+ * expenses never take part; missing receipt coverage remains explicit.
+ */
+export async function listRevenueEvotorReconciliation(input: RevenueRegistryFilter = {}) {
+  const db = await getDb();
+  if (!db || (Array.isArray(input.storeIds) && !input.storeIds.length)) return [];
+  const records = await listRevenueRecords({ ...input, limit: 500 });
+  const conditions = [
+    eq(operationalEvotorDocuments.documentType, "SELL"),
+    isNotNull(operationalEvotorDocuments.occurredAt),
+    eq(stores.isHidden, false),
+    input.from ? gte(operationalEvotorDocuments.occurredAt, `${input.from}T00:00:00`) : undefined,
+    input.to ? lte(operationalEvotorDocuments.occurredAt, `${input.to}T23:59:59.999`) : undefined,
+    input.storeId ? eq(operationalEvotorDocuments.storeId, input.storeId) : undefined,
+    Array.isArray(input.storeIds) ? inArray(operationalEvotorDocuments.storeId, input.storeIds) : undefined,
+  ].filter(Boolean);
+  const documents = await db.select({ storeId: operationalEvotorDocuments.storeId, storeName: stores.name, occurredAt: operationalEvotorDocuments.occurredAt, total: operationalEvotorDocuments.total })
+    .from(operationalEvotorDocuments)
+    .innerJoin(stores, eq(operationalEvotorDocuments.storeId, stores.id))
+    .where(conditions.length ? and(...conditions) : undefined)
+    .limit(50_000);
+  const receiptTotals = new Map<string, { storeId: number; storeName: string; businessDate: string; total: number; receiptCount: number }>();
+  for (const document of documents) {
+    if (!document.occurredAt) continue;
+    const businessDate = document.occurredAt.slice(0, 10);
+    const key = `${document.storeId}:${businessDate}`;
+    const current = receiptTotals.get(key) ?? { storeId: document.storeId, storeName: document.storeName, businessDate, total: 0, receiptCount: 0 };
+    current.total += Number(document.total ?? 0);
+    current.receiptCount += 1;
+    receiptTotals.set(key, current);
+  }
+  const results = new Map<string, { storeId: number; storeName: string; businessDate: string; reportedSales: number | null; evotorSales: number | null; receiptCount: number; difference: number | null; status: "matched" | "underreported" | "overreported" | "missing_receipts" | "not_reported" }>();
+  for (const record of records) {
+    const key = `${record.storeId}:${record.businessDate}`;
+    const receipts = receiptTotals.get(key);
+    const reportedSales = Number(record.cash) + Number(record.cashless);
+    const evotorSales = receipts?.total ?? null;
+    const difference = evotorSales === null ? null : Math.round((reportedSales - evotorSales) * 100) / 100;
+    const status = evotorSales === null ? "missing_receipts" : Math.abs(difference ?? 0) <= 0.01 ? "matched" : (difference ?? 0) < 0 ? "underreported" : "overreported";
+    results.set(key, { storeId: record.storeId, storeName: record.storeName, businessDate: record.businessDate, reportedSales, evotorSales, receiptCount: receipts?.receiptCount ?? 0, difference, status });
+    receiptTotals.delete(key);
+  }
+  for (const receipt of Array.from(receiptTotals.values())) {
+    results.set(`${receipt.storeId}:${receipt.businessDate}`, { storeId: receipt.storeId, storeName: receipt.storeName, businessDate: receipt.businessDate, reportedSales: null, evotorSales: Math.round(receipt.total * 100) / 100, receiptCount: receipt.receiptCount, difference: null, status: "not_reported" });
+  }
+  return Array.from(results.values()).sort((left, right) => right.businessDate.localeCompare(left.businessDate) || left.storeName.localeCompare(right.storeName, "ru"));
 }
 
 export async function getRevenueRecord(recordId: number) {

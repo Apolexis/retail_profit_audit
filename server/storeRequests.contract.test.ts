@@ -23,14 +23,15 @@ describe("заявки магазинов: серверный контракт",
     expect(service).toContain("Закрытую заявку нельзя изменять");
     expect(service).toContain("catalogNumber: product.catalogNumber");
     expect(service).toContain("productName: product.canonicalName");
-    expect(service).toContain("categoryName: product.categoryName");
+    expect(service).toContain("catalogCategoryId: product.catalogCategoryId");
+    expect(service).toContain("categoryName: product.managedCategoryName ?? product.evotorCategoryName");
     expect(service).toContain("status: \"closed\"");
   });
 
   it("строит печать только из закрытых заявок, исключая скрытые магазины", () => {
     expect(service).toContain("eq(operationalStoreRequests.status, \"closed\")");
     expect(service).toContain("eq(stores.isHidden, false)");
-    expect(service).toContain("expandPrintCategoryNames(categoryGroup.id, allCategoryGroups, members)");
+    expect(service).toContain("expandPrintCategoryReferences(categoryGroup.id, allCategoryGroups, members)");
     expect(service).toContain("storeIds?: number[] | null");
     expect(service).toContain("groupedStoreIds.filter(storeId => input.storeIds!.includes(storeId))");
   });

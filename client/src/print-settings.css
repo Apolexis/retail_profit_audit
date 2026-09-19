@@ -1,0 +1,9 @@
+.packet .print-settings-card { display: grid; gap: 15px; }
+.packet .print-settings-store-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 9px; }
+.packet .print-settings-store-list > label { display: grid; gap: 6px; min-width: 0; padding: 10px 11px; border: 1px solid var(--warehouse-line); border-radius: 10px; background: var(--warehouse-panel); }
+.packet .print-settings-store-list strong { overflow-wrap: anywhere; font-size: 13px; }
+.packet .print-settings-store-list select { min-width: 0; }
+.packet .print-settings-lede { margin-bottom: 16px; }
+@media (max-width: 620px) {
+  .packet .print-settings-store-list { grid-template-columns: 1fr; }
+}

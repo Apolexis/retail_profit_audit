@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const page = readFileSync(new URL("./StoreRequests.tsx", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../store-requests.css", import.meta.url), "utf8");
+const printSettings = readFileSync(new URL("./PrintSettings.tsx", import.meta.url), "utf8");
 
 describe("заявки магазинов: экран", () => {
   it("предлагает только точки, разрешенные текущему пользователю", () => {
@@ -55,9 +56,11 @@ describe("заявки магазинов: экран", () => {
   });
 
   it("не возвращает общий комментарий и оставляет два комментария к категориям печати", () => {
-    expect(page).toContain("До двух комментариев; категория печати настраивается в «Складах»");
-    expect(page).toContain("([1, 2] as const).map(slot");
-    expect(page).toContain("Комментарий {slot}");
+    expect(page).not.toContain("Комментарий к заявке");
+    expect(printSettings).toContain("requestCommentSlot");
+    expect(printSettings).toContain("Комментарий 1");
+    expect(printSettings).toContain("Комментарий 2");
+    expect(printSettings).toContain("категория печати");
     expect(page).not.toContain("Комментарий к заявке");
     expect(page).not.toContain("Общее примечание к заказу");
   });
@@ -72,7 +75,7 @@ describe("заявки магазинов: адаптивность и печа�
   });
 
   it("использует A4 portrait с отдельными листами для сформированной подборки", () => {
-    expect(styles).toContain("@page { size: A4 portrait; margin: 12mm; }");
+    expect(styles).toContain("@page { size: A4 portrait; margin: 4mm; }");
     expect(styles).toContain(".store-request-print { display: block !important;");
     expect(styles).toContain("break-after: page");
   });

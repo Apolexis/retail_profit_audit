@@ -330,6 +330,8 @@ export const operationalCatalogProducts = mysqlTable("operational_catalog_produc
   barcodes: json("barcodes"),
   /** Read-only category name resolved from Evotor's product-group hierarchy. */
   evotorCategoryName: varchar("evotorCategoryName", { length: 512 }),
+  /** Administrator-managed network category; raw Evotor group stays in evotorCategoryName. */
+  catalogCategoryId: int("catalogCategoryId"),
   /** `fraction` is the Evotor weight code and is rendered as «кг» in every user-facing view. */
   baseUnit: mysqlEnum("baseUnit", ["fraction", "l", "piece", "unknown"]).default("unknown").notNull(),
   /** Network works only with VAT. The default for a manually added item is 10%. */
@@ -357,6 +359,17 @@ export const operationalCatalogProducts = mysqlTable("operational_catalog_produc
   importedAt: timestamp("importedAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => [unique("operational_catalog_store_evotor_product_uq").on(table.storeId, table.evotorProductId)]);
+
+/** Network category master. Categories are archived instead of hard-deleted so print history remains reproducible. */
+export const operationalCatalogCategories = mysqlTable("operational_catalog_categories", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 512 }).notNull(),
+  normalizedName: varchar("normalizedName", { length: 560 }).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdByAccountId: int("createdByAccountId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [unique("operational_catalog_category_name_uq").on(table.normalizedName)]);
 
 /** Network-wide sale price classes. A store is assigned exactly one active class. */
 export const operationalPriceTypes = mysqlTable("operational_price_types", {
@@ -423,6 +436,8 @@ export const operationalPrintCategoryGroupMembers = mysqlTable("operational_prin
   id: int("id").autoincrement().primaryKey(),
   groupId: int("groupId").notNull(),
   memberType: mysqlEnum("memberType", ["catalog_category", "category_group"]).notNull(),
+  /** Stable master-category link. catalogCategory remains only as a legacy print-history fallback. */
+  catalogCategoryId: int("catalogCategoryId"),
   catalogCategory: varchar("catalogCategory", { length: 512 }),
   childGroupId: int("childGroupId"),
   sortOrder: int("sortOrder").default(0).notNull(),
@@ -581,6 +596,8 @@ export const operationalStoreRequestLines = mysqlTable("operational_store_reques
   productName: varchar("productName", { length: 512 }).notNull(),
   /** A request-only product name; it never creates or changes the common catalog. */
   manualProductName: varchar("manualProductName", { length: 512 }),
+  /** Category ID is snapshotted so a later category rename never changes a closed printed request. */
+  catalogCategoryId: int("catalogCategoryId"),
   categoryName: varchar("categoryName", { length: 512 }),
   /** Selected only for a manual line so it reaches the intended configured print sheet. */
   manualPrintCategoryGroupId: int("manualPrintCategoryGroupId"),
@@ -612,6 +629,7 @@ export const operationalStoreRequestComments = mysqlTable("operational_store_req
 
 export type OperationalInventory = typeof operationalInventories.$inferSelect;
 export type OperationalCatalogProduct = typeof operationalCatalogProducts.$inferSelect;
+export type OperationalCatalogCategory = typeof operationalCatalogCategories.$inferSelect;
 export type OperationalPriceType = typeof operationalPriceTypes.$inferSelect;
 export type OperationalStorePriceType = typeof operationalStorePriceTypes.$inferSelect;
 export type OperationalProductSalePrice = typeof operationalProductSalePrices.$inferSelect;
