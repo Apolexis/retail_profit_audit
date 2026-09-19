@@ -39,12 +39,17 @@ describe("интерфейс операционных остатков", () => {
 	  expect(css).toContain('--stock-accent: #ff765f;');
 	});
 
-	it("на узком экране заменяет широкую таблицу подписанными карточками", () => {
-	  expect(page).toContain('data-label="Учетный остаток"');
-	  expect(page).toContain('data-label="Действие"');
-	  expect(css).toContain(".stock-table.data-table tbody tr:nth-child(even) { display: grid");
+		it("на узком экране заменяет широкую таблицу подписанными карточками", () => {
+		  expect(page).toContain('data-label="Учетный остаток"');
+		  expect(page).toContain('data-label="Действие"');
+		  expect(css).toContain(".stock-table.data-table tbody tr:nth-child(even) { display: grid");
 	  expect(css).toContain("content: attr(data-label)");
 	  expect(css).toContain("@media (max-width: 1400px)");
-	  expect(css).toContain(".stock-table-wrap.data-table-wrap { overflow: visible !important; cursor: default !important;");
-	});
+		  expect(css).toContain(".stock-table-wrap.data-table-wrap { overflow: visible !important; cursor: default !important;");
+		});
+
+		it("не обрезает длинные названия магазина и категории в карточном режиме", () => {
+		  expect(css).toContain(".packet .stock-table td:nth-child(3),\n  .packet .stock-table td:nth-child(9) { grid-column: 1 / -1; }");
+		  expect(css).toContain(".packet .stock-table td:nth-child(2),\n  .packet .stock-table td:nth-child(3) { overflow-wrap: anywhere; word-break: normal; }");
+		});
 });

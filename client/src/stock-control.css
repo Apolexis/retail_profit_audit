@@ -109,7 +109,10 @@ html[data-audit-theme="light"] .packet .stock-table.data-table tbody td { border
   .packet .stock-table td:nth-child(-n+2) { border-top: 0 !important; }
   .packet .stock-table td:nth-child(1) { min-width: 0; padding: 8px 10px !important; color: var(--stock-accent); font-size: 12px; }
   .packet .stock-table td:nth-child(4),
+  .packet .stock-table td:nth-child(3),
   .packet .stock-table td:nth-child(9) { grid-column: 1 / -1; }
+  .packet .stock-table td:nth-child(2),
+  .packet .stock-table td:nth-child(3) { overflow-wrap: anywhere; word-break: normal; }
   .packet .stock-table td:nth-child(4) { padding-top: 10px; }
   .packet .stock-table td:nth-child(4) strong { overflow-wrap: anywhere; }
   .packet .stock-table td:nth-child(9) { padding-bottom: 10px; }

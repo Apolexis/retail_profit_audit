@@ -30,6 +30,16 @@
 .packet .print-settings-card .warehouse-print-group-chip.is-inactive { border-color: var(--warehouse-line); background: transparent; color: var(--muted); }
 .packet .print-settings-card .warehouse-print-group-chip.is-inactive svg { color: var(--muted); }
 
+/* Inputs and actions share the established 40px operating rhythm without creating a new button style. */
+.packet .print-settings-card :is(.warehouse-print-group-create input, .warehouse-print-group-editor input) { min-height: 40px; }
+.packet .print-settings-card :is(.warehouse-print-group-create .subtle-button, .warehouse-print-group-editor .subtle-button, .warehouse-category-add .subtle-button, .warehouse-category-group-actions .subtle-button, .warehouse-category-group-edit) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  box-sizing: border-box;
+}
+
 /* A category is one readable unit: its memberships, then two add rows. */
 .packet .print-settings-card .warehouse-category-print-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .packet .print-settings-card .warehouse-category-print-groups > article { min-width: 0; padding: 14px; }

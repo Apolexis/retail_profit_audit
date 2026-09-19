@@ -77,11 +77,11 @@ describe("общий операционный справочник", () => {
 		  expect(editor).toContain('placeholder="Например: 0,5"');
       expect(editor).not.toContain("Справочное соответствие V2 · без выгрузки");
       expect(editor).toContain('value={evotorProductTypeByMarking[marking]} readOnly');
-      expect(editor).toContain('aria-readonly="true"');
-      expect(editor).toContain("catalog-grow-expand");
-      expect(css).toContain(".catalog-editor-barcodes.is-expanded");
-      expect(css).toContain(".catalog-editor-grid > label.catalog-alcohol-code { grid-column: auto; max-width: 320px; }");
-      expect(css).toContain(".packet .catalog-editor-action-group");
+	      expect(editor).toContain('aria-readonly="true"');
+	      expect(editor).toContain("catalog-grow-expand");
+	      expect(css).toContain(".catalog-editor-barcodes.is-expanded");
+	      expect(css).toContain(".catalog-editor-grid > label.catalog-alcohol-code { grid-column: auto; max-width: 280px; }");
+	      expect(css).toContain(".packet .catalog-editor-action-group");
 		});
 
 		it("использует обычные ссылки для самостоятельных маршрутов номенклатуры", () => {
@@ -96,6 +96,15 @@ describe("общий операционный справочник", () => {
 		  expect(css).toContain(".catalog-editor-grid > label.catalog-editor-barcodes.is-expanded,");
 		  expect(css).toContain(".packet .catalog-business-id { display: block;");
 		  expect(css).toContain("text-overflow: ellipsis;");
+		});
+
+		it("перестраивает карточку товара и виды цен до узкой рабочей области sidebar", () => {
+		  expect(css).toContain("@media (max-width: 1180px) {");
+		  expect(css).toContain(".packet .catalog-price-secondary form { grid-template-columns: minmax(0, 1fr) auto; width: min(100%, 620px); }");
+		  expect(css).toContain(".packet .catalog-editor-grid > label.catalog-alcohol-code { grid-column: auto; max-width: 280px; }");
+		  expect(css).toContain(".packet .catalog-editor-card > .card-title { flex-direction: column; align-items: stretch; gap: 11px; }");
+		  expect(css).toContain(".packet .catalog-editor-title-actions { width: 100%; justify-content: flex-start; }");
+		  expect(css).toContain(".packet .catalog-editor-title-actions .catalog-editor-save { grid-column: 1 / -1; width: 100%; }");
 		});
 
 		it("показывает бизнес-номер без технического идентификатора в общем списке", () => {

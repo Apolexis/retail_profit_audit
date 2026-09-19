@@ -5088,21 +5088,23 @@ html[data-audit-theme="dark"] .packet :is(.price-import-list, .saved-price-impor
   align-items: center;
   gap: 6px;
 }
-html[data-audit-theme="light"] .packet :is(.revenue-registry, .inventory-layout, .inventory-history, .stock-table-card, .catalog-working-card, .catalog-editor-card, .warehouse-table-card) .subtle-button:not(:disabled):hover {
-  transform: none !important;
-  border-color: #0a84ff !important;
-  background: #eaf5ff !important;
-  color: #075dbb !important;
-  box-shadow: 0 0 0 1px rgba(10, 132, 255, .12) !important;
-  filter: none !important;
-}
-html[data-audit-theme="dark"] .packet :is(.revenue-registry, .inventory-layout, .inventory-history, .stock-table-card, .catalog-working-card, .catalog-editor-card, .warehouse-table-card) .subtle-button:not(:disabled):hover {
-  transform: none !important;
-  border-color: #ff765f !important;
-  background: #1b141c !important;
-  color: var(--ink) !important;
-  box-shadow: 0 0 0 1px rgba(255, 118, 95, .18) !important;
-  filter: none !important;
+@media (hover: hover) and (pointer: fine) {
+  html[data-audit-theme="light"] .packet :is(.revenue-registry, .inventory-layout, .inventory-history, .stock-table-card, .catalog-working-card, .catalog-editor-card, .warehouse-table-card) .subtle-button:not(:disabled):hover {
+    transform: none !important;
+    border-color: #0a84ff !important;
+    background: #eaf5ff !important;
+    color: #075dbb !important;
+    box-shadow: 0 0 0 1px rgba(10, 132, 255, .12) !important;
+    filter: none !important;
+  }
+  html[data-audit-theme="dark"] .packet :is(.revenue-registry, .inventory-layout, .inventory-history, .stock-table-card, .catalog-working-card, .catalog-editor-card, .warehouse-table-card) .subtle-button:not(:disabled):hover {
+    transform: none !important;
+    border-color: #ff765f !important;
+    background: #1b141c !important;
+    color: var(--ink) !important;
+    box-shadow: 0 0 0 1px rgba(255, 118, 95, .18) !important;
+    filter: none !important;
+  }
 }
 
 /* Charts inherit the operating theme; no white grid or marker halo appears in dark mode. */

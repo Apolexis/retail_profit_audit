@@ -6,6 +6,7 @@ const router = readFileSync(new URL("../../../server/routers/revenueRegistry.ts"
 const revenueService = readFileSync(new URL("../../../server/revenueRegistry.ts", import.meta.url), "utf8");
 const accessRouter = readFileSync(new URL("../../../server/routers/localAuth.ts", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../revenue-registry.css", import.meta.url), "utf8");
+const finalOverrides = readFileSync(new URL("../final-overrides.css", import.meta.url), "utf8");
 
 describe("контракт страницы Выручка", () => {
   it("показывает все согласованные поля, пояснения расходов и живой итог", () => {
@@ -112,6 +113,14 @@ describe("контракт страницы Выручка", () => {
 	    expect(styles).toContain(".revenue-amount:focus-within { border-color: var(--revenue-accent);");
 	    expect(styles).toContain("@media (hover: hover) and (pointer: fine) {\n  .packet .revenue-amount:hover");
 	    expect(styles).toContain(".revenue-register-table.data-table tbody tr:focus-within td");
+	    expect(styles).toContain('html[data-audit-theme="light"] .packet :is(.revenue-entry-card, .revenue-rule-disclosure):hover');
+	    expect(styles).toContain('html[data-audit-theme="dark"] .packet :is(.revenue-entry-card, .revenue-rule-disclosure):hover');
+	    expect(finalOverrides).toContain('@media (hover: hover) and (pointer: fine) {\n  html[data-audit-theme="light"] .packet :is(.revenue-registry');
+	  });
+
+	  it("сохраняет карточный реестр на границе 760px без max-content overflow", () => {
+	    expect(styles).toContain(".packet .revenue-admin-register .revenue-register-table.data-table { min-width: 0; }");
+	    expect(styles).not.toContain("@media (max-width: 760px) {\n  .packet .revenue-admin-register .revenue-register-table.data-table { min-width: max-content; }");
 	  });
 
 	  it("не выводит в реестре логин или телефон автора передачи", () => {

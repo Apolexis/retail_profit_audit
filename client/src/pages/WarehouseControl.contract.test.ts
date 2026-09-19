@@ -79,10 +79,20 @@ describe("warehouse and print settings contract", () => {
     expect(styles).toContain("grid-template-columns: minmax(0, 1fr);");
   });
 
-  it("keeps summary and editor surfaces inside the approved blue/coral hierarchy", () => {
-    expect(styles).toContain("--warehouse-card: #f7fbff;");
-    expect(styles).toContain("--warehouse-card: #16101a;");
-    expect(styles).not.toContain("background: var(--surface-2);");
-    expect(printStyles).toContain(".packet .print-settings-card");
-  });
+	  it("keeps summary and editor surfaces inside the approved blue/coral hierarchy", () => {
+	    expect(styles).toContain("--warehouse-card: #f7fbff;");
+	    expect(styles).toContain("--warehouse-card: #16101a;");
+	    expect(styles).not.toContain("background: var(--surface-2);");
+	    expect(printStyles).toContain(".packet .print-settings-card");
+	  });
+
+	  it("gives standalone print settings the same resolved warehouse contours and control rhythm", () => {
+	    expect(styles).toContain(".packet .print-settings-card {\n  --warehouse-card: var(--surface);");
+	    expect(styles).toContain('html[data-audit-theme="light"] .packet .print-settings-card {');
+	    expect(styles).toContain('html[data-audit-theme="dark"] .packet .print-settings-card {');
+	    expect(styles).toContain("--warehouse-line: #c7e2ff;");
+	    expect(styles).toContain("--warehouse-line: #3b2435;");
+	    expect(printStyles).toContain(".print-settings-card :is(.warehouse-print-group-create .subtle-button");
+	    expect(printStyles).toContain("min-height: 40px;");
+	  });
 });
