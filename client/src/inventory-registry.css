@@ -92,7 +92,10 @@
 .packet .inventory-history-list > article { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; min-width: 0; overflow: hidden; padding: 0 10px 0 0; border: 1px solid var(--inventory-line); border-radius: 10px; background: var(--inventory-field); transition: border-color 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease); }
 .packet .inventory-history-select { display: grid; grid-template-columns: minmax(110px, .6fr) minmax(180px, 1.25fr) minmax(170px, 1fr) auto; gap: 10px; align-items: center; width: 100%; min-width: 0; padding: 12px 13px; border: 0; background: transparent; color: var(--ink); text-align: left; }
 .packet .inventory-history-list > article.selected { border-color: var(--inventory-accent); background: var(--inventory-field); }
-.packet .inventory-history-list > article:hover { border-color: var(--inventory-accent); box-shadow: inset 0 0 0 1px var(--inventory-accent-faint); }
+.packet .inventory-history-list > article:focus-within { border-color: var(--inventory-accent); box-shadow: 0 0 0 2px var(--inventory-accent-faint); }
+@media (hover: hover) and (pointer: fine) {
+  .packet .inventory-history-list > article:hover { border-color: var(--inventory-accent); box-shadow: 0 0 0 1px var(--inventory-accent-faint); }
+}
 .packet .inventory-history-select:hover,
 .packet .inventory-history-select:focus-visible { transform: none !important; border-color: transparent !important; background: transparent !important; box-shadow: none !important; outline: none; }
 .packet .inventory-history-list > article .subtle-button { display: inline-flex; align-items: center; gap: 6px; margin: 0; white-space: nowrap; }
@@ -178,6 +181,7 @@ html[data-audit-theme="dark"] .packet .packet-card.inventory-rule-disclosure:foc
   .packet .inventory-rule-disclosure > div,
   .packet .inventory-note-form,
   .packet .inventory-line-create { grid-template-columns: 1fr; }
+  .packet .inventory-draft-card > .card-title { flex-direction: column; align-items: stretch; }
   .packet .inventory-create-actions,
   .packet .inventory-close-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
   .packet .inventory-create-actions .packet-link,

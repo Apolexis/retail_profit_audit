@@ -84,13 +84,21 @@ describe("общий операционный справочник", () => {
       expect(css).toContain(".packet .catalog-editor-action-group");
 		});
 
-	it("использует обычные ссылки для самостоятельных маршрутов номенклатуры", () => {
-	  expect(page).toContain('href="/catalog-control/new"');
-	  expect(page).toContain('href={`/catalog-control/${product.id}/edit`}');
-	  expect(editor).toContain('href="/catalog-control"');
-	});
+		it("использует обычные ссылки для самостоятельных маршрутов номенклатуры", () => {
+		  expect(page).toContain('href="/catalog-control/new"');
+		  expect(page).toContain('href={`/catalog-control/${product.id}/edit`}');
+		  expect(editor).toContain('href="/catalog-control"');
+		});
 
-	it("показывает бизнес-номер без технического идентификатора в общем списке", () => {
+		it("сохраняет одну колонку карточки на телефоне и доступное раскрытие кодов", () => {
+		  expect(css).toContain(".packet .catalog-grow-expand {\n  position: absolute; z-index: 1; top: 8px; right: 7px; display: inline-grid;");
+		  expect(css).toContain(".packet .catalog-editor-grid { grid-template-columns: minmax(0, 1fr); }");
+		  expect(css).toContain(".catalog-editor-grid > label.catalog-editor-barcodes.is-expanded,");
+		  expect(css).toContain(".packet .catalog-business-id { display: block;");
+		  expect(css).toContain("text-overflow: ellipsis;");
+		});
+
+		it("показывает бизнес-номер без технического идентификатора в общем списке", () => {
 	  expect(page).toContain('data-label="№ / ID / артикул"');
 	  expect(page).toContain("№ / ID / артикул: {product.internalCode}");
 	  expect(page).not.toContain("ID {product.id} · артикул Эвотор");

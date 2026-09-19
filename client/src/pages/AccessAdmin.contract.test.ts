@@ -118,6 +118,15 @@ describe("матрица доступа к импорту",()=>{
     expect(overrides).toContain('.packet .account-role-change');
   });
 
+  it("держит статус и роль выбранной записи в карточке создания, не создавая отдельный широкий блок",()=>{
+    const page=readFileSync(resolve(process.cwd(),"client/src/pages/AccessAdmin.tsx"),"utf8");
+    const theme=readFileSync(resolve(process.cwd(),"client/src/theme-refresh.css"),"utf8");
+    expect(page).toContain('const selectedAccountStatus = selected ?');
+    expect(page).toContain('<article className="packet-card access-create-card">{selectedAccountStatus}');
+    expect(theme).toContain('.packet .access-selected-status .status-row');
+    expect(theme).toContain('@media (max-width: 680px)');
+  });
+
   it("сохраняет выбор магазина сразу через существующую журналируемую мутацию",()=>{
     const page=readFileSync(resolve(process.cwd(),"client/src/pages/AccessAdmin.tsx"),"utf8");
     expect(page).toContain("const setStoreGrant = (storeId: number, accessLevel?: Level)");

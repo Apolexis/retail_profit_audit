@@ -38,7 +38,7 @@ describe("warehouse and print settings contract", () => {
     expect(styles).toContain('.warehouse-table.data-table');
   });
 
-  it("keeps all request print configuration in one page", () => {
+	  it("keeps all request print configuration in one page", () => {
     expect(printSettings).toContain("Группы и категории для заявок");
     expect(printSettings).toContain("createPrintGroup.useMutation");
     expect(printSettings).toContain("setWarehousePrintGroup.useMutation");
@@ -47,10 +47,20 @@ describe("warehouse and print settings contract", () => {
     expect(printSettings).toContain("updatePrintCategoryGroup.useMutation");
     expect(printSettings).toContain("deletePrintCategoryGroup.useMutation");
     expect(printSettings).toContain("Товары не изменятся, а вложенные связи будут отсоединены.");
-    expect(printSettings).toContain("requestCommentSlot");
-  });
+	    expect(printSettings).toContain("requestCommentSlot");
+	  });
 
-  it("sets print mode and freshness on the category, not on a request", () => {
+	  it("keeps hidden print groups recoverable without making them selectable or printable", () => {
+	    expect(printSettings).toContain("const inactiveGroups");
+	    expect(printSettings).toContain('aria-label="Скрытые группы печати"');
+	    expect(printSettings).toContain("СКРЫТЫЕ ГРУППЫ");
+	    expect(printSettings).toContain("Не участвуют в назначении и печати");
+	    expect(printSettings).toContain('<Eye size={14}/>Показать');
+	    expect(printSettings).toContain("activeGroups.map(group => <option");
+	    expect(printStyles).toContain(".warehouse-print-group-recovery");
+	  });
+
+	  it("sets print mode and freshness on the category, not on a request", () => {
     expect(printSettings).toContain('className="warehouse-category-print-mode"');
     expect(printSettings).toContain("Макс. запас в магазине, дни");
     expect(printSettings).toContain("maxStoreCoverDays");

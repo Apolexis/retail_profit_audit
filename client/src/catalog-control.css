@@ -226,7 +226,7 @@ html[data-audit-theme="dark"] .packet .catalog-working-card:hover { border-color
 }
 .packet .catalog-grow-control textarea:focus-visible { border-color: var(--catalog-accent); box-shadow: 0 0 0 2px var(--catalog-accent-faint); }
 .packet .catalog-grow-expand {
-  position: absolute; z-index: 1; top: 8px; right: 7px; display: none; width: 26px; height: 26px; min-height: 26px;
+  position: absolute; z-index: 1; top: 8px; right: 7px; display: inline-grid; width: 26px; height: 26px; min-height: 26px;
   place-items: center; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--catalog-accent); box-shadow: none; transform: none !important;
 }
 .packet .catalog-grow-expand:hover,
@@ -249,7 +249,15 @@ html[data-audit-theme="dark"] .packet .catalog-working-card:hover { border-color
   .packet .catalog-lede .subtle-button { width: auto; }
 }
 
-.packet .catalog-business-id { display: inline-flex; flex: 0 0 auto; align-self: flex-start; width: max-content; max-width: 100%; margin-top: 5px; padding: 3px 7px; border: 1px solid var(--catalog-line); border-radius: 7px; background: var(--catalog-panel); color: var(--muted); font-size: 11px; font-weight: 700; line-height: 1.35; white-space: nowrap; }
+.packet .catalog-business-id { display: block; align-self: flex-start; width: fit-content; min-width: 0; max-width: 100%; margin-top: 5px; overflow: hidden; padding: 3px 7px; border: 1px solid var(--catalog-line); border-radius: 7px; background: var(--catalog-panel); color: var(--muted); font-size: 11px; font-weight: 700; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Late tablet rules use two columns; the phone must restore one full-width column after them. */
+@media (max-width: 620px) {
+  .packet .catalog-editor-grid { grid-template-columns: minmax(0, 1fr); }
+  .packet .catalog-editor-grid > label.catalog-editor-barcodes,
+  .packet .catalog-editor-grid > label.catalog-editor-barcodes.is-expanded,
+  .packet .catalog-editor-grid > label.catalog-alcohol-code { grid-column: auto; }
+}
 
 /* The catalog uses the blue surface hierarchy around the table, not blue-filled data rows. */
 html[data-audit-theme="light"] .packet .packet-card.catalog-working-card {

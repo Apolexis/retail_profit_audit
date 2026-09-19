@@ -1,4 +1,4 @@
-import { ChevronUp, EyeOff, Pencil, Plus, Save, Tags, Warehouse, X } from "lucide-react";
+import { ChevronUp, Eye, EyeOff, Pencil, Plus, Save, Tags, Warehouse, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AuditShell } from "@/components/AuditShell";
@@ -9,7 +9,22 @@ import "@/print-settings.css";
 
 type PrintGroup = { id: number; name: string; isActive: boolean };
 type CatalogCategory = { id: number; name: string; isActive: boolean };
-type PrintCategoryGroup = { id: number; name: string; printMode: "per_store" | "grouped_stores"; supplyPrintGroupId: number | null; requestCommentSlot: "slot_1" | "slot_2" | null; maxStoreCoverDays: number; members: Array<{ id: number; memberType: "catalog_category" | "category_group"; catalogCategoryId: number | null; catalogCategory: string | null; childGroupId: number | null; childGroupName: string | null }> };
+type PrintCategoryGroup = {
+  id: number;
+  name: string;
+  printMode: "per_store" | "grouped_stores";
+  supplyPrintGroupId: number | null;
+  requestCommentSlot: "slot_1" | "slot_2" | null;
+  maxStoreCoverDays: number;
+  members: Array<{
+    id: number;
+    memberType: "catalog_category" | "category_group";
+    catalogCategoryId: number | null;
+    catalogCategory: string | null;
+    childGroupId: number | null;
+    childGroupName: string | null;
+  }>;
+};
 type WarehouseRow = { storeId: number; storeName: string; isHidden: boolean; printGroupId: number | null; printGroupName: string | null };
 type CategoryEditor = Pick<PrintCategoryGroup, "id" | "name" | "printMode" | "supplyPrintGroupId" | "requestCommentSlot" | "maxStoreCoverDays">;
 
@@ -31,6 +46,7 @@ export default function PrintSettings() {
   const [editingCategoryGroup, setEditingCategoryGroup] = useState<CategoryEditor | null>(null);
 
   const activeGroups = ((printGroups.data ?? []) as PrintGroup[]).filter(group => group.isActive);
+  const inactiveGroups = ((printGroups.data ?? []) as PrintGroup[]).filter(group => !group.isActive);
   const activeCategories = ((catalogCategories.data ?? []) as CatalogCategory[]).filter(category => category.isActive);
   const categoryGroups = (printCategoryGroups.data ?? []) as PrintCategoryGroup[];
   const visibleWarehouses = useMemo(() => ((warehouses.data ?? []) as WarehouseRow[]).filter(row => !row.isHidden), [warehouses.data]);
@@ -38,7 +54,9 @@ export default function PrintSettings() {
   useEffect(() => {
     setGroupDrafts(current => {
       const next = { ...current };
-      for (const warehouse of visibleWarehouses) if (next[warehouse.storeId] === undefined) next[warehouse.storeId] = warehouse.printGroupId ? String(warehouse.printGroupId) : "";
+      for (const warehouse of visibleWarehouses) {
+        if (next[warehouse.storeId] === undefined) next[warehouse.storeId] = warehouse.printGroupId ? String(warehouse.printGroupId) : "";
+      }
       return next;
     });
   }, [visibleWarehouses]);
@@ -52,24 +70,98 @@ export default function PrintSettings() {
     utils.inventoryRegistry.requestPrintSettings.invalidate(),
     utils.audit.changes.invalidate(),
   ]);
-  const setWarehouseGroup = trpc.inventoryRegistry.setWarehousePrintGroup.useMutation({ onSuccess: async () => { await invalidatePrintSettings(); toast.success("Группа назначена магазину"); }, onError: error => toast.error("Группа не назначена", { description: error.message }) });
-  const createGroup = trpc.inventoryRegistry.createPrintGroup.useMutation({ onSuccess: async () => { setNewPrintGroupName(""); await invalidatePrintSettings(); toast.success("Группа печати создана"); }, onError: error => toast.error("Группа печати не создана", { description: error.message }) });
-  const updateGroup = trpc.inventoryRegistry.updatePrintGroup.useMutation({ onSuccess: async () => { setEditingPrintGroup(null); await invalidatePrintSettings(); toast.success("Группа печати сохранена"); }, onError: error => toast.error("Группа печати не сохранена", { description: error.message }) });
-  const deleteGroup = trpc.inventoryRegistry.deletePrintGroup.useMutation({ onSuccess: async () => { setEditingPrintGroup(null); await invalidatePrintSettings(); toast.success("Группа печати удалена"); }, onError: error => toast.error("Группа печати не удалена", { description: error.message }) });
-  const createCategoryGroup = trpc.inventoryRegistry.createPrintCategoryGroup.useMutation({ onSuccess: async () => { setNewCategoryGroupName(""); await invalidatePrintSettings(); toast.success("Категория печати создана"); }, onError: error => toast.error("Категория печати не создана", { description: error.message }) });
-  const updateCategoryGroup = trpc.inventoryRegistry.updatePrintCategoryGroup.useMutation({ onSuccess: async () => { setEditingCategoryGroup(null); await invalidatePrintSettings(); toast.success("Категория печати сохранена"); }, onError: error => toast.error("Категория печати не сохранена", { description: error.message }) });
-  const deleteCategoryGroup = trpc.inventoryRegistry.deletePrintCategoryGroup.useMutation({ onSuccess: async () => { setEditingCategoryGroup(null); await invalidatePrintSettings(); toast.success("Категория печати удалена"); }, onError: error => toast.error("Категория печати не удалена", { description: error.message }) });
-  const addMember = trpc.inventoryRegistry.addPrintCategoryGroupMember.useMutation({ onSuccess: invalidatePrintSettings, onError: error => toast.error("Состав категории не изменен", { description: error.message }) });
-  const removeMember = trpc.inventoryRegistry.removePrintCategoryGroupMember.useMutation({ onSuccess: invalidatePrintSettings, onError: error => toast.error("Состав категории не изменен", { description: error.message }) });
-  const updateRequestPrintSettings = trpc.inventoryRegistry.updateRequestPrintSettings.useMutation({ onSuccess: invalidatePrintSettings, onError: error => toast.error("Настройка печати не изменена", { description: error.message }) });
+  const setWarehouseGroup = trpc.inventoryRegistry.setWarehousePrintGroup.useMutation({
+    onSuccess: async () => {
+      await invalidatePrintSettings();
+      toast.success("Группа назначена магазину");
+    },
+    onError: error => toast.error("Группа не назначена", { description: error.message }),
+  });
+  const createGroup = trpc.inventoryRegistry.createPrintGroup.useMutation({
+    onSuccess: async () => {
+      setNewPrintGroupName("");
+      await invalidatePrintSettings();
+      toast.success("Группа печати создана");
+    },
+    onError: error => toast.error("Группа печати не создана", { description: error.message }),
+  });
+  const updateGroup = trpc.inventoryRegistry.updatePrintGroup.useMutation({
+    onSuccess: async () => {
+      setEditingPrintGroup(null);
+      await invalidatePrintSettings();
+      toast.success("Группа печати сохранена");
+    },
+    onError: error => toast.error("Группа печати не сохранена", { description: error.message }),
+  });
+  const deleteGroup = trpc.inventoryRegistry.deletePrintGroup.useMutation({
+    onSuccess: async () => {
+      setEditingPrintGroup(null);
+      await invalidatePrintSettings();
+      toast.success("Группа печати удалена");
+    },
+    onError: error => toast.error("Группа печати не удалена", { description: error.message }),
+  });
+  const createCategoryGroup = trpc.inventoryRegistry.createPrintCategoryGroup.useMutation({
+    onSuccess: async () => {
+      setNewCategoryGroupName("");
+      await invalidatePrintSettings();
+      toast.success("Категория печати создана");
+    },
+    onError: error => toast.error("Категория печати не создана", { description: error.message }),
+  });
+  const updateCategoryGroup = trpc.inventoryRegistry.updatePrintCategoryGroup.useMutation({
+    onSuccess: async () => {
+      setEditingCategoryGroup(null);
+      await invalidatePrintSettings();
+      toast.success("Категория печати сохранена");
+    },
+    onError: error => toast.error("Категория печати не сохранена", { description: error.message }),
+  });
+  const deleteCategoryGroup = trpc.inventoryRegistry.deletePrintCategoryGroup.useMutation({
+    onSuccess: async () => {
+      setEditingCategoryGroup(null);
+      await invalidatePrintSettings();
+      toast.success("Категория печати удалена");
+    },
+    onError: error => toast.error("Категория печати не удалена", { description: error.message }),
+  });
+  const addMember = trpc.inventoryRegistry.addPrintCategoryGroupMember.useMutation({
+    onSuccess: invalidatePrintSettings,
+    onError: error => toast.error("Состав категории не изменен", { description: error.message }),
+  });
+  const removeMember = trpc.inventoryRegistry.removePrintCategoryGroupMember.useMutation({
+    onSuccess: invalidatePrintSettings,
+    onError: error => toast.error("Состав категории не изменен", { description: error.message }),
+  });
+  const updateRequestPrintSettings = trpc.inventoryRegistry.updateRequestPrintSettings.useMutation({
+    onSuccess: invalidatePrintSettings,
+    onError: error => toast.error("Настройка печати не изменена", { description: error.message }),
+  });
 
-  if (!me.isLoading && !isAdmin) return <AuditShell kicker="31 / НАСТРОЙКИ ПЕЧАТИ" title="Настройки печати"><section className="empty-state"><Tags size={28}/><h2>Настройки печати доступны администратору</h2><p>Заявки и печать остаются в операционных разделах согласно назначенной роли.</p></section></AuditShell>;
+  if (!me.isLoading && !isAdmin) {
+    return <AuditShell kicker="31 / НАСТРОЙКИ ПЕЧАТИ" title="Настройки печати"><section className="empty-state"><Tags size={28}/><h2>Настройки печати доступны администратору</h2><p>Заявки и печать остаются в операционных разделах согласно назначенной роли.</p></section></AuditShell>;
+  }
 
   return <AuditShell kicker="31 / НАСТРОЙКИ ПЕЧАТИ" title="Настройки печати">
     <section className="page-lede print-settings-lede"><div><span>УПРАВЛЕНИЕ МАГАЗИНАМИ</span><h2>Группы и категории для заявок</h2><p>Здесь настраиваются магазины в листе, категории товаров, режим печати, источник качественного индикатора остатка и два слота комментариев. Сами заявки всегда печатают все активные настройки.</p></div></section>
-    <section className="packet-card print-settings-card print-paper-settings"><div className="card-title"><div><span>ВИД ПЕЧАТИ ЗАЯВОК</span><h3>Белый лист и читаемая таблица</h3><small>Поля листа всегда белые. При необходимости добавляется только нейтральная зебра внутри таблицы.</small></div><label>Зебра таблицы<ThemedSelect value={requestPrintSettings.data?.zebraMode ?? "none"} disabled={updateRequestPrintSettings.isPending} onChange={event => updateRequestPrintSettings.mutate({ zebraMode: event.target.value as "none" | "rows" | "columns" })}><option value="none">Без заливки</option><option value="rows">Чередовать строки</option><option value="columns">Чередовать столбцы</option></ThemedSelect></label></div></section>
-    <section className="packet-card print-settings-card"><div className="card-title"><div><span>ГРУППЫ МАГАЗИНОВ ДЛЯ ПЕЧАТИ</span><h3>Состав листов</h3><small>Назначение сохраняется сразу после выбора. Скрытые магазины не участвуют.</small></div></div><form className="warehouse-print-group-create" onSubmit={event => { event.preventDefault(); createGroup.mutate({ name: newPrintGroupName }); }}><label>Новая группа печати<input value={newPrintGroupName} onChange={event => setNewPrintGroupName(event.target.value)} placeholder="Например, Область 1" maxLength={128}/></label><button className="subtle-button" disabled={createGroup.isPending || !newPrintGroupName.trim()}><Plus size={14}/>Создать</button></form>{editingPrintGroup ? <div className="warehouse-print-group-editor"><label>Группа печати<input value={editingPrintGroup.name} onChange={event => setEditingPrintGroup({ ...editingPrintGroup, name: event.target.value })} maxLength={128}/></label><button type="button" className="subtle-button" disabled={updateGroup.isPending || !editingPrintGroup.name.trim()} onClick={() => updateGroup.mutate(editingPrintGroup)}><Save size={14}/>Сохранить</button><button type="button" className="subtle-button" disabled={updateGroup.isPending} onClick={() => updateGroup.mutate({ ...editingPrintGroup, isActive: false })}><EyeOff size={14}/>Скрыть</button><button type="button" className="subtle-button subtle-danger" disabled={deleteGroup.isPending} onClick={() => { if (window.confirm(`Удалить группу печати «${editingPrintGroup.name}»? Магазины будут отсоединены только от этой группы; товары, цены, документы и история не изменятся.`)) deleteGroup.mutate({ id: editingPrintGroup.id }); }}><X size={14}/>Удалить</button><button type="button" className="subtle-button" onClick={() => setEditingPrintGroup(null)}><X size={14}/>Отмена</button></div> : <div className="warehouse-print-group-list" aria-label="Группы печати">{activeGroups.length ? activeGroups.map(group => <button type="button" key={group.id} className="warehouse-print-group-chip" onClick={() => setEditingPrintGroup(group)}><Pencil size={13}/>{group.name}</button>) : <small>Группы печати еще не созданы.</small>}</div>}<div className="print-settings-store-list">{visibleWarehouses.map(warehouse => <label key={warehouse.storeId}><strong>{warehouse.storeName}</strong><ThemedSelect value={groupDrafts[warehouse.storeId] ?? ""} onChange={event => { const value = event.target.value; setGroupDrafts(current => ({ ...current, [warehouse.storeId]: value })); if (value !== (warehouse.printGroupId ? String(warehouse.printGroupId) : "")) setWarehouseGroup.mutate({ storeId: warehouse.storeId, printGroupId: value ? Number(value) : null }); }}><option value="">Не назначена</option>{activeGroups.map(group => <option key={group.id} value={group.id}>{group.name}</option>)}</ThemedSelect></label>)}</div></section>
-    <section className="packet-card print-settings-card"><div className="card-title"><div><span>КАТЕГОРИИ ДЛЯ ПЕЧАТИ ЗАЯВОК</span><h3>Состав печатных подборок</h3><small>«Отдельный лист на магазин» — подпись режима; каждый магазин будет на отдельной странице.</small></div></div><form className="warehouse-print-group-create" onSubmit={event => { event.preventDefault(); createCategoryGroup.mutate({ name: newCategoryGroupName, printMode: "per_store" }); }}><label>Новая категория печати<input value={newCategoryGroupName} onChange={event => setNewCategoryGroupName(event.target.value)} placeholder="Например, СРС" maxLength={128}/></label><button className="subtle-button" disabled={!newCategoryGroupName.trim() || createCategoryGroup.isPending}><Plus size={14}/>Создать</button></form><div className="warehouse-category-print-groups">{categoryGroups.length ? categoryGroups.map(group => <article key={group.id}>{editingCategoryGroup?.id === group.id ? <div className="warehouse-category-group-editor"><label>Название группы<input value={editingCategoryGroup.name} onChange={event => setEditingCategoryGroup(current => current ? { ...current, name: event.target.value } : current)} maxLength={128}/></label><label>Режим листа<ThemedSelect value={editingCategoryGroup.printMode} onChange={event => setEditingCategoryGroup(current => current ? { ...current, printMode: event.target.value as "per_store" | "grouped_stores" } : current)}><option value="per_store">Отдельный лист на магазин</option><option value="grouped_stores">Все магазины вместе</option></ThemedSelect></label><label>Группа для индикатора остатка<ThemedSelect value={editingCategoryGroup.supplyPrintGroupId ? String(editingCategoryGroup.supplyPrintGroupId) : ""} onChange={event => setEditingCategoryGroup(current => current ? { ...current, supplyPrintGroupId: event.target.value ? Number(event.target.value) : null } : current)}><option value="">Не задана</option>{activeGroups.map(printGroup => <option key={printGroup.id} value={printGroup.id}>{printGroup.name}</option>)}</ThemedSelect></label><label>Комментарий заявки<ThemedSelect value={editingCategoryGroup.requestCommentSlot ?? ""} onChange={event => setEditingCategoryGroup(current => current ? { ...current, requestCommentSlot: (event.target.value || null) as "slot_1" | "slot_2" | null } : current)}><option value="">Не печатать</option><option value="slot_1">Комментарий к Мороженной продукции</option><option value="slot_2">Комментарий к Копченой продукции</option></ThemedSelect></label><label>Макс. запас в магазине, дни<input type="number" min="1" max="14" step="1" value={editingCategoryGroup.maxStoreCoverDays} onChange={event => setEditingCategoryGroup(current => current ? { ...current, maxStoreCoverDays: Number(event.target.value) || 1 } : current)}/></label><div className="warehouse-category-group-actions"><button type="button" className="subtle-button" disabled={!editingCategoryGroup.name.trim() || updateCategoryGroup.isPending} onClick={() => updateCategoryGroup.mutate(editingCategoryGroup)}><Save size={14}/>Сохранить</button><button type="button" className="subtle-button subtle-danger" disabled={deleteCategoryGroup.isPending} onClick={() => { if (window.confirm(`Удалить категорию печати «${group.name}»? Товары не изменятся, а вложенные связи будут отсоединены.`)) deleteCategoryGroup.mutate({ id: group.id }); }}><X size={14}/>Удалить</button><button type="button" className="subtle-button" onClick={() => setEditingCategoryGroup(null)}><ChevronUp size={14}/>Отмена</button></div></div> : <div className="warehouse-category-group-heading"><div><strong>{group.name}</strong><span className="warehouse-category-print-mode">{group.printMode === "per_store" ? "Отдельный лист на магазин" : "Все магазины вместе"}{group.requestCommentSlot ? ` · ${group.requestCommentSlot === "slot_1" ? "Комментарий к Мороженной продукции" : "Комментарий к Копченой продукции"}` : ""}{` · максимум ${group.maxStoreCoverDays} дн.`}</span></div><button type="button" className="subtle-button warehouse-category-group-edit" onClick={() => setEditingCategoryGroup({ id: group.id, name: group.name, printMode: group.printMode, supplyPrintGroupId: group.supplyPrintGroupId, requestCommentSlot: group.requestCommentSlot, maxStoreCoverDays: group.maxStoreCoverDays })}><Pencil size={14}/>Изменить</button></div>}<div className="warehouse-category-member-list">{group.members.map(member => <span className="warehouse-category-member" key={member.id}>{member.memberType === "catalog_category" ? member.catalogCategory : member.childGroupName}<button type="button" aria-label="Убрать из группы" onClick={() => removeMember.mutate({ groupId: group.id, memberId: member.id })}><X size={12}/></button></span>)}</div><div className="warehouse-category-add"><ThemedSelect value={categoryMemberDrafts[group.id] ?? ""} onChange={event => setCategoryMemberDrafts(current => ({ ...current, [group.id]: event.target.value }))}><option value="">Категория товара</option>{activeCategories.map(category => <option value={category.id} key={category.id}>{category.name}</option>)}</ThemedSelect><button type="button" className="subtle-button" disabled={!categoryMemberDrafts[group.id] || addMember.isPending} onClick={() => addMember.mutate({ groupId: group.id, memberType: "catalog_category", catalogCategoryId: Number(categoryMemberDrafts[group.id]) })}><Plus size={14}/>Добавить категорию</button><ThemedSelect value={childGroupDrafts[group.id] ?? ""} onChange={event => setChildGroupDrafts(current => ({ ...current, [group.id]: event.target.value }))}><option value="">Вложенная группа</option>{categoryGroups.filter(candidate => candidate.id !== group.id).map(candidate => <option value={candidate.id} key={candidate.id}>{candidate.name}</option>)}</ThemedSelect><button type="button" className="subtle-button" disabled={!childGroupDrafts[group.id] || addMember.isPending} onClick={() => addMember.mutate({ groupId: group.id, memberType: "category_group", childGroupId: Number(childGroupDrafts[group.id]) })}><Plus size={14}/>Добавить группу</button></div></article>) : <p className="packet-note">Создайте группу, затем добавьте в нее категории номенклатуры или другую печатную группу.</p>}</div></section>
+
+    <section className="packet-card print-settings-card print-paper-settings">
+      <div className="card-title"><div><span>ВИД ПЕЧАТИ ЗАЯВОК</span><h3>Белый лист и читаемая таблица</h3><small>Поля листа всегда белые. При необходимости добавляется только нейтральная зебра внутри таблицы.</small></div><label>Зебра таблицы<ThemedSelect value={requestPrintSettings.data?.zebraMode ?? "none"} disabled={updateRequestPrintSettings.isPending} onChange={event => updateRequestPrintSettings.mutate({ zebraMode: event.target.value as "none" | "rows" | "columns" })}><option value="none">Без заливки</option><option value="rows">Чередовать строки</option><option value="columns">Чередовать столбцы</option></ThemedSelect></label></div>
+    </section>
+
+    <section className="packet-card print-settings-card">
+      <div className="card-title"><div><span>ГРУППЫ МАГАЗИНОВ ДЛЯ ПЕЧАТИ</span><h3>Состав листов</h3><small>Назначение сохраняется сразу после выбора. Скрытые магазины не участвуют.</small></div></div>
+      <form className="warehouse-print-group-create" onSubmit={event => { event.preventDefault(); createGroup.mutate({ name: newPrintGroupName }); }}><label>Новая группа печати<input value={newPrintGroupName} onChange={event => setNewPrintGroupName(event.target.value)} placeholder="Например, Область 1" maxLength={128}/></label><button className="subtle-button" disabled={createGroup.isPending || !newPrintGroupName.trim()}><Plus size={14}/>Создать</button></form>
+      {editingPrintGroup ? <div className="warehouse-print-group-editor"><label>Группа печати<input value={editingPrintGroup.name} onChange={event => setEditingPrintGroup({ ...editingPrintGroup, name: event.target.value })} maxLength={128}/></label><button type="button" className="subtle-button" disabled={updateGroup.isPending || !editingPrintGroup.name.trim()} onClick={() => updateGroup.mutate(editingPrintGroup)}><Save size={14}/>Сохранить</button>{editingPrintGroup.isActive ? <button type="button" className="subtle-button" disabled={updateGroup.isPending} onClick={() => updateGroup.mutate({ ...editingPrintGroup, isActive: false })}><EyeOff size={14}/>Скрыть</button> : <button type="button" className="subtle-button" disabled={updateGroup.isPending} onClick={() => updateGroup.mutate({ ...editingPrintGroup, isActive: true })}><Eye size={14}/>Показать</button>}<button type="button" className="subtle-button subtle-danger" disabled={deleteGroup.isPending} onClick={() => { if (window.confirm(`Удалить группу печати «${editingPrintGroup.name}»? Магазины будут отсоединены только от этой группы; товары, цены, документы и история не изменятся.`)) deleteGroup.mutate({ id: editingPrintGroup.id }); }}><X size={14}/>Удалить</button><button type="button" className="subtle-button" onClick={() => setEditingPrintGroup(null)}><X size={14}/>Отмена</button></div> : <><div className="warehouse-print-group-list" aria-label="Активные группы печати">{activeGroups.length ? activeGroups.map(group => <button type="button" key={group.id} className="warehouse-print-group-chip" onClick={() => setEditingPrintGroup(group)}><Pencil size={13}/>{group.name}</button>) : <small>Активные группы печати еще не созданы.</small>}</div>{inactiveGroups.length > 0 && <div className="warehouse-print-group-recovery" aria-label="Скрытые группы печати"><span>СКРЫТЫЕ ГРУППЫ</span><small>Не участвуют в назначении и печати. Откройте группу, чтобы показать её снова.</small><div>{inactiveGroups.map(group => <button type="button" key={group.id} className="warehouse-print-group-chip is-inactive" onClick={() => setEditingPrintGroup(group)}><Pencil size={13}/>{group.name}</button>)}</div></div>}</>}
+      <div className="print-settings-store-list">{visibleWarehouses.map(warehouse => <label key={warehouse.storeId}><strong>{warehouse.storeName}</strong><ThemedSelect value={groupDrafts[warehouse.storeId] ?? ""} onChange={event => { const value = event.target.value; setGroupDrafts(current => ({ ...current, [warehouse.storeId]: value })); if (value !== (warehouse.printGroupId ? String(warehouse.printGroupId) : "")) setWarehouseGroup.mutate({ storeId: warehouse.storeId, printGroupId: value ? Number(value) : null }); }}><option value="">Не назначена</option>{activeGroups.map(group => <option key={group.id} value={group.id}>{group.name}</option>)}</ThemedSelect></label>)}</div>
+    </section>
+
+    <section className="packet-card print-settings-card">
+      <div className="card-title"><div><span>КАТЕГОРИИ ДЛЯ ПЕЧАТИ ЗАЯВОК</span><h3>Состав печатных подборок</h3><small>«Отдельный лист на магазин» — подпись режима; каждый магазин будет на отдельной странице.</small></div></div>
+      <form className="warehouse-print-group-create" onSubmit={event => { event.preventDefault(); createCategoryGroup.mutate({ name: newCategoryGroupName, printMode: "per_store" }); }}><label>Новая категория печати<input value={newCategoryGroupName} onChange={event => setNewCategoryGroupName(event.target.value)} placeholder="Например, СРС" maxLength={128}/></label><button className="subtle-button" disabled={!newCategoryGroupName.trim() || createCategoryGroup.isPending}><Plus size={14}/>Создать</button></form>
+      <div className="warehouse-category-print-groups">{categoryGroups.length ? categoryGroups.map(group => <article key={group.id}>{editingCategoryGroup?.id === group.id ? <div className="warehouse-category-group-editor"><label>Название группы<input value={editingCategoryGroup.name} onChange={event => setEditingCategoryGroup(current => current ? { ...current, name: event.target.value } : current)} maxLength={128}/></label><label>Режим листа<ThemedSelect value={editingCategoryGroup.printMode} onChange={event => setEditingCategoryGroup(current => current ? { ...current, printMode: event.target.value as "per_store" | "grouped_stores" } : current)}><option value="per_store">Отдельный лист на магазин</option><option value="grouped_stores">Все магазины вместе</option></ThemedSelect></label><label>Группа для индикатора остатка<ThemedSelect value={editingCategoryGroup.supplyPrintGroupId ? String(editingCategoryGroup.supplyPrintGroupId) : ""} onChange={event => setEditingCategoryGroup(current => current ? { ...current, supplyPrintGroupId: event.target.value ? Number(event.target.value) : null } : current)}><option value="">Не задана</option>{activeGroups.map(printGroup => <option key={printGroup.id} value={printGroup.id}>{printGroup.name}</option>)}</ThemedSelect></label><label>Комментарий заявки<ThemedSelect value={editingCategoryGroup.requestCommentSlot ?? ""} onChange={event => setEditingCategoryGroup(current => current ? { ...current, requestCommentSlot: (event.target.value || null) as "slot_1" | "slot_2" | null } : current)}><option value="">Не печатать</option><option value="slot_1">Комментарий к Мороженной продукции</option><option value="slot_2">Комментарий к Копченой продукции</option></ThemedSelect></label><label>Макс. запас в магазине, дни<input type="number" min="1" max="14" step="1" value={editingCategoryGroup.maxStoreCoverDays} onChange={event => setEditingCategoryGroup(current => current ? { ...current, maxStoreCoverDays: Number(event.target.value) || 1 } : current)}/></label><div className="warehouse-category-group-actions"><button type="button" className="subtle-button" disabled={!editingCategoryGroup.name.trim() || updateCategoryGroup.isPending} onClick={() => updateCategoryGroup.mutate(editingCategoryGroup)}><Save size={14}/>Сохранить</button><button type="button" className="subtle-button subtle-danger" disabled={deleteCategoryGroup.isPending} onClick={() => { if (window.confirm(`Удалить категорию печати «${group.name}»? Товары не изменятся, а вложенные связи будут отсоединены.`)) deleteCategoryGroup.mutate({ id: group.id }); }}><X size={14}/>Удалить</button><button type="button" className="subtle-button" onClick={() => setEditingCategoryGroup(null)}><ChevronUp size={14}/>Отмена</button></div></div> : <div className="warehouse-category-group-heading"><div><strong>{group.name}</strong><span className="warehouse-category-print-mode">{group.printMode === "per_store" ? "Отдельный лист на магазин" : "Все магазины вместе"}{group.requestCommentSlot ? ` · ${group.requestCommentSlot === "slot_1" ? "Комментарий к Мороженной продукции" : "Комментарий к Копченой продукции"}` : ""}{` · максимум ${group.maxStoreCoverDays} дн.`}</span></div><button type="button" className="subtle-button warehouse-category-group-edit" onClick={() => setEditingCategoryGroup({ id: group.id, name: group.name, printMode: group.printMode, supplyPrintGroupId: group.supplyPrintGroupId, requestCommentSlot: group.requestCommentSlot, maxStoreCoverDays: group.maxStoreCoverDays })}><Pencil size={14}/>Изменить</button></div>}<div className="warehouse-category-member-list">{group.members.map(member => <span className="warehouse-category-member" key={member.id}>{member.memberType === "catalog_category" ? member.catalogCategory : member.childGroupName}<button type="button" aria-label="Убрать из группы" onClick={() => removeMember.mutate({ groupId: group.id, memberId: member.id })}><X size={12}/></button></span>)}</div><div className="warehouse-category-add"><ThemedSelect value={categoryMemberDrafts[group.id] ?? ""} onChange={event => setCategoryMemberDrafts(current => ({ ...current, [group.id]: event.target.value }))}><option value="">Категория товара</option>{activeCategories.map(category => <option value={category.id} key={category.id}>{category.name}</option>)}</ThemedSelect><button type="button" className="subtle-button" disabled={!categoryMemberDrafts[group.id] || addMember.isPending} onClick={() => addMember.mutate({ groupId: group.id, memberType: "catalog_category", catalogCategoryId: Number(categoryMemberDrafts[group.id]) })}><Plus size={14}/>Добавить категорию</button><ThemedSelect value={childGroupDrafts[group.id] ?? ""} onChange={event => setChildGroupDrafts(current => ({ ...current, [group.id]: event.target.value }))}><option value="">Вложенная группа</option>{categoryGroups.filter(candidate => candidate.id !== group.id).map(candidate => <option value={candidate.id} key={candidate.id}>{candidate.name}</option>)}</ThemedSelect><button type="button" className="subtle-button" disabled={!childGroupDrafts[group.id] || addMember.isPending} onClick={() => addMember.mutate({ groupId: group.id, memberType: "category_group", childGroupId: Number(childGroupDrafts[group.id]) })}><Plus size={14}/>Добавить группу</button></div></article>) : <p className="packet-note">Создайте группу, затем добавьте в нее категории номенклатуры или другую печатную группу.</p>}</div>
+    </section>
+
     <section className="warehouse-guidance"><article><Warehouse size={18}/><div><span>ПЕЧАТЬ ЗАЯВОК</span><strong>Все активные настройки участвуют автоматически</strong><p>В заявках не выбирают набор листов: после закрытия печатаются все активные группы магазинов и категории.</p></div></article><article><Tags size={18}/><div><span>КАТЕГОРИИ ТОВАРОВ</span><strong>Редактируются в «Номенклатуре»</strong><p>Здесь задается только состав печатного листа, а не создается товар и не меняется карточка номенклатуры.</p></div></article></section>
   </AuditShell>;
 }

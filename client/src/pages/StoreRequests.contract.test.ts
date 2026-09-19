@@ -36,10 +36,11 @@ describe("заявки магазинов: экран", () => {
     expect(page).toContain("норма категории");
   });
 
-  it("возвращает пользователя в уже открытый черновик и закрывает весь печатный запуск только уполномоченному персоналу", () => {
-    expect(page).toContain('toast.success(result.created ? "Заявка сохранена" : "Открыта сохраненная заявка")');
-    expect(page).toContain('<Eye size={14}/><span>Открыть</span>');
-    expect(page).toContain("requestPrintCandidates");
+	  it("возвращает пользователя в уже открытый черновик и закрывает весь печатный запуск только уполномоченному персоналу", () => {
+	    expect(page).toContain('toast.success(result.created ? "Заявка сохранена" : "Открыта сохраненная заявка")');
+	    expect(page).toContain("К списку заявок");
+	    expect(page).not.toContain("request-history-open");
+	    expect(page).toContain("requestPrintCandidates");
     expect(page).toContain("closeRequestsForPrint");
     expect(page).toContain("Распечатать и закрыть");
     expect(page).not.toContain('>Закрыть заявку<');
@@ -67,12 +68,13 @@ describe("заявки магазинов: экран", () => {
     expect(page).not.toContain("Общее примечание к заказу");
   });
 
-  it("сохраняет оба комментария единым действием черновика, а не при выходе из каждого поля", () => {
-    expect(page).toContain("const saveDraftComments = async () =>");
-    expect(page).toContain("upsertRequestComment.mutateAsync");
-    expect(page).toContain('<Save size={14}/>');
-    expect(page).toContain("Сохраняются общей кнопкой «Сохранить» в черновике");
-    expect(page).not.toContain("onBlur={() => saveComment(slot)}");
+	  it("сохраняет оба комментария единым действием черновика, а не при выходе из каждого поля", () => {
+	    expect(page).toContain("const saveDraftComments = async () =>");
+	    expect(page).toContain("upsertRequestComment.mutateAsync");
+	    expect(page).toContain('<Save size={14}/>');
+	    expect(page).toContain("Сохранить комментарии");
+	    expect(page).toContain("Комментарии сохранены");
+	    expect(page).not.toContain("onBlur={() => saveComment(slot)}");
   });
 });
 
@@ -90,10 +92,11 @@ describe("заявки магазинов: адаптивность и печа�
     expect(styles).toContain("break-after: page");
   });
 
-  it("сохраняет тематическую иерархию полей и контуров без двойного outline", () => {
+	  it("сохраняет тематическую иерархию полей и контуров без двойного outline", () => {
     expect(styles).toContain("--request-accent: #0a84ff");
     expect(styles).toContain("--request-accent: #ff765f");
-    expect(styles).toContain(".request-history-list > article:hover");
+	    expect(styles).toContain("@media (hover: hover) and (pointer: fine)");
+	    expect(styles).toContain(".request-history-list > article:focus-within");
     expect(styles).toContain("border-color: var(--request-line)");
     expect(styles).toContain("box-shadow: 0 0 0 1px var(--request-accent-faint)");
     expect(styles).not.toContain("outline: 2px");

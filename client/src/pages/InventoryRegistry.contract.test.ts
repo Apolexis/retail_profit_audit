@@ -133,10 +133,12 @@ describe("интерфейс операционной инвентаризаци
     expect(page).toContain("Добавить в ревизию");
   });
 
-  it("не выводит квадратный контур истории за пределы строки", () => {
-    expect(css).toContain("overflow: hidden; padding: 0 10px 0 0;");
-    expect(css).toContain("box-shadow: inset 0 0 0 1px var(--inventory-accent-faint);");
-    expect(css).toContain("background: transparent; color: var(--inventory-accent);");
-  });
+	  it("не выводит квадратный контур истории за пределы строки", () => {
+	    expect(css).toContain("overflow: hidden; padding: 0 10px 0 0;");
+	    expect(css).toContain(".inventory-history-list > article:focus-within { border-color: var(--inventory-accent); box-shadow: 0 0 0 2px var(--inventory-accent-faint); }");
+	    expect(css).toContain("@media (hover: hover) and (pointer: fine) {\n  .packet .inventory-history-list > article:hover");
+	    expect(css).toContain(".inventory-draft-card > .card-title { flex-direction: column; align-items: stretch; }");
+	    expect(css).toContain("background: transparent; color: var(--inventory-accent);");
+	  });
 
 });

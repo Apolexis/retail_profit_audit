@@ -37,3 +37,17 @@ html[data-audit-theme="light"]{color-scheme:light}html[data-audit-theme="light"]
 /* The four concise signal cards remain a readable 2×2 operating grid on any medium or wide canvas. */
 .packet .notification-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
 @media (max-width: 560px) { .packet .notification-kpis { grid-template-columns: minmax(0, 1fr) !important; } }
+
+/* Account state belongs with account creation and remains readable at every width. */
+.packet .access-create-card { align-content: start; }
+.packet .access-selected-status { display: grid; gap: 12px; margin: 0 0 2px; padding: 0 0 14px; border-bottom: 1px solid var(--line); }
+.packet .access-selected-status .status-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(190px, 240px) auto; align-items: end; gap: 12px 16px; }
+.packet .access-selected-status .row-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+@media (max-width: 1080px) {
+  .packet .access-selected-status .status-row { grid-template-columns: minmax(0, 1fr) minmax(190px, 240px); }
+  .packet .access-selected-status .row-actions { grid-column: 1 / -1; justify-content: flex-start; }
+}
+@media (max-width: 680px) {
+  .packet .access-selected-status .status-row { grid-template-columns: minmax(0, 1fr); }
+  .packet .access-selected-status .row-actions { grid-column: auto; }
+}

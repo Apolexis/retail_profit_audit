@@ -82,7 +82,10 @@ html[data-audit-theme="light"] .packet .stock-table.data-table tbody td { border
 .packet .stock-table.data-table thead th { background: var(--stock-panel); color: var(--muted); }
 .packet .stock-table.data-table tbody tr:nth-child(odd) { background: var(--stock-card); }
 .packet .stock-table.data-table tbody tr:nth-child(even) { background: var(--stock-panel); }
-.packet .stock-table.data-table tbody tr:hover { background: color-mix(in srgb, var(--stock-accent) 8%, var(--stock-card)); transform: none; }
+.packet .stock-table.data-table tbody tr:focus-within { background: color-mix(in srgb, var(--stock-accent) 8%, var(--stock-card)); }
+@media (hover: hover) and (pointer: fine) {
+  .packet .stock-table.data-table tbody tr:hover { background: color-mix(in srgb, var(--stock-accent) 8%, var(--stock-card)); transform: none; }
+}
 @media (hover: hover) and (pointer: fine) { .packet :is(.stock-rule-disclosure, .stock-table-card):hover { border-color: color-mix(in srgb, var(--stock-accent) 56%, var(--stock-line)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--stock-accent) 18%, transparent); } }
 .packet :is(.stock-rule-disclosure, .stock-table-card):focus-within { border-color: color-mix(in srgb, var(--stock-accent) 62%, var(--stock-line)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--stock-accent) 18%, transparent); }
 @media (max-width: 760px) { .packet .stock-rule-disclosure > div, .packet .stock-controls { grid-template-columns: 1fr; } .packet .stock-table-card .card-title { gap: 12px; } .packet .stock-table-card .card-title .subtle-button { width: 100%; justify-content: center; } }

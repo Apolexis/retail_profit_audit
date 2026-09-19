@@ -5264,7 +5264,9 @@ button[data-slot="alert-dialog-cancel"]:active { transform: none !important; fil
 .packet .request-comments > div { display: grid; gap: 6px; }
 
 /* Saved import preview: the link name is subordinate to its product, never a narrow independent column. */
-.packet .price-import-preview .price-preview-table > .price-saved-import-row { grid-template-columns: 38px minmax(260px, 1fr) minmax(90px, auto) auto; }
+@media (min-width: 1281px) {
+  .packet .price-import-preview .price-preview-table > .price-saved-import-row { grid-template-columns: 38px minmax(260px, 1fr) minmax(90px, auto) auto; }
+}
 .packet .price-saved-import-main small { display: block; min-width: 0; overflow: hidden; color: var(--price-muted); font-size: 10px; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 1280px) {
   .packet .price-saved-import-main small { overflow: visible; text-overflow: clip; white-space: normal; overflow-wrap: anywhere; }

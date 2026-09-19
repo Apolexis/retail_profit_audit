@@ -23,6 +23,12 @@
 .packet .print-settings-card .warehouse-print-group-chip svg { color: var(--warehouse-accent); }
 .packet .print-settings-card .warehouse-print-group-chip:hover,
 .packet .print-settings-card .warehouse-print-group-chip:focus-visible { border-color: var(--warehouse-accent); box-shadow: 0 0 0 1px var(--warehouse-accent-faint); outline: none; transform: none; }
+.packet .print-settings-card .warehouse-print-group-recovery { display: grid; gap: 7px; padding: 10px 11px; border: 1px dashed var(--warehouse-line); border-radius: 10px; background: var(--warehouse-panel); }
+.packet .print-settings-card .warehouse-print-group-recovery > span { color: var(--muted); font: 800 9px/1.2 Manrope, Arial, sans-serif; letter-spacing: .08em; }
+.packet .print-settings-card .warehouse-print-group-recovery > small { color: var(--muted); font-size: 11px; line-height: 1.4; }
+.packet .print-settings-card .warehouse-print-group-recovery > div { display: flex; flex-wrap: wrap; gap: 7px; }
+.packet .print-settings-card .warehouse-print-group-chip.is-inactive { border-color: var(--warehouse-line); background: transparent; color: var(--muted); }
+.packet .print-settings-card .warehouse-print-group-chip.is-inactive svg { color: var(--muted); }
 
 /* A category is one readable unit: its memberships, then two add rows. */
 .packet .print-settings-card .warehouse-category-print-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }

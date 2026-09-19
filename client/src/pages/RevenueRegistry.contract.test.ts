@@ -92,7 +92,7 @@ describe("контракт страницы Выручка", () => {
     expect(styles).not.toContain('tfoot :is(th, td) { background: #d8d8d8 !important; }');
   });
 
-  it("отделяет синий light-контур от сдержанной темной поверхности", () => {
+	  it("отделяет синий light-контур от сдержанной темной поверхности", () => {
     expect(styles).toContain('html[data-audit-theme="light"] .packet {');
     expect(styles).toContain('--revenue-accent: #0a84ff;');
     expect(styles).toContain('--revenue-panel: #edf6ff;');
@@ -106,9 +106,15 @@ describe("контракт страницы Выручка", () => {
 	  expect(styles).toContain('.revenue-amount { background: #f8fcff !important; border-color: #b9d9f5 !important; }');
 	  expect(styles).toContain('.revenue-amount input { background: #fff !important; border-color: #9dcbed !important; }');
 	  expect(styles).toContain('.revenue-amount { background: #19131d !important; border-color: #3b2435 !important; }');
-  });
+	  });
 
-  it("не выводит в реестре логин или телефон автора передачи", () => {
+	  it("не оставляет hover-подсветку финансовых полей и строк на touch-устройствах", () => {
+	    expect(styles).toContain(".revenue-amount:focus-within { border-color: var(--revenue-accent);");
+	    expect(styles).toContain("@media (hover: hover) and (pointer: fine) {\n  .packet .revenue-amount:hover");
+	    expect(styles).toContain(".revenue-register-table.data-table tbody tr:focus-within td");
+	  });
+
+	  it("не выводит в реестре логин или телефон автора передачи", () => {
     expect(page).not.toContain('{record.createdByName}</small>');
   });
 
