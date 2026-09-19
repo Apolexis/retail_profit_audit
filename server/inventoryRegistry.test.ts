@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateInventoryAdjustment, catalogUnitFromEvotor, inventoryUnitFromCatalogUnit, markingFromEvotorCategory, validateCountedQuantity, validateInventoryDate, validateStoreRequestQuantity } from "./inventoryRegistry";
+import { calculateInventoryAdjustment, catalogUnitFromEvotor, inventoryUnitFromCatalogUnit, markingFromEvotorCategory, normalizeAlcoholProductKindCode, validateCountedQuantity, validateInventoryDate, validateStoreRequestQuantity } from "./inventoryRegistry";
 
 describe("операционная инвентаризация: контроль количества", () => {
   it("принимает вес с точностью до грамма и нулевой фактический остаток", () => {
@@ -67,6 +67,13 @@ describe("Эвотор V2: типы маркировки", () => {
     expect(markingFromEvotorCategory({ name: "Вино", categoryName: null, type: "ALCOHOL_NOT_MARKED" })).toBe("alcohol");
     expect(markingFromEvotorCategory({ name: "Пиво", categoryName: null, type: "NORMAL" })).toBe("none");
     expect(markingFromEvotorCategory({ name: "Пиво", categoryName: null, type: "UNRECOGNIZED_SOURCE_TYPE" })).toBe("none");
+  });
+
+  it("оставляет ровно два согласованных кода вида АП и подставляет 500", () => {
+    expect(normalizeAlcoholProductKindCode(undefined, true)).toBe("500");
+    expect(normalizeAlcoholProductKindCode("510", true)).toBe("510");
+    expect(normalizeAlcoholProductKindCode("500", false)).toBeNull();
+    expect(() => normalizeAlcoholProductKindCode("999", true)).toThrow("500 или 510");
   });
 });
 

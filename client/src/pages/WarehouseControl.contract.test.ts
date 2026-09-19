@@ -62,6 +62,9 @@ describe("warehouse control contract", () => {
 		expect(styles).toContain(".warehouse-settings-grid :is(.app-select-trigger, input)");
 		expect(styles).toContain(".warehouse-table.data-table { display: block; width: 100% !important; max-width: 100%; min-width: 0 !important; }");
 		expect(styles).toContain(".warehouse-settings-row { display: block; width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box;");
+		expect(styles).toContain("grid-template-columns: minmax(0, 1fr);");
+		expect(styles).toContain(".warehouse-settings-note { min-width: 0; white-space: normal; overflow-wrap: anywhere; }");
+		expect(styles).toContain(".warehouse-settings-actions { display: flex; flex-wrap: wrap; width: 100%;");
 	});
 
 	it("keeps summary, open settings and print categories within the approved blue/coral hierarchy", () => {

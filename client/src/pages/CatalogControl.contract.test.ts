@@ -72,10 +72,15 @@ describe("общий операционный справочник", () => {
 		  expect(editor).toContain('beer_marked: "BEER_MARKED"');
 		  expect(editor).toContain('beer_non_alcoholic: "NOT_ALCOHOL_BEER_MARKED"');
 		  expect(editor).toContain('const alcoholTypeOptions = ["500", "510"] as const;');
+		  expect(editor).toContain('setAlcoholTypeCode(isAlcoholProduct ? productKind : "500")');
+		  expect(editor).not.toContain('<option value="">Не задан</option>');
 		  expect(editor).toContain('className="catalog-alcohol-code"');
 		  expect(editor).toContain('placeholder="Например: 0,5"');
 		  expect(editor).toContain("Справочное соответствие V2 · без выгрузки");
-	});
+		  expect(editor).toContain('ThemedSelect value={evotorProductTypeByMarking[marking]} disabled');
+		  expect(editor).toContain("catalog-barcode-expand");
+		  expect(css).toContain(".catalog-editor-barcodes.is-expanded");
+		});
 
 	it("использует обычные ссылки для самостоятельных маршрутов номенклатуры", () => {
 	  expect(page).toContain('href="/catalog-control/new"');

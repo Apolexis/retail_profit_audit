@@ -43,6 +43,17 @@ const normalizedManualBarcodes = (value: string | null | undefined) => {
   if (unique.some(item => item.length > 128)) throw new Error("Каждый ручной штрихкод не должен быть длиннее 128 символов.");
   return unique.join(";") || null;
 };
+const alcoholProductKindCodes = ["500", "510"] as const;
+
+/** The UI offers exactly the two agreed AP (FSRAR) kinds. It never writes an empty kind for alcohol or marked beer. */
+export function normalizeAlcoholProductKindCode(value: string | null | undefined, isAlcoholProduct: boolean) {
+  if (!isAlcoholProduct) return null;
+  const code = normalizedText(value ?? "") || "500";
+  if (!alcoholProductKindCodes.includes(code as typeof alcoholProductKindCodes[number])) {
+    throw new Error("Код вида АП (ФСРАР) допускает только значения 500 или 510.");
+  }
+  return code;
+}
 
 async function nextCatalogNumber() {
   const db = await getDb();
@@ -1146,6 +1157,7 @@ export async function createOperationalCatalogProduct(input: { canonicalName: st
   if (input.internalCostPrice !== undefined && input.internalCostPrice !== null && (!Number.isFinite(input.internalCostPrice) || input.internalCostPrice < 0)) throw new Error("Внутренняя себестоимость должна быть неотрицательным числом.");
   if (input.alcoholStrengthPercent !== undefined && input.alcoholStrengthPercent !== null && (!Number.isFinite(input.alcoholStrengthPercent) || input.alcoholStrengthPercent < 0 || input.alcoholStrengthPercent > 100)) throw new Error("Крепость должна быть числом от 0 до 100%.");
   const isAlcohol = input.markingCategory === "alcohol" || input.markingCategory === "beer_marked";
+  const alcoholTypeCode = normalizeAlcoholProductKindCode(input.alcoholTypeCode, isAlcohol);
   const [inserted] = await db.insert(operationalCatalogProducts).values({
     catalogNumber: await nextCatalogNumber(),
     storeId: null,
@@ -1159,7 +1171,7 @@ export async function createOperationalCatalogProduct(input: { canonicalName: st
     internalCostPrice: input.internalCostPrice === null || input.internalCostPrice === undefined ? null : input.internalCostPrice.toFixed(2),
     markingCategory: input.markingCategory ?? "none",
     alcoholCode: isAlcohol ? normalizedText(input.alcoholCode ?? "").slice(0, 255) || null : null,
-    alcoholTypeCode: isAlcohol ? normalizedText(input.alcoholTypeCode ?? "").slice(0, 64) || null : null,
+    alcoholTypeCode,
     alcoholStrengthPercent: isAlcohol && input.alcoholStrengthPercent !== null && input.alcoholStrengthPercent !== undefined ? input.alcoholStrengthPercent.toFixed(2) : null,
     alcoholVolumeLiters: isAlcohol && input.alcoholVolumeLiters !== null && input.alcoholVolumeLiters !== undefined ? input.alcoholVolumeLiters.toFixed(3) : null,
     manualBarcodes: normalizedManualBarcodes(input.manualBarcodes),
@@ -1181,7 +1193,8 @@ export async function updateOperationalCatalogProduct(input: { id: number; canon
   if (canonicalName.length > 512) throw new Error("Название товара слишком длинное.");
   if (input.alcoholStrengthPercent !== undefined && input.alcoholStrengthPercent !== null && (!Number.isFinite(input.alcoholStrengthPercent) || input.alcoholStrengthPercent < 0 || input.alcoholStrengthPercent > 100)) throw new Error("Крепость должна быть числом от 0 до 100%.");
   const isAlcohol = input.markingCategory === "alcohol" || input.markingCategory === "beer_marked";
-  await db.update(operationalCatalogProducts).set({ canonicalName, evotorCategoryName: normalizedText(input.evotorCategoryName ?? "").slice(0, 512) || null, baseUnit: input.baseUnit, vatRate: input.vatRate, markingCategory: input.markingCategory, alcoholCode: isAlcohol ? normalizedText(input.alcoholCode ?? "").slice(0, 255) || null : null, alcoholTypeCode: isAlcohol ? normalizedText(input.alcoholTypeCode ?? "").slice(0, 64) || null : null, alcoholStrengthPercent: isAlcohol && input.alcoholStrengthPercent !== null && input.alcoholStrengthPercent !== undefined ? input.alcoholStrengthPercent.toFixed(2) : null, alcoholVolumeLiters: isAlcohol && input.alcoholVolumeLiters !== null && input.alcoholVolumeLiters !== undefined ? input.alcoholVolumeLiters.toFixed(3) : null, manualBarcodes: normalizedManualBarcodes(input.manualBarcodes), isVisibleInRequests: input.isVisibleInRequests, isEvotorExportEnabled: input.isEvotorExportEnabled }).where(eq(operationalCatalogProducts.id, input.id));
+  const alcoholTypeCode = normalizeAlcoholProductKindCode(input.alcoholTypeCode, isAlcohol);
+  await db.update(operationalCatalogProducts).set({ canonicalName, evotorCategoryName: normalizedText(input.evotorCategoryName ?? "").slice(0, 512) || null, baseUnit: input.baseUnit, vatRate: input.vatRate, markingCategory: input.markingCategory, alcoholCode: isAlcohol ? normalizedText(input.alcoholCode ?? "").slice(0, 255) || null : null, alcoholTypeCode, alcoholStrengthPercent: isAlcohol && input.alcoholStrengthPercent !== null && input.alcoholStrengthPercent !== undefined ? input.alcoholStrengthPercent.toFixed(2) : null, alcoholVolumeLiters: isAlcohol && input.alcoholVolumeLiters !== null && input.alcoholVolumeLiters !== undefined ? input.alcoholVolumeLiters.toFixed(3) : null, manualBarcodes: normalizedManualBarcodes(input.manualBarcodes), isVisibleInRequests: input.isVisibleInRequests, isEvotorExportEnabled: input.isEvotorExportEnabled }).where(eq(operationalCatalogProducts.id, input.id));
   const [after] = await db.select().from(operationalCatalogProducts).where(eq(operationalCatalogProducts.id, input.id)).limit(1);
   return { before, after: after! };
 }
