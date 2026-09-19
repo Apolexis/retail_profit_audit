@@ -5,6 +5,7 @@ import { operationalEvotorScheduleDefinitions } from "./operationalEvotorSchedul
 const registry = readFileSync(new URL("./inventoryRegistry.ts", import.meta.url), "utf8");
 const scheduler = readFileSync(new URL("./operationalEvotorSchedule.ts", import.meta.url), "utf8");
 const client = readFileSync(new URL("./evotorCatalog.ts", import.meta.url), "utf8");
+const signals = readFileSync(new URL("./operationalSignals.ts", import.meta.url), "utf8");
 
 describe("планировщик read-only синхронизации Эвотор", () => {
   it("ограничивает каждый scheduled запуск одним складом на минимальном допустимом интервале", () => {
@@ -45,5 +46,15 @@ describe("планировщик read-only синхронизации Эвото
     expect(client).toContain('numberHeader("X-RateLimit-Remaining")');
     expect(scheduler).toContain("rateLimit: result.rateLimit");
     expect(client).not.toContain("Authorization: token");
+  });
+
+  it("проверяет операционные дедлайны идемпотентно внутри уже существующего минутного callback", () => {
+    expect(scheduler).toContain("evaluateOperationalStoreSignals()");
+    expect(signals).toContain("request_missing:");
+    expect(signals).toContain("revenue_missing:");
+    expect(signals).toContain("20 * 60 + 5");
+    expect(signals).toContain("21 * 60 + 5");
+    expect(signals).toContain("eq(stores.isHidden, false)");
+    expect(signals).toContain("entityType: \"operational_signal\"");
   });
 });

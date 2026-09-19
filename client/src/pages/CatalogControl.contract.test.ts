@@ -11,7 +11,7 @@ describe("общий операционный справочник", () => {
     expect(page).toContain('className="data-table catalog-table"');
     expect(page).toContain("/catalog-control/new");
     expect(page).toContain("/catalog-control/${product.id}/edit");
-    expect(page).toContain("Показать еще");
+    expect(page).not.toContain("Показать еще");
   });
 
   it("делает виды цен компактной раскрываемой настройкой", () => {
@@ -109,7 +109,7 @@ describe("общий операционный справочник", () => {
 		expect(page).toContain('className="subtle-button catalog-table-action"');
 		expect(page).toContain('aria-label={`Изменить товар: ${product.canonicalName}`}');
 		expect(page).toContain('className="catalog-table-action-label">Изменить');
-		expect(page).toContain('<ArrowDown size={14}/>Показать еще');
+		expect(page).not.toContain("visibleCatalog");
 		expect(css).toContain(".packet .catalog-table-action { width: 32px;");
 		expect(css).toContain(".packet .catalog-table-action-label { display: none; }");
 	});

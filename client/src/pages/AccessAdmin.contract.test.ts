@@ -51,14 +51,15 @@ describe("матрица доступа к импорту",()=>{
   });
 
   it("дает администратору адресную push-рассылку с честным итогом доставки",()=>{
-    const page=readFileSync(resolve(process.cwd(),"client/src/pages/AccessAdmin.tsx"),"utf8");
-    expect(page).toContain("Push по выбранной аудитории");
+    const page=readFileSync(resolve(process.cwd(),"client/src/pages/Notifications.tsx"),"utf8");
+    expect(page).toContain("Рассылка в ленту сигналов");
     expect(page).toContain("adminBroadcast.useMutation");
     expect(page).toContain("добровольно включенной браузерной подпиской");
     expect(page).toContain("pushSubscriptionsAccepted");
     expect(page).toContain("Пользователю");
     expect(page).toContain("По роли");
     expect(page).toContain("broadcastAudience");
+    expect(readFileSync(resolve(process.cwd(),"client/src/pages/AccessAdmin.tsx"),"utf8")).not.toContain("adminBroadcast.useMutation");
     expect(overrides).toContain('html[data-audit-theme="light"] .packet .admin-broadcast .stack-form textarea:focus');
   });
 

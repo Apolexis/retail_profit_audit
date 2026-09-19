@@ -13,6 +13,7 @@ import {
   syncOperationalEvotorDocumentPage,
 } from "./inventoryRegistry";
 import { createHeartbeatJob } from "./_core/heartbeat";
+import { evaluateOperationalStoreSignals } from "./operationalSignals";
 
 export type OperationalEvotorScheduledKind = "evotor_catalog" | "evotor_documents";
 type OperationalEvotorDocumentMode = "historical" | "current_day";
@@ -207,16 +208,17 @@ export async function runScheduledEvotorDocuments(taskUid: string) {
   await setJobState(job.id, { started: true, error: null });
   try {
     const target = await nextDocumentSyncTarget();
-    if (!target) return { storeCount: 0, documentsRead: 0, positionsRead: 0 };
+    const signals = await evaluateOperationalStoreSignals();
+    if (!target) return { storeCount: 0, documentsRead: 0, positionsRead: 0, signals };
     const result = await syncOperationalEvotorDocumentPage({ storeId: target.storeId, actorId: null, mode: target.mode });
     await setJobState(job.id, { completed: true, error: null });
     await recordChange({
       action: "operational_evotor.documents_scheduled_sync",
       entityType: "operational_sync",
       entityId: "evotor_documents",
-      afterState: { warehouseCount: 1, documentsRead: result.readDocuments, positionsRead: result.readPositions, paymentHeadersHydrated: result.hydratedPaymentDocuments, rateLimit: result.rateLimit, importWindow: target.mode, mode: "read_only" },
+      afterState: { warehouseCount: 1, documentsRead: result.readDocuments, positionsRead: result.readPositions, paymentHeadersHydrated: result.hydratedPaymentDocuments, rateLimit: result.rateLimit, importWindow: target.mode, signals, mode: "read_only" },
     });
-    return { storeCount: 1, documentsRead: result.readDocuments, positionsRead: result.readPositions };
+    return { storeCount: 1, documentsRead: result.readDocuments, positionsRead: result.readPositions, signals };
   } catch (error) {
     const message = error instanceof Error ? error.message.slice(0, 512) : String(error).slice(0, 512);
     await setJobState(job.id, { error: message });

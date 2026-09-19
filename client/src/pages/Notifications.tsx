@@ -1,16 +1,20 @@
-import { ArrowUpRight, BellRing, CheckCheck, CircleAlert, Info, TriangleAlert } from "lucide-react";
+import { ArrowUpRight, BellRing, CheckCheck, CircleAlert, Info, Megaphone, TriangleAlert } from "lucide-react";
 import { useLocation } from "wouter";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AuditShell } from "@/components/AuditShell";
 import { useAudit } from "@/contexts/AuditContext";
 import { trpc } from "@/lib/trpc";
+import { ThemedSelect } from "@/components/ui/themed-select";
+import { formatLocalAccountLogin } from "@/lib/accountLogin";
 
 const severityIcon = { critical: CircleAlert, warning: TriangleAlert, info: Info };
 const severityLabel = { critical: "Критично", warning: "Контроль", info: "Информация" };
 const cashControlRuleKeys = new Set(["cash_expense_daily", "ndfl_22_daily"]);
 
 type ThresholdDraft = { threshold: string; isEnabled: boolean };
+type BroadcastTarget = "all" | "account" | "role";
+type AccountRole = "admin" | "analyst" | "seller" | "manager";
 type ThresholdRule = { ruleKey: string; label: string; description: string; comparison: "gte" | "lte"; threshold: number; isEnabled: boolean; unit: string };
 const importIdFromAddress = () => {
   if (typeof window === "undefined") return null;
@@ -40,7 +44,12 @@ export default function Notifications() {
   const importAlertDetails = trpc.localAuth.importAlertDetails.useInfiniteQuery({ importId:activeImportId ?? 0, limit:50 }, { enabled:activeImportId!==null, getNextPageParam:page=>page.nextCursor ?? undefined, retry:false });
   const stores = trpc.audit.stores.useQuery(undefined, { retry: false });
   const thresholds = trpc.audit.alertThresholds.useQuery(undefined, { enabled: me.data?.role === "admin", retry: false });
+  const accounts = trpc.localAuth.list.useQuery(undefined, { enabled: me.data?.role === "admin", retry: false });
   const [thresholdDrafts, setThresholdDrafts] = useState<Record<string, ThresholdDraft>>({});
+  const [broadcastText, setBroadcastText] = useState("");
+  const [broadcastTarget, setBroadcastTarget] = useState<BroadcastTarget>("all");
+  const [broadcastAccountId, setBroadcastAccountId] = useState("");
+  const [broadcastRole, setBroadcastRole] = useState<AccountRole>("analyst");
 
   useEffect(() => {
     if (thresholds.data) setThresholdDrafts(Object.fromEntries(thresholds.data.map(rule => [rule.ruleKey, { threshold: String(rule.threshold), isEnabled: rule.isEnabled }])));
@@ -55,11 +64,14 @@ export default function Notifications() {
   const markRead = trpc.localAuth.markNotificationRead.useMutation({ onSuccess: refreshNotifications });
   const markAllRead = trpc.localAuth.markAllNotificationsRead.useMutation({ onSuccess: () => { refreshNotifications(); toast.success("Все доступные уведомления отмечены как прочитанные"); } });
   const saveThreshold = trpc.audit.updateAlertThreshold.useMutation({ onSuccess: () => { utils.audit.alertThresholds.invalidate(); toast.success("Порог сигнала сохранен"); } });
+  const broadcast = trpc.localAuth.adminBroadcast.useMutation({ onSuccess: result => { setBroadcastText(""); utils.localAuth.notifications.invalidate(); utils.localAuth.notificationSummary.invalidate(); toast.success("Сообщение отправлено", { description: `В ленту: ${result.recipientAccounts}. Push принял сервис для устройств: ${result.pushSubscriptionsAccepted}.` }); }, onError: error => toast.error(error.message) });
   const notificationItems = notifications.data?.pages.flatMap(page => page.items) ?? [];
   const importDetailItems = importAlertDetails.data?.pages.flatMap(page => page.items) ?? [];
   const unread = notificationSummary.data?.unread ?? 0;
   const firstUnreadId = notificationItems.find(item => !item.isRead)?.id;
   const allRules = (thresholds.data ?? []) as ThresholdRule[];
+  const activeAccounts = (accounts.data ?? []).filter(account => account.isActive);
+  const broadcastAudience = broadcastTarget === "account" ? { kind: "account" as const, accountId: Number(broadcastAccountId) } : broadcastTarget === "role" ? { kind: "role" as const, role: broadcastRole } : { kind: "all" as const };
   const cashControlRules = allRules.filter(rule => cashControlRuleKeys.has(rule.ruleKey));
   const otherRules = allRules.filter(rule => !cashControlRuleKeys.has(rule.ruleKey));
   const setDraft = (ruleKey: string, next: ThresholdDraft) => setThresholdDrafts(current => ({ ...current, [ruleKey]: next }));
@@ -91,14 +103,16 @@ export default function Notifications() {
     if (item.entityType === "weekly_report") { setLocation(`/reports?report=${item.entityId}`); return; }
     if (item.entityType === "metric") { const [storeId, entryDate, metricCode] = item.entityId.split(":"); sessionStorage.setItem("auditManageTarget", JSON.stringify({ storeId: Number(storeId), entryDate, metricCode })); setLocation("/manage"); return; }
     if (item.entityType === "threshold") { const [storeId, entryDate] = item.entityId.split(":"); if (entryDate) { sessionStorage.setItem("auditManageTarget", JSON.stringify({ storeId: Number(storeId), entryDate })); setLocation("/manage"); return; } const store = stores.data?.find(row => row.id === Number(storeId)); if (store) setSelectedStore(store.name); setLocation("/stores"); return; }
+    if (item.entityType === "operational_signal") { setLocation(item.entityId?.startsWith("request_missing:") ? "/requests" : "/revenue"); return; }
     if (item.entityType === "store") { const store = stores.data?.find(row => row.id === Number(item.entityId)); if (store) setSelectedStore(store.name); setLocation("/stores"); }
   };
 
-  const sourceLabel = (item: { entityType: string | null }) => item.entityType === "import" ? "Открыть импорт" : item.entityType === "price" ? "Открыть прайс‑контроль" : item.entityType === "alert_feed" ? "Открыть детали" : item.entityType === "metric" ? "Открыть факт" : item.entityType === "threshold" ? "Открыть источник" : item.entityType === "store" ? "Открыть магазин" : item.entityType === "weekly_report" ? "Открыть отчет" : null;
+  const sourceLabel = (item: { entityType: string | null }) => item.entityType === "import" ? "Открыть импорт" : item.entityType === "price" ? "Открыть прайс‑контроль" : item.entityType === "alert_feed" ? "Открыть детали" : item.entityType === "metric" ? "Открыть факт" : item.entityType === "threshold" ? "Открыть источник" : item.entityType === "operational_signal" ? "Открыть реестр" : item.entityType === "store" ? "Открыть магазин" : item.entityType === "weekly_report" ? "Открыть отчет" : null;
 
   return <AuditShell kicker="15 / УВЕДОМЛЕНИЯ" title="Сигналы и контроль">
     <section className="page-lede"><div><span>ЦЕНТР СОБЫТИЙ</span><h2>Критичные изменения под контролем</h2><p>Сигналы появляются при нарушении выбранных порогов, существенных ручных изменениях и замене периодов при импорте. Их получают администраторы и назначенные пользователи магазина.</p></div></section>
     <section className="packet-kpis equal"><button type="button" className="packet-kpi notification-unread-kpi" disabled={!unread} onClick={revealFirstUnread} aria-label={unread ? `Перейти к первому из ${unread} непрочитанных событий` : "Непрочитанных событий нет"}><span>НЕПРОЧИТАННО</span><strong>{unread}</strong><small>{unread ? "Нажмите, чтобы открыть первое событие" : "событий требуют просмотра"}</small></button><article className="packet-kpi"><span>РУЧНЫЕ ИЗМЕНЕНИЯ</span><strong>25%</strong><small>при выполнении абсолютного порога метрики</small></article><article className="packet-kpi risk"><span>ПОРОГИ РИСКА</span><strong>{allRules.filter(rule => rule.isEnabled).length}</strong><small>включенных правил контроля</small></article><article className="packet-kpi"><span>ДОСТАВКА</span><strong>Сайт + телефон</strong><small>при включенных уведомлениях устройства</small></article></section>
+    {me.data?.role === "admin" && <section className="packet-card admin-broadcast"><div className="card-title"><div><span>СООБЩЕНИЕ ПОЛЬЗОВАТЕЛЯМ</span><h3>Рассылка в ленту сигналов</h3></div><Megaphone size={20}/></div><p className="packet-note">Сообщение попадет в ленту активных получателей. Push‑уведомление придет только на устройство с добровольно включенной браузерной подпиской.</p><form className="stack-form" onSubmit={event => { event.preventDefault(); if (broadcastText.trim() && (broadcastTarget !== "account" || broadcastAccountId)) broadcast.mutate({ message: broadcastText.trim(), audience: broadcastAudience }); }}><div className="broadcast-targeting"><span>Получатели</span><div className="broadcast-target-buttons" role="group" aria-label="Кому отправить сообщение"><button type="button" className={broadcastTarget === "all" ? "active" : ""} aria-pressed={broadcastTarget === "all"} onClick={() => setBroadcastTarget("all")}>Всем</button><button type="button" className={broadcastTarget === "account" ? "active" : ""} aria-pressed={broadcastTarget === "account"} onClick={() => setBroadcastTarget("account")}>Пользователю</button><button type="button" className={broadcastTarget === "role" ? "active" : ""} aria-pressed={broadcastTarget === "role"} onClick={() => setBroadcastTarget("role")}>По роли</button></div>{broadcastTarget === "account" && <label>Учетная запись<ThemedSelect value={broadcastAccountId} onChange={event => setBroadcastAccountId(event.target.value)} required><option value="">Выберите пользователя</option>{activeAccounts.map(account => <option key={account.id} value={account.id}>{formatLocalAccountLogin(account.username)}</option>)}</ThemedSelect></label>}{broadcastTarget === "role" && <label>Роль<ThemedSelect value={broadcastRole} onChange={event => setBroadcastRole(event.target.value as AccountRole)}><option value="analyst">Аналитики</option><option value="seller">Продавцы</option><option value="manager">Руководители</option><option value="admin">Администраторы</option></ThemedSelect></label>}</div><label>Текст сообщения<textarea value={broadcastText} onChange={event => setBroadcastText(event.target.value)} maxLength={360} placeholder="Например: завтра сверяем списания и остатки до 11:00." required/></label><div className="admin-broadcast-actions"><small>{broadcastText.trim().length}/360</small><button className="packet-link compact" disabled={!broadcastText.trim() || broadcast.isPending || (broadcastTarget === "account" && !broadcastAccountId)}><Megaphone size={15}/>{broadcast.isPending ? "Отправляем…" : "Отправить"}</button></div></form></section>}
     {me.data?.role === "admin" && <section className="packet-card alert-thresholds"><div className="card-title"><div><span>НАСТРОЙКИ ПОРОГОВ</span><h3>Когда отправлять сигнал</h3></div></div><p className="packet-note">Пороги базовых метрик проверяются при ручном изменении факта и после импорта. Отклонение наценки рассчитывается после импорта по доступным точкам на одну дату. Отключенное правило не формирует системные и телефонные уведомления.</p>
       {cashControlRules.length > 0 && <div className="threshold-grid threshold-grid-cash">{cashControlRules.map(rule => <ThresholdRuleCard key={rule.ruleKey} rule={rule} draft={draftFor(rule)} onDraftChange={next => setDraft(rule.ruleKey, next)} onSave={() => saveRule(rule)} isSaving={saveThreshold.isPending}/>)}</div>}
       <div className="threshold-grid">{otherRules.map(rule => <ThresholdRuleCard key={rule.ruleKey} rule={rule} draft={draftFor(rule)} onDraftChange={next => setDraft(rule.ruleKey, next)} onSave={() => saveRule(rule)} isSaving={saveThreshold.isPending}/>)}</div>

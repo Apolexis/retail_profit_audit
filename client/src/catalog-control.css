@@ -295,6 +295,15 @@ html[data-audit-theme="light"] .packet .catalog-table tbody td { border-color: #
 
 /* Categories are a dense responsive directory—not a grid of large cards. */
 .packet .catalog-category-directory { display: grid; gap: 14px; }
+.packet .catalog-category-directory > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; list-style: none; }
+.packet .catalog-category-directory > summary::-webkit-details-marker { display: none; }
+.packet .catalog-category-directory > summary > div { min-width: 0; }
+.packet .catalog-category-directory > summary span { display: block; color: var(--muted); font: 800 10px/1.2 Manrope, Arial, sans-serif; letter-spacing: .08em; }
+.packet .catalog-category-directory > summary h3 { margin: 3px 0 0; color: var(--ink); font-size: 15px; }
+.packet .catalog-category-directory > summary small { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+.packet .catalog-category-directory > summary > svg { flex: 0 0 auto; color: var(--catalog-accent); transition: transform 160ms var(--audit-hover-ease); }
+.packet .catalog-category-directory[open] > summary > svg { transform: rotate(180deg); }
+.packet .catalog-category-body { display: grid; gap: 12px; }
 .packet .catalog-category-create { display: flex; align-items: end; gap: 10px; max-width: 760px; }
 .packet .catalog-category-create > label { flex: 1 1 360px; min-width: 0; }
 .packet .catalog-category-list { display: grid; gap: 0; overflow: hidden; border: 1px solid var(--catalog-line); border-radius: 10px; background: var(--catalog-panel); }

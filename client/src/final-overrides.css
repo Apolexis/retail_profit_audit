@@ -5236,3 +5236,34 @@ html[data-audit-theme="dark"] button[data-slot="alert-dialog-cancel"]:focus-visi
   transform: none !important;
 }
 button[data-slot="alert-dialog-cancel"]:active { transform: scale(.98) !important; }
+
+/* Medium-width operational grids must use available width without horizontal page overflow. */
+@media (min-width: 761px) and (max-width: 1400px) {
+  .packet .stock-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .packet .stock-controls > label:last-child { grid-column: 1 / -1; }
+  .packet .revenue-filter-row { grid-template-columns: minmax(0, 1fr) minmax(220px, .62fr); }
+}
+@media (max-width: 520px) {
+  .packet .stock-table tbody tr,
+  .packet .stock-table.data-table tbody tr:nth-child(odd),
+  .packet .stock-table.data-table tbody tr:nth-child(even),
+  .packet .catalog-table tbody tr,
+  .packet .catalog-table tbody tr:nth-child(even),
+  .packet .revenue-register-table tbody tr { grid-template-columns: minmax(0, 1fr) !important; }
+  .packet .stock-table td,
+  .packet .catalog-table td,
+  .packet .revenue-register-table tbody td { min-width: 0 !important; }
+}
+
+/* Saved price preview: link name gets its own readable row before columns collapse. */
+@media (max-width: 1280px) {
+  .packet .price-import-workbench.is-preview-ready .price-preview-row,
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row { grid-template-columns: minmax(0, 1fr) minmax(120px, .32fr) minmax(120px, .32fr); }
+  .packet .price-import-workbench.is-preview-ready .price-preview-product-link,
+  .packet .price-import-workbench.is-preview-ready .price-preview-new-row .price-preview-product-link { grid-column: 1 / -1 !important; width: 100%; }
+}
+
+/* Request comments save automatically; keep the status as helper text, not a second action button. */
+.packet .request-comments > div > small,
+.packet .request-comment-status { color: var(--muted); font-size: 11px; }
+.packet .request-comments > div { display: grid; gap: 6px; }
