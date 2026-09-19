@@ -51,5 +51,12 @@ describe("интерфейс операционных остатков", () => {
 		it("не обрезает длинные названия магазина и категории в карточном режиме", () => {
 		  expect(css).toContain(".packet .stock-table td:nth-child(3),\n  .packet .stock-table td:nth-child(9) { grid-column: 1 / -1; }");
 		  expect(css).toContain(".packet .stock-table td:nth-child(2),\n  .packet .stock-table td:nth-child(3) { overflow-wrap: anywhere; word-break: normal; }");
+		  expect(css).toContain(".packet .stock-table td:nth-child(4) small { overflow-wrap: anywhere; }");
+		});
+
+		it("перестраивает фильтры в две колонки до узкой рабочей области", () => {
+		  expect(css).toContain("@media (min-width: 761px) and (max-width: 1100px) {");
+		  expect(css).toContain(".packet .stock-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }");
+		  expect(css).toContain(".packet .stock-controls > label:last-child { grid-column: 1 / -1; }");
 		});
 });

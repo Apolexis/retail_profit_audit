@@ -122,12 +122,12 @@ html[data-audit-theme="light"] .packet .inventory-history-list > article.selecte
 html[data-audit-theme="light"] .packet .inventory-create-actions .packet-link,
 html[data-audit-theme="light"] .packet .inventory-line-create .packet-link,
 html[data-audit-theme="light"] .packet .inventory-close-actions .packet-link { border-color: #0a84ff !important; background: #0a84ff !important; color: #fff !important; box-shadow: 0 8px 18px rgba(10, 132, 255, .22) !important; }
-html[data-audit-theme="light"] .packet :is(.inventory-create-actions, .inventory-line-create, .inventory-close-actions) .packet-link:hover,
 html[data-audit-theme="light"] .packet :is(.inventory-create-actions, .inventory-line-create, .inventory-close-actions) .packet-link:focus-visible { border-color: #075dbb !important; background: #075dbb !important; box-shadow: 0 8px 18px rgba(10, 132, 255, .28) !important; }
-html[data-audit-theme="light"] .packet .inventory-history-list > article .subtle-button:hover,
-html[data-audit-theme="light"] .packet .inventory-history-list > article .subtle-button:focus-visible,
-html[data-audit-theme="light"] .packet .inventory-draft-actions .subtle-button:hover,
-html[data-audit-theme="light"] .packet .inventory-draft-actions .subtle-button:focus-visible { border-color: var(--inventory-accent); background: var(--inventory-accent-faint); color: #075dbb; box-shadow: 0 0 0 1px rgba(10, 132, 255, .1); }
+html[data-audit-theme="light"] .packet :is(.inventory-history-list > article .subtle-button, .inventory-draft-actions .subtle-button):focus-visible { border-color: var(--inventory-accent); background: var(--inventory-accent-faint); color: #075dbb; box-shadow: 0 0 0 1px rgba(10, 132, 255, .1); }
+@media (hover: hover) and (pointer: fine) {
+  html[data-audit-theme="light"] .packet :is(.inventory-create-actions, .inventory-line-create, .inventory-close-actions) .packet-link:hover { border-color: #075dbb !important; background: #075dbb !important; box-shadow: 0 8px 18px rgba(10, 132, 255, .28) !important; }
+  html[data-audit-theme="light"] .packet :is(.inventory-history-list > article .subtle-button, .inventory-draft-actions .subtle-button):hover { border-color: var(--inventory-accent); background: var(--inventory-accent-faint); color: #075dbb; box-shadow: 0 0 0 1px rgba(10, 132, 255, .1); }
+}
 
 /* Dark: neutral slate/plum surfaces remain dominant; coral is an outline, never a table fill. */
 html[data-audit-theme="dark"] .packet {
@@ -145,10 +145,10 @@ html[data-audit-theme="dark"] .packet :is(.inventory-line-create, .inventory-acc
 html[data-audit-theme="dark"] .packet .inventory-history-list > article { border-color: var(--inventory-line); background: var(--inventory-field); }
 html[data-audit-theme="dark"] .packet .inventory-history-list > article.selected { border-color: var(--inventory-accent); background: var(--inventory-field); }
 html[data-audit-theme="dark"] .packet .inventory-lines tbody tr:nth-child(even) { background: #1b121c; }
-html[data-audit-theme="dark"] .packet .inventory-history-list > article .subtle-button:hover,
-html[data-audit-theme="dark"] .packet .inventory-history-list > article .subtle-button:focus-visible,
-html[data-audit-theme="dark"] .packet .inventory-draft-actions .subtle-button:hover,
-html[data-audit-theme="dark"] .packet .inventory-draft-actions .subtle-button:focus-visible { border-color: var(--inventory-accent); background: transparent; color: var(--inventory-accent); box-shadow: inset 0 0 0 1px rgba(255, 118, 95, .12); }
+html[data-audit-theme="dark"] .packet :is(.inventory-history-list > article .subtle-button, .inventory-draft-actions .subtle-button):focus-visible { border-color: var(--inventory-accent); background: transparent; color: var(--inventory-accent); box-shadow: inset 0 0 0 1px rgba(255, 118, 95, .12); }
+@media (hover: hover) and (pointer: fine) {
+  html[data-audit-theme="dark"] .packet :is(.inventory-history-list > article .subtle-button, .inventory-draft-actions .subtle-button):hover { border-color: var(--inventory-accent); background: transparent; color: var(--inventory-accent); box-shadow: inset 0 0 0 1px rgba(255, 118, 95, .12); }
+}
 
 /* The legacy stylesheet has a generic important packet-card rule. Override it locally. */
 html[data-audit-theme="light"] .packet .packet-card.inventory-create-card,
@@ -159,14 +159,10 @@ html[data-audit-theme="dark"] .packet .packet-card.inventory-create-card,
 html[data-audit-theme="dark"] .packet .packet-card.inventory-draft-card,
 html[data-audit-theme="dark"] .packet .packet-card.inventory-history,
 html[data-audit-theme="dark"] .packet .packet-card.inventory-rule-disclosure { border-color: var(--inventory-line) !important; background: var(--inventory-card) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .025) !important; }
-html[data-audit-theme="light"] .packet .packet-card.inventory-create-card:hover,
-html[data-audit-theme="light"] .packet .packet-card.inventory-draft-card:hover,
-html[data-audit-theme="light"] .packet .packet-card.inventory-history:hover,
-html[data-audit-theme="light"] .packet .packet-card.inventory-rule-disclosure:hover { border-color: var(--inventory-accent) !important; background: var(--inventory-card) !important; box-shadow: none !important; transform: none !important; }
-html[data-audit-theme="dark"] .packet .packet-card.inventory-create-card:hover,
-html[data-audit-theme="dark"] .packet .packet-card.inventory-draft-card:hover,
-html[data-audit-theme="dark"] .packet .packet-card.inventory-history:hover,
-html[data-audit-theme="dark"] .packet .packet-card.inventory-rule-disclosure:hover { border-color: var(--inventory-accent) !important; background: var(--inventory-card) !important; box-shadow: none !important; transform: none !important; }
+@media (hover: hover) and (pointer: fine) {
+  html[data-audit-theme="light"] .packet :is(.packet-card.inventory-create-card, .packet-card.inventory-draft-card, .packet-card.inventory-history, .packet-card.inventory-rule-disclosure):hover { border-color: var(--inventory-accent) !important; background: var(--inventory-card) !important; box-shadow: none !important; transform: none !important; }
+  html[data-audit-theme="dark"] .packet :is(.packet-card.inventory-create-card, .packet-card.inventory-draft-card, .packet-card.inventory-history, .packet-card.inventory-rule-disclosure):hover { border-color: var(--inventory-accent) !important; background: var(--inventory-card) !important; box-shadow: none !important; transform: none !important; }
+}
 html[data-audit-theme="light"] .packet .packet-card.inventory-create-card:focus-within,
 html[data-audit-theme="light"] .packet .packet-card.inventory-draft-card:focus-within,
 html[data-audit-theme="light"] .packet .packet-card.inventory-history:focus-within,
@@ -175,6 +171,14 @@ html[data-audit-theme="dark"] .packet .packet-card.inventory-create-card:focus-w
 html[data-audit-theme="dark"] .packet .packet-card.inventory-draft-card:focus-within,
 html[data-audit-theme="dark"] .packet .packet-card.inventory-history:focus-within,
 html[data-audit-theme="dark"] .packet .packet-card.inventory-rule-disclosure:focus-within { border-color: var(--inventory-accent) !important; background: var(--inventory-card) !important; box-shadow: none !important; }
+
+@media (max-width: 920px) {
+  .packet .inventory-history-list > article { grid-template-columns: minmax(0, 1fr); padding: 0; }
+  .packet .inventory-history-select { grid-template-columns: minmax(0, 1fr) auto; gap: 3px 10px; }
+  .packet .inventory-history-select small { grid-column: 1; }
+  .packet .inventory-history-select b { grid-column: 2; grid-row: 1 / span 2; }
+  .packet .inventory-history-list > article .subtle-button { width: calc(100% - 24px); margin: 0 12px 12px; justify-content: center; }
+}
 
 @media (max-width: 760px) {
   .packet .inventory-meta-grid,

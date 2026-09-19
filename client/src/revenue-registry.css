@@ -263,13 +263,14 @@ html[data-audit-theme="dark"] .packet .packet-card.revenue-entry-card button.fre
   .packet .revenue-register-table tbody td:first-child strong { overflow-wrap: anywhere; }
   .packet .revenue-register-table tbody td[data-label="Комментарии расходов"],
   .packet .revenue-register-table tbody td[data-label="Действия"] { grid-column: 1 / -1; }
+  .packet .revenue-register-table tbody td.revenue-comment-cell { overflow-wrap: anywhere; }
   .packet .revenue-row-actions { flex-wrap: wrap; }
   .packet .revenue-row-actions .subtle-button { flex: 1 1 145px; justify-content: center; min-width: 0; }
   .packet .revenue-register-table tfoot { display: block; margin-top: 9px; }
   .packet .revenue-register-table tfoot tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: hidden; border: 1px solid var(--revenue-accent-soft); border-radius: 11px; background: var(--revenue-total-surface); }
   .packet .revenue-register-table tfoot :is(th, td) { display: none; border: 0 !important; background: transparent !important; }
   .packet .revenue-register-table tfoot th { display: block; grid-column: 1 / -1; padding: 9px 11px; color: var(--ink); text-align: left; }
-  .packet .revenue-register-table tfoot .revenue-total-cell { display: block; padding: 0 11px 9px; color: var(--ink); font-weight: 800; }
+  .packet .revenue-register-table tfoot .revenue-total-cell { display: block; grid-column: 1 / -1; padding: 0 11px 9px; color: var(--ink); font-weight: 800; }
   .packet .revenue-register-table tfoot .revenue-total-cell::before { content: "Итого"; display: block; margin-bottom: 2px; color: var(--muted); font: 800 9px/1.15 Manrope,Arial,sans-serif; letter-spacing: .07em; text-transform: uppercase; }
 }
 @media (max-width: 440px) {

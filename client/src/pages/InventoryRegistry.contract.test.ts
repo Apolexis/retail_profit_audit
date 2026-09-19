@@ -61,6 +61,8 @@ describe("интерфейс операционной инвентаризаци
     expect(page).toContain("Заполнить учетными остатками");
     expect(page).toContain("По категориям");
     expect(page).toContain("sortedLines");
+    expect(page).toContain('aria-pressed={sortLinesByCategory}');
+    expect(page).toContain('aria-label={sortLinesByCategory ? "Сортировка: по категориям" : "Сортировка: по товару"}');
     expect(router).toContain("fillFromAccounting:");
     expect(router).toContain('action: "inventory.lines.fill_from_accounting"');
   });
@@ -72,6 +74,7 @@ describe("интерфейс операционной инвентаризаци
     expect(css).toContain('.packet .inventory-history-list > article { display: grid;');
     expect(css).toContain('.packet .inventory-history-select { display: grid;');
     expect(page).not.toContain('<button type="button" className={item.id === activeInventoryId');
+    expect(page).toContain('aria-current={item.id === activeInventoryId ? "true" : undefined}');
   });
 
   it("использует для таблицы пересчета тот же drag-scroll контейнер, что и Ритм", () => {
@@ -137,8 +140,10 @@ describe("интерфейс операционной инвентаризаци
 	    expect(css).toContain("overflow: hidden; padding: 0 10px 0 0;");
 	    expect(css).toContain(".inventory-history-list > article:focus-within { border-color: var(--inventory-accent); box-shadow: 0 0 0 2px var(--inventory-accent-faint); }");
 	    expect(css).toContain("@media (hover: hover) and (pointer: fine) {\n  .packet .inventory-history-list > article:hover");
-	    expect(css).toContain(".inventory-draft-card > .card-title { flex-direction: column; align-items: stretch; }");
-	    expect(css).toContain("background: transparent; color: var(--inventory-accent);");
-	  });
+		    expect(css).toContain(".inventory-draft-card > .card-title { flex-direction: column; align-items: stretch; }");
+		    expect(css).toContain("background: transparent; color: var(--inventory-accent);");
+		    expect(css).toContain("@media (max-width: 920px) {");
+		    expect(css).toContain(".packet .inventory-history-select { grid-template-columns: minmax(0, 1fr) auto; gap: 3px 10px; }");
+		  });
 
 });

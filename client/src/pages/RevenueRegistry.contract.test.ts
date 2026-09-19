@@ -55,8 +55,10 @@ describe("контракт страницы Выручка", () => {
 	  expect(styles).toContain('@media (max-width: 1400px)');
 	  expect(styles).toContain('.packet .data-table-wrap.revenue-register-table-wrap { overflow: visible !important; cursor: default !important;');
 	  expect(page).toContain('className="revenue-total-cell numeric-column"');
-	  expect(styles).toContain('.packet .revenue-register-table tfoot .revenue-total-cell');
-	});
+		  expect(styles).toContain('.packet .revenue-register-table tfoot .revenue-total-cell');
+		  expect(styles).toContain('.packet .revenue-register-table tfoot .revenue-total-cell { display: block; grid-column: 1 / -1;');
+		  expect(styles).toContain('.packet .revenue-register-table tbody td.revenue-comment-cell { overflow-wrap: anywhere; }');
+		});
 
   it("раскрывает редактор при изменении записи из реестра", () => {
     expect(page).toContain('entryCardRef.current?.setAttribute("open", "");');
