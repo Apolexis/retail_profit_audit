@@ -28,6 +28,16 @@ describe("заявки магазинов: серверный контракт",
     expect(service).toContain("status: \"closed\"");
   });
 
+  it("сохраняет редактируемые строки и два комментария черновика одной транзакцией", () => {
+    expect(service).toContain("export async function saveOperationalStoreRequestDraft");
+    expect(service).toContain("return db.transaction(async tx => {");
+    expect(service).toContain("Передайте оба комментария черновика.");
+    expect(service).toContain("retainedManualLines");
+    expect(router).toContain("saveRequestDraft: protectedProcedure");
+    expect(router).toContain('action: "store_request.draft.save"');
+    expect(router).toContain('saveMode: "single-transaction"');
+  });
+
   it("строит печать из сохраненных и закрытых заявок, исключая скрытые магазины", () => {
     expect(service).toContain('inArray(operationalStoreRequests.status, ["draft", "closed"])');
     expect(service).toContain("eq(stores.isHidden, false)");
@@ -54,7 +64,7 @@ describe("заявки магазинов: серверный контракт",
   });
 
   it("фиксирует каждую постоянную операцию существующим audit", () => {
-    for (const action of ["store_request.create", "store_request.line.upsert", "store_request.line.remove", "store_request.close", "store_request.close_for_print", "store_request.draft.delete", "store_request.print"]) {
+    for (const action of ["store_request.create", "store_request.draft.save", "store_request.line.upsert", "store_request.line.remove", "store_request.close", "store_request.close_for_print", "store_request.draft.delete", "store_request.print"]) {
       expect(router).toContain(action);
     }
     expect(router).toContain("recordChange");

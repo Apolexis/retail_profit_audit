@@ -752,6 +752,125 @@ export async function upsertOperationalStoreRequestLine(input: { requestId: numb
 }
 
 /**
+ * Replaces the editable product lines and both print comments as one transaction.
+ * The operation never creates catalogue products and retains legacy manual lines
+ * untouched, because they are not editable from the current request interface.
+ */
+export async function saveOperationalStoreRequestDraft(input: {
+  requestId: number;
+  lines: Array<{ productId: number; requestedQuantity: number }>;
+  comments: Array<{ slot: 1 | 2; text: string }>;
+  actorId: number;
+  allowHidden?: boolean;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("База данных недоступна");
+  if (input.lines.length > 2_000) throw new Error("Черновик может содержать не более 2 000 позиций.");
+  const linesByProduct = new Map<number, { productId: number; requestedQuantity: number }>();
+  for (const line of input.lines) {
+    if (linesByProduct.has(line.productId)) throw new Error("Один товар нельзя сохранить в заявке дважды.");
+    linesByProduct.set(line.productId, { productId: line.productId, requestedQuantity: validateStoreRequestQuantity(line.requestedQuantity) });
+  }
+  const commentsBySlot = new Map<1 | 2, string>();
+  for (const comment of input.comments) {
+    if (commentsBySlot.has(comment.slot)) throw new Error("Каждый комментарий можно сохранить только один раз.");
+    commentsBySlot.set(comment.slot, normalizedText(comment.text).slice(0, 2_000));
+  }
+  if (commentsBySlot.size !== 2 || !commentsBySlot.has(1) || !commentsBySlot.has(2)) {
+    throw new Error("Передайте оба комментария черновика.");
+  }
+  const productIds = Array.from(linesByProduct.keys());
+  return db.transaction(async tx => {
+    const [request] = await tx.select().from(operationalStoreRequests).where(eq(operationalStoreRequests.id, input.requestId)).limit(1);
+    if (!request) throw new Error("Заявка не найдена.");
+    if (request.status !== "draft") throw new Error("Закрытую заявку нельзя изменять.");
+    const [existingLines, existingComments, commentCategories] = await Promise.all([
+      tx.select().from(operationalStoreRequestLines).where(eq(operationalStoreRequestLines.requestId, input.requestId)).limit(2_000),
+      tx.select().from(operationalStoreRequestComments).where(eq(operationalStoreRequestComments.requestId, input.requestId)).limit(2),
+      tx.select({ id: operationalPrintCategoryGroups.id, name: operationalPrintCategoryGroups.name, requestCommentSlot: operationalPrintCategoryGroups.requestCommentSlot })
+        .from(operationalPrintCategoryGroups)
+        .where(and(eq(operationalPrintCategoryGroups.isActive, true), inArray(operationalPrintCategoryGroups.requestCommentSlot, ["slot_1", "slot_2"]))),
+    ]);
+    const products = productIds.length
+      ? await tx.select({
+        id: operationalCatalogProducts.id,
+        catalogNumber: operationalCatalogProducts.catalogNumber,
+        canonicalName: operationalCatalogProducts.canonicalName,
+        catalogCategoryId: operationalCatalogProducts.catalogCategoryId,
+        managedCategoryName: operationalCatalogCategories.name,
+        evotorCategoryName: operationalCatalogProducts.evotorCategoryName,
+        baseUnit: operationalCatalogProducts.baseUnit,
+        isActive: operationalCatalogProducts.isActive,
+        isVisibleInRequests: operationalCatalogProducts.isVisibleInRequests,
+      }).from(operationalCatalogProducts)
+        .leftJoin(operationalCatalogCategories, eq(operationalCatalogProducts.catalogCategoryId, operationalCatalogCategories.id))
+        .where(inArray(operationalCatalogProducts.id, productIds))
+      : [];
+    const productsById = new Map(products.map(product => [product.id, product]));
+    if (productsById.size !== productIds.length) throw new Error("Один из товаров больше недоступен для заявки.");
+    for (const product of products) {
+      if (!product.isActive || (!product.isVisibleInRequests && !input.allowHidden)) throw new Error("Товар недоступен для заявки.");
+      if (product.baseUnit !== "fraction" && product.baseUnit !== "l" && product.baseUnit !== "piece") throw new Error("Для товара не задана рабочая единица.");
+    }
+    const categoryBySlot = new Map<1 | 2, { id: number; name: string }>();
+    for (const category of commentCategories) {
+      if (category.requestCommentSlot === "slot_1") categoryBySlot.set(1, category);
+      if (category.requestCommentSlot === "slot_2") categoryBySlot.set(2, category);
+    }
+    for (const slot of [1, 2] as const) {
+      if (commentsBySlot.get(slot) && !categoryBySlot.has(slot)) throw new Error(`Для комментария ${slot} настройте категорию печати в разделе «Состав печатных подборок».`);
+    }
+    const existingLineByProduct = new Map(existingLines.filter(line => line.productId !== null).map(line => [line.productId!, line]));
+    const existingCommentBySlot = new Map(existingComments.map(comment => [comment.slot, comment]));
+    const desiredProductIds = new Set(productIds);
+    const removableLineIds = existingLines.filter(line => line.productId !== null && !desiredProductIds.has(line.productId)).map(line => line.id);
+    if (removableLineIds.length) await tx.delete(operationalStoreRequestLines).where(inArray(operationalStoreRequestLines.id, removableLineIds));
+    for (const entry of Array.from(linesByProduct.values())) {
+      const product = productsById.get(entry.productId)!;
+      const values = {
+        requestId: input.requestId,
+        productId: product.id,
+        catalogNumber: product.catalogNumber,
+        productName: product.canonicalName,
+        catalogCategoryId: product.catalogCategoryId,
+        categoryName: product.managedCategoryName ?? product.evotorCategoryName,
+        requestedQuantity: entry.requestedQuantity.toFixed(1),
+        unit: inventoryUnitFromCatalogUnit(product.baseUnit),
+        note: null,
+      };
+      const before = existingLineByProduct.get(product.id);
+      if (before) await tx.update(operationalStoreRequestLines).set(values).where(eq(operationalStoreRequestLines.id, before.id));
+      else await tx.insert(operationalStoreRequestLines).values(values);
+    }
+    for (const slot of [1, 2] as const) {
+      const before = existingCommentBySlot.get(slot);
+      const text = commentsBySlot.get(slot)!;
+      if (!text) {
+        if (before) await tx.delete(operationalStoreRequestComments).where(eq(operationalStoreRequestComments.id, before.id));
+        continue;
+      }
+      const category = categoryBySlot.get(slot)!;
+      const values = {
+        requestId: input.requestId,
+        slot,
+        printCategoryGroupId: category.id,
+        printCategoryGroupName: category.name,
+        text,
+        updatedByAccountId: input.actorId,
+      };
+      if (before) await tx.update(operationalStoreRequestComments).set(values).where(eq(operationalStoreRequestComments.id, before.id));
+      else await tx.insert(operationalStoreRequestComments).values({ ...values, createdByAccountId: input.actorId });
+    }
+    await tx.update(operationalStoreRequests).set({ updatedAt: new Date() }).where(eq(operationalStoreRequests.id, input.requestId));
+    const retainedManualLines = existingLines.filter(line => line.productId === null).length;
+    return {
+      before: { lineCount: existingLines.length, commentCount: existingComments.length },
+      after: { lineCount: linesByProduct.size + retainedManualLines, commentCount: Array.from(commentsBySlot.values()).filter(Boolean).length, retainedManualLines },
+    };
+  });
+}
+
+/**
  * A missing assortment item may be noted by a store without turning a free-text
  * request into a new catalog record. Such a line is intentionally print-only
  * and has no route into Evotor.

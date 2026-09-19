@@ -152,6 +152,29 @@ export default function StoreRequests() {
   }, [active?.id]);
 
   const productLines = useMemo(() => new Map((active?.lines ?? []).filter(line => line.productId !== null).map(line => [line.productId!, line])), [active?.lines]);
+  const legacyManualLines = useMemo(() => (active?.lines ?? []).filter(line => line.productId === null), [active?.lines]);
+  const productsById = useMemo(() => new Map(products.map(product => [product.id, product])), [products]);
+  const draftProductLines = useMemo(() => Object.entries(quantityDrafts)
+    .map(([productId, raw]) => ({ productId: Number(productId), requestedQuantity: Number(normalizeQuantity(raw)) }))
+    .filter(line => Number.isInteger(line.productId) && Number.isFinite(line.requestedQuantity) && line.requestedQuantity > 0)
+    .map(line => {
+      const product = productsById.get(line.productId);
+      const persisted = productLines.get(line.productId);
+      return {
+        productId: line.productId,
+        catalogNumber: product?.catalogNumber ?? persisted?.catalogNumber ?? 0,
+        productName: product?.canonicalName ?? persisted?.productName ?? "Товар из сохраненной заявки",
+        unit: product ? (product.baseUnit === "fraction" ? "kg" : product.baseUnit) : persisted?.unit ?? "kg",
+        requestedQuantity: line.requestedQuantity,
+      };
+    }), [productLines, productsById, quantityDrafts]);
+  const hasUnsavedDraftChanges = useMemo(() => {
+    if (!active || active.status !== "draft") return false;
+    const savedByProduct = new Map(active.lines.filter(line => line.productId !== null).map(line => [line.productId!, Number(line.requestedQuantity)]));
+    if (savedByProduct.size !== draftProductLines.length) return true;
+    if (draftProductLines.some(line => savedByProduct.get(line.productId) !== line.requestedQuantity)) return true;
+    return ([1, 2] as const).some(slot => (active.comments.find(comment => comment.slot === slot)?.text ?? "") !== commentDrafts[slot].text);
+  }, [active, commentDrafts, draftProductLines]);
   const normalizedQuery = query.trim().toLocaleLowerCase("ru-RU");
   const previousQueryRef = useRef("");
   const groupedProducts = useMemo(() => {
@@ -186,17 +209,17 @@ export default function StoreRequests() {
     },
     onError: error => toast.error("Заявка не открыта", { description: error.message }),
   });
-  const upsertRequestComment = trpc.inventoryRegistry.upsertRequestComment.useMutation({
-    onSuccess: refresh,
-    onError: error => toast.error("Комментарий не сохранен", { description: error.message }),
-  });
-  const upsertLine = trpc.inventoryRegistry.upsertRequestLine.useMutation({
-    onSuccess: async () => { await refresh(); },
-    onError: error => toast.error("Позиция не сохранена", { description: error.message }),
-  });
-  const removeLine = trpc.inventoryRegistry.removeRequestLine.useMutation({
-    onSuccess: async () => { await refresh(); toast.success("Позиция убрана из заявки"); },
-    onError: error => toast.error("Позиция не убрана", { description: error.message }),
+  const saveRequestDraft = trpc.inventoryRegistry.saveRequestDraft.useMutation({
+    onSuccess: async (_result, variables) => {
+      setQuantityDrafts(Object.fromEntries(variables.lines.map(line => [line.productId, quantityText(line.requestedQuantity)])));
+      setCommentDrafts({
+        1: { text: variables.comments.find(comment => comment.slot === 1)?.text.trim().replace(/\s+/g, " ") ?? "" },
+        2: { text: variables.comments.find(comment => comment.slot === 2)?.text.trim().replace(/\s+/g, " ") ?? "" },
+      });
+      await refresh();
+      toast.success("Черновик сохранен");
+    },
+    onError: error => toast.error("Черновик не сохранен", { description: error.message }),
   });
   const closeRequestsForPrint = trpc.inventoryRegistry.closeRequestsForPrint.useMutation({
     onSuccess: async result => {
@@ -232,23 +255,16 @@ export default function StoreRequests() {
   const setProductQuantity = (product: RequestProduct, raw: string) => {
     setQuantityDrafts(current => ({ ...current, [product.id]: normalizeQuantity(raw) }));
   };
-  const persistProductQuantity = (product: RequestProduct, preferred?: number) => {
+  const normalizeProductQuantityDraft = (product: RequestProduct, preferred?: number) => {
     if (!active || active.status !== "draft") return;
     const raw = preferred === undefined ? quantityDrafts[product.id] ?? "" : String(preferred);
     const quantity = Number(normalizeQuantity(raw));
-    const line = productLines.get(product.id);
-    if (!Number.isFinite(quantity) || quantity <= 0) {
-      if (line) removeLine.mutate({ requestId: active.id, lineId: line.id });
-      setQuantityDrafts(current => ({ ...current, [product.id]: "" }));
-      return;
-    }
-    setQuantityDrafts(current => ({ ...current, [product.id]: quantityText(quantity) }));
-    upsertLine.mutate({ requestId: active.id, productId: product.id, requestedQuantity: quantity });
+    setQuantityDrafts(current => ({ ...current, [product.id]: Number.isFinite(quantity) && quantity > 0 ? quantityText(quantity) : "" }));
   };
   const changeProductQuantity = (product: RequestProduct, delta: number) => {
     const current = Number(normalizeQuantity(quantityDrafts[product.id] ?? quantityText(productLines.get(product.id)?.requestedQuantity ?? 0))) || 0;
     const step = product.baseUnit === "fraction" ? 0.5 : 1;
-    persistProductQuantity(product, Math.max(0, Math.round((current + delta * step) * 10) / 10));
+    normalizeProductQuantityDraft(product, Math.max(0, Math.round((current + delta * step) * 10) / 10));
   };
   const toggleCategory = (category: string) => setExpandedCategories(current => {
     const next = new Set(current);
@@ -260,14 +276,13 @@ export default function StoreRequests() {
     setStoreId(String(item.storeId));
     setBusinessDate(item.businessDate);
   };
-  const saveDraftComments = async () => {
+  const saveDraft = () => {
     if (!active || active.status !== "draft") return;
-    try {
-      await Promise.all(([1, 2] as const).map(slot => upsertRequestComment.mutateAsync({ requestId: active.id, slot, text: commentDrafts[slot].text })));
-      toast.success("Комментарии сохранены");
-    } catch {
-      // Each mutation provides its own actionable error toast.
-    }
+    saveRequestDraft.mutate({
+      requestId: active.id,
+      lines: draftProductLines.map(line => ({ productId: line.productId, requestedQuantity: line.requestedQuantity })),
+      comments: ([1, 2] as const).map(slot => ({ slot, text: commentDrafts[slot].text })),
+    });
   };
 
   if (!me.isLoading && !isSeller && !isManager && !isAdmin) return <AuditShell kicker="30 / ЗАЯВКИ" title="Заявки магазинов"><section className="empty-state"><ClipboardList size={28}/><h2>Нет операционного доступа</h2><p>Заявки доступны назначенному продавцу, руководителю или администратору.</p></section></AuditShell>;
@@ -292,7 +307,7 @@ export default function StoreRequests() {
 
     {active && <section className="packet-card request-draft-card">
       <div className="card-title request-draft-title"><div><span>{active.status === "draft" ? "СОХРАНЕННАЯ ЗАЯВКА" : "ЗАКРЫТАЯ ЗАЯВКА"}</span><h3>{active.storeName} · {displayDate(active.businessDate)}</h3></div></div>
-      {active.status === "draft" && <div className="request-actions"><ConfirmDangerDialog trigger={<button type="button" className="subtle-button subtle-danger request-delete-draft" disabled={deleteDraft.isPending}><Trash2 size={14}/>{deleteDraft.isPending ? "Удаляем…" : "Удалить черновик"}</button>} title="Удалить черновик заявки?" description="Черновик и его строки будут удалены. Закрытые заявки и печатные подборки не изменятся; событие останется в общем журнале." confirmLabel="Удалить черновик" disabled={deleteDraft.isPending} onConfirm={() => deleteDraft.mutate({ requestId: active.id })}/><button type="button" className="subtle-button request-save-draft" disabled={upsertRequestComment.isPending} onClick={saveDraftComments}><Save size={14}/>{upsertRequestComment.isPending ? "Сохраняем…" : "Сохранить комментарии"}</button><button type="button" className="subtle-button request-cancel-draft" onClick={() => setActiveRequestId(undefined)}><X size={14}/>К списку заявок</button></div>}
+      {active.status === "draft" && <div className="request-actions"><ConfirmDangerDialog trigger={<button type="button" className="subtle-button subtle-danger request-delete-draft" disabled={deleteDraft.isPending || saveRequestDraft.isPending}><Trash2 size={14}/>{deleteDraft.isPending ? "Удаляем…" : "Удалить черновик"}</button>} title="Удалить черновик заявки?" description="Черновик и его строки будут удалены. Несохраненные локальные изменения также не попадут в заявку. Закрытые заявки и печатные подборки не изменятся; событие останется в общем журнале." confirmLabel="Удалить черновик" disabled={deleteDraft.isPending || saveRequestDraft.isPending} onConfirm={() => deleteDraft.mutate({ requestId: active.id })}/><button type="button" className="subtle-button request-save-draft" disabled={saveRequestDraft.isPending || !hasUnsavedDraftChanges} onClick={saveDraft}><Save size={14}/>{saveRequestDraft.isPending ? "Сохраняем…" : "Сохранить черновик"}</button><button type="button" className="subtle-button request-cancel-draft" disabled={saveRequestDraft.isPending} onClick={() => setActiveRequestId(undefined)}><X size={14}/>К списку заявок</button></div>}
       {active.status === "draft" ? <>
         <div className="request-search-row"><label>Поиск товара<input value={query} onChange={event => setQuery(event.target.value)} placeholder="Название или код" autoComplete="off"/></label><span>{products.length} позиций</span></div>
         {requestProducts.isLoading ? <p className="packet-note">Загружаем доступную номенклатуру…</p> : <div className="request-catalog" aria-label="Категории товаров для заявки">{groupedProducts.map(([category, categoryProducts]) => {
@@ -304,15 +319,15 @@ export default function StoreRequests() {
               const draft = quantityDrafts[product.id] ?? (line ? quantityText(line.requestedQuantity) : "");
               return <article className="request-product-row" key={product.id}>
                 <div className="request-product-name"><span>№ {product.catalogNumber}</span><strong>{product.canonicalName}</strong>{!product.isVisibleInRequests && <small className="request-admin-only">видно только администратору</small>}<div className="request-product-signals"><i className={`request-stock ${product.supplyStockState}`}>{product.supplyGroupName ? `${product.supplyGroupName}: ` : "склад: "}{stockLabel[product.supplyStockState]}</i>{product.dailySold !== null && <small>Продажи за 7 дн.: {quantityText(product.weeklySold)} {catalogUnitLabel[product.baseUnit]} · в среднем {quantityText(product.dailySold)} {catalogUnitLabel[product.baseUnit]}/день</small>}{product.daysCover !== null && <small>В магазине запас примерно на {quantityText(product.daysCover)} дн.; норма категории — до {product.maxStoreCoverDays} дн.</small>}{product.recommendedQuantity !== null && <b>{product.recommendedQuantity > 0 ? `Рекомендуем заказать ${quantityText(product.recommendedQuantity)} ${catalogUnitLabel[product.baseUnit]}: средняя продажа за день + запас` : `Запаса в магазине достаточно: сегодня не заказывайте (норма — до ${product.maxStoreCoverDays} дн.)`}</b>}{product.recommendation === "order_soon" && product.recommendedQuantity === null && <b>Рекомендуем проверить наличие и заказать</b>}{orderSignal(product, draft) && <b className="request-order-signal">{orderSignal(product, draft)}</b>}</div></div>
-                <div className="request-quantity-stepper"><button type="button" className="subtle-button" aria-label={`Уменьшить количество: ${product.canonicalName}`} onClick={() => changeProductQuantity(product, -1)} disabled={upsertLine.isPending || removeLine.isPending}><Minus size={15}/></button><label><input aria-label={`Количество: ${product.canonicalName}`} data-decimal-input type="text" inputMode="decimal" value={draft} onChange={event => setProductQuantity(product, event.target.value)} onBlur={() => persistProductQuantity(product) } placeholder="0"/><small>{catalogUnitLabel[product.baseUnit]}</small></label><button type="button" className="subtle-button" aria-label={`Увеличить количество: ${product.canonicalName}`} onClick={() => changeProductQuantity(product, 1)} disabled={upsertLine.isPending || removeLine.isPending}><Plus size={15}/></button></div>
+                <div className="request-quantity-stepper"><button type="button" className="subtle-button" aria-label={`Уменьшить количество: ${product.canonicalName}`} onClick={() => changeProductQuantity(product, -1)} disabled={saveRequestDraft.isPending}><Minus size={15}/></button><label><input aria-label={`Количество: ${product.canonicalName}`} data-decimal-input type="text" inputMode="decimal" value={draft} onChange={event => setProductQuantity(product, event.target.value)} onBlur={() => normalizeProductQuantityDraft(product)} placeholder="0"/><small>{catalogUnitLabel[product.baseUnit]}</small></label><button type="button" className="subtle-button" aria-label={`Увеличить количество: ${product.canonicalName}`} onClick={() => changeProductQuantity(product, 1)} disabled={saveRequestDraft.isPending}><Plus size={15}/></button></div>
               </article>;
             })}</div>}
           </section>;
         })}</div>}
         {!groupedProducts.length && <div className="request-empty-lines"><Boxes size={24}/><div><strong>Ничего не найдено</strong><p>Измените запрос: в заявке доступны только товары общего справочника.</p></div></div>}
-        <section className="request-comments" aria-label="Комментарии к печати"><div><span>КОММЕНТАРИИ</span><small>Сохраняются общей кнопкой «Сохранить комментарии» вверху черновика</small></div>{([1, 2] as const).map(slot => <div key={slot}><label>{slot === 1 ? "Комментарий к Мороженной продукции" : "Комментарий к Копченой продукции"}<textarea value={commentDrafts[slot].text} onChange={event => setCommentDrafts(current => ({ ...current, [slot]: { ...current[slot], text: event.target.value } }))} maxLength={2_000} placeholder={slot === 1 ? "Пожелания к мороженной продукции" : "Пожелания к копченой продукции"}/></label></div>)}</section>
-        <div className="request-chosen-lines"><div><span>В ЗАЯВКЕ</span><strong>{active.lines.length} поз.</strong></div>{active.lines.length ? <div>{active.lines.map(line => <article key={line.id}><span>{line.catalogNumber ? `№ ${line.catalogNumber}` : "вручную"}</span><strong>{line.productName}</strong><b>{quantityText(line.requestedQuantity)} {unitLabel[line.unit]}</b><button type="button" className="subtle-button subtle-danger" aria-label={`Убрать ${line.productName}`} disabled={removeLine.isPending} onClick={() => removeLine.mutate({ requestId: active.id, lineId: line.id })}><Trash2 size={14}/></button></article>)}</div> : <p>Добавьте товары из раскрытой категории.</p>}</div>
-        <div className="request-draft-footer"><span>Заполнение сохраняется в черновике. Руководитель или администратор закроет его перед печатью.</span></div>
+        <section className="request-comments" aria-label="Комментарии к печати"><div><span>КОММЕНТАРИИ</span><small>Сохраняются вместе с количеством одной кнопкой «Сохранить черновик»</small></div>{([1, 2] as const).map(slot => <div key={slot}><label>{slot === 1 ? "Комментарий к Мороженной продукции" : "Комментарий к Копченой продукции"}<textarea value={commentDrafts[slot].text} onChange={event => setCommentDrafts(current => ({ ...current, [slot]: { ...current[slot], text: event.target.value } }))} maxLength={2_000} placeholder={slot === 1 ? "Пожелания к мороженной продукции" : "Пожелания к копченой продукции"}/></label></div>)}</section>
+        <div className="request-chosen-lines"><div><span>В ЗАЯВКЕ{hasUnsavedDraftChanges ? " · НЕ СОХРАНЕНО" : ""}</span><strong>{draftProductLines.length + legacyManualLines.length} поз.</strong></div>{draftProductLines.length || legacyManualLines.length ? <div>{draftProductLines.map(line => <article key={line.productId}><span>{line.catalogNumber ? `№ ${line.catalogNumber}` : "без номера"}</span><strong>{line.productName}</strong><b>{quantityText(line.requestedQuantity)} {unitLabel[line.unit]}</b><button type="button" className="subtle-button subtle-danger" aria-label={`Убрать ${line.productName}`} disabled={saveRequestDraft.isPending} onClick={() => setQuantityDrafts(current => ({ ...current, [line.productId]: "" }))}><Trash2 size={14}/></button></article>)}{legacyManualLines.map(line => <article key={`manual-${line.id}`}><span>вручную</span><strong>{line.productName}</strong><b>{quantityText(line.requestedQuantity)} {unitLabel[line.unit]}</b></article>)}</div> : <p>Добавьте товары из раскрытой категории.</p>}</div>
+        <div className="request-draft-footer"><span>{hasUnsavedDraftChanges ? "Изменения пока локальные: сохраните черновик перед печатью или выходом к списку." : "Черновик сохранен. Руководитель или администратор закроет его перед печатью."}</span></div>
       </> : <div className="request-closed-lines">{active.lines.map(line => <article key={line.id}><span>{line.catalogNumber ? `№ ${line.catalogNumber}` : "вручную"}</span><strong>{line.productName}</strong><b>{quantityText(line.requestedQuantity)} {unitLabel[line.unit]}</b></article>)}</div>}
     </section>}
 

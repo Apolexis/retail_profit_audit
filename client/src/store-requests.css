@@ -34,6 +34,7 @@
 .packet .request-actions .subtle-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; margin: 0; padding-inline: 13px; white-space: nowrap; }
 .packet .request-actions > :first-child:not(:only-child) { margin-right: auto; }
 .packet .request-delete-draft { min-width: 166px; }
+.packet .request-save-draft:not(:disabled) { border-color: var(--request-accent); box-shadow: 0 0 0 1px var(--request-accent-faint); }
 .packet .request-search-row { display: flex; align-items: end; gap: 12px; padding: 12px 0; border-block: 1px solid var(--request-line); }
 .packet .request-search-row > label { flex: 1 1 260px; }
 .packet .request-search-row > span { padding-bottom: 10px; color: var(--muted); font-size: 11px; white-space: nowrap; }

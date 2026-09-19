@@ -50,6 +50,7 @@ import {
   setOperationalProductSalePrice,
   setOperationalWarehouseEvotorMapping,
   setOperationalWarehousePrintGroup,
+  saveOperationalStoreRequestDraft,
   setOperationalPrintCategoryGroupMember,
   setOperationalStorePriceType,
   syncOperationalEvotorDocumentPage,
@@ -410,6 +411,26 @@ export const inventoryRegistryRouter = router({
       entityId: `${input.requestId}:${input.slot}`,
       beforeState: result.before ? { categoryGroupId: result.before.printCategoryGroupId, categoryGroup: result.before.printCategoryGroupName, text: result.before.text } : null,
       afterState: result.after ? { categoryGroupId: result.after.printCategoryGroupId, categoryGroup: result.after.printCategoryGroupName, text: result.after.text } : { deleted: true },
+    });
+    return result;
+  }),
+  saveRequestDraft: protectedProcedure.input(z.object({
+    requestId: z.number().int().positive(),
+    lines: z.array(z.object({ productId: z.number().int().positive(), requestedQuantity: z.number().finite().positive().max(1_000_000) })).max(2_000),
+    comments: z.array(z.object({ slot: z.union([z.literal(1), z.literal(2)]), text: z.string().max(2_000) })).length(2),
+  }).superRefine((input, context) => {
+    if (new Set(input.lines.map(line => line.productId)).size !== input.lines.length) context.addIssue({ code: z.ZodIssueCode.custom, message: "Один товар нельзя сохранить в заявке дважды.", path: ["lines"] });
+    if (new Set(input.comments.map(comment => comment.slot)).size !== 2) context.addIssue({ code: z.ZodIssueCode.custom, message: "Передайте оба комментария черновика.", path: ["comments"] });
+  })).mutation(async ({ ctx, input }) => {
+    const { actor, detail } = await storeRequestDetailWithPermission(ctx.user.openId, input.requestId, "edit");
+    const result = await saveOperationalStoreRequestDraft({ ...input, actorId: actor.id, allowHidden: actor.role === "admin" });
+    await recordChange({
+      actorId: actor.id,
+      action: "store_request.draft.save",
+      entityType: "operational_store_request",
+      entityId: String(input.requestId),
+      beforeState: { requestNumber: detail.requestNumber, storeName: detail.storeName, lineCount: result.before.lineCount, commentCount: result.before.commentCount },
+      afterState: { lineCount: result.after.lineCount, commentCount: result.after.commentCount, retainedManualLines: result.after.retainedManualLines, saveMode: "single-transaction" },
     });
     return result;
   }),

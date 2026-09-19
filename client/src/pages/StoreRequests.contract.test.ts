@@ -22,10 +22,10 @@ describe("заявки магазинов: экран", () => {
     expect(page).not.toContain("evotorCostPrice");
   });
 
-  it("меняет количество прямо в строке и показывает расчеты без создания товара из заявки", () => {
-    expect(page).toContain("upsertRequestLine");
-    expect(page).toContain("removeRequestLine");
-    expect(page).toContain("changeProductQuantity");
+	  it("меняет количество прямо в строке и показывает расчеты без создания товара из заявки", () => {
+	    expect(page).toContain("saveRequestDraft");
+	    expect(page).toContain("draftProductLines");
+	    expect(page).toContain("changeProductQuantity");
     expect(page).toContain("request-quantity-stepper");
     expect(page).not.toContain("addRequestManualLine");
     expect(page).not.toContain("Не нашли товар? Добавить строку");
@@ -68,14 +68,17 @@ describe("заявки магазинов: экран", () => {
     expect(page).not.toContain("Общее примечание к заказу");
   });
 
-	  it("сохраняет оба комментария единым действием черновика, а не при выходе из каждого поля", () => {
-	    expect(page).toContain("const saveDraftComments = async () =>");
-	    expect(page).toContain("upsertRequestComment.mutateAsync");
+	  it("сохраняет количество и оба комментария одним действием черновика", () => {
+	    expect(page).toContain("const saveDraft = () =>");
+	    expect(page).toContain("saveRequestDraft.mutate");
 	    expect(page).toContain('<Save size={14}/>');
-	    expect(page).toContain("Сохранить комментарии");
-	    expect(page).toContain("Комментарии сохранены");
-	    expect(page).not.toContain("onBlur={() => saveComment(slot)}");
-  });
+	    expect(page).toContain("Сохранить черновик");
+	    expect(page).toContain("Черновик сохранен");
+	    expect(page).toContain("НЕ СОХРАНЕНО");
+	    expect(page).not.toContain("upsertRequestComment.mutateAsync");
+	    expect(page).not.toContain("removeLine.mutate");
+	    expect(page).not.toContain("persistProductQuantity");
+	  });
 });
 
 describe("заявки магазинов: адаптивность и печать", () => {
