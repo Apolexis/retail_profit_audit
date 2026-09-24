@@ -1,0 +1,1 @@
+ALTER TABLE `operational_evotor_outbound_jobs` MODIFY COLUMN `reason` enum('catalog_create','catalog_update','catalog_enable','full_catalog_export','price_update','warehouse_mapping','inventory_close','stock_adjustment','transfer','shipment_receipt') NOT NULL;

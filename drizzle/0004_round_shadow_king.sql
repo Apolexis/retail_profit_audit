@@ -1,0 +1,1 @@
+ALTER TABLE `audit_local_accounts` MODIFY COLUMN `role` enum('admin','analyst') NOT NULL DEFAULT 'analyst';

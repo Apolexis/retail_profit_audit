@@ -1,0 +1,22 @@
+import { describe, expect, it } from "vitest";
+import { passkeyRegistrationPolicy, passkeyRelyingParty } from "./passkeys";
+
+describe("контекст passkey", () => {
+  it("использует фактический HTTPS Origin телефона даже при внутреннем host прокси", () => {
+    expect(passkeyRelyingParty({ protocol: "http", headers: { host: "internal:3000", origin: "https://apolexis.manus.space", "x-forwarded-host": "internal.manus.computer", "x-forwarded-proto": "https" } })).toEqual({ rpId: "apolexis.manus.space", origin: "https://apolexis.manus.space" });
+  });
+
+  it("использует публичный forwarded host и HTTPS origin за прокси", () => {
+    expect(passkeyRelyingParty({ protocol: "http", headers: { host: "internal:3000", "x-forwarded-host": "apolexis.manus.space", "x-forwarded-proto": "https" } })).toEqual({ rpId: "apolexis.manus.space", origin: "https://apolexis.manus.space" });
+  });
+
+  it("отделяет порт разработки от RP ID localhost", () => {
+    expect(passkeyRelyingParty({ protocol: "http", headers: { host: "localhost:3000" } })).toEqual({ rpId: "localhost", origin: "http://localhost:3000" });
+  });
+
+  it("предпочитает локальный authenticator и не требует discoverable credential до показа Android platform prompt", () => {
+    expect(passkeyRegistrationPolicy.timeout).toBe(120_000);
+    expect(passkeyRegistrationPolicy.authenticatorSelection).toEqual({ residentKey: "preferred", userVerification: "required" });
+    expect(passkeyRegistrationPolicy.preferredAuthenticatorType).toBe("localDevice");
+  });
+});

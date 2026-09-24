@@ -1,0 +1,141 @@
+import { BellRing, BellOff, Download, RefreshCw, Share, Smartphone } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { browserSupportsPasskeys, startRegistration } from "@simplewebauthn/browser";
+import { AuditShell } from "@/components/AuditShell";
+import { currentPushSubscription, pushSupported, subscribeToPush } from "@/lib/push";
+import { getPwaInstallGuide } from "@/lib/pwaInstallGuide";
+import { trpc } from "@/lib/trpc";
+import { formatMoscowDateTime } from "@/lib/utils";
+import { PasswordInput } from "@/components/PasswordInput";
+import { passkeyErrorText } from "@/lib/passkeyError";
+import { getPasskeyPlatform, passkeyPlatformGuidance } from "@/lib/passkeyPlatform";
+
+type InstallPromptEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: "accepted" | "dismissed" }> };
+type PreparedPasskeyOptions = Parameters<typeof startRegistration>[0]["optionsJSON"];
+
+function maskPhone(phone: string | undefined) {
+  const digits = (phone ?? "").replace(/\D/g, "");
+  return /^79\d{9}$/.test(digits) ? `+7 ••• •••-${digits.slice(-4)}` : phone || "—";
+}
+
+export default function Profile() {
+  const me = trpc.localAuth.me.useQuery();
+  const account = me.data;
+  const isAdmin = account?.role === "admin";
+  const isSeller = account?.role === "seller";
+  const isManager = account?.role === "manager";
+  const push = trpc.localAuth.pushStatus.useQuery(undefined, { retry: false });
+  const utils = trpc.useUtils();
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [nextPassword, setNextPassword] = useState("");
+  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
+  const [passkeySupported, setPasskeySupported] = useState(false);
+  const [preparedPasskeyOptions, setPreparedPasskeyOptions] = useState<PreparedPasskeyOptions | null>(null);
+  const [clearingCache, setClearingCache] = useState(false);
+  const standalone = typeof window !== "undefined" && window.matchMedia("(display-mode: standalone)").matches;
+
+  useEffect(() => {
+    const capture = (event: Event) => { event.preventDefault(); setInstallPrompt(event as InstallPromptEvent); };
+    window.addEventListener("beforeinstallprompt", capture);
+    browserSupportsPasskeys().then(setPasskeySupported).catch(() => setPasskeySupported(false));
+    return () => window.removeEventListener("beforeinstallprompt", capture);
+  }, []);
+
+  const change = trpc.localAuth.changePassword.useMutation({
+    onSuccess: () => { setCurrentPassword(""); setNextPassword(""); utils.localAuth.me.invalidate(); toast.success("Пароль изменен"); },
+    onError: error => toast.error(error.message),
+  });
+  const logout = trpc.localAuth.logout.useMutation({ onSuccess: () => window.location.reload() });
+  const subscribe = trpc.localAuth.subscribePush.useMutation({ onSuccess: () => utils.localAuth.pushStatus.invalidate(), onError: error => toast.error(error.message) });
+  const unsubscribe = trpc.localAuth.unsubscribePush.useMutation({ onSuccess: () => utils.localAuth.pushStatus.invalidate(), onError: error => toast.error(error.message) });
+  const passkeys = trpc.localAuth.passkeys.useQuery(undefined, { retry: false, enabled: Boolean(account) && !isSeller });
+  const beginPasskey = trpc.localAuth.beginPasskeyRegistration.useMutation();
+  const finishPasskey = trpc.localAuth.finishPasskeyRegistration.useMutation({ onSuccess: () => { utils.localAuth.passkeys.invalidate(); toast.success("Ключ доступа добавлен на этом устройстве"); } });
+  const deletePasskey = trpc.localAuth.deletePasskey.useMutation({ onSuccess: () => { utils.localAuth.passkeys.invalidate(); toast.success("Ключ доступа удален"); }, onError: error => toast.error(error.message) });
+  const enablePush = async () => {
+    try {
+      if (!push.data?.configured || !push.data.publicKey) { toast.info("Телефонные уведомления еще настраиваются на сервере"); return; }
+      const subscription = await subscribeToPush(push.data.publicKey);
+      await subscribe.mutateAsync(subscription.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } });
+      toast.success("Телефонные уведомления включены");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Не удалось включить уведомления");
+    }
+  };
+  const disablePush = async () => {
+    try {
+      const subscription = await currentPushSubscription();
+      await unsubscribe.mutateAsync({ endpoint: subscription?.endpoint });
+      await subscription?.unsubscribe();
+      toast.success("Телефонные уведомления отключены");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Не удалось отключить уведомления");
+    }
+  };
+  const install = async () => {
+    if (!installPrompt) { toast.info(getPwaInstallGuide(navigator.userAgent, navigator.maxTouchPoints), { duration: 9000 }); return; }
+    await installPrompt.prompt();
+    const choice = await installPrompt.userChoice;
+    if (choice.outcome === "accepted") toast.success("Приложение добавлено на экран");
+    setInstallPrompt(null);
+  };
+  const clearPwaCache = async () => {
+    setClearingCache(true);
+    await new Promise<void>(resolve => window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve())));
+    const visibleFor = new Promise<void>(resolve => window.setTimeout(resolve, 620));
+    try {
+      if ("caches" in window) {
+        const names = await caches.keys();
+        await Promise.all(names.map(name => caches.delete(name)));
+      }
+      window.localStorage.clear();
+      if ("serviceWorker" in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.filter(registration => new URL(registration.scope).origin === window.location.origin).map(registration => registration.update()));
+      }
+      window.location.replace(window.location.href);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Не удалось очистить кэш приложения");
+    } finally {
+      await visibleFor;
+      setClearingCache(false);
+    }
+  };
+  const enablePasskey = async () => {
+    try {
+      const options = await beginPasskey.mutateAsync();
+      if (getPasskeyPlatform() !== "android") {
+        const response = await startRegistration({ optionsJSON: options });
+        await finishPasskey.mutateAsync({ response });
+        return;
+      }
+      setPreparedPasskeyOptions(options);
+      toast.success("Ключ подготовлен", { description: "Теперь нажмите «Подтвердить ключ на устройстве» — это откроет системное подтверждение." });
+    } catch (error) {
+      toast.error(passkeyErrorText(error, getPasskeyPlatform()), { duration: 9000 });
+    }
+  };
+  const confirmPasskeyOnDevice = async () => {
+    if (!preparedPasskeyOptions) return;
+    try {
+      const response = await startRegistration({ optionsJSON: preparedPasskeyOptions });
+      await finishPasskey.mutateAsync({ response });
+      setPreparedPasskeyOptions(null);
+    } catch (error) {
+      toast.error(passkeyErrorText(error, getPasskeyPlatform()), { duration: 9000 });
+    }
+  };
+  const passkeyBusy = beginPasskey.isPending || finishPasskey.isPending;
+  const passkeyPlatform = getPasskeyPlatform();
+
+  return <AuditShell kicker="14 / ПРОФИЛЬ" title="Профиль и безопасность">
+    <section className="page-lede"><div><span>ЛОКАЛЬНАЯ УЧЕТНАЯ ЗАПИСЬ</span><h2>Профиль доступа</h2><p>{isSeller ? "Здесь можно изменить пароль, настроить уведомления и завершить текущую сессию. Для магазина доступен только операционный контур назначенной точки." : isManager ? "Здесь можно изменить пароль, настроить уведомления и завершить текущую сессию. Руководитель работает только в операционном контуре назначенных точек." : "Здесь можно изменить пароль, настроить телефонные уведомления и завершить текущую сессию. Администратор управляет системой целиком; аналитик видит только назначенные ему магазины."}</p></div></section>
+    <section className="access-grid">
+      <article className="packet-card"><span className="card-eyebrow">ТЕКУЩАЯ РОЛЬ</span><h3>{isAdmin ? "Администратор" : isSeller ? "Продавец" : isManager ? "Руководитель" : "Аналитик"}</h3><p>{isSeller ? "Логин магазина" : "Номер телефона"}: <strong>{maskPhone(account?.phone)}</strong></p><p className="packet-note">{isAdmin ? "Доступ ко всем магазинам, импорту, базе, журналу и настройке пользователей." : isSeller ? "Доступна только «Выручка» назначенной точки. Финансовая аналитика, Excel, прайс-контроль и ключ доступа закрыты." : isManager ? "Доступны операционные модули назначенных точек. Финансовая аналитика, Excel, прайс-контроль и системные настройки закрыты." : "Доступ к каждому магазину задается отдельно: «Просмотр» или «Редактирование»."}</p><button className="subtle-button" onClick={() => logout.mutate()}>Выйти из системы</button></article>
+      <article className="packet-card"><span className="card-eyebrow">СМЕНА ПАРОЛЯ</span>{account?.mustChangePassword && <p className="inline-error">После первого входа магазина замените выданный пароль на новый не короче 10 символов. До этого остальные разделы закрыты.</p>}<form className="stack-form" onSubmit={event => { event.preventDefault(); change.mutate({ currentPassword, nextPassword }); }}><label>Текущий пароль<PasswordInput value={currentPassword} onChange={event => setCurrentPassword(event.target.value)} autoComplete="current-password" required /></label><label>Новый пароль<PasswordInput value={nextPassword} onChange={event => setNextPassword(event.target.value)} minLength={10} autoComplete="new-password" required /></label>{change.error && <p className="inline-error">{change.error.message}</p>}<button className="packet-link compact" disabled={change.isPending}>Сохранить пароль</button></form></article>
+    </section>
+    {!isSeller && <section className="packet-card passkey-settings"><div><span className="card-eyebrow">КЛЮЧ ДОСТУПА</span><h3>Вход с ключом доступа</h3><p>Устройство создает ключ для «Аналитики «Рыбный»». Для подтверждения оно может использовать Face ID, Touch ID, Windows Hello, ключ аккаунта или PIN; в системе хранится только открытый ключ.</p></div><div className="passkey-settings-action">{passkeySupported ? <><button className="packet-link compact" onClick={enablePasskey} disabled={passkeyBusy}>{beginPasskey.isPending ? "Подготавливаем…" : preparedPasskeyOptions ? "Подготовить заново" : "Добавить ключ доступа"}</button>{preparedPasskeyOptions && <button className="packet-link compact" onClick={confirmPasskeyOnDevice} disabled={passkeyBusy}>Подтвердить ключ на устройстве</button>}<small>{passkeyPlatformGuidance(passkeyPlatform)}</small></> : <small>Этот браузер не поддерживает ключи доступа.</small>}</div>{passkeys.data?.length ? <div className="passkey-list">{passkeys.data.map(item => <div key={item.id}><span><b>{item.deviceType === "multiDevice" ? "Синхронизируемый ключ" : "Ключ устройства"}</b><small>{item.lastUsedAt ? `Последний вход: ${formatMoscowDateTime(item.lastUsedAt)}` : `Добавлен: ${formatMoscowDateTime(item.createdAt)}`}</small></span><button className="subtle-button" onClick={() => deletePasskey.mutate({ id: item.id })} disabled={deletePasskey.isPending}>Удалить</button></div>)}</div> : null}</section>}
+    <section className="packet-card push-settings"><div><span className="card-eyebrow">ПРИЛОЖЕНИЕ И УВЕДОМЛЕНИЯ</span><h3>На экране телефона или планшета</h3><p>Установите Аналитику «Рыбный» как приложение, затем по желанию включите критичные сигналы и новые управленческие отчеты.</p></div><div className="push-settings-action"><button className="subtle-button" onClick={install} disabled={standalone}>{standalone ? <Smartphone size={16} /> : installPrompt ? <Download size={16} /> : <Share size={16} />} {standalone ? "Уже установлено" : installPrompt ? "Установить приложение" : "Как добавить на экран"}</button><button className={clearingCache ? "subtle-button profile-cache-reset is-clearing" : "subtle-button profile-cache-reset"} type="button" onClick={clearPwaCache} disabled={clearingCache}><span className="profile-cache-reset-icon" aria-hidden="true"><RefreshCw size={16} /></span> {clearingCache ? "Очищаем кэш…" : "Сбросить кэш приложения"}</button><small>Сбрасываются Cache Storage и локальные настройки приложения. Факты, доступ, серверные записи и текущая сессия не меняются.</small>{!pushSupported() ? <small>Этот браузер не поддерживает Web Push.</small> : push.data?.enabled ? <><span><BellRing size={17} /> Включены на этом устройстве</span><button className="subtle-button" onClick={disablePush} disabled={unsubscribe.isPending}><BellOff size={16} />Отключить</button></> : <><span><Smartphone size={17} />{push.data?.configured ? "Разрешение еще не выдано" : "Серверная настройка ожидается"}</span><button className="packet-link compact" onClick={enablePush} disabled={!push.data?.configured || subscribe.isPending}><BellRing size={16} />Включить</button></>}</div></section>
+  </AuditShell>;
+}

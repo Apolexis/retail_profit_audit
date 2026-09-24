@@ -1,0 +1,192 @@
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useLocation } from "wouter";
+
+export type DateRangeValue = { from: string; to: string };
+type Theme = "dark" | "light";
+
+const defaultRange: DateRangeValue = { from: "2026-01-01", to: "2026-12-31" };
+const pretty = (date: string) => date.split("-").reverse().join(".");
+const normalizeRange = (value: DateRangeValue): DateRangeValue => value.from <= value.to ? value : { from: value.to, to: value.from };
+/** The shared analysis scope is either the whole network or one store. Legacy
+ * chip selections retain the first store so an existing scoped view stays scoped. */
+const normalizeStoreScope = (values: unknown[]): string[] => Array.from(new Set(values.filter((value): value is string => typeof value === "string" && Boolean(value.trim()) && value !== "__all__"))).slice(0, 1);
+const themeIcon = {
+  dark: "/manus-storage/rybny_circle_dark_v8_high_detail_transparent_a12b19ba.png",
+  light: "/manus-storage/rybny_circle_light_v10_clean_contours_rgba_candidate_3c5f2dad.png",
+} as const;
+const themeManifest = { dark: "/manifest-dark.webmanifest?v=19", light: "/manifest-light.webmanifest?v=19" } as const;
+const storedTheme = () => localStorage.getItem("audit-theme") as Theme | null;
+const systemTheme = (): Theme => window.matchMedia?.("(prefers-color-scheme: light)").matches ? "light" : "dark";
+
+type AuditState = {
+  selectedStore: string;
+  setSelectedStore: (value: string) => void;
+  selectedStores: string[];
+  setSelectedStores: (value: string[]) => void;
+  range: DateRangeValue;
+  setRange: (value: DateRangeValue) => void;
+  theme: Theme;
+  toggleTheme: () => void;
+  demoMode: boolean;
+  demoSeed: number;
+  toggleDemoMode: () => void;
+  rangeLabel: string;
+  months: string[];
+  includesMonth: (value: string) => boolean;
+};
+
+const AuditContext = createContext<AuditState | null>(null);
+
+/** Applies standalone shell and PWA metadata synchronously without replacing DOM nodes. */
+function applyPwaTheme(theme: Theme) {
+  const color = theme === "dark" ? "#0c0b12" : "#ffffff";
+  const root = document.documentElement;
+  const refreshNativeThemeMeta = () => {
+    const upsertMeta = (id: string, name: string, content: string) => {
+      const next = document.createElement("meta");
+      next.id = id;
+      next.name = name;
+      next.content = content;
+      next.dataset.auditThemeRevision = `${theme}-${Date.now()}`;
+      const current = document.getElementById(id);
+      if (current) current.replaceWith(next);
+      else document.head.append(next);
+    };
+    // iOS may ignore an in-place content mutation. A fresh node causes Safari to
+    // re-evaluate the browser/PWA chrome without requiring an orientation change.
+    upsertMeta("app-theme-color", "theme-color", color);
+    upsertMeta("app-apple-status-bar-style", "apple-mobile-web-app-status-bar-style", theme === "dark" ? "black-translucent" : "default");
+    document.querySelectorAll('meta[data-audit-runtime-theme-color], meta[data-audit-runtime-status-style]').forEach(node => node.remove());
+  };
+
+  localStorage.setItem("audit-theme", theme);
+  root.dataset.auditTheme = theme;
+  root.dataset.pwaTheme = theme;
+  document.body.dataset.auditTheme = theme;
+  document.body.dataset.pwaTheme = theme;
+  root.style.colorScheme = theme;
+  root.style.setProperty("background", color, "important");
+  root.style.setProperty("background-color", color, "important");
+  root.style.setProperty("--pwa-system-color", color, "important");
+  document.body.style.colorScheme = theme;
+  document.body.style.setProperty("background", color, "important");
+  document.body.style.setProperty("background-color", color, "important");
+  document.body.style.setProperty("--pwa-system-color", color, "important");
+  refreshNativeThemeMeta();
+  // Safari/iOS may retain a composited browser/PWA surface until it observes a fresh
+  // theme-color node and a synchronous layout read. Both are local visual updates.
+  void root.offsetHeight;
+  document.querySelectorAll<HTMLElement>(".packet .packet-top").forEach(header => {
+    header.style.setProperty("background", color, "important");
+    header.style.setProperty("background-color", color, "important");
+    header.style.colorScheme = theme;
+  });
+  document.getElementById("app-favicon")?.setAttribute("href", themeIcon[theme]);
+  document.getElementById("app-apple-touch-icon")?.setAttribute("href", themeIcon[theme]);
+  document.getElementById("app-manifest")?.setAttribute("href", themeManifest[theme]);
+  window.requestAnimationFrame(()=>{refreshNativeThemeMeta();});
+  window.setTimeout(()=>{refreshNativeThemeMeta();},32);
+  window.dispatchEvent(new CustomEvent("audit-pwa-theme-change", { detail: { theme, color } }));
+}
+
+export function AuditProvider({ children }: { children: ReactNode }) {
+  const [selectedStores, setSelectedStoresState] = useState<string[]>(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("audit-stores") ?? "null");
+      if (Array.isArray(stored)) return normalizeStoreScope(stored);
+    } catch {}
+    const legacy = localStorage.getItem("audit-store");
+    return legacy && legacy !== "__all__" ? [legacy] : [];
+  });
+  const [range, setRangeState] = useState<DateRangeValue>(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("audit-range") ?? "null") as DateRangeValue | null;
+      return stored?.from && stored.to ? normalizeRange(stored) : defaultRange;
+    } catch {
+      return defaultRange;
+    }
+  });
+  const [theme, setTheme] = useState<Theme>(() => storedTheme() ?? systemTheme());
+  const [demoMode, setDemoMode] = useState(() => localStorage.getItem("audit-demo-mode") === "true");
+  const [demoSeed, setDemoSeed] = useState(() => Number(localStorage.getItem("audit-demo-seed")) || Date.now());
+  const themeRef = useRef(theme);
+  const [location] = useLocation();
+  const selectedStore = selectedStores.length === 1 ? selectedStores[0] : "__all__";
+  const setSelectedStores = (values: string[]) => setSelectedStoresState(normalizeStoreScope(values));
+  const setSelectedStore = (value: string) => setSelectedStores(value === "__all__" ? [] : [value]);
+  const setRange = (value: DateRangeValue) => setRangeState(normalizeRange(value));
+
+  useEffect(() => { localStorage.setItem("audit-store", selectedStore); }, [selectedStore]);
+  useEffect(() => { localStorage.setItem("audit-stores", JSON.stringify(selectedStores)); }, [selectedStores]);
+  useEffect(() => { localStorage.setItem("audit-range", JSON.stringify(range)); }, [range]);
+  useEffect(() => { localStorage.setItem("audit-demo-mode", String(demoMode)); }, [demoMode]);
+  useEffect(() => { localStorage.setItem("audit-demo-seed", String(demoSeed)); }, [demoSeed]);
+  useLayoutEffect(() => {
+    themeRef.current = theme;
+    applyPwaTheme(theme);
+  }, [theme]);
+  useEffect(() => {
+    const setWhitePrintSurface = () => {
+      const root = document.documentElement;
+      root.style.setProperty("background", "#ffffff", "important");
+      root.style.setProperty("background-color", "#ffffff", "important");
+      root.style.colorScheme = "light";
+      document.body.style.setProperty("background", "#ffffff", "important");
+      document.body.style.setProperty("background-color", "#ffffff", "important");
+      document.body.style.colorScheme = "light";
+    };
+    const restorePwaSurface = () => applyPwaTheme(themeRef.current);
+    window.addEventListener("beforeprint", setWhitePrintSurface);
+    window.addEventListener("afterprint", restorePwaSurface);
+    return () => {
+      window.removeEventListener("beforeprint", setWhitePrintSurface);
+      window.removeEventListener("afterprint", restorePwaSurface);
+    };
+  }, []);
+  useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: "auto" }); }, [location]);
+
+  const value = useMemo<AuditState>(() => {
+    const start = new Date(`${range.from.slice(0, 7)}-01T00:00:00`);
+    const end = new Date(`${range.to.slice(0, 7)}-01T00:00:00`);
+    const months: string[] = [];
+    for (const cursor = new Date(start); cursor <= end; cursor.setMonth(cursor.getMonth() + 1)) {
+      months.push(`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`);
+    }
+    const toggleTheme = () => {
+      const next = themeRef.current === "dark" ? "light" : "dark";
+      themeRef.current = next;
+      applyPwaTheme(next);
+      setTheme(next);
+    };
+    return {
+      selectedStore,
+      setSelectedStore,
+      selectedStores,
+      setSelectedStores,
+      range,
+      setRange,
+      theme,
+      toggleTheme,
+      demoMode,
+      demoSeed,
+      toggleDemoMode: () => {
+        if (!demoMode) setDemoSeed(Date.now());
+        setDemoMode(current => !current);
+      },
+      rangeLabel: `${pretty(range.from)} — ${pretty(range.to)}`,
+      months,
+      includesMonth: (value: string) => {
+        const normalized = value.length === 7 ? value : value.slice(0, 7);
+        return normalized >= range.from.slice(0, 7) && normalized <= range.to.slice(0, 7);
+      },
+    };
+  }, [selectedStore, selectedStores, range, theme, demoMode, demoSeed]);
+
+  return <AuditContext.Provider value={value}>{children}</AuditContext.Provider>;
+}
+
+export function useAudit() {
+  const context = useContext(AuditContext);
+  if (!context) throw new Error("useAudit must be inside AuditProvider");
+  return context;
+}

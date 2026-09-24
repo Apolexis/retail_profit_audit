@@ -1,0 +1,330 @@
+/* Isolated inventory uses the same operating theme contract as «Выручка». */
+.packet {
+  --inventory-card: var(--surface);
+  --inventory-panel: var(--surface-2);
+  --inventory-field: var(--surface);
+  --inventory-input: var(--surface-2);
+  --inventory-line: var(--line);
+  --inventory-quiet-line: var(--line);
+  --inventory-accent: var(--packet-accent);
+  --inventory-accent-soft: var(--packet-accent-soft);
+  --inventory-accent-faint: var(--packet-accent-faint);
+}
+.packet .inventory-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+.packet .inventory-lede { margin-bottom: 0; }
+.packet .inventory-rule-disclosure { display: grid; gap: 0; margin: 18px 0; border-color: var(--inventory-line); background: var(--inventory-card); box-shadow: none; }
+.packet .inventory-rule-disclosure > summary { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: baseline; cursor: pointer; list-style: none; }
+.packet .inventory-rule-disclosure > summary::-webkit-details-marker { display: none; }
+.packet .inventory-rule-disclosure > summary > span { color: var(--inventory-accent); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .08em; }
+.packet .inventory-rule-disclosure > summary > strong { min-width: 0; color: var(--ink); font-size: 14px; }
+.packet .inventory-rule-disclosure > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(250px, .85fr); gap: 16px 24px; padding-top: 14px; }
+.packet .inventory-rule-disclosure ol { display: grid; gap: 7px; margin: 0; padding-left: 22px; color: var(--ink); font-size: 13px; line-height: 1.4; }
+.packet .inventory-rule-disclosure .packet-note { margin: 0; }
+
+.packet :is(.inventory-create-card, .inventory-draft-card, .inventory-history) { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; min-width: 0; border-color: var(--inventory-line); background: var(--inventory-card); box-shadow: none; }
+.packet .inventory-meta-grid { display: grid; grid-template-columns: minmax(190px, .75fr) minmax(190px, 1fr); gap: 12px; }
+.packet .inventory-meta-grid > label,
+.packet .inventory-store-readonly,
+.packet .inventory-note,
+.packet .inventory-note-form > label,
+.packet .inventory-line-create > label { display: grid; gap: 6px; min-width: 0; color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.packet .inventory-store-readonly { align-content: center; min-height: 42px; padding: 9px 12px; border: 1px solid var(--inventory-line); border-radius: 11px; background: var(--inventory-field); }
+.packet .inventory-store-readonly strong { overflow: hidden; color: var(--ink); letter-spacing: normal; text-overflow: ellipsis; text-transform: none; white-space: nowrap; }
+.packet .inventory-note small,
+.packet .inventory-note-form small,
+.packet .inventory-line-create label > small { color: var(--faint); font-size: 10px; font-weight: 650; letter-spacing: normal; text-transform: none; }
+.packet .inventory-note textarea,
+.packet .inventory-note-form textarea { min-height: 70px; width: 100%; resize: vertical; padding: 8px 10px; border: 1px solid var(--inventory-line); border-radius: 9px; background: var(--inventory-input); color: var(--ink); font: 650 12px Manrope, Arial, sans-serif; letter-spacing: normal; outline: none; text-transform: none; }
+.packet .inventory-note textarea:focus-visible,
+.packet .inventory-note-form textarea:focus-visible,
+.packet .inventory-line-create input:focus-visible { border-color: var(--inventory-accent); outline: none; box-shadow: none; }
+.packet .inventory-create-actions { display: flex; justify-content: flex-end; }
+.packet .inventory-table-actions { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+.packet .inventory-table-actions .subtle-button { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; margin: 0; white-space: nowrap; }
+.packet .inventory-table-actions .inventory-save-lines { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 34px; margin: 0; white-space: nowrap; }
+.packet .inventory-table-actions .inventory-close-trigger { border-style: dashed; }
+.packet .inventory-close-hint { flex-basis: 100%; color: var(--muted); font-size: 10px; line-height: 1.3; text-align: right; }
+.packet .inventory-revision-totals { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 12px; border: 1px solid var(--inventory-quiet-line); border-radius: 11px; background: var(--inventory-panel); }
+.packet .inventory-revision-totals-heading { flex-basis: 100%; color: var(--inventory-accent); font: 900 13px/1 Manrope, Arial, sans-serif; letter-spacing: .07em; }
+.packet .inventory-revision-totals > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; min-width: 0; padding-right: 12px; border-right: 1px solid var(--inventory-quiet-line); color: var(--muted); font-size: 11px; }
+.packet .inventory-revision-totals > div:last-child { padding-right: 0; border-right: 0; }
+.packet .inventory-revision-totals strong { color: var(--ink); font-size: 12px; }
+.packet .inventory-revision-totals b { font-size: 11px; }
+.packet .inventory-revision-totals small { flex-basis: 100%; color: var(--muted); font-size: 10px; line-height: 1.3; }
+
+.packet .inventory-note-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: end; }
+.packet .inventory-note-form .subtle-button,
+.packet .inventory-line-create .packet-link { display: inline-flex; align-items: center; gap: 7px; min-height: 38px; margin: 0; white-space: nowrap; }
+.packet .inventory-add-product-link { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; margin: 0; white-space: nowrap; }
+.packet .inventory-line-create { display: grid; grid-template-columns: minmax(260px, 1.35fr) minmax(130px, .6fr) minmax(150px, .65fr) auto auto; gap: 12px; align-items: end; padding: 14px; border: 1px solid var(--inventory-quiet-line); border-radius: 13px; background: var(--inventory-panel); }
+.packet .inventory-search { position: relative; display: grid; align-items: center; }
+.packet .inventory-search svg { position: absolute; right: 10px; color: var(--faint); pointer-events: none; }
+.packet .inventory-line-create input { width: 100%; min-width: 0; height: 40px; padding: 0 10px; border: 1px solid var(--inventory-line); border-radius: 9px; background: var(--inventory-field); color: var(--ink); font: 700 13px Manrope, Arial, sans-serif; outline: none; }
+.packet .inventory-line-create .free-scroll-select-trigger { width: 100%; min-height: 40px; border-color: var(--inventory-line); border-radius: 9px; background: var(--inventory-field); color: var(--ink); }
+.packet .inventory-line-create .free-scroll-select-trigger:focus-visible { border-color: var(--inventory-accent); box-shadow: none; outline: none; }
+.packet .inventory-search input { padding-right: 31px; }
+.packet .inventory-accounting-readout { display: grid; align-content: center; min-height: 40px; gap: 3px; padding: 7px 10px; border: 1px solid var(--inventory-line); border-radius: 9px; background: var(--inventory-field); }
+.packet .inventory-accounting-readout > span { color: var(--muted); font: 800 9px Manrope, Arial, sans-serif; letter-spacing: .07em; text-transform: uppercase; }
+.packet .inventory-accounting-readout > strong { overflow: hidden; color: var(--ink); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.packet .inventory-quantity-field { min-width: 150px; }
+.packet .inventory-quantity-input { position: relative; display: grid; align-items: center; }
+.packet .inventory-quantity-input input { padding-right: 42px; }
+.packet .inventory-quantity-input small { position: absolute; right: 10px; color: var(--muted); font: 750 11px Manrope, Arial, sans-serif; letter-spacing: 0; pointer-events: none; text-transform: none; }
+.packet .inventory-quantity-stepper { display: grid; grid-template-columns: 38px minmax(0, 1fr) 38px; align-items: center; gap: 9px; }
+.packet .inventory-quantity-stepper .subtle-button { display: grid; place-items: center; width: 38px; min-width: 38px; height: 40px; min-height: 40px; margin: 0; padding: 0; border-radius: 10px; font-size: 18px; line-height: 1; }
+.packet .inventory-lines-wrap { overflow-x: auto; cursor: grab; scrollbar-width: none; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y; }
+.packet .inventory-lines-wrap::-webkit-scrollbar { display: none; }
+.packet .inventory-lines-wrap.table-mouse-dragging { cursor: grabbing; user-select: none; }
+.packet .inventory-lines { min-width: 660px; }
+.packet .inventory-lines tbody tr:nth-child(even) { background: color-mix(in srgb, var(--inventory-panel) 72%, transparent); }
+.packet .inventory-lines td small { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+.packet .inventory-lines td:last-child { white-space: nowrap; }
+.packet .inventory-inline-quantity { display: grid; grid-template-columns: 32px minmax(0, 1fr) 32px; align-items: center; width: min(214px, 100%); gap: 7px; }
+.packet .inventory-inline-quantity > span { position: relative; min-width: 0; }
+.packet .inventory-inline-quantity input { width: 100%; min-width: 0; height: 34px; padding: 0 36px 0 9px; border: 1px solid var(--inventory-line); border-radius: 8px; background: var(--inventory-field); color: var(--ink); font: 750 12px Manrope, Arial, sans-serif; outline: none; }
+.packet .inventory-inline-quantity input:focus-visible { border-color: var(--inventory-accent); outline: none; box-shadow: none; }
+.packet .inventory-inline-quantity small { position: absolute; right: 9px; top: 50%; margin: 0 !important; color: var(--muted); font-size: 11px; pointer-events: none; transform: translateY(-50%); }
+.packet .inventory-inline-quantity .subtle-button { display: grid; place-items: center; width: 32px; min-width: 32px; height: 34px; min-height: 34px; margin: 0; padding: 0; border-radius: 8px; font-size: 16px; line-height: 1; }
+.packet .inventory-empty-lines { display: flex; align-items: flex-start; gap: 11px; padding: 14px; border: 1px dashed var(--inventory-line); border-radius: 12px; color: var(--muted); }
+.packet .inventory-empty-lines svg { color: var(--inventory-accent); flex: 0 0 auto; }
+.packet .inventory-empty-lines div { display: grid; gap: 3px; }
+.packet .inventory-empty-lines strong { color: var(--ink); font-size: 13px; }
+.packet .inventory-empty-lines p { margin: 0; font-size: 12px; line-height: 1.4; }
+.packet .inventory-close-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+.packet .inventory-close-actions .packet-note { margin: 0; max-width: 520px; font-size: 12px; text-align: right; }
+.packet .inventory-closed-note { display: flex; align-items: center; gap: 8px; margin: 0; padding: 11px 12px; border: 1px solid var(--inventory-accent-soft); border-radius: 10px; background: var(--inventory-accent-faint); color: var(--ink); font-size: 12px; }
+.packet .inventory-closed-note svg { color: var(--inventory-accent); flex: 0 0 auto; }
+
+.packet .inventory-history { margin-top: 18px; }
+.packet .inventory-history-list { display: grid; gap: 7px; }
+.packet .inventory-history-list > article { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; min-width: 0; overflow: hidden; padding: 0 10px 0 0; border: 1px solid var(--inventory-line); border-radius: 10px; background: var(--inventory-field); transition: border-color 160ms var(--audit-hover-ease), box-shadow 160ms var(--audit-hover-ease); }
+.packet .inventory-history-select { display: grid; grid-template-columns: minmax(110px, .6fr) minmax(180px, 1.25fr) minmax(170px, 1fr) auto; gap: 10px; align-items: center; width: 100%; min-width: 0; padding: 12px 13px; border: 0; background: transparent; color: var(--ink); text-align: left; }
+.packet .inventory-history-list > article.selected { border-color: var(--inventory-accent); background: var(--inventory-field); }
+.packet .inventory-history-list > article:focus-within { border-color: var(--inventory-accent); box-shadow: 0 0 0 2px var(--inventory-accent-faint); }
+@media (hover: hover) and (pointer: fine) {
+  .packet .inventory-history-list > article:hover { border-color: var(--inventory-accent); box-shadow: 0 0 0 1px var(--inventory-accent-faint); }
+  .packet .inventory-history-select:hover { transform: none !important; border-color: transparent !important; background: transparent !important; box-shadow: none !important; outline: none; }
+}
+.packet .inventory-history-select:focus-visible { transform: none !important; border-color: transparent !important; background: transparent !important; box-shadow: none !important; outline: none; }
+.packet .inventory-history-list > article .subtle-button { display: inline-flex; align-items: center; gap: 6px; margin: 0; white-space: nowrap; }
+.packet .inventory-history-list span,
+.packet .inventory-history-list small { color: var(--muted); font-size: 11px; }
+.packet .inventory-history-list strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.packet .inventory-history-list b { justify-self: end; color: var(--inventory-accent); font-size: 11px; white-space: nowrap; }
+
+/* Light: operating surfaces use iOS-blue hierarchy; coral does not appear. */
+html[data-audit-theme="light"] .packet {
+  --inventory-card: #f7fbff;
+  --inventory-panel: #edf6ff;
+  --inventory-field: #ffffff;
+  --inventory-input: #ffffff;
+  --inventory-line: #c7e2ff;
+  --inventory-quiet-line: #d8ebff;
+  --inventory-accent: #0a84ff;
+  --inventory-accent-soft: #8bc7ff;
+  --inventory-accent-faint: #eaf5ff;
+}
+html[data-audit-theme="light"] .packet :is(.inventory-line-create, .inventory-accounting-readout) { border-color: var(--inventory-quiet-line); background: var(--inventory-panel); }
+html[data-audit-theme="light"] .packet .inventory-history-list > article { border-color: var(--inventory-line); background: var(--inventory-field); }
+html[data-audit-theme="light"] .packet .inventory-history-list > article.selected { border-color: var(--inventory-accent); background: var(--inventory-field); }
+html[data-audit-theme="light"] .packet .inventory-create-actions .packet-link,
+html[data-audit-theme="light"] .packet .inventory-line-create .packet-link,
+html[data-audit-theme="light"] .packet .inventory-close-actions .packet-link { border-color: #0a84ff !important; background: #0a84ff !important; color: #fff !important; box-shadow: 0 8px 18px rgba(10, 132, 255, .22) !important; }
+html[data-audit-theme="light"] .packet :is(.inventory-create-actions, .inventory-line-create, .inventory-close-actions) .packet-link:focus-visible { border-color: #075dbb !important; background: #075dbb !important; box-shadow: 0 8px 18px rgba(10, 132, 255, .28) !important; }
+html[data-audit-theme="light"] .packet :is(.inventory-history-list > article .subtle-button, .inventory-draft-actions .subtle-button):focus-visible { border-color: var(--inventory-accent); background: var(--inventory-accent-faint); color: #075dbb; box-shadow: 0 0 0 1px rgba(10, 132, 255, .1); }
+@media (hover: hover) and (pointer: fine) {
+  html[data-audit-theme="light"] .packet :is(.inventory-create-actions, .inventory-line-create, .inventory-close-actions) .packet-link:hover { border-color: #075dbb !important; background: #075dbb !important; box-shadow: 0 8px 18px rgba(10, 132, 255, .28) !important; }
+  html[data-audit-theme="light"] .packet :is(.inventory-history-list > article .subtle-button, .inventory-draft-actions .subtle-button):hover { border-color: var(--inventory-accent); background: var(--inventory-accent-faint); color: #075dbb; box-shadow: 0 0 0 1px rgba(10, 132, 255, .1); }
+}
+
+/* Dark: neutral slate/plum surfaces remain dominant; coral is an outline, never a table fill. */
+html[data-audit-theme="dark"] .packet {
+  --inventory-card: #16101a;
+  --inventory-panel: #0e0a11;
+  --inventory-field: #17111b;
+  --inventory-input: #17111b;
+  --inventory-line: #3b2435;
+  --inventory-quiet-line: #2a1c29;
+  --inventory-accent: #ff765f;
+  --inventory-accent-soft: #64394d;
+  --inventory-accent-faint: rgba(255, 118, 95, .075);
+}
+html[data-audit-theme="dark"] .packet :is(.inventory-line-create, .inventory-accounting-readout) { border-color: var(--inventory-quiet-line); background: var(--inventory-panel); }
+html[data-audit-theme="dark"] .packet .inventory-history-list > article { border-color: var(--inventory-line); background: var(--inventory-field); }
+html[data-audit-theme="dark"] .packet .inventory-history-list > article.selected { border-color: var(--inventory-accent); background: var(--inventory-field); }
+html[data-audit-theme="dark"] .packet .inventory-lines tbody tr:nth-child(even) { background: #1b121c; }
+html[data-audit-theme="dark"] .packet :is(.inventory-history-list > article .subtle-button, .inventory-draft-actions .subtle-button):focus-visible { border-color: var(--inventory-accent); background: transparent; color: var(--inventory-accent); box-shadow: inset 0 0 0 1px rgba(255, 118, 95, .12); }
+@media (hover: hover) and (pointer: fine) {
+  html[data-audit-theme="dark"] .packet :is(.inventory-history-list > article .subtle-button, .inventory-draft-actions .subtle-button):hover { border-color: var(--inventory-accent); background: transparent; color: var(--inventory-accent); box-shadow: inset 0 0 0 1px rgba(255, 118, 95, .12); }
+}
+
+/* The legacy stylesheet has a generic important packet-card rule. Override it locally. */
+html[data-audit-theme="light"] .packet .packet-card.inventory-create-card,
+html[data-audit-theme="light"] .packet .packet-card.inventory-draft-card,
+html[data-audit-theme="light"] .packet .packet-card.inventory-history,
+html[data-audit-theme="light"] .packet .packet-card.inventory-rule-disclosure { border-color: var(--inventory-line) !important; background: var(--inventory-card) !important; box-shadow: 0 8px 20px rgba(10, 94, 180, .06) !important; }
+html[data-audit-theme="dark"] .packet .packet-card.inventory-create-card,
+html[data-audit-theme="dark"] .packet .packet-card.inventory-draft-card,
+html[data-audit-theme="dark"] .packet .packet-card.inventory-history,
+html[data-audit-theme="dark"] .packet .packet-card.inventory-rule-disclosure { border-color: var(--inventory-line) !important; background: var(--inventory-card) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .025) !important; }
+@media (hover: hover) and (pointer: fine) {
+  html[data-audit-theme="light"] .packet :is(.packet-card.inventory-create-card, .packet-card.inventory-draft-card, .packet-card.inventory-history, .packet-card.inventory-rule-disclosure):hover { border-color: var(--inventory-accent) !important; background: var(--inventory-card) !important; box-shadow: none !important; transform: none !important; }
+  html[data-audit-theme="dark"] .packet :is(.packet-card.inventory-create-card, .packet-card.inventory-draft-card, .packet-card.inventory-history, .packet-card.inventory-rule-disclosure):hover { border-color: var(--inventory-accent) !important; background: var(--inventory-card) !important; box-shadow: none !important; transform: none !important; }
+}
+html[data-audit-theme="light"] .packet .packet-card.inventory-create-card:focus-within,
+html[data-audit-theme="light"] .packet .packet-card.inventory-draft-card:focus-within,
+html[data-audit-theme="light"] .packet .packet-card.inventory-history:focus-within,
+html[data-audit-theme="light"] .packet .packet-card.inventory-rule-disclosure:focus-within { border-color: var(--inventory-accent) !important; background: var(--inventory-card) !important; box-shadow: none !important; }
+html[data-audit-theme="dark"] .packet .packet-card.inventory-create-card:focus-within,
+html[data-audit-theme="dark"] .packet .packet-card.inventory-draft-card:focus-within,
+html[data-audit-theme="dark"] .packet .packet-card.inventory-history:focus-within,
+html[data-audit-theme="dark"] .packet .packet-card.inventory-rule-disclosure:focus-within { border-color: var(--inventory-accent) !important; background: var(--inventory-card) !important; box-shadow: none !important; }
+
+@media (max-width: 920px) {
+  .packet .inventory-history-list > article { grid-template-columns: minmax(0, 1fr); padding: 0; }
+  .packet .inventory-history-select { grid-template-columns: minmax(0, 1fr) auto; gap: 3px 10px; }
+  .packet .inventory-history-select small { grid-column: 1; }
+  .packet .inventory-history-select b { grid-column: 2; grid-row: 1 / span 2; }
+  .packet .inventory-history-list > article .subtle-button { width: calc(100% - 24px); margin: 0 12px 12px; justify-content: center; }
+}
+
+@media (max-width: 760px) {
+  .packet .inventory-meta-grid,
+  .packet .inventory-rule-disclosure > div,
+  .packet .inventory-note-form,
+  .packet .inventory-line-create { grid-template-columns: 1fr; }
+  .packet .inventory-draft-card > .card-title { flex-direction: column; align-items: stretch; }
+  .packet .inventory-note-form { display: grid; gap: 6px; }
+  .packet .inventory-create-actions,
+  .packet .inventory-close-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .packet .inventory-create-actions .packet-link,
+	.packet .inventory-close-actions .packet-link,
+	.packet .inventory-note-form .subtle-button,
+	.packet .inventory-line-create .packet-link { width: 100%; justify-content: center; }
+	.packet .inventory-add-product-link { width: 100%; justify-content: center; }
+  .packet .inventory-close-actions .packet-note { max-width: none; text-align: left; }
+  .packet .inventory-history-list > article { grid-template-columns: minmax(0, 1fr); padding: 0; }
+  .packet .inventory-history-select { grid-template-columns: minmax(0, 1fr) auto; gap: 3px 10px; }
+  .packet .inventory-history-select small { grid-column: 1; }
+  .packet .inventory-history-select b { grid-column: 2; grid-row: 1 / span 2; }
+  .packet .inventory-history-list > article .subtle-button { width: calc(100% - 24px); margin: 0 12px 12px; justify-content: center; }
+		/* Three long actions must not create a horizontal flex row inside the card title. */
+		.packet .inventory-draft-card > .card-title { display: grid; grid-template-columns: minmax(0, 1fr); justify-content: initial; }
+		.packet .inventory-table-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; justify-content: initial; align-self: stretch; }
+		.packet .inventory-table-actions :is(.subtle-button, .inventory-save-lines) { width: 100%; flex: none; justify-content: center; }
+		.packet .inventory-table-actions .inventory-close-trigger { grid-column: 1 / -1; }
+		.packet .inventory-draft-actions { width: 100%; }
+		.packet .inventory-draft-actions .subtle-button { width: 100%; justify-content: center; }
+		.packet .inventory-close-hint { text-align: left; }
+  .packet .inventory-revision-totals { display: grid; }
+	.packet .inventory-revision-totals > div { padding: 0 0 8px; border-right: 0; border-bottom: 1px solid var(--inventory-quiet-line); }
+	.packet .inventory-revision-totals > div:last-child { padding-bottom: 0; border-bottom: 0; }
+}
+@media (max-width: 1400px) and (min-width: 761px) {
+  .packet .inventory-line-create { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .packet .inventory-line-create :is(.packet-link, .inventory-add-product-link) { justify-self: start; }
+}
+@media (max-width: 400px) {
+  .packet .inventory-rule-disclosure > summary { grid-template-columns: 1fr; gap: 4px; }
+  .packet .inventory-history-select { grid-template-columns: 1fr; }
+  .packet .inventory-history-select b { grid-column: 1; grid-row: auto; justify-self: start; }
+}
+
+/* A live revision has editable quantities and must not require horizontal drag
+   inside the sidebar shell; switch the line table to labelled cards early. */
+@media (max-width: 1400px) {
+  .packet .inventory-lines-wrap.data-table-wrap { overflow: visible !important; cursor: default !important; touch-action: pan-y; border: 0; border-radius: 0; background: transparent; }
+  .packet .inventory-lines { display: block; min-width: 0; }
+  .packet .inventory-lines thead { display: none; }
+  .packet .inventory-lines tbody { display: grid; gap: 9px; }
+  .packet .inventory-lines tbody tr,
+  .packet .inventory-lines tbody tr:nth-child(even) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: hidden; border: 1px solid var(--inventory-line); border-radius: 11px; background: var(--inventory-card); }
+  .packet .inventory-lines td { display: grid; min-width: 0; min-height: 42px; align-content: center; gap: 3px; padding: 8px 10px; border: 0 !important; border-top: 1px solid var(--inventory-line) !important; text-align: left !important; white-space: normal; }
+  .packet .inventory-lines td::before { content: attr(data-label); color: var(--muted); font: 800 9px/1.15 Manrope, Arial, sans-serif; letter-spacing: .07em; text-transform: uppercase; }
+  .packet .inventory-lines td:first-child { grid-column: 1 / -1; padding-top: 10px; border-top: 0 !important; }
+  .packet .inventory-lines td:first-child strong { overflow-wrap: anywhere; }
+  .packet .inventory-lines td:last-child:has(.subtle-button) { grid-column: 1 / -1; padding-bottom: 10px; }
+	.packet .inventory-lines td:last-child .subtle-button { width: 100%; min-height: 36px; justify-content: center; }
+		.packet .inventory-inline-quantity { width: 100%; }
+		.packet .inventory-inline-quantity input { height: 38px; }
+}
+
+/* Above the card breakpoint, the live revision remains a full table but may
+   never regain the legacy 660px minimum or a grab-to-read wrapper. */
+@media (min-width: 1401px) {
+  .packet .inventory-lines-wrap.data-table-wrap { width: 100%; min-width: 0; max-width: 100%; overflow: visible; cursor: default; touch-action: pan-y; }
+  .packet .inventory-lines { width: 100%; min-width: 0; max-width: 100%; table-layout: fixed; }
+  .packet .inventory-lines :is(th, td) { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+  .packet .inventory-lines :is(th, td):nth-child(1) { width: 6%; }
+  .packet .inventory-lines :is(th, td):nth-child(2) { width: 29%; }
+  .packet .inventory-lines :is(th, td):nth-child(3) { width: 16%; }
+  .packet .inventory-lines :is(th, td):nth-child(4) { width: 12%; }
+  .packet .inventory-lines :is(th, td):nth-child(5) { width: 15%; }
+  .packet .inventory-lines :is(th, td):nth-child(6) { width: 12%; }
+  .packet .inventory-lines :is(th, td):nth-child(7) { width: 10%; }
+  .packet .inventory-lines td:last-child { white-space: normal; }
+}
+
+/* Read-only Evotor preview styling remains scoped and does not create outbound actions. */
+.packet .evotor-catalog-preview { display: grid; gap: 14px; margin: 18px 0; }
+.packet .evotor-catalog-preview > .packet-note { margin: -4px 0 0; max-width: 840px; }
+.packet .evotor-catalog-controls { display: grid; grid-template-columns: minmax(250px, .9fr) minmax(250px, 1.1fr); gap: 12px; }
+.packet .evotor-catalog-controls > label { display: grid; gap: 6px; min-width: 0; color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.packet .evotor-catalog-results { display: grid; gap: 10px; }
+.packet .evotor-catalog-summary { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 14px; color: var(--muted); font-size: 12px; }
+.packet .evotor-catalog-summary strong { color: var(--ink); font-size: 13px; }
+.packet .evotor-catalog-list { display: grid; gap: 5px; }
+.packet .evotor-catalog-list > article { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 11px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.packet .evotor-catalog-list > article > span { color: var(--faint); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .05em; white-space: nowrap; }
+.packet .evotor-catalog-list > article > div { display: grid; min-width: 0; gap: 2px; }
+.packet .evotor-catalog-list strong { overflow: hidden; color: var(--ink); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.packet .evotor-catalog-list small { color: var(--muted); font-size: 11px; }
+.packet .evotor-catalog-list > article > small { text-align: right; white-space: nowrap; }
+
+.packet .inventory-cost-register { display: grid; gap: 13px; margin-top: 18px; }
+.packet .inventory-cost-list { display: grid; gap: 0; border: 1px solid var(--line); border-radius: 13px; overflow: hidden; }
+.packet .inventory-cost-list article { display: grid; grid-template-columns: minmax(0, 1fr) minmax(150px, .38fr) auto; gap: 12px; align-items: end; padding: 11px 13px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.packet .inventory-cost-list article:nth-child(even) { background: color-mix(in srgb, var(--surface-2) 68%, var(--surface)); }
+.packet .inventory-cost-list article:last-child { border-bottom: 0; }
+.packet .inventory-cost-list article > div { display: grid; gap: 3px; min-width: 0; }
+.packet .inventory-cost-list strong { overflow: hidden; color: var(--ink); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.packet .inventory-cost-list small { color: var(--muted); font-size: 11px; }
+.packet .inventory-cost-list label { position: relative; display: grid; gap: 5px; color: var(--muted); font: 800 10px Manrope, Arial, sans-serif; letter-spacing: .07em; text-transform: uppercase; }
+.packet .inventory-cost-list label input { width: 100%; min-width: 0; height: 34px; padding: 0 25px 0 9px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); color: var(--ink); font: 700 12px Manrope, Arial, sans-serif; outline: none; }
+.packet .inventory-cost-list label input:focus-visible { border-color: var(--inventory-accent); }
+.packet .inventory-cost-list label span { position: absolute; right: 9px; bottom: 9px; color: var(--muted); font-size: 12px; letter-spacing: 0; text-transform: none; }
+.packet .inventory-cost-list .subtle-button { min-height: 34px; margin: 0; }
+.packet .inventory-draft-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.packet .inventory-draft-actions .subtle-button { display: inline-flex; align-items: center; gap: 6px; margin: 0; }
+@media (max-width: 760px) { .packet .evotor-catalog-controls { grid-template-columns: 1fr; } .packet .evotor-catalog-list > article { grid-template-columns: 38px minmax(0, 1fr); gap: 6px 9px; } .packet .evotor-catalog-list > article > small { grid-column: 2; text-align: left; } }
+@media (max-width: 680px) { .packet .inventory-cost-list article { grid-template-columns: 1fr; gap: 9px; } .packet .inventory-cost-list .subtle-button { width: 100%; justify-content: center; } }
+@media (max-width: 560px) { .packet .inventory-draft-actions { width: 100%; justify-content: stretch; } .packet .inventory-draft-actions .subtle-button { flex: 1 1 140px; justify-content: center; } }
+
+/* Close is intentionally a guarded secondary action beside the single save action. */
+.packet .inventory-table-actions .inventory-close-trigger { min-height: 38px; }
+.packet .inventory-close-hint { flex: 1 1 100%; margin: -2px 0 0; color: var(--muted); font-size: 11px; line-height: 1.35; }
+.packet .inventory-close-trigger:disabled { cursor: not-allowed; opacity: .56; box-shadow: none !important; }
+html[data-audit-theme="light"] .packet .inventory-close-trigger:not(:disabled) { border-color: #d77988; background: #fff0f2; color: #8f2f43; }
+html[data-audit-theme="dark"] .packet .inventory-close-trigger:not(:disabled) { border-color: #a95268; background: #351b27; color: #ffd4cb; }
+@media (hover: hover) and (pointer: fine) {
+  html[data-audit-theme="light"] .packet .inventory-close-trigger:not(:disabled):hover { border-color: #a8465b; background: #ffe4e9; color: #7a2236; }
+  html[data-audit-theme="dark"] .packet .inventory-close-trigger:not(:disabled):hover { border-color: #ff765f; background: #45202e; color: #fff1ed; }
+}
+
+/* Tasks21: comment, saved-state hint and add-from-stock action stay compact at every width. */
+.packet .inventory-note-form textarea { min-height: 112px; resize: vertical; }
+.packet .inventory-close-hint { display: inline-flex; width: fit-content; max-width: min(100%, 360px); flex: 0 1 auto; padding: 6px 8px; border: 1px solid var(--inventory-line); border-radius: 8px; background: var(--inventory-panel); color: var(--muted); }
+.packet .inventory-sort-heading { cursor: pointer; user-select: none; }
+.packet .inventory-sort-heading:focus-visible { outline: none; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) { .packet .inventory-sort-heading:hover { color: var(--inventory-accent, var(--accent)); } }
+@media (max-width: 1400px) {
+  .packet .inventory-line-create :is(.packet-link, .inventory-add-product-link) { width: 100%; justify-content: center; }
+  .packet .inventory-lines td:first-child { grid-column: auto; padding-top: 8px; border-top: 0 !important; }
+  .packet .inventory-lines td:nth-child(2) { grid-column: 1 / -1; padding-top: 10px; border-top: 0 !important; }
+}
+@media (max-width: 760px) {
+  .packet .inventory-note-form textarea { min-height: 124px; }
+  .packet .inventory-table-actions { align-items: stretch; }
+  .packet .inventory-table-actions :is(.packet-link, .subtle-button) { flex: 1 1 100%; justify-content: center; }
+  .packet .inventory-close-hint { width: 100%; max-width: none; }
+}

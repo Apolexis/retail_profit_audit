@@ -1,0 +1,1 @@
+ALTER TABLE `price_imports` MODIFY COLUMN `sourceType` enum('xls','xlsx','pdf','docx','manual') NOT NULL;

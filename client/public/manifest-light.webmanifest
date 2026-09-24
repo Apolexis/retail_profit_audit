@@ -1,0 +1,12 @@
+{
+  "name": "Аналитика «Рыбный»",
+  "short_name": "Рыбный",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f2f2f7",
+  "theme_color": "#f2f2f7",
+  "icons": [
+    {"src":"/manus-storage/rybny_circle_light_v10_clean_contours_rgba_candidate_3c5f2dad.png","sizes":"192x192","type":"image/png","purpose":"any"},
+    {"src":"/manus-storage/rybny_circle_light_v10_clean_contours_rgba_candidate_3c5f2dad.png","sizes":"512x512","type":"image/png","purpose":"any"}
+  ]
+}

@@ -1,0 +1,2 @@
+ALTER TABLE `audit_notifications` ADD `resolvedAt` timestamp;--> statement-breakpoint
+CREATE INDEX `audit_notification_entity_resolution_idx` ON `audit_notifications` (`entityType`,`entityId`,`resolvedAt`);

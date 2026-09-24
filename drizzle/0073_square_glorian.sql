@@ -1,0 +1,2 @@
+ALTER TABLE `operational_evotor_documents` ADD `sourceCreatedAt` varchar(64);--> statement-breakpoint
+CREATE INDEX `operational_evotor_document_source_time_idx` ON `operational_evotor_documents` (`storeId`,`sourceCreatedAt`);

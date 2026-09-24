@@ -1,0 +1,1 @@
+ALTER TABLE `operational_inventories` ADD `isArchived` boolean DEFAULT false NOT NULL;

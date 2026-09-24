@@ -1,0 +1,1 @@
+ALTER TABLE `operational_evotor_product_links` ADD `evotorQuantitySource` enum('catalog','confirmed_reset') DEFAULT 'catalog' NOT NULL;

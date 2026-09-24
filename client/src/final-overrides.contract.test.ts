@@ -1,0 +1,190 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+
+const styles = readFileSync(new URL("./final-overrides.css", import.meta.url), "utf8");
+
+describe("скрытые полосы прокрутки", () => {
+  it("скрывает системные scrollbar без запрета прокрутки", () => {
+    expect(styles).toContain("scrollbar-width: none;");
+    expect(styles).toContain(".packet *::-webkit-scrollbar");
+    expect(styles).not.toMatch(/overflow:\s*hidden\s*!important;\s*\/\*\s*global-scrollbar/);
+  });
+
+  it("оформляет допустимую мобильную полосу прокрутки темной темы без белой области", () => {
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet { scrollbar-width: thin !important; scrollbar-color: #6e4960 #101620 !important; }');
+    expect(styles).toContain('html[data-audit-theme="dark"] body::-webkit-scrollbar-thumb');
+    expect(styles).toContain('background: #6e4960 !important;');
+  });
+});
+
+describe("триггеры категорий темной навигации", () => {
+  it("не меняют визуальное состояние на границе hover", () => {
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet :is(.nav-section-trigger, .nav-drawer-section-trigger) { transition: none !important; }');
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet :is(.nav-section-trigger, .nav-drawer-section-trigger):hover { border-color: var(--line) !important; background: var(--surface-2) !important; box-shadow: none !important; }');
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet .nav-section:not(.is-open) .nav-section-trigger:hover');
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet .nav-section.is-open .nav-section-trigger:hover');
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet .nav-drawer-section.is-open .nav-drawer-section-trigger:hover { color: var(--text) !important; }');
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet :is(.nav-section-trigger, .nav-drawer-section-trigger) :is(.nav-section-label, svg) { pointer-events: none; color: inherit; }');
+  });
+});
+
+describe("индикатор проверки безопасного доступа", () => {
+  it("синхронизирует цвета проверки доступа и загрузки фактов по темам", () => {
+    expect(styles).toContain('html[data-audit-theme="dark"] .facts-loader.ocean-loader > p { color: #ff765f !important; }');
+    expect(styles).toContain('html[data-audit-theme="light"] .facts-loader.ocean-loader > p { color: var(--muted) !important; }');
+    expect(styles).toContain('html[data-audit-theme="dark"] .facts-loader:not(.ocean-loader) > p { color: #ff765f !important; }');
+  });
+});
+
+describe("управленческий фокус светлой темы", () => {
+  it("дает заметную синюю подсветку без смещения карточки", () => {
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .section-recommendation:hover { transform: none !important; border-color: #0a84ff !important; background: #eef7ff !important; box-shadow: 0 0 0 3px rgba(10, 132, 255, .16), 0 16px 34px rgba(10, 99, 200, .14) !important; }');
+  });
+});
+
+describe("карточки контроля импорта", () => {
+  it("дает спокойную базу обычным карточкам, отдельный риск и единый статус правил", () => {
+    expect(styles).toContain('.import-summary > div:nth-child(3):not(.risk)');
+    expect(styles).toContain('.import-risk-overview article.risk { border-color: #efbcc3 !important; background: #fff5f5 !important;');
+    expect(styles).toContain('.import-threshold-list > div.critical { border-left-color: #6a94bd !important; color: #26384d !important; }');
+    expect(styles).toContain('.import-risk-overview article:hover,');
+    expect(styles).toContain('.import-cash-breakdown:hover,');
+    expect(styles).toContain('.import-threshold-list:hover { border-color: #0a84ff !important;');
+  });
+});
+
+describe("карточки общего среза и сводки", () => {
+  it("дают hover-контур без изменения геометрии в обеих темах", () => {
+    expect(styles).toContain('.packet .analysis-filter,\n.packet .cover,\n.packet .cover-note { transition:');
+    expect(styles).toContain('.packet .analysis-filter:hover,\n.packet .cover:hover,\n.packet .cover-note:hover { transform: none !important; border-color: rgba(255, 118, 95, .78) !important;');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .analysis-filter:hover { border-color: #0a84ff !important;');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .cover-note:hover { border-color: #0a84ff !important;');
+  });
+});
+
+describe("выбор адресатов рассылки", () => {
+  it("использует коралловый активный контур в темной теме, сохраняя iOS-синий в светлой", () => {
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet .broadcast-target-buttons button.active { border-color: #ff765f !important;');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .broadcast-target-buttons button.active { border-color: #0a63c8;');
+  });
+});
+
+describe("действия отчетов и контроля импорта", () => {
+  it("выравнивает высоту расписания и опускает короткую кнопку контроля без сдвига строки", () => {
+    expect(styles).toContain('.packet .report-schedule-controls .schedule-toggle,\n.packet .report-schedule-controls .packet-link.compact { display: inline-flex !important; align-items: center; justify-content: center; min-height: 38px !important; height: 38px !important;');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .report-schedule-controls .schedule-toggle:not(.active) { border-color: #c6d9ec !important; background: #fbfdff !important; color: #4e6681 !important; }');
+    expect(styles).toContain('.packet .access-import-control-row .access-control-toggle { width: 100% !important; justify-self: end !important; align-self: center !important; transform: none !important; margin-top: 8px !important; }');
+  });
+});
+
+describe("выбранный режим графика светлой темы", () => {
+  it("сохраняет видимую iOS-синюю окантовку при hover у выбранного и невыбранного варианта", () => {
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .chart-view-button.active:hover { outline: 2px solid #0a84ff !important; outline-offset: 1px !important;');
+    expect(styles).toContain('html[data-audit-theme="light"] .chart-expand-view-control .chart-view-button.active:hover { outline: 2px solid #0a84ff !important; outline-offset: 1px !important;');
+    expect(styles).toContain('html[data-audit-theme="light"] .chart-expand-view-control .chart-view-button:hover:not(.active) { outline: 2px solid #0a84ff !important; outline-offset: 1px !important;');
+  });
+});
+
+describe("неактивная ссылка профиля", () => {
+  it("остается узнаваемой кнопкой в обеих темах без переопределения active-состояния", () => {
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet :is(.packet-profile-link, .drawer-profile-link):not(.active) { border-color: var(--line) !important; background: transparent !important; color: #aeb9c8 !important; }');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet :is(.packet-profile-link, .drawer-profile-link):not(.active) { border: 1px solid #c6d9ec !important;');
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet :is(.packet-profile-link, .drawer-profile-link):not(.active):hover { border-color: rgba(255, 118, 95, .78) !important;');
+  });
+});
+
+describe("пороги, масштаб и ожидаемые KPI", () => {
+  it("сохраняет iOS-синюю поверхность остальных порогов и нейтральный вид связанного блока наличных", () => {
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .threshold-control-group:hover,');
+    expect(styles).toContain('background: #edf6ff !important;');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .threshold-control-group :is(input, select):focus { border-color: #0a84ff !important;');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .threshold-control-group:has(.threshold-grid-cash) { border-color: #d8e2ef !important; background: #ffffff !important; box-shadow: none !important; }');
+    expect(styles).toContain('.threshold-control-group:has(.threshold-grid-cash) .threshold-amount > span { color: #61728a !important; }');
+    expect(styles).toContain('html[data-audit-theme="dark"] .chart-panzoom-actions button:hover,');
+    expect(styles).toContain('html[data-audit-theme="light"] .chart-panzoom-actions button:hover,');
+  });
+
+  it("дает ожидаемым месяцам прогноза hover-контур без сдвига", () => {
+    expect(styles).toContain('.packet .forecast-signal-grid article { transition:');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .forecast-signal-grid article:hover { transform: none !important; border-color: #0a84ff !important;');
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet .forecast-signal-grid article:hover { transform: none !important; border-color: rgba(255, 118, 95, .72) !important;');
+  });
+});
+
+describe("активная поверхность развернутого графика", () => {
+  it("не отдает pointer-события скрытому компактному графику под открытым диалогом", () => {
+    expect(styles).toContain('body:has(.chart-expand-dialog[data-state="open"]) .packet .chart-panzoom-compact { pointer-events: none !important; }');
+    expect(styles).toContain('.chart-expand-dialog .chart-panzoom { isolation: isolate !important; z-index: 1 !important; pointer-events: auto !important; touch-action: none !important; }');
+  });
+});
+
+describe("длинные подписи адаптивных карточек", () => {
+  it("дает карточкам полную доступную ширину и безопасный перенос текста на малых и средних экранах в обеих темах", () => {
+    expect(styles).toContain('@media (max-width: 1059px) {\n  .packet :is(.packet-card, .packet-kpi, .cover-note, .section-recommendation, .launch-card, .watch-card, .scenario-card, .report-history-item, .pricing-markup-detail-grid > article) { box-sizing: border-box; min-width: 0; max-width: 100%; }');
+    expect(styles).toContain('overflow-wrap: anywhere; word-break: normal;');
+    expect(styles).toContain('.packet .card-title { flex-wrap: wrap; gap: 9px; }');
+    expect(styles).toContain('.packet .card-title > div { flex: 1 1 100%; }');
+  });
+});
+
+describe("узкие формы и графитовые контуры", () => {
+  it("не дает полям и placeholder расширять mobile-карточки", () => {
+    expect(styles).toContain(".packet :is(input, select, textarea) { min-width: 0; max-width: 100%; box-sizing: border-box; }");
+    expect(styles).toContain("@media (max-width: 480px) {");
+    expect(styles).toContain(".packet :is(input, textarea)::placeholder { font-size: 11px; letter-spacing: 0; }");
+  });
+
+  it("исключает белые и тесно-серые контуры generic-полей темной темы", () => {
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet :is(input, select, textarea):not(:focus):not(:focus-visible)');
+    expect(styles).toContain("border-color: var(--line) !important;");
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet :is(input, textarea)::placeholder { color: #9caabd !important; opacity: 1; }');
+  });
+});
+
+describe("финальные исправления журнала и медианных графиков", () => {
+  it("задает дозагрузке журнала структурный верхний отступ вместо конфликтующих margin", () => {
+    expect(styles).toContain('.packet .change-log-more-wrap { display: block; width: 100%; padding-top: 20px; }');
+    expect(styles).toContain('.packet .change-log-more-wrap .change-log-more { width: calc(100% - 8px); margin: 0 4px 10px !important; }');
+  });
+
+  it("унифицирует светлую медиану в компактном и развернутом графиках", () => {
+    expect(styles).toContain('html[data-audit-theme="light"] :is(.benchmark-chart, .benchmark-chart-expanded) .median-badge { border-color: #8bc2fb !important; background: #edf6ff !important; color: #075dbb !important; box-shadow: none !important; }');
+    expect(styles).toContain('.recharts-reference-line :is(line, path),');
+    expect(styles).toContain('.recharts-reference-line-line { stroke: #0a84ff !important; }');
+  });
+
+  it("делает tooltip двухколоночным в compact и портальном детальном графике без жесткого ограничения высоты", () => {
+    expect(styles).toContain(':is(.packet, .chart-expand-dialog, .chart-expand-dialog-general) :is(.metric-chart, .benchmark-chart, .benchmark-chart-expanded) .tiny-tooltip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 10px; width: min(280px, calc(100vw - 56px));');
+    expect(styles).toContain('max-height: none !important; overflow: visible !important;');
+    expect(styles).toContain('@media (min-width: 561px) and (max-width: 1059px), (min-width: 561px) and (max-height: 780px)');
+    expect(styles).toContain('translate: 0 -10px;');
+  });
+
+  it("повторяет светлую поверхность compact-режимов и перенос пояснения в портальном графике и карточке цен", () => {
+    expect(styles).toContain('html[data-audit-theme="light"] :is(.chart-expand-dialog, .chart-expand-dialog-general) .chart-panzoom-touch-actions .chart-touch-mode-control { border-color: #c4dffb !important; background: #f4f9ff !important; }');
+    expect(styles).toContain('html[data-audit-theme="light"] :is(.chart-expand-dialog, .chart-expand-dialog-general) .chart-panzoom-touch-actions .chart-touch-mode-button.active,');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .pricing-markup-detail .card-title :is(h3, small) { display: block; max-width: 100%; min-width: 0; white-space: normal !important; overflow-wrap: anywhere; word-break: normal; }');
+  });
+
+  it("держит плотный tooltip внутри области графика и исключает смешение цветов медианы и dark-hover", () => {
+    expect(styles).toContain('.recharts-tooltip-wrapper { translate: var(--tiny-tooltip-shift-x, 0px) var(--tiny-tooltip-shift-y, 0px); }');
+    expect(styles).toContain('.tiny-tooltip-dense { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));');
+    expect(styles).toContain('html[data-audit-theme="light"] :is(.benchmark-chart, .benchmark-chart-expanded) .median-badge i { height: 0; background: transparent !important; border-top-color: #0a84ff !important; }');
+    expect(styles).toContain('html[data-audit-theme="dark"] :is(.chart-expand-dialog, .chart-expand-dialog-general) .chart-panzoom:is(:hover, :focus, :focus-visible)');
+  });
+});
+
+describe("единая палитра полей и действий", () => {
+  it("не смешивает нейтрально-серые поля с активной темой", () => {
+    expect(styles).toContain('html[data-audit-theme="light"] .packet :is(input, textarea, select, [data-slot="select-trigger"])');
+    expect(styles).toContain('border-color: #c7e2ff !important;');
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet :is(input, textarea, select, [data-slot="select-trigger"])');
+    expect(styles).toContain('border-color: #754456 !important;');
+    expect(styles).toContain('border-color: #ff765f !important;');
+  });
+
+  it("раскладывает соседние команды по доступной ширине", () => {
+    expect(styles).toContain('.packet :is(.request-actions, .request-print-actions, .evotor-receipt-search) > :is(.subtle-button, .text-action)');
+    expect(styles).toContain('flex: 1 1 148px;');
+  });
+});

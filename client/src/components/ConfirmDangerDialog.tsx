@@ -1,0 +1,5 @@
+import { AlertTriangle } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+
+type Props={trigger:React.ReactNode;title:string;description:string;confirmLabel?:string;onConfirm:()=>void;disabled?:boolean};
+export function ConfirmDangerDialog({trigger,title,description,confirmLabel="Удалить",onConfirm,disabled=false}:Props){return <AlertDialog><AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger><AlertDialogContent className="danger-confirm-dialog"><AlertDialogHeader><div className="danger-confirm-icon"><AlertTriangle size={19}/></div><AlertDialogTitle>{title}</AlertDialogTitle><AlertDialogDescription>{description}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Отмена</AlertDialogCancel><AlertDialogAction className="danger-confirm-action" disabled={disabled} onClick={onConfirm}>{confirmLabel}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>}

@@ -1,0 +1,206 @@
+import { TRPCError } from "@trpc/server";
+import { z } from "zod";
+import { getSessionCookieOptions } from "../_core/cookies";
+import { adminProcedure, protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { adminResetLocalPassword, authenticateLocalAccount, changeLocalPassword, createLocalAccount, createLocalSession, deleteLocalAccount, deleteLocalSessionFromCookie, formatRussianPhone, getLocalAccountByOpenId, getLocalSessionFromCookie, listLocalAccounts, LOCAL_SESSION_COOKIE, recordChange, updateLocalAccount } from "../localAuth";
+import { getAccessibleStoreIds, listAccountStoreAccess, replaceAccountStoreAccess } from "../accessControl";
+import { getImportThresholdBreachPage, listAuditStores } from "../audit";
+import { getEvotorCredentialStatus, replaceEvotorApiToken, revealEvotorApiToken } from "../evotorCredentials";
+import { getEvotorWebhookCredentialStatus, replaceEvotorWebhookCredential, revealEvotorWebhookCredential } from "../evotorWebhookCredentials";
+import { createNotifications, getNotificationSummary, getPushStatus, hasNotificationEntityAccess, listMyNotifications, markAllNotificationsRead, markNotificationRead, removePushSubscription, savePushSubscription } from "../notifications";
+import { PASSKEY_ATTEMPT_COOKIE, beginPasskeyAuthentication, beginPasskeyRegistration, deleteAccountPasskey, finishPasskeyAuthentication, finishPasskeyRegistration, listAccountPasskeys } from "../passkeys";
+
+const password = z.string().min(10, "Пароль должен содержать не менее 10 символов").max(128);
+const role = z.enum(["admin", "analyst", "seller", "manager"]);
+const accountName = z.string().trim().max(64, "Не более 64 символов").optional();
+const createAccountInput = z.object({ username: z.string().min(1).max(64), password: z.string().min(1).max(128), role, firstName: accountName, lastName: accountName }).superRefine((value, ctx) => {
+  if (value.role !== "seller" && value.password.length < 10) ctx.addIssue({ code: "custom", path: ["password"], message: "Пароль должен содержать не менее 10 символов" });
+});
+const importAccessLevel = z.enum(["none", "upload", "edit"]);
+const priceAccessLevel = z.enum(["none", "view", "upload", "edit"]);
+const broadcastAudience = z.discriminatedUnion("kind", [z.object({ kind: z.literal("all") }), z.object({ kind: z.literal("account"), accountId: z.number().int().positive() }), z.object({ kind: z.literal("role"), role })]);
+const passkeyResponse = z.any();
+
+async function localAccountFromContext(openId?: string | null) {
+  const account = await getLocalAccountByOpenId(openId);
+  if (!account) throw new TRPCError({ code: "UNAUTHORIZED", message: "Требуется локальный вход" });
+  return account;
+}
+function requirePasskeyAccount(account: Awaited<ReturnType<typeof localAccountFromContext>>) {
+  if (account.role === "seller") throw new TRPCError({ code: "FORBIDDEN", message: "Для входа магазина используйте логин и пароль" });
+  return account;
+}
+async function localAdminFromContext(openId?: string | null) {
+  const account = await localAccountFromContext(openId);
+  if (account.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Рассылка доступна только администратору" });
+  return account;
+}
+
+const accountResponse = (account: Awaited<ReturnType<typeof localAccountFromContext>>) => ({
+  id: account.id,
+  phone: account.username,
+  login: account.username,
+  displayName: account.displayName,
+  firstName: account.firstName,
+  lastName: account.lastName,
+  role: account.role,
+  importAccessLevel: account.role === "admin" ? "edit" : account.importAccessLevel,
+  priceAccessLevel: account.role === "admin" ? "edit" : account.priceAccessLevel,
+  canViewImportControls: account.role === "admin" || account.canViewImportControls,
+  mustChangePassword: account.mustChangePassword,
+});
+
+export const localAuthRouter = router({
+  me: publicProcedure.query(async ({ ctx }) => {
+    const account = (await getLocalSessionFromCookie(ctx.req.headers.cookie))?.account ?? await getLocalAccountByOpenId(ctx.user?.openId);
+    return account ? accountResponse(account) : null;
+  }),
+  login: publicProcedure.input(z.object({ username: z.string().min(1).max(64), password: z.string().min(1).max(128) })).mutation(async ({ input, ctx }) => {
+    const account = await authenticateLocalAccount(input.username, input.password);
+    if (!account) throw new TRPCError({ code: "UNAUTHORIZED", message: "Неверный логин или пароль" });
+    const session = await createLocalSession(account.id);
+    ctx.res.cookie(LOCAL_SESSION_COOKIE, session.token, { ...getSessionCookieOptions(ctx.req), sameSite: "lax", maxAge: session.expiresAt.getTime() - Date.now() });
+    return accountResponse(account);
+  }),
+  logout: publicProcedure.mutation(async ({ ctx }) => {
+    const account = (await getLocalSessionFromCookie(ctx.req.headers.cookie))?.account;
+    await deleteLocalSessionFromCookie(ctx.req.headers.cookie);
+    ctx.res.clearCookie(LOCAL_SESSION_COOKIE, { ...getSessionCookieOptions(ctx.req), sameSite: "lax", maxAge: -1 });
+    if (account) await recordChange({ actorId: account.id, action: "account.logout", entityType: "account", entityId: String(account.id) });
+    return { success: true };
+  }),
+  passkeys: protectedProcedure.query(async ({ ctx }) => listAccountPasskeys(requirePasskeyAccount(await localAccountFromContext(ctx.user?.openId)).id)),
+  beginPasskeyRegistration: protectedProcedure.mutation(async ({ ctx }) => {
+    const account = requirePasskeyAccount(await localAccountFromContext(ctx.user?.openId));
+    const result = await beginPasskeyRegistration(account, ctx.req);
+    ctx.res.cookie(PASSKEY_ATTEMPT_COOKIE, result.attempt, { ...getSessionCookieOptions(ctx.req), sameSite: "lax", maxAge: result.expiresAt.getTime() - Date.now() });
+    return result.options;
+  }),
+  finishPasskeyRegistration: protectedProcedure.input(z.object({ response: passkeyResponse })).mutation(async ({ input, ctx }) => {
+    const account = requirePasskeyAccount(await localAccountFromContext(ctx.user?.openId));
+    const result = await finishPasskeyRegistration(account, input.response, ctx.req.headers.cookie);
+    ctx.res.clearCookie(PASSKEY_ATTEMPT_COOKIE, { ...getSessionCookieOptions(ctx.req), sameSite: "lax", maxAge: -1 });
+    return result;
+  }),
+  deletePasskey: protectedProcedure.input(z.object({ id: z.number().int() })).mutation(async ({ input, ctx }) => deleteAccountPasskey(requirePasskeyAccount(await localAccountFromContext(ctx.user?.openId)).id, input.id)),
+  beginPasskeyLogin: publicProcedure.input(z.object({ phone: z.string().regex(/^7\d{10}$/, "Введите номер телефона полностью").optional() })).mutation(async ({ input, ctx }) => {
+    const result = await beginPasskeyAuthentication(input.phone, ctx.req);
+    ctx.res.cookie(PASSKEY_ATTEMPT_COOKIE, result.attempt, { ...getSessionCookieOptions(ctx.req), sameSite: "lax", maxAge: result.expiresAt.getTime() - Date.now() });
+    return { options: result.options };
+  }),
+  finishPasskeyLogin: publicProcedure.input(z.object({ phone: z.string().regex(/^7\d{10}$/, "Введите номер телефона полностью").optional(), response: passkeyResponse })).mutation(async ({ input, ctx }) => {
+    const account = await finishPasskeyAuthentication(input.phone, input.response, ctx.req.headers.cookie);
+    const session = await createLocalSession(account.id);
+    ctx.res.clearCookie(PASSKEY_ATTEMPT_COOKIE, { ...getSessionCookieOptions(ctx.req), sameSite: "lax", maxAge: -1 });
+    ctx.res.cookie(LOCAL_SESSION_COOKIE, session.token, { ...getSessionCookieOptions(ctx.req), sameSite: "lax", maxAge: session.expiresAt.getTime() - Date.now() });
+    return accountResponse(account);
+  }),
+  changePassword: protectedProcedure.input(z.object({ currentPassword: z.string().min(1), nextPassword: password })).mutation(async ({ input, ctx }) => {
+    const account = await localAccountFromContext(ctx.user?.openId);
+    return changeLocalPassword(account.id, input.currentPassword, input.nextPassword, account.id);
+  }),
+  list: adminProcedure.query(async ({ ctx }) => {
+    await localAccountFromContext(ctx.user?.openId);
+    return listLocalAccounts();
+  }),
+  create: adminProcedure.input(createAccountInput).mutation(async ({ input, ctx }) => {
+    const actor = await localAccountFromContext(ctx.user?.openId);
+    return { id: await createLocalAccount(input, actor.id) };
+  }),
+  update: adminProcedure.input(z.object({ id: z.number().int(), role: role.optional(), isActive: z.boolean().optional(), importAccessLevel: importAccessLevel.optional(), priceAccessLevel: priceAccessLevel.optional(), canViewImportControls: z.boolean().optional(), firstName: accountName, lastName: accountName })).mutation(async ({ input, ctx }) => {
+    const actor = await localAccountFromContext(ctx.user?.openId);
+    return updateLocalAccount(input, actor.id);
+  }),
+  delete: adminProcedure.input(z.object({ id: z.number().int() })).mutation(async ({ input, ctx }) => {
+    const actor = await localAccountFromContext(ctx.user?.openId);
+    return deleteLocalAccount(input.id, actor.id);
+  }),
+  adminResetPassword: adminProcedure.input(z.object({ id: z.number().int(), nextPassword: password })).mutation(async ({ input, ctx }) => {
+    const actor = await localAccountFromContext(ctx.user?.openId);
+    return adminResetLocalPassword(input.id, input.nextPassword, actor.id);
+  }),
+  evotorCredentialStatus: adminProcedure.query(async ({ ctx }) => {
+    await localAdminFromContext(ctx.user?.openId);
+    return getEvotorCredentialStatus();
+  }),
+  revealEvotorCredential: adminProcedure.mutation(async ({ ctx }) => {
+    await localAdminFromContext(ctx.user?.openId);
+    // The value is returned only to the current administrator on explicit
+    // demand. It is intentionally not sent to recordChange or any log.
+    return { token: await revealEvotorApiToken() };
+  }),
+  replaceEvotorCredential: adminProcedure.input(z.object({ token: z.string().trim().min(16).max(4096) })).mutation(async ({ input, ctx }) => {
+    const actor = await localAdminFromContext(ctx.user?.openId);
+    return replaceEvotorApiToken(input.token, actor.id);
+  }),
+  evotorWebhookCredentialStatus: adminProcedure.query(async ({ ctx }) => {
+    await localAdminFromContext(ctx.user?.openId);
+    return getEvotorWebhookCredentialStatus();
+  }),
+  revealEvotorWebhookCredential: adminProcedure.mutation(async ({ ctx }) => {
+    await localAdminFromContext(ctx.user?.openId);
+    return { token: await revealEvotorWebhookCredential() };
+  }),
+  replaceEvotorWebhookCredential: adminProcedure.input(z.object({ token: z.string().trim().min(16).max(4096) })).mutation(async ({ input, ctx }) => {
+    const actor = await localAdminFromContext(ctx.user?.openId);
+    return replaceEvotorWebhookCredential(input.token, actor.id);
+  }),
+  storeAccess: adminProcedure.input(z.object({ accountId: z.number().int() })).query(async ({ input, ctx }) => {
+    await localAccountFromContext(ctx.user?.openId);
+    return listAccountStoreAccess(input.accountId);
+  }),
+  replaceStoreAccess: adminProcedure.input(z.object({ accountId: z.number().int(), grants: z.array(z.object({ storeId: z.number().int(), accessLevel: z.enum(["view", "edit"]) })).max(500) })).mutation(async ({ input, ctx }) => {
+    const actor = await localAccountFromContext(ctx.user?.openId);
+    const accountsBefore = await listLocalAccounts();
+    const targetBefore = accountsBefore.find(account => account.id === input.accountId);
+    if (!targetBefore) throw new TRPCError({ code: "NOT_FOUND", message: "Учетная запись не найдена" });
+    if (targetBefore.role === "seller" && (input.grants.length !== 1 || input.grants[0]?.accessLevel !== "view")) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "Продавцу назначается ровно один магазин с операционным доступом «Просмотр»" });
+    }
+    const result = await replaceAccountStoreAccess(input.accountId, input.grants);
+    const stores = await listAuditStores();
+    const target = targetBefore;
+    const names = new Map(stores.map(store => [store.id, store.name]));
+    const describe = (grant: { storeId: number; accessLevel: "view" | "edit" }) => ({ storeId: grant.storeId, storeName: names.get(grant.storeId) ?? `Магазин #${grant.storeId}`, accessLevel: grant.accessLevel, accessLabel: grant.accessLevel === "edit" ? "редактирование" : "просмотр" });
+    await recordChange({ actorId: actor.id, action: "store_access.replace", entityType: "account", entityId: String(input.accountId), beforeState: { accountId: input.accountId, account: target?.displayName ?? `Пользователь #${input.accountId}`, grants: result.before.map(describe) }, afterState: { accountId: input.accountId, account: target?.displayName ?? `Пользователь #${input.accountId}`, grants: result.after.map(describe) } });
+    return { success: true };
+  }),
+  notificationSummary: protectedProcedure.query(async ({ ctx }) => {
+    const account = await localAccountFromContext(ctx.user?.openId);
+    return getNotificationSummary(account.id);
+  }),
+  notifications: protectedProcedure.input(z.object({ limit: z.number().int().min(10).max(100).optional(), cursor: z.number().int().positive().optional() }).optional()).query(async ({ input, ctx }) => {
+    const account = await localAccountFromContext(ctx.user?.openId);
+    return listMyNotifications(account.id, input);
+  }),
+  importAlertDetails: protectedProcedure.input(z.object({ importId: z.number().int().positive(), limit: z.number().int().min(10).max(100).optional(), cursor: z.number().int().nonnegative().optional() })).query(async ({ input, ctx }) => {
+    const account = await localAccountFromContext(ctx.user?.openId);
+    if (account.role === "seller" || account.role === "manager") throw new TRPCError({ code: "FORBIDDEN", message: "Операционной роли недоступны финансовые сигналы и детали импорта" });
+    if (account.role !== "admin" && !await hasNotificationEntityAccess(account.id, "alert_feed", String(input.importId))) throw new TRPCError({ code: "FORBIDDEN", message: "Нет доступа к деталям этого уведомления" });
+    return getImportThresholdBreachPage(input.importId, await getAccessibleStoreIds(ctx.user?.openId), input);
+  }),
+  markNotificationRead: protectedProcedure.input(z.object({ id: z.number().int() })).mutation(async ({ input, ctx }) => markNotificationRead((await localAccountFromContext(ctx.user?.openId)).id, input.id)),
+  markAllNotificationsRead: protectedProcedure.mutation(async ({ ctx }) => markAllNotificationsRead((await localAccountFromContext(ctx.user?.openId)).id)),
+  pushStatus: protectedProcedure.query(async ({ ctx }) => getPushStatus((await localAccountFromContext(ctx.user?.openId)).id)),
+  subscribePush: protectedProcedure.input(z.object({ endpoint: z.string().url(), keys: z.object({ p256dh: z.string().min(1), auth: z.string().min(1) }) })).mutation(async ({ input, ctx }) => savePushSubscription((await localAccountFromContext(ctx.user?.openId)).id, input)),
+  unsubscribePush: protectedProcedure.input(z.object({ endpoint: z.string().url().optional() })).mutation(async ({ input, ctx }) => removePushSubscription((await localAccountFromContext(ctx.user?.openId)).id, input.endpoint)),
+  adminBroadcast: adminProcedure.input(z.object({ message: z.string().trim().min(1, "Введите текст сообщения").max(360, "Сообщение не должно превышать 360 символов"), audience: broadcastAudience })).mutation(async ({ input, ctx }) => {
+    const actor = await localAdminFromContext(ctx.user?.openId);
+    const activeAccounts = (await listLocalAccounts()).filter(account => account.isActive);
+    const audience = input.audience;
+    let recipients = activeAccounts;
+    if (audience.kind === "account") {
+      recipients = activeAccounts.filter(account => account.id === audience.accountId);
+    } else if (audience.kind === "role") {
+      recipients = activeAccounts.filter(account => account.role === audience.role);
+    }
+    if (!recipients.length) throw new TRPCError({ code: "BAD_REQUEST", message: "Для выбранной аудитории нет активных учетных записей" });
+    const accountIds = recipients.map(account => account.id);
+    const result = await createNotifications({accountIds,severity:"info",title:"Сообщение администратора",message:input.message,entityType:"admin_broadcast"});
+    let audienceId = "all-active";
+    if (audience.kind === "account") audienceId = `account:${audience.accountId}`;
+    else if (audience.kind === "role") audienceId = `role:${audience.role}`;
+    await recordChange({ actorId: actor.id, action: "notification.broadcast", entityType: "notification", entityId: audienceId, afterState: { audience: input.audience, recipientAccounts: result.created, pushSubscriptionsAccepted: result.pushSent, messageLength: input.message.length } });
+    return { recipientAccounts: result.created, pushSubscriptionsAccepted: result.pushSent };
+  }),
+});

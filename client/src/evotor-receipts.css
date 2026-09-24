@@ -1,0 +1,176 @@
+.packet .evotor-receipt-period{margin-bottom:12px}
+.packet .evotor-receipt-store-picker{margin-bottom:12px}
+.packet .evotor-receipt-kpis{margin-bottom:12px}
+.packet .evotor-receipt-register,.packet .evotor-receipt-detail{margin-top:12px}
+.packet .evotor-receipt-sync{display:grid;gap:10px;margin-top:12px}
+.packet .evotor-receipt-sync>summary{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;align-items:baseline;gap:8px;cursor:pointer;list-style:none}
+.packet .evotor-receipt-sync>summary::-webkit-details-marker{display:none}
+.packet .evotor-receipt-sync>summary>span{color:var(--packet-muted);font-size:10px;font-weight:800;letter-spacing:.07em}
+.packet .evotor-receipt-sync>summary>b{min-width:0;color:var(--packet-ink);font-size:13px;overflow-wrap:anywhere}
+.packet .evotor-receipt-sync>summary>small{color:var(--packet-muted);font-size:11px}
+.packet .evotor-receipt-sync>summary::after{width:7px;height:7px;align-self:center;border:solid var(--packet-muted);border-width:0 1.5px 1.5px 0;content:"";transform:rotate(45deg);transition:transform 160ms var(--audit-hover-ease)}
+.packet .evotor-receipt-sync[open]>summary::after{transform:rotate(225deg) translate(-2px,-2px)}
+.packet .evotor-sync-trust{margin:0;padding:9px 11px;border:1px solid var(--packet-line);border-radius:10px;background:color-mix(in srgb,var(--packet-accent) 6%,var(--packet-input));color:var(--packet-muted);font-size:11px;line-height:1.45}
+.packet .evotor-sync-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.packet .evotor-sync-summary-grid article,.packet .evotor-store-coverage article{display:grid;gap:3px;min-width:0;padding:9px 10px;border:1px solid var(--packet-line);border-radius:10px;background:var(--packet-input)}
+.packet .evotor-sync-summary-grid article.is-risk{border-color:color-mix(in srgb,#ff453a 58%,var(--packet-line))}
+.packet .evotor-sync-summary-grid span,.packet .evotor-store-coverage small{color:var(--packet-muted);font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+.packet .evotor-sync-summary-grid strong{overflow-wrap:anywhere;color:var(--packet-ink);font-size:15px}
+.packet .evotor-sync-summary-grid small{color:var(--packet-muted);font-size:10px}
+.packet .evotor-sync-coverage{display:grid;gap:8px}
+.packet .evotor-sync-coverage>summary{cursor:pointer;color:var(--packet-ink);font-size:12px;font-weight:750}
+.packet .evotor-sync-coverage>summary::marker{color:var(--packet-muted)}
+.packet .evotor-store-coverage{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:7px}
+.packet .evotor-store-coverage article{grid-template-columns:minmax(0,1fr) auto;gap:4px 8px;align-items:baseline}
+.packet .evotor-store-coverage strong{grid-column:1/-1;min-width:0;color:var(--packet-ink);font-size:12px;overflow-wrap:anywhere}
+.packet .evotor-store-coverage span{min-width:0;color:var(--packet-muted);font-size:11px;white-space:nowrap}
+.packet .evotor-store-coverage small{min-width:0;color:var(--packet-muted);font-size:11px;font-weight:600;letter-spacing:0;line-height:1.35;text-align:right;text-transform:none;overflow-wrap:anywhere}
+.packet .evotor-receipt-more{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:12px 0 2px}
+.packet .evotor-receipt-more small{color:var(--packet-muted);font-size:11px}
+.packet .evotor-receipt-search{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:6px;min-width:0;margin:0 0 12px;padding:0 9px;border:1px solid var(--packet-line);border-radius:12px;background:var(--packet-input);color:var(--packet-muted);transition:border-color 160ms var(--audit-hover-ease),box-shadow 160ms var(--audit-hover-ease)}
+.packet .evotor-receipt-search:focus-within{border-color:var(--packet-accent);color:var(--packet-accent);box-shadow:0 0 0 1px color-mix(in srgb,var(--packet-accent) 15%,transparent)}
+.packet .evotor-receipt-search input{width:100%;min-width:0;height:40px;border:0;outline:0;background:transparent;color:var(--packet-ink);font:inherit}
+.packet .evotor-receipt-search .subtle-button{box-sizing:border-box;align-self:center;min-height:34px;height:34px;margin:0;padding-inline:11px;white-space:nowrap}
+.packet .receipt-search-clear{display:grid;place-items:center;width:30px;height:30px;padding:0;border:0;border-radius:9px;background:transparent;color:var(--packet-muted)}
+.packet .receipt-search-clear:focus-visible{outline:1px solid var(--packet-accent);outline-offset:1px;color:var(--packet-accent)}
+.packet .evotor-receipt-search input::placeholder{color:var(--packet-muted)}
+.packet .evotor-receipt-table tr{cursor:pointer}
+.packet .evotor-receipt-table tr.is-selected{background:color-mix(in srgb,var(--packet-accent) 9%,transparent)}
+.packet .evotor-receipt-table tr:focus-within{outline:1px solid var(--packet-accent);outline-offset:-1px}
+.packet .receipt-kind{display:inline-flex;align-items:center;min-height:24px;padding:2px 8px;border:1px solid var(--packet-line);border-radius:999px;color:var(--packet-ink);font-size:11px;font-weight:700;white-space:nowrap}
+.packet .receipt-kind.is-return{border-color:color-mix(in srgb,#ff453a 60%,var(--packet-line));color:#d3362d}
+.packet .receipt-open-cell{width:42px;text-align:right}
+.packet .receipt-open-cell button{display:inline-grid;width:32px;height:32px;place-items:center;border:1px solid var(--packet-line);border-radius:10px;background:transparent;color:var(--packet-muted)}
+.packet .receipt-open-cell button:focus-visible{outline:1px solid var(--packet-accent);outline-offset:2px}
+.packet .evotor-receipt-detail .card-title{align-items:flex-start}
+.packet .evotor-receipt-detail .card-title small{display:block;margin-top:4px;color:var(--packet-muted);font-size:12px;font-weight:500}
+.packet .evotor-receipt-detail-table :is(th,td){text-align:left!important}
+.packet .evotor-receipt-detail-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
+.packet .evotor-receipt-detail-kpis article{min-width:0;padding:10px 12px;border:1px solid var(--packet-line);border-radius:12px;background:var(--packet-input)}
+.packet .evotor-receipt-detail-kpis span{display:block;color:var(--packet-muted);font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.packet .evotor-receipt-detail-kpis strong{display:block;margin-top:4px;overflow:hidden;color:var(--packet-ink);font-size:15px;text-overflow:ellipsis;white-space:nowrap}
+@media (min-width:1401px){
+  .packet .evotor-receipt-table-wrap.data-table-wrap,.packet .evotor-receipt-detail-table-wrap.data-table-wrap{width:100%;min-width:0;max-width:100%;overflow:visible;cursor:default;touch-action:pan-y}
+  .packet .evotor-receipt-table,.packet .evotor-receipt-detail-table{width:100%;min-width:0;max-width:100%;table-layout:fixed}
+  .packet .evotor-receipt-table :is(th,td),.packet .evotor-receipt-detail-table :is(th,td){min-width:0;white-space:normal;overflow-wrap:anywhere}
+  .packet .evotor-receipt-table :is(th,td):nth-child(1){width:14%}.packet .evotor-receipt-table :is(th,td):nth-child(2){width:18%}.packet .evotor-receipt-table :is(th,td):nth-child(3){width:16%}.packet .evotor-receipt-table :is(th,td):nth-child(4){width:10%}.packet .evotor-receipt-table :is(th,td):nth-child(5){width:12%}.packet .evotor-receipt-table :is(th,td):nth-child(6){width:21%}.packet .evotor-receipt-table :is(th,td):nth-child(7){width:9%}
+  .packet .evotor-receipt-detail-table :is(th,td):nth-child(1){width:54%}.packet .evotor-receipt-detail-table :is(th,td):nth-child(2){width:20%}.packet .evotor-receipt-detail-table :is(th,td):nth-child(3){width:26%}
+}
+@media (hover:hover) and (pointer:fine){
+  .packet .evotor-receipt-table tbody tr:hover{background:color-mix(in srgb,var(--packet-accent) 7%,transparent)}
+  .packet .receipt-open-cell button:hover{border-color:var(--packet-accent);color:var(--packet-accent)}
+  .packet .evotor-receipt-search:hover{border-color:var(--packet-accent);box-shadow:0 0 0 1px color-mix(in srgb,var(--packet-accent) 14%,transparent)}
+  .packet .receipt-search-clear:hover{background:color-mix(in srgb,var(--packet-accent) 10%,transparent);color:var(--packet-accent)}
+}
+@media (max-width:860px){
+  .packet .evotor-sync-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .packet .evotor-receipt-detail-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .packet .evotor-receipt-table-wrap,.packet .evotor-receipt-detail-table-wrap{overflow:visible}
+  .packet .evotor-receipt-table,.packet .evotor-receipt-table tbody,.packet .evotor-receipt-table tr,.packet .evotor-receipt-table td,.packet .evotor-receipt-detail-table,.packet .evotor-receipt-detail-table tbody,.packet .evotor-receipt-detail-table tr,.packet .evotor-receipt-detail-table td{display:block;width:100%}
+  .packet .evotor-receipt-table thead,.packet .evotor-receipt-detail-table thead{display:none}
+  .packet .evotor-receipt-table tbody,.packet .evotor-receipt-detail-table tbody{display:grid;gap:8px}
+  .packet .evotor-receipt-table tr,.packet .evotor-receipt-detail-table tr{position:relative;overflow:hidden;padding:10px 12px;border:1px solid var(--packet-line);border-radius:12px;background:var(--packet-input)}
+  .packet .evotor-receipt-table td,.packet .evotor-receipt-detail-table td{min-width:0;padding:3px 34px 3px 0;border:0;text-align:left}
+  .packet .evotor-receipt-table td[data-label]::before,.packet .evotor-receipt-detail-table td[data-label]::before{content:attr(data-label);display:inline-block;min-width:104px;margin-right:8px;color:var(--packet-muted);font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+  .packet .evotor-receipt-table .receipt-open-cell{position:absolute;top:8px;right:8px;width:32px;padding:0}
+  .packet .evotor-receipt-table tfoot,.packet .evotor-receipt-detail-table tfoot{display:block;margin-top:8px}
+  .packet .evotor-receipt-detail-table tfoot tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px;padding:10px 12px;border:1px solid var(--packet-line);border-radius:12px;background:var(--packet-input)}
+  .packet .evotor-receipt-detail-table tfoot th,.packet .evotor-receipt-detail-table tfoot td{display:block;padding:0;border:0;text-align:right}
+  .packet .evotor-receipt-detail-table tfoot th{grid-row:span 2;text-align:left}
+}
+@media (max-width:480px){
+  .packet .evotor-receipt-sync>summary{grid-template-columns:minmax(0,1fr) auto}
+  .packet .evotor-receipt-sync>summary>span{grid-column:1/-1}
+  .packet .evotor-receipt-sync>summary>small{display:none}
+  .packet .evotor-sync-summary-grid{grid-template-columns:1fr}
+  .packet .evotor-store-coverage{grid-template-columns:1fr}
+  .packet .evotor-store-coverage article{gap:3px 6px;padding:9px 10px}
+  .packet .evotor-receipt-more{display:grid;grid-template-columns:minmax(0,1fr);justify-items:stretch;width:100%;gap:6px}
+  .packet .evotor-receipt-more .subtle-button{width:100%;justify-content:center}
+  .packet .evotor-receipt-more small{text-align:center}
+  .packet .evotor-receipt-search{grid-template-columns:auto minmax(0,1fr) auto auto;padding:0 8px}
+  .packet .evotor-receipt-search input{height:40px}
+  .packet .evotor-receipt-search .subtle-button{padding-inline:8px}
+  .packet .evotor-receipt-detail .card-title{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+  .packet .evotor-receipt-detail-kpis{grid-template-columns:1fr}
+  .packet .evotor-receipt-table td[data-label]::before,.packet .evotor-receipt-detail-table td[data-label]::before{min-width:88px}
+}
+
+/* A receipt is a single operational object on a phone: give it a clear card
+   boundary and align every product fact from the left instead of a loose table. */
+@media (max-width:860px){
+  .packet .evotor-receipt-table tbody{gap:12px}
+  .packet .evotor-receipt-table tr,
+  .packet .evotor-receipt-detail-table tr{
+    border:1px solid color-mix(in srgb,var(--packet-accent) 44%,var(--packet-line)) !important;
+    border-radius:12px;
+    background:var(--packet-surface, var(--packet-input));
+    box-shadow:0 2px 0 color-mix(in srgb,var(--packet-accent) 16%,transparent);
+  }
+  .packet .evotor-receipt-table td[data-label],
+  .packet .evotor-receipt-detail-table td[data-label]{
+    display:grid;
+    grid-template-columns:minmax(88px,.82fr) minmax(0,1.18fr);
+    align-items:start;
+    gap:8px;
+    padding-right:40px;
+    text-align:left !important;
+  }
+  body .packet .evotor-receipt-register .evotor-receipt-table td.numeric-column,
+  body .packet .evotor-receipt-register .evotor-receipt-table td[data-label="Время"],
+  body .packet .evotor-receipt-register .evotor-receipt-table td[data-label="Сумма"]{text-align:left !important}
+  body .packet .evotor-receipt-detail .evotor-receipt-detail-table td[data-label="Количество"],
+  body .packet .evotor-receipt-detail .evotor-receipt-detail-table td[data-label="Сумма строки"]{text-align:left !important}
+  .packet .evotor-receipt-table td[data-label]::before,
+  .packet .evotor-receipt-detail-table td[data-label]::before{
+    min-width:0;
+    margin:2px 0 0;
+  }
+  .packet .evotor-receipt-detail-table td[data-label]{padding-right:0}
+  .packet .evotor-receipt-detail-table td[data-label] > *{justify-self:start;text-align:left}
+  .packet .evotor-receipt-table tr.is-selected{box-shadow:0 0 0 1px color-mix(in srgb,var(--packet-accent) 42%,transparent)}
+}
+@media (max-width:480px){
+  .packet .evotor-receipt-table td[data-label],
+  .packet .evotor-receipt-detail-table td[data-label]{grid-template-columns:minmax(78px,.78fr) minmax(0,1.22fr);gap:6px}
+}
+
+/* The historic --packet-* variables are not defined by the shell.  Give
+   receipt cards explicit, theme-native separation rather than an invisible
+   fallback: iOS blue in light and restrained coral/plum in dark. */
+@media (max-width:860px){
+  html[data-audit-theme="light"] .packet :is(.evotor-receipt-table, .evotor-receipt-detail-table) tbody tr{
+    border-color:#76b7f3 !important;
+    background:#f7fbff !important;
+    box-shadow:0 2px 0 rgba(10,132,255,.17) !important;
+  }
+  html[data-audit-theme="dark"] .packet :is(.evotor-receipt-table, .evotor-receipt-detail-table) tbody tr{
+    border-color:#6b3848 !important;
+    background:#16101a !important;
+    box-shadow:0 2px 0 rgba(255,118,95,.18) !important;
+  }
+}
+@media print{
+  .packet .evotor-receipt-search,.packet .receipt-open-cell,.packet .evotor-receipt-detail .text-action{display:none!important}
+}
+
+
+/* Bounded payment repair is an admin-only read of existing document IDs, not a new import mode. */
+.packet .evotor-payment-repair{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;padding:10px 11px;border:1px solid var(--packet-line);border-radius:10px;background:var(--packet-input)}
+.packet .evotor-payment-repair>div{display:grid;gap:3px;min-width:0}
+.packet .evotor-payment-repair strong{color:var(--packet-ink);font-size:12px}
+.packet .evotor-payment-repair small{color:var(--packet-muted);font-size:11px;line-height:1.4}
+.packet .evotor-payment-repair .subtle-button{flex:0 0 auto;white-space:nowrap}
+.packet .evotor-payment-repair-result{margin:8px 0 0}
+@media (max-width:560px){
+  .packet .evotor-payment-repair{align-items:stretch;flex-direction:column}
+  .packet .evotor-payment-repair .subtle-button{width:100%;justify-content:center}
+}
+
+html[data-audit-theme="light"] .packet .evotor-receipt-search{border-color:#c7e2ff;background:#f4f9ff;color:#5b6f86}
+html[data-audit-theme="dark"] .packet .evotor-receipt-search{border-color:#3b2435;background:#17111b;color:#b8aab3}
+
+/* The receipt period follows the established common-slice line: date and store
+   selector remain peers on a desktop, then intentionally stack on a phone. */
+.packet .evotor-receipt-period { grid-template-columns: minmax(240px, 1fr) minmax(310px, auto) minmax(238px, 300px); align-items: center; }
+@media (max-width: 860px) { .packet .evotor-receipt-period { grid-template-columns: minmax(0, 1fr); } }

@@ -1,0 +1,42 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+
+const page = readFileSync(new URL("./CompareStores.tsx", import.meta.url), "utf8");
+const overrides = readFileSync(new URL("../final-overrides.css", import.meta.url), "utf8");
+
+describe("страница «Сравнить»", () => {
+  it("содержит полный сгруппированный выбор уже рассчитанных показателей", () => {
+    expect(page).toContain("Детализация расходов");
+    expect(page).toContain("stockChange");
+    expect(page).toContain("coverDays");
+    expect(page).toContain("expenseDefinitions.map");
+  });
+
+  it("корректно различает деньги, проценты и дни покрытия", () => {
+    expect(page).toContain('type MetricKind = "money" | "percent" | "number"');
+    expect(page).toContain("displayMode={chartMode}");
+    expect(page).toContain("Дней покрытия");
+  });
+
+  it("по умолчанию ограничивает выбор видимыми точками и позволяет явно показать исключенные", () => {
+    expect(page).toContain('const [onlyVisibleStores,setOnlyVisibleStores]=useState(true)');
+    expect(page).toContain('useAuditFacts({includeHidden:!onlyVisibleStores})');
+    expect(page).toContain('Только видимые');
+    expect(page).toContain('Все точки');
+    expect(page).not.toContain('Исключенные и резервные точки скрыты из выбора.');
+  });
+
+  it("поясняет фактическую базу сравнения и не подменяет отсутствие факта нулем", () => {
+    expect(page).toContain("const aHasFacts");
+    expect(page).toContain("const bHasFacts");
+    expect(page).toContain("Расчет фактический");
+    expect(page).toContain('Символ «—» означает отсутствие факта, а не нулевое значение.');
+  });
+
+  it("не перестраивает панель выбора при смене состава точек", () => {
+    expect(page).toContain('page-controls compare-page-controls');
+    expect(page).toContain('className="compare-metric-control"');
+    expect(overrides).toContain(".packet .compare-page-controls");
+    expect(overrides).toContain(".packet .compare-page-controls .compare-metric-control");
+  });
+});

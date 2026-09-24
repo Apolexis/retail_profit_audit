@@ -1,0 +1,117 @@
+import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { rankClosureCandidates, summarizeClosureScenario } from "@/lib/closureScenario";
+
+const page=readFileSync(resolve(process.cwd(),"client/src/pages/Pilot.tsx"),"utf8");
+const styles=readFileSync(resolve(process.cwd(),"client/src/final-overrides.css"),"utf8");
+
+describe("Pilot scenario outcome contract",()=>{
+  it("shows the base, scenario delta, and final profit in the right order",()=>{
+    expect(page).toContain("const scenarioDelta=model.profit-store.netProfit+closureProfitChange");
+    expect(page).toContain("const scenarioProfit=model.profit+closureProfitChange");
+    expect(page).toContain("Исходная прибыль");
+    expect(page).toContain("Изменение сценария");
+    expect(page).toContain("Итоговая прибыль");
+    expect(page).toContain("result(store.netProfit,false)");
+    expect(page).toContain("result(scenarioProfit,false)");
+  });
+
+  it("does not mark zero money values as positive",()=>{
+    expect(page).toContain('value>0?"positive":value<0?"negative":"neutral"');
+  });
+
+  it("adds a separate markup lever based on purchases without changing the source facts or modeling a separate sale-price lever",()=>{
+    expect(page).toContain("markupShift");
+    expect(page).toContain("const markupProfit=store.purchaseSmoked*effectiveMarkupSmokedShift/100+store.purchaseFrozen*effectiveMarkupFrozenShift/100");
+    expect(page).toContain("Рекомендованный тест наценки");
+    expect(page).toContain('label="Наценка Общий · п.п."');
+    expect(page).toContain("Наценка Общий → прибыль");
+    expect(page).toContain("const weightedMarkupShift=purchases?");
+    expect(page).not.toContain('label="Изменение цены продажи"');
+    expect(page).not.toContain("priceProfit");
+    expect(page).toContain("formatPilotNumber");
+  });
+
+  it("uses a separate rent lever for the second fact-based recommendation without applying it automatically",()=>{
+    expect(page).toContain("const totalRent=Math.abs(store.expenseByCode.rent??0)");
+    expect(page).toContain("const rentRatioMedian=median(facts.summaries.map");
+    expect(page).toContain("const rentGapToMedian=rentRatio>rentRatioMedian");
+    expect(page).toContain("const recommendedRentShift=Math.min(10,rentGapToMedian)");
+    expect(page).toContain('id:"rent"');
+    expect(page).toContain("Пилот пересмотра аренды б/нал");
+    expect(page).toContain("Рекомендация по фактам");
+    expect(page).toContain("не применяется автоматически");
+    expect(page).toContain('label="Сокращение аренды б/нал"');
+    expect(page).toContain("Аренда б/нал → прибыль");
+    expect(page).toContain("rentProfit");
+    expect(page).not.toContain("Коммунальные → прибыль");
+    expect(page).not.toContain("Пилот сокращения коммунальных платежей");
+    expect(page).not.toContain("Пилот сокращения коммунальных платежей");
+  });
+
+  it("derives the frozen-writeoff recommendation from the median share instead of a fixed scenario",()=>{
+    expect(page).toContain("const writeoffShareMedian=median(facts.summaries.map");
+    expect(page).toContain("const writeoffGapToMedian=writeoffShare>writeoffShareMedian");
+    expect(page).toContain("const recommendedWriteoffShift=Math.min(15,writeoffGapToMedian)");
+    expect(page).toContain('id:"writeoff"');
+    expect(page).toContain("Рекомендованное сокращение списаний М.");
+    expect(page).toContain("рычаг списаний М.");
+    expect(page).toContain("writeoff:recommendedWriteoffShift");
+    expect(page).not.toContain("writeoff:15");
+  });
+
+  it("restores the separate evidence-based recommendation for managed operating expenses",()=>{
+    expect(page).toContain("const expenseRatio=store.revenue?");
+    expect(page).toContain("const expenseRatioMedian=median(facts.summaries.map");
+    expect(page).toContain("const recommendedOpexShift=expenseRatio>expenseRatioMedian");
+    expect(page).toContain('id:"cost"');
+    expect(page).toContain("Рекомендованное сокращение управляемых расходов");
+    expect(page).toContain("рычаг управляемых расходов");
+    expect(page).toContain("opex:recommendedOpexShift");
+  });
+
+  it("supports several store closures and explains an evidence-based priority",()=>{
+    expect(page).toContain("closingStores");
+    expect(page).toContain("Выбрать убыточные");
+    expect(page).toContain("Изменение закрытия");
+    expect(page).toContain("Оценка чистой прибыли сети");
+    expect(page).toContain("Закрытие {closureSelectedInScope.length}");
+    expect(page).toContain("closureScenario.profitChange");
+    expect(page).toContain("const closureSelectedInScope=useMemo(()=>isNetwork?closureSelected:closureSelected.filter(candidate=>candidate.store===name)");
+    expect(page).toContain("const hasClosureInScope=closureSelectedInScope.length>0");
+    expect(page).toContain("const closureProfitChange=hasClosureInScope?closureScenario.profitChange:0");
+    expect(page).toContain("Закупки Коп. сократятся");
+    expect(page).toContain("Закупки Мор. сократятся");
+    expect(page).toContain("Остаток сети после закрытия");
+    expect(page).toContain("ПРЕКРАЩАЕМЫЕ РАСХОДЫ");
+    expect(page).toContain("Общий итог и статьи выбранных точек");
+    expect(styles).toContain(".packet .closure-overview { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));");
+    const candidates=rankClosureCandidates([{store:"Убыток",revenue:1_000,expenses:1_100,netProfit:-100,netMargin:-10,purchaseSmoked:250,purchaseFrozen:150,stockClose:90,expenseByCode:{rent:400,delivery:50}},{store:"Плюс",revenue:2_000,expenses:1_500,netProfit:200,netMargin:10}]);
+    expect(candidates[0]).toMatchObject({store:"Убыток",shouldReviewForClosure:true});
+    expect(candidates[0]?.reason).toContain("Убыток");
+    const scenario=summarizeClosureScenario({revenue:3_000,expenses:2_600,netProfit:100,purchaseSmoked:600,purchaseFrozen:300,stockClose:200},[candidates[0]!]);
+    expect(scenario).toMatchObject({closedRevenue:1_000,closedExpenses:1_100,closedPurchaseSmoked:250,closedPurchaseFrozen:150,closedPurchases:400,closedStock:90,remainingStock:110,profitChange:100,remainingProfit:200,closedExpenseByCode:{rent:400,delivery:50}});
+  });
+
+  it("limits a single-store scenario to the closure selected in its contour",()=>{
+    expect(page).toContain('closureSelected.filter(candidate=>candidate.store===name)');
+    expect(page).toContain("{hasClosureInScope&&<div className=\"closure-expense-breakdown\">");
+    expect(page).toContain("{hasClosureInScope&&<div><span>Закрытие {closureSelectedInScope.length}");
+    expect(page).toContain('чистая прибыль {isNetwork?"сети":"контура"}');
+  });
+
+  it("keeps the closure card frame intact and removes only the following recommendations divider",()=>{
+    expect(styles).toContain(".packet .closure-planner { display: grid; gap: 13px; }");
+    expect(styles).toContain(".packet .scenario-strip { border-top: 0; }");
+    expect(styles).toContain(".packet .closure-overview > div { display: grid;");
+  });
+
+  it("uses sign-aware light result surfaces and keeps scenario cards interactive",()=>{
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .scenario-result.neutral .scenario-profit-step.total,');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .scenario-result.positive .scenario-profit-step.total { border-color: #8ccfb5 !important; background: #effaf6 !important; }');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .scenario-result.negative .scenario-profit-step.total { border-color: #e5b0b5 !important; background: #fff4f4 !important; }');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .closure-overview > div:hover,');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .closure-choice.priority .closure-choice-main small.negative { color: #075dbb !important; }');
+  });
+});

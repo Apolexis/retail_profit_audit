@@ -1,0 +1,1 @@
+ALTER TABLE `audit_local_accounts` ADD `importAccessLevel` enum('none','upload','edit') DEFAULT 'none' NOT NULL;

@@ -1,0 +1,121 @@
+import { ChevronDown, Eye, EyeOff, FilePlus2, PencilLine, Plus, Save, Send, Tag, Trash2, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { Link } from "wouter";
+import { AuditShell } from "@/components/AuditShell";
+import { ConfirmDangerDialog } from "@/components/ConfirmDangerDialog";
+import { ThemedSelect } from "@/components/ui/themed-select";
+import { formatMoneyRubles } from "@/lib/displayFormat";
+import { trpc } from "@/lib/trpc";
+import "@/catalog-control.css";
+
+type CatalogUnit = "fraction" | "l" | "piece" | "unknown";
+type MarkingCategory = "none" | "supplement" | "seafood_caviar" | "seafood_canned" | "alcohol" | "beer_marked" | "beer_non_alcoholic" | "soft_drinks" | "water" | "dairy";
+type CatalogProduct = { id: number; internalCode: string; canonicalName: string; evotorCategoryName?: string | null; catalogCategoryId?: number | null; catalogCategoryName?: string | null; barcodes?: unknown; baseUnit: CatalogUnit; vatRate: "VAT_10" | "VAT_22"; markingCategory: MarkingCategory; manualBarcodes: string | null; isVisibleInRequests: boolean; isEvotorExportEnabled: boolean; isActive?: boolean };
+type CatalogCategory = { id: number; name: string; isActive: boolean };
+type PriceType = { id: number; name: string; isDefault: boolean; isActive: boolean };
+type SalePrice = { productId: number; priceTypeId: number; salePrice: string | number };
+type CatalogSort = "code" | "name" | "category" | "price";
+type SortDirection = "asc" | "desc";
+
+const unitLabel: Record<CatalogUnit, string> = { fraction: "кг", l: "л", piece: "шт", unknown: "Уточнить" };
+const markingLabel: Record<MarkingCategory, string> = { none: "Нет", supplement: "БАД", seafood_caviar: "Морепродукты · икра", seafood_canned: "Морепродукты · консервы", alcohol: "Алкоголь", beer_marked: "Маркированное пиво", beer_non_alcoholic: "Безалкогольное пиво", soft_drinks: "Соковая продукция и безалкогольные напитки", water: "Бутилированная питьевая вода", dairy: "Молоко и молочная продукция" };
+const sourceBarcodes = (value: unknown) => Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && Boolean(item.trim())).join("; ") : "";
+const moneyText = (value: string | number | undefined) => value === undefined ? "—" : formatMoneyRubles(Number(value));
+const catalogSearchTokens = (value: string) => value
+  .toLocaleLowerCase("ru-RU")
+  .replace(/ё/g, "е")
+  .split(/[^0-9A-Za-zА-Яа-я]+/)
+  .filter(Boolean);
+
+export default function CatalogControl() {
+  const utils = trpc.useUtils();
+  const me = trpc.localAuth.me.useQuery(undefined, { retry: false });
+  const isAdmin = me.data?.role === "admin";
+  const products = trpc.inventoryRegistry.products.useQuery({ includeUnknown: true }, { enabled: isAdmin, retry: false });
+  const catalogCategories = trpc.inventoryRegistry.catalogCategories.useQuery(undefined, { enabled: isAdmin, retry: false });
+  const priceTypes = trpc.inventoryRegistry.priceTypes.useQuery(undefined, { enabled: isAdmin, retry: false });
+  const [catalogSearch, setCatalogSearch] = useState("");
+  const [catalogSort, setCatalogSort] = useState<CatalogSort>("code");
+  const [catalogSortDirection, setCatalogSortDirection] = useState<SortDirection>("asc");
+  const [priceTypeId, setPriceTypeId] = useState("");
+  const [priceTypeDraft, setPriceTypeDraft] = useState("");
+  const [showPriceSettings, setShowPriceSettings] = useState(false);
+  const [showCategoryCreate, setShowCategoryCreate] = useState(false);
+  const [newPriceTypeName, setNewPriceTypeName] = useState("");
+  const [newCatalogCategoryName, setNewCatalogCategoryName] = useState("");
+  const [editingCatalogCategoryId, setEditingCatalogCategoryId] = useState<number | null>(null);
+  const [catalogCategoryDrafts, setCatalogCategoryDrafts] = useState<Record<number, string>>({});
+  const activePriceTypes = ((priceTypes.data ?? []) as PriceType[]).filter(item => item.isActive);
+  const selectedPriceType = activePriceTypes.find(item => item.id === Number(priceTypeId));
+  const salePriceInput = useMemo(() => selectedPriceType ? { priceTypeId: selectedPriceType.id } : undefined, [selectedPriceType]);
+  const salePrices = trpc.inventoryRegistry.salePrices.useQuery(salePriceInput, { enabled: Boolean(isAdmin && selectedPriceType), retry: false });
+  const salePriceByProduct = useMemo(() => new Map(((salePrices.data ?? []) as SalePrice[]).map(item => [item.productId, item.salePrice])), [salePrices.data]);
+
+  useEffect(() => { if (!priceTypeId && activePriceTypes.length) setPriceTypeId(String(activePriceTypes.find(item => item.isDefault)?.id ?? activePriceTypes[0].id)); }, [activePriceTypes, priceTypeId]);
+  useEffect(() => { setPriceTypeDraft(selectedPriceType?.name ?? ""); }, [selectedPriceType]);
+
+  const catalogRows = useMemo(() => {
+    const queryTokens = catalogSearchTokens(catalogSearch);
+    const list = (products.data ?? []) as CatalogProduct[];
+    const filtered = queryTokens.length ? list.filter(item => {
+      const haystack = `${item.canonicalName} ${item.internalCode} ${item.catalogCategoryName ?? item.evotorCategoryName ?? ""} ${item.manualBarcodes ?? ""} ${markingLabel[item.markingCategory]}`.toLocaleLowerCase("ru-RU").replace(/ё/g, "е");
+      return queryTokens.every(token => haystack.includes(token));
+    }) : list;
+    const direction = catalogSortDirection === "asc" ? 1 : -1;
+    const compareText = (left: string, right: string) => left.localeCompare(right, "ru", { numeric: true, sensitivity: "base" });
+    const comparePrice = (left: number | undefined, right: number | undefined) => {
+      if (left === undefined && right === undefined) return 0;
+      if (left === undefined) return 1;
+      if (right === undefined) return -1;
+      return (left - right) * direction;
+    };
+    const priceOf = (item: CatalogProduct) => {
+      const value = salePriceByProduct.get(item.id);
+      return value === undefined ? undefined : Number(value);
+    };
+    return [...filtered].sort((left, right) => {
+      const comparison = catalogSort === "name"
+        ? compareText(left.canonicalName, right.canonicalName) * direction
+        : catalogSort === "category"
+          ? compareText(left.catalogCategoryName ?? left.evotorCategoryName ?? "", right.catalogCategoryName ?? right.evotorCategoryName ?? "") * direction
+          : catalogSort === "price"
+            ? comparePrice(priceOf(left), priceOf(right))
+            : compareText(left.internalCode, right.internalCode) * direction;
+      return comparison || compareText(left.internalCode, right.internalCode) || compareText(left.canonicalName, right.canonicalName);
+    });
+  }, [catalogSearch, catalogSort, catalogSortDirection, products.data, salePriceByProduct]);
+  const toggleCatalogSort = (nextSort: CatalogSort) => {
+    if (nextSort === catalogSort) setCatalogSortDirection(current => current === "asc" ? "desc" : "asc");
+    else {
+      setCatalogSort(nextSort);
+      setCatalogSortDirection(nextSort === "price" ? "desc" : "asc");
+    }
+  };
+  const sortableCatalogHeading = (key: CatalogSort, label: string) => <th aria-sort={catalogSort === key ? (catalogSortDirection === "asc" ? "ascending" : "descending") : "none"} className="catalog-sort-heading" tabIndex={0} title={`Сортировать по столбцу «${label}»`} onClick={() => toggleCatalogSort(key)} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleCatalogSort(key); } }}>{label}</th>;
+  const refresh = async () => { await Promise.all([utils.inventoryRegistry.products.invalidate(), utils.inventoryRegistry.priceTypes.invalidate(), utils.inventoryRegistry.catalogCategories.invalidate(), utils.inventoryRegistry.catalogCategoryNames.invalidate(), utils.inventoryRegistry.printCategoryGroups.invalidate(), utils.audit.changes.invalidate()]); };
+  const createPriceType = trpc.inventoryRegistry.createPriceType.useMutation({ onSuccess: async row => { await refresh(); setNewPriceTypeName(""); setPriceTypeId(String(row.id)); toast.success("Вид цены создан"); }, onError: error => toast.error("Вид цены не создан", { description: error.message }) });
+  const updatePriceType = trpc.inventoryRegistry.updatePriceType.useMutation({ onSuccess: async () => { await refresh(); toast.success("Вид цены сохранен"); }, onError: error => toast.error("Вид цены не сохранен", { description: error.message }) });
+  const deletePriceType = trpc.inventoryRegistry.deletePriceType.useMutation({ onSuccess: async () => { setPriceTypeId(""); await refresh(); toast.success("Вид цены удален"); }, onError: error => toast.error("Вид цены не удален", { description: error.message }) });
+  const restore = trpc.inventoryRegistry.restoreCatalogProduct.useMutation({ onSuccess: async () => { await refresh(); toast.success("Товар возвращен в общий справочник"); }, onError: error => toast.error("Товар не возвращен", { description: error.message }) });
+  const createCatalogCategory = trpc.inventoryRegistry.createCatalogCategory.useMutation({ onSuccess: async () => { setNewCatalogCategoryName(""); setShowCategoryCreate(false); await refresh(); toast.success("Категория создана"); }, onError: error => toast.error("Категория не создана", { description: error.message }) });
+  const updateCatalogCategory = trpc.inventoryRegistry.updateCatalogCategory.useMutation({ onSuccess: async () => { setEditingCatalogCategoryId(null); await refresh(); toast.success("Категория сохранена"); }, onError: error => toast.error("Категория не сохранена", { description: error.message }) });
+  const archiveCatalogCategory = trpc.inventoryRegistry.archiveCatalogCategory.useMutation({ onSuccess: async result => { await refresh(); toast.success("Категория удалена из рабочего справочника", { description: `Товаров отсоединено: ${result.detachedProducts}; связей печати: ${result.detachedPrintMembers}.` }); }, onError: error => toast.error("Категория не удалена", { description: error.message }) });
+  if (!me.isLoading && !isAdmin) return <AuditShell kicker="26 / НОМЕНКЛАТУРА" title="Номенклатура"><section className="empty-state"><Tag size={28}/><h2>Управление номенклатурой доступно администратору</h2><p>Продавцы и руководители используют подтвержденный общий справочник только в операционных действиях.</p></section></AuditShell>;
+
+  return <AuditShell kicker="26 / НОМЕНКЛАТУРА" title="Номенклатура">
+    <section className="page-lede catalog-lede"><div><span>УПРАВЛЕНИЕ МАГАЗИНАМИ</span><h2>Общая номенклатура сети</h2><p>Один товар доступен всем магазинам-складам. В списке нет редактирования: карточка и создание товара открываются на отдельных страницах. Категорию можно создать, изменить или удалить в ее отдельном справочнике ниже.</p></div><Link href="/catalog-control/new" className="packet-link"><FilePlus2 size={16}/>Добавить товар</Link></section>
+
+	    <details className="packet-card catalog-price-types" open={showPriceSettings} onToggle={event => setShowPriceSettings((event.currentTarget as HTMLDetailsElement).open)}>
+      <summary><div><span>ВИДЫ ЦЕН</span><h3>{selectedPriceType?.name ?? "Выберите вид цены"}</h3><small>{selectedPriceType?.isDefault ? "Основной вид цены" : "Продажная цена выбирается в карточке товара"}</small></div><ChevronDown size={17}/></summary>
+      <div className="catalog-price-primary"><label>Текущий вид цены<ThemedSelect value={priceTypeId} onChange={event => setPriceTypeId(event.target.value)}>{activePriceTypes.map(item => <option value={item.id} key={item.id}>{item.name}{item.isDefault ? " · основной" : ""}</option>)}</ThemedSelect></label><label>Название<input value={priceTypeDraft} onChange={event => setPriceTypeDraft(event.target.value)} maxLength={128}/></label><button type="button" className="subtle-button" disabled={!selectedPriceType || updatePriceType.isPending || !priceTypeDraft.trim()} onClick={() => selectedPriceType && updatePriceType.mutate({ id: selectedPriceType.id, name: priceTypeDraft, isDefault: selectedPriceType.isDefault, isActive: true })}><Save size={14}/>Сохранить</button><button type="button" className="subtle-button" disabled={!selectedPriceType || selectedPriceType.isDefault || updatePriceType.isPending} onClick={() => selectedPriceType && updatePriceType.mutate({ id: selectedPriceType.id, name: selectedPriceType.name, isDefault: true, isActive: true })}><Eye size={14}/>Сделать основным</button></div>
+	      <div className="catalog-price-secondary"><form className="catalog-price-create" onSubmit={event => { event.preventDefault(); createPriceType.mutate({ name: newPriceTypeName }); }}><label>Новый вид цены<input value={newPriceTypeName} onChange={event => setNewPriceTypeName(event.target.value)} placeholder="Например: Оптово-розничная" maxLength={128}/></label><button className="subtle-button" disabled={!newPriceTypeName.trim() || createPriceType.isPending}><Plus size={14}/>Добавить</button></form>{selectedPriceType && !selectedPriceType.isDefault && <ConfirmDangerDialog trigger={<button type="button" className="subtle-button subtle-danger" disabled={deletePriceType.isPending}><Trash2 size={14}/>Удалить выбранный</button>} title="Удалить вид цены?" description="Удаление допустимо только если вид не назначен складу и для него нет цен товаров." confirmLabel="Удалить вид цены" disabled={deletePriceType.isPending} onConfirm={() => deletePriceType.mutate({ id: selectedPriceType.id })}/>}</div>
+	    </details>
+
+    <details className="packet-card catalog-category-directory" id="catalog-categories"><summary><div><span>КАТЕГОРИИ НОМЕНКЛАТУРЫ</span><h3>Единый справочник</h3><small>{(catalogCategories.data ?? []).length} категорий · открывается для настройки</small></div><ChevronDown size={17}/></summary><div className="catalog-category-body"><div className="catalog-category-create-action"><span>Новая категория</span><button type="button" className="subtle-button" aria-expanded={showCategoryCreate} onClick={() => setShowCategoryCreate(open => !open)}>{showCategoryCreate ? <><X size={14}/>Скрыть форму</> : <><Plus size={14}/>Добавить категорию</>}</button></div>{showCategoryCreate && <form className="catalog-category-create" onSubmit={event => { event.preventDefault(); createCatalogCategory.mutate({ name: newCatalogCategoryName }); }}><label>Название новой категории<input value={newCatalogCategoryName} onChange={event => setNewCatalogCategoryName(event.target.value)} maxLength={512} placeholder="Например: Рыба х/к" autoFocus/></label><div><button className="subtle-button" disabled={createCatalogCategory.isPending || !newCatalogCategoryName.trim()}><Save size={14}/>{createCatalogCategory.isPending ? "Создаём…" : "Создать"}</button><button type="button" className="subtle-button" onClick={() => { setShowCategoryCreate(false); setNewCatalogCategoryName(""); }}><X size={14}/>Отменить</button></div></form>}<div className="catalog-category-list" role="list">{((catalogCategories.data ?? []) as CatalogCategory[]).map(category => { const editing = editingCatalogCategoryId === category.id; const draft = catalogCategoryDrafts[category.id] ?? category.name; return <article key={category.id} role="listitem" className={category.isActive ? "" : "is-archived"}>{editing ? <label>Название категории<input value={draft} onChange={event => setCatalogCategoryDrafts(current => ({ ...current, [category.id]: event.target.value }))} maxLength={512}/></label> : <strong>{category.name}</strong>}<small>{category.isActive ? "Активна" : "Удалена из рабочего справочника"}</small><div>{editing ? <><button type="button" className="subtle-button" disabled={!draft.trim() || updateCatalogCategory.isPending} onClick={() => updateCatalogCategory.mutate({ id: category.id, name: draft })}><Save size={14}/>Сохранить</button><button type="button" className="subtle-button" onClick={() => setEditingCatalogCategoryId(null)}><X size={14}/>Отменить</button></> : category.isActive ? <><button type="button" className="subtle-button" onClick={() => { setCatalogCategoryDrafts(current => ({ ...current, [category.id]: category.name })); setEditingCatalogCategoryId(category.id); }}><PencilLine size={14}/>Изменить</button><ConfirmDangerDialog trigger={<button type="button" className="subtle-button subtle-danger" disabled={archiveCatalogCategory.isPending}><Trash2 size={14}/>Удалить</button>} title="Удалить категорию из рабочего справочника?" description="Товары и история не удаляются: товары будут отсоединены от категории, а связи с печатными подборками сняты. Входящий каталог Эвотор не восстановит удаленную локальную категорию автоматически." confirmLabel="Удалить категорию" disabled={archiveCatalogCategory.isPending} onConfirm={() => archiveCatalogCategory.mutate({ id: category.id })}/></> : null}</div></article>; })}</div></div></details>
+
+    <section className="packet-card catalog-working-card"><div className="card-title"><div><span>ОБЩИЙ СПРАВОЧНИК</span><h3>{catalogRows.length} {catalogRows.length === 1 ? "товар" : catalogRows.length < 5 ? "товара" : "товаров"}</h3></div></div><div className="catalog-directory-controls"><label className="catalog-search-label">Поиск товара<div className="catalog-search"><input value={catalogSearch} onChange={event => setCatalogSearch(event.target.value)} placeholder="Название, код или не полное имя"/><PencilLine size={15}/></div></label></div>
+      {products.isLoading ? <p className="packet-note">Загружаем общий справочник…</p> : !catalogRows.length ? <div className="empty-state compact"><Tag size={24}/><h2>Товаров не найдено</h2><p>Измените запрос или добавьте товар через отдельную карточку.</p></div> : <><div className="data-table-wrap catalog-table-wrap" data-drag-scroll="false"><table className="data-table catalog-table"><thead><tr>{sortableCatalogHeading("code", "№")}{sortableCatalogHeading("name", "Товар")}{sortableCatalogHeading("category", "Категория")}<th>Ед.</th><th>НДС</th><th>Маркировка</th><th>Штрихкоды</th>{sortableCatalogHeading("price", `Продажная цена · ${selectedPriceType?.name ?? "—"}`)}<th>Заявки</th><th>Эвотор</th><th aria-label="Действие"/></tr></thead><tbody>{catalogRows.map(product => <tr className={product.isActive === false ? "is-archived" : ""} key={product.id}><td data-label="№ / ID / артикул">{product.internalCode}</td><td data-label="Товар"><strong>{product.canonicalName}</strong></td><td data-label="Категория">{product.catalogCategoryName ?? product.evotorCategoryName ?? "—"}</td><td data-label="Ед.">{unitLabel[product.baseUnit]}</td><td data-label="НДС">{product.vatRate === "VAT_22" ? "22%" : "10%"}</td><td data-label="Маркировка">{markingLabel[product.markingCategory]}</td><td data-label="Штрихкоды">{product.manualBarcodes || sourceBarcodes(product.barcodes) || "—"}</td><td data-label="Продажная цена" className="catalog-table-money">{moneyText(salePriceByProduct.get(product.id))}</td><td data-label="Заявки">{product.isVisibleInRequests ? <span className="catalog-table-flag is-on"><Eye size={14}/>Да</span> : <span className="catalog-table-flag"><EyeOff size={14}/>Нет</span>}</td><td data-label="Эвотор">{product.isEvotorExportEnabled ? <span className="catalog-table-flag is-on"><Send size={14}/>Готов</span> : <span className="catalog-table-flag"><EyeOff size={14}/>Выключена</span>}</td><td data-label="Действие">{product.isActive === false ? <button type="button" className="subtle-button catalog-table-action" aria-label="Вернуть товар в общий справочник" title="Вернуть" onClick={() => restore.mutate({ id: product.id })} disabled={restore.isPending}><Eye size={14}/><span className="catalog-table-action-label">Вернуть</span></button> : <Link href={`/catalog-control/${product.id}/edit`} className="subtle-button catalog-table-action" aria-label={`Изменить товар: ${product.canonicalName}`} title="Изменить"><PencilLine size={14}/><span className="catalog-table-action-label">Изменить</span></Link>}</td></tr>)}</tbody></table></div></>}
+    </section>
+  </AuditShell>;
+}

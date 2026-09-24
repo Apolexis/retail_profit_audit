@@ -1,0 +1,1 @@
+ALTER TABLE `operational_onec_store_shipments` ADD `destinationReference` varchar(191) NOT NULL;

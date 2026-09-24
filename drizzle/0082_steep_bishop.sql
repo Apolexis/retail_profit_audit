@@ -1,0 +1,1 @@
+ALTER TABLE `operational_catalog_products` ADD `isEvotorCostExportEnabled` boolean DEFAULT false NOT NULL;

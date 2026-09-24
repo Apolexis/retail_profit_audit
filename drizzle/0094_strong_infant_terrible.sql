@@ -1,0 +1,1 @@
+ALTER TABLE `operational_evotor_product_links` ADD CONSTRAINT `operational_evotor_product_link_store_product_uq` UNIQUE(`storeId`,`productId`);

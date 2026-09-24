@@ -1,0 +1,124 @@
+/* Consolidated print settings use dense operating rows rather than broad tile grids. */
+.packet .print-settings-card { display: grid; gap: 15px; min-width: 0; }
+.packet .print-settings-store-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
+.packet .print-settings-store-list > label { display: grid; gap: 6px; min-width: 0; padding: 10px 11px; border: 1px solid var(--warehouse-line); border-radius: 10px; background: var(--warehouse-panel); }
+.packet .print-settings-store-list strong { overflow-wrap: anywhere; font-size: 13px; }
+.packet .print-settings-store-list select { min-width: 0; }
+.packet .print-settings-lede { margin-bottom: 16px; }
+
+/* The group name is visibly an edit control even before hover. */
+.packet .print-settings-card .warehouse-print-group-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--warehouse-accent);
+  border-radius: 9px;
+  background: var(--warehouse-accent-faint);
+  color: var(--warehouse-accent);
+  font: 750 12px Manrope, Arial, sans-serif;
+}
+.packet .print-settings-card .warehouse-print-group-chip svg { color: var(--warehouse-accent); }
+.packet .print-settings-card .warehouse-print-group-chip:focus-visible { border-color: var(--warehouse-accent); box-shadow: 0 0 0 1px var(--warehouse-accent-faint); outline: none; transform: none; }
+@media (hover: hover) and (pointer: fine) {
+  .packet .print-settings-card .warehouse-print-group-chip:hover { border-color: var(--warehouse-accent); box-shadow: 0 0 0 1px var(--warehouse-accent-faint); outline: none; transform: none; }
+}
+.packet .print-settings-card .warehouse-print-group-recovery { display: grid; gap: 7px; padding: 10px 11px; border: 1px dashed var(--warehouse-line); border-radius: 10px; background: var(--warehouse-panel); }
+.packet .print-settings-card .warehouse-print-group-recovery > span { color: var(--muted); font: 800 9px/1.2 Manrope, Arial, sans-serif; letter-spacing: .08em; }
+.packet .print-settings-card .warehouse-print-group-recovery > small { color: var(--muted); font-size: 11px; line-height: 1.4; }
+.packet .print-settings-card .warehouse-print-group-recovery > div { display: flex; flex-wrap: wrap; gap: 7px; }
+.packet .print-settings-card .warehouse-print-group-chip.is-inactive { border-color: var(--warehouse-line); background: transparent; color: var(--muted); }
+.packet .print-settings-card .warehouse-print-group-chip.is-inactive svg { color: var(--muted); }
+
+/* Inputs and actions share the established 40px operating rhythm without creating a new button style. */
+.packet .print-settings-card :is(.warehouse-print-group-create input, .warehouse-print-group-editor input) { min-height: 40px; }
+.packet .print-settings-card :is(.warehouse-print-group-create .subtle-button, .warehouse-print-group-editor .subtle-button, .warehouse-category-add .subtle-button, .warehouse-category-group-actions .subtle-button, .warehouse-category-group-edit) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  box-sizing: border-box;
+}
+
+/* A category is one readable unit: its memberships, then two add rows. */
+.packet .print-settings-card .warehouse-category-print-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.packet .print-settings-card .warehouse-category-print-groups > article { min-width: 0; padding: 14px; }
+.packet .print-settings-card .warehouse-category-group-heading { align-items: flex-start; }
+.packet .print-settings-card .warehouse-category-group-heading > div { min-width: 0; }
+.packet .print-settings-card .warehouse-category-print-mode { display: block; max-width: 100%; margin-top: 4px; color: var(--muted); font-size: 10px; line-height: 1.35; overflow-wrap: anywhere; }
+.packet .print-settings-card .warehouse-category-member-list { min-height: 30px; }
+.packet .print-settings-card .warehouse-category-add { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.packet .print-settings-card .warehouse-category-add .subtle-button { min-width: 0; padding-inline: 10px; }
+.packet .print-settings-card .warehouse-category-add > :nth-child(3) { grid-column: 1; }
+.packet .print-settings-card .warehouse-category-add > :nth-child(4) { grid-column: 2; }
+.packet .print-settings-inline-paper { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start; padding: 11px; border: 1px solid var(--warehouse-line); border-radius: 10px; background: var(--warehouse-panel); }
+.packet .print-settings-inline-paper > div { display: grid; gap: 3px; min-width: 0; }
+.packet .print-settings-inline-paper span { color: var(--muted); font: 800 9px/1.2 Manrope, Arial, sans-serif; letter-spacing: .08em; }
+.packet .print-settings-inline-paper strong { color: var(--ink); font-size: 13px; }
+.packet .print-settings-inline-paper small { color: var(--muted); font-size: 11px; line-height: 1.4; }
+.packet .print-settings-inline-paper label { display: grid; gap: 6px; min-width: 0; }
+.packet .print-settings-card .card-title small { display: block; min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+.packet .print-settings-card .warehouse-category-members-toggle { justify-self: start; min-height: 34px; }
+.packet .print-settings-card .warehouse-category-members-toggle > svg { transition: transform 160ms var(--audit-hover-ease); transform: rotate(180deg); }
+.packet .print-settings-card .warehouse-category-members-toggle.is-expanded > svg { transform: rotate(0); }
+.packet .print-settings-card .warehouse-category-members-panel { display: grid; gap: 10px; padding-top: 2px; }
+
+@media (max-width: 1400px) {
+  .packet .print-settings-store-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 1040px) {
+  .packet .print-settings-store-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .packet .print-settings-card .warehouse-category-print-groups { grid-template-columns: 1fr; }
+}
+@media (max-width: 620px) {
+  /* These cards share general warehouse flex rows. Reset their intrinsic width so
+     long operational controls cannot widen the whole packet on a phone. */
+  .packet .print-settings-card,
+  .packet .print-settings-card > * { min-width: 0; max-width: 100%; box-sizing: border-box; }
+  .packet .print-settings-card .warehouse-print-group-create,
+  .packet .print-settings-card .warehouse-print-group-editor { display: grid; grid-template-columns: minmax(0, 1fr); width: 100%; }
+  .packet .print-settings-card .warehouse-print-group-create > *,
+  .packet .print-settings-card .warehouse-print-group-editor > * { width: 100%; min-width: 0; max-width: 100%; }
+  .packet .print-settings-card .warehouse-print-group-create label,
+  .packet .print-settings-card .warehouse-print-group-editor label { flex: none; }
+  .packet .print-settings-card .card-title,
+  .packet .print-settings-card .card-title > div { width: 100%; min-width: 0; max-width: 100%; }
+  .packet .print-settings-card .card-title { flex-wrap: wrap; }
+  .packet .print-settings-card .card-title :is(h3, small) { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+  .packet .print-settings-card .warehouse-category-print-mode { font-size: 9px; line-height: 1.35; }
+  .packet .print-settings-store-list { grid-template-columns: 1fr; }
+  .packet .print-settings-inline-paper { grid-template-columns: minmax(0, 1fr); }
+  .packet .print-settings-card .warehouse-category-add { grid-template-columns: 1fr; }
+  .packet .print-settings-card .warehouse-category-add > :nth-child(3),
+  .packet .print-settings-card .warehouse-category-add > :nth-child(4) { grid-column: auto; }
+  .packet .print-settings-card .warehouse-category-add .subtle-button { width: 100%; justify-content: center; }
+}
+
+/* Two optional request comments are configured independently from group membership. */
+.packet .print-settings-comments { display: grid; grid-template-columns: minmax(0, 1.2fr) repeat(2, minmax(190px, 1fr)); gap: 12px; align-items: end; padding: 11px; border: 1px solid var(--warehouse-line); border-radius: 10px; background: var(--warehouse-panel); }
+.packet .print-settings-comments > div,
+.packet .print-settings-comments > label { display: grid; gap: 6px; min-width: 0; }
+.packet .print-settings-comments span { color: var(--muted); font: 800 9px/1.2 Manrope, Arial, sans-serif; letter-spacing: .08em; }
+.packet .print-settings-comments strong { color: var(--ink); font-size: 13px; }
+.packet .print-settings-comments small { color: var(--muted); font-size: 11px; line-height: 1.4; }
+@media (max-width: 980px) { .packet .print-settings-comments { grid-template-columns: repeat(2, minmax(0, 1fr)); } .packet .print-settings-comments > div { grid-column: 1 / -1; } }
+@media (max-width: 620px) { .packet .print-settings-comments { grid-template-columns: minmax(0, 1fr); } .packet .print-settings-comments > div { grid-column: auto; } }
+
+/* Each typography role owns one stable tile: controls never overlap at intermediate widths. */
+.packet .print-settings-inline-paper .print-settings-controls { display: grid; grid-template-columns: minmax(180px, .72fr) minmax(0, 2.28fr); gap: 12px; align-items: end; }
+.packet .print-settings-inline-paper .request-print-recommendations { grid-column: 1 / -1; min-width: 0; }
+.packet .request-print-typography { display: grid !important; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; min-width: 0; }
+.packet .request-print-typography > label { display: grid; gap: 6px; min-width: 0; }
+.packet .request-print-typography > label > span { display: grid; grid-template-columns: minmax(0, 1fr) minmax(72px, auto); gap: 6px; align-items: center; min-width: 0; }
+.packet .request-print-typography .subtle-button { min-height: 40px; min-width: 72px; padding-inline: 9px; white-space: nowrap; }
+.packet .request-print-typography .subtle-button.is-active { border-color: var(--warehouse-accent); background: var(--warehouse-accent-faint); color: var(--warehouse-accent); }
+.packet .request-print-recommendations { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 14px; margin: 0; padding: 10px; border: 1px solid var(--warehouse-line); border-radius: 10px; color: var(--ink); }
+.packet .request-print-recommendations legend { padding-inline: 5px; color: var(--muted); font: 800 9px/1.2 Manrope, Arial, sans-serif; letter-spacing: .08em; }
+.packet .request-print-recommendations label { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 12px; line-height: 1.3; }
+.packet .request-print-recommendations input { width: 16px; height: 16px; margin: 0; accent-color: var(--warehouse-accent); flex: 0 0 auto; }
+.packet .request-print-recommendation-style { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.packet .request-print-recommendation-style > label { display: grid; gap: 4px; min-width: 0; color: var(--muted); font: 800 9px Manrope, Arial, sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+@media (max-width: 980px) { .packet .print-settings-inline-paper .print-settings-controls { grid-template-columns: 1fr; } }
+@media (max-width: 620px) { .packet .request-print-typography, .packet .request-print-recommendations, .packet .request-print-recommendation-style { grid-template-columns: 1fr; } }

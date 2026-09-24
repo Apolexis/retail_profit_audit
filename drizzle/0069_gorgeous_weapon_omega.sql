@@ -1,0 +1,2 @@
+ALTER TABLE `operational_stock_movements` ADD `shipmentReceiptLineId` int;--> statement-breakpoint
+ALTER TABLE `operational_stock_movements` ADD CONSTRAINT `operational_stock_movement_receipt_line_uq` UNIQUE(`shipmentReceiptLineId`);

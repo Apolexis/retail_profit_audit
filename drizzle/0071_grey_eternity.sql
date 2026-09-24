@@ -1,0 +1,1 @@
+ALTER TABLE `operational_scheduled_sync_jobs` MODIFY COLUMN `kind` enum('evotor_catalog','evotor_documents','evotor_documents_current_1','evotor_documents_current_2','evotor_documents_current_3','evotor_documents_current_4') NOT NULL;

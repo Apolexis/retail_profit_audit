@@ -1,0 +1,1 @@
+ALTER TABLE `operational_evotor_document_syncs` ADD `syncMode` enum('historical','current_day') DEFAULT 'historical' NOT NULL;

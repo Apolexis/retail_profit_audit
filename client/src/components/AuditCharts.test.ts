@@ -1,0 +1,264 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+import { buildAdjacentTooltipChanges, chartPanSpeedForZoom, chartTick, clampChartZoom, formatFactAmount, formatK, formatM, formatTableAmount, missingTooltipLines, nonZeroLines, normalizeOverlayBarRect, panChartRows, percentageChange, pointInsideRect, resolveChartPanAxis, resolveMetricChartLayout, resolveMetricChartView, resolveOverlayBarGeometry, sortTooltipPayload, truncateTooltipLabel, viewportChartDomain, windowChartRows, zeroAwareTicks } from "./AuditCharts";
+
+describe("форматирование денежных показателей", () => {
+  it("округляет денежные показатели до полных рублей без копеек", () => {
+    expect(formatK(0.4)).toBe("0.4тыс ₽");
+    expect(formatK(0.004)).toBe("4 ₽");
+    expect(formatK(0.00366)).toBe("4 ₽");
+    expect(formatK(0.00004)).toBe("0 ₽");
+    expect(formatK(0.00000003)).toBe("0 ₽");
+    expect(formatK(65.2)).toBe("65.2тыс ₽");
+  });
+  it("не превращает малые значения миллионов в 0,0 млн на осях и в tooltip", () => {
+    expect(formatM(0.00366)).toBe("3.66тыс ₽");
+    expect(formatM(-0.000004)).toBe("−4 ₽");
+    expect(formatM(0.05)).toBe("0.05млн ₽");
+    expect(chartTick(0.00366,"million")).toBe("3.66тыс");
+    expect(chartTick(0,"million")).toBe("0");
+  });
+  it("дает таблицам единый точный формат и сохраняет отдельное состояние отсутствующего факта", () => {
+    expect(formatFactAmount(3.66)).toBe("4 ₽");
+    expect(formatFactAmount(3_660)).toBe("3.7тыс ₽");
+    expect(formatTableAmount(0.00366)).toBe("4 ₽");
+    expect(formatTableAmount(0)).toBe("0 ₽");
+    expect(formatFactAmount(null)).toBe("—");
+    expect(formatTableAmount(undefined)).toBe("—");
+  });
+  it("показывает только действительно отсутствующие линии как «Нет факта», а не фактический ноль", () => {
+    const lines=[{key:"a",name:"А",color:"#111"},{key:"b",name:"Б",color:"#222"},{key:"c",name:"В",color:"#333"}];
+    expect(missingTooltipLines([{name:"А",value:0,payload:{a:0,b:null}}],lines)).toEqual([{name:"Б",color:"#222"},{name:"В",color:"#333"}]);
+  });
+  it("показывает крупные значения в миллионах", () => {
+    expect(formatK(1540)).toBe("1.5млн ₽");
+  });
+  it("сортирует значения тултипа по убыванию, включая отрицательные", () => {
+    expect(sortTooltipPayload([{ name: "C", value: -5 }, { name: "A", value: 120 }, { name: "B", value: 40 }]).map(item => item.name)).toEqual(["A", "B", "C"]);
+  });
+	it("показывает изменение только к предыдущему периоду и не рассчитывает процент от нулевой базы", () => {
+	  expect(percentageChange(120, 100)).toBe(20);
+	  expect(percentageChange(80, 100)).toBe(-20);
+	  expect(percentageChange(100, 0)).toBeNull();
+    expect(buildAdjacentTooltipChanges([{ month: "01", metric: 100 }, { month: "02", metric: 120 }, { month: "03", metric: 90 }], [{ key: "metric", name: "Метрика", color: "#111" }])).toEqual({
+      "01": { "Метрика": { previous: null } },
+      "02": { "Метрика": { previous: 20 } },
+	    "03": { "Метрика": { previous: -25 } },
+	  });
+	});
+
+		it("не показывает процентную разницу между выбранными фактами", () => {
+		  const source = readFileSync(new URL("./AuditCharts.tsx", import.meta.url), "utf8");
+		  expect(source).not.toContain("pairResults.map");
+		  expect(source).not.toContain("tiny-tooltip-pair-change\"><span>");
+		});
+		it("не добавляет в tooltip отдельный блок сравнения фактов", () => {
+		  const overrides = readFileSync(new URL("../final-overrides.css", import.meta.url), "utf8");
+		  expect(overrides).toContain(".packet .tiny-tooltip-pair-change { display: none !important; }");
+		});
+	it("не сокращает подпись tooltip по числу символов: ограничение задает только реальная ширина колонки", () => {
+    expect(truncateTooltipLabel("КИР1")).toBe("КИР1");
+    expect(truncateTooltipLabel("П.ЗОР")).toBe("П.ЗОР");
+    expect(truncateTooltipLabel("СНЕЖОК")).toBe("СНЕЖОК");
+    expect(truncateTooltipLabel("Зарплата наличными")).toBe("Зарплата наличными");
+  });
+  it("не выводит серию, которая за весь выбранный срез равна нулю", () => {
+    const lines=[{key:"driverCash",name:"Водитель нал",color:"#111"},{key:"cash",name:"Траты нал",color:"#222"}];
+    expect(nonZeroLines([{driverCash:0,cash:120},{driverCash:0,cash:-30}],lines).map(line=>line.key)).toEqual(["cash"]);
+  });
+  it("сохраняет выбранный вид и для короткого временного среза", () => {
+    expect(resolveMetricChartView(1,"line")).toBe("line");
+    expect(resolveMetricChartView(0,"line")).toBe("line");
+    expect(resolveMetricChartView(2,"line")).toBe("line");
+    expect(resolveMetricChartView(2,"bar")).toBe("bar");
+  });
+  it("не переворачивает график для одного периода или нескольких рядов", () => {
+    expect(resolveMetricChartLayout(1, 4)).toBe("timeline");
+    expect(resolveMetricChartLayout(1, 1)).toBe("timeline");
+    expect(resolveMetricChartLayout(2, 4)).toBe("timeline");
+  });
+  it("сохраняет волну как базовое представление динамики", () => {
+    expect(resolveMetricChartView(3, "line")).toBe("line");
+  });
+  it("сохраняет наложенные столбцы отдельным режимом для многоточечного ряда", () => {
+    expect(resolveMetricChartView(3, "overlay")).toBe("overlay");
+    expect(resolveMetricChartView(1, "overlay")).toBe("overlay");
+  });
+	it("дает каждому общему графику все три доступных представления", () => {
+	  const source = require("node:fs").readFileSync(new URL("./AuditCharts.tsx", import.meta.url), "utf8");
+	  expect(source).toContain("{showViewControls&&<ChartViewControls");
+	  expect(source).toContain(">Волна</button>");
+	  expect(source).toContain(">Столбцы</button>");
+	  expect(source).toContain(">Наложение</button>");
+	  expect(source).toContain("export function ChartPeriodComparisonToggle");
+	  expect(source).toContain("comparisonControl?:()=>ReactNode");
+	  expect(source).toContain("{comparisonControl?.()}{showViewControls&&<ChartViewControls");
+	});
+  it("дает всем общим графикам доступное увеличение в отдельном диалоге", () => {
+    const source = require("node:fs").readFileSync(new URL("./AuditCharts.tsx", import.meta.url), "utf8");
+    expect(source).toContain("function ChartExpandButton");
+    expect(source).toContain("Увеличить график:");
+    expect(source).not.toContain("Детальный просмотр: колесо или pinch");
+    expect(source).toContain("<MetricLineChart key={expandedView} data={data}");
+	    expect(source).toContain("<BenchmarkBars data={data}");
+	  });
+
+	  it("раскладывает controls увеличенного графика без наложения", () => {
+	    const overrides = readFileSync(new URL("../final-overrides.css", import.meta.url), "utf8");
+	    expect(overrides).toContain(".chart-expand-dialog-general .chart-expand-controls{display:grid!important;grid-template-columns:minmax(180px,.85fr) minmax(280px,1.15fr)");
+	    expect(overrides).toContain(".chart-expand-dialog-general .chart-expand-view-control .chart-view-control{display:grid;width:100%;min-width:0;grid-template-columns:repeat(3,minmax(0,1fr))");
+	  });
+
+	  it("сохраняет выбранный вид и дает переключатель в увеличенном графике", () => {
+    const source = require("node:fs").readFileSync(new URL("./AuditCharts.tsx", import.meta.url), "utf8");
+    expect(source).toContain("initialView?:MetricChartView");
+    expect(source).toContain("useState<MetricChartView>(initialView)");
+	  expect(source).toContain("initialView={expandedView} expanded showViewControls={false}");
+	  expect(source).toContain("{showViewControls&&<ChartViewControls view={chartView}");
+	  expect(source).toContain('className="chart-expand-view-control"');
+	  expect(source).toContain('className="chart-expand-controls"');
+	  expect(source).toContain("{comparisonControl?.()}{showViewControls&&");
+	  expect(source).toContain("showViewControls comparisonControl={comparisonControl} touchModeControl={data.length>1}");
+	});
+  it("масштабирует домен и видимый срез данных, а не SVG-поверхность", () => {
+    expect(clampChartZoom(.5)).toBe(1);
+    expect(clampChartZoom(4)).toBe(3);
+    expect(chartPanSpeedForZoom(1)).toBeCloseTo(5.27,2);
+    expect(chartPanSpeedForZoom(1)).toBeGreaterThan(chartPanSpeedForZoom(1.5));
+    expect(chartPanSpeedForZoom(1.5)).toBeGreaterThan(chartPanSpeedForZoom(2));
+    expect(chartPanSpeedForZoom(2)).toBeGreaterThan(chartPanSpeedForZoom(2.5));
+    expect(chartPanSpeedForZoom(2.5)).toBeGreaterThan(chartPanSpeedForZoom(3));
+    expect(chartPanSpeedForZoom(3)).toBeCloseTo(3.4/Math.sqrt(3));
+    expect(resolveChartPanAxis(1,0)).toBeNull();
+    expect(resolveChartPanAxis(14,5)).toBe("x");
+    expect(resolveChartPanAxis(5,14)).toBe("y");
+    expect(pointInsideRect({clientX:120,clientY:80},{left:100,right:180,top:40,bottom:120})).toBe(true);
+    expect(pointInsideRect({clientX:181,clientY:80},{left:100,right:180,top:40,bottom:120})).toBe(false);
+    expect(windowChartRows([1,2,3,4,5,6],{zoom:2,pan:{x:0,y:0}})).toEqual([3,4,5]);
+    expect(windowChartRows([1,2,3,4,5,6],{zoom:2,pan:{x:0,y:1}},"y")).toEqual([4,5,6]);
+    expect(windowChartRows([1,2,3,4],{zoom:1.16,pan:{x:1,y:0}})).toEqual([2,3,4]);
+    expect(windowChartRows([1,2,3,4,5,6],{zoom:2,pan:{x:2.4,y:0}})).toEqual([4,5,6]);
+    expect(panChartRows([{month:"M1"},{month:"M2"},{month:"M3"}],{zoom:1,pan:{x:1,y:0}}).map(row=>row.month)).toEqual(["M1","M2","M3"]);
+    expect(panChartRows([{store:"A"},{store:"B"},{store:"C"}],{zoom:1,pan:{x:0,y:-1}},"y").map(row=>row.store)).toEqual(["A","B","C"]);
+    expect(viewportChartDomain([0,100],{zoom:2,pan:{x:0,y:0}})).toEqual([25,75]);
+    expect(viewportChartDomain([0,100],{zoom:2,pan:{x:1,y:0}},"x")).toEqual([125,175]);
+    expect(viewportChartDomain([0,100],{zoom:2,pan:{x:2,y:0}},"x")).toEqual([225,275]);
+    expect(viewportChartDomain([0,100],{zoom:1,pan:{x:1,y:0}},"x")).toEqual([75,175]);
+    expect(viewportChartDomain([0,100],{zoom:1,pan:{x:2.4,y:0}},"x")).toEqual([180,280]);
+    expect(viewportChartDomain([8,18],{zoom:2,pan:{x:0,y:0}},"y",false)).toEqual([10.5,15.5]);
+    const source = require("node:fs").readFileSync(new URL("./AuditCharts.tsx", import.meta.url), "utf8");
+    expect(source).toContain('=>windowChartRows(data,viewport,axis)');
+    expect(source).toContain("export const panChartRows");
+    expect(source).toContain("const chartData=panChartRows(data,viewport)");
+    expect(source).toContain('const chartData=panChartRows(data,viewport,"y")');
+    expect(source).toContain('viewportChartDomain(fullPlottedValues,viewport,"y",(viewport?.zoom??1)<=1)');
+    expect(source).toContain('axis:"x"|"y"="y"');
+    expect(source).toContain("includeZero=true");
+    expect(source).not.toContain("scale(${zoom})");
+    expect(source).toContain("onPointerDownCapture={down}");
+    expect(source).toContain('addEventListener("wheel",wheel,{passive:false})');
+    expect(source).toContain("event.stopPropagation()");
+    expect(source).not.toContain("if(activeZoom<=1)return");
+    expect(source).toContain("const speed=chartPanSpeedForZoom(zoomRef.current)");
+    expect(source).toContain("const queuePan=(delta:{x:number;y:number})");
+    expect(source).toContain("if(mouseAxisLock&&!touchInput&&!gesture.current.axis)");
+    expect(source).toContain("const mouseAxisThreshold=4");
+    expect(source).toContain("mouseVerticalPanDirection=1");
+    expect(source).toContain("mouseVerticalPanDirection={-1}");
+    expect(source).toContain("touchVerticalPanDirection={-1}");
+    expect(source).toContain("panDirection={-1}");
+    expect(source).toContain('gesture.current.axis==="y"?0:-deltaX*speed');
+    expect(source).toContain('queuePan({x:-deltaX*speed/Math.max(bounds.width,1),y:deltaY*touchVerticalPanDirection*speed');
+    expect(source).toContain("event.currentTarget.setPointerCapture(event.pointerId)");
+    expect(source).toContain("const renderPan=pan");
+    expect(source).toContain("onLostPointerCapture={cancel}");
+    expect(source).not.toContain("onBlur={cancel}");
+    expect(source).toContain('window.addEventListener("pointerup",release,true)');
+    expect(source).toContain("event.preventDefault()");
+    expect(source).toContain("const clampUnit=(value:number)=>Math.min(2.4,Math.max(-2.4,value))");
+    expect(source).toContain("button,[data-chart-point='true']");
+    expect(source).not.toContain("resolveChartPanAxis(next.x-start.x,next.y-start.y,dragThreshold)");
+    expect(source).toContain("gesture.current.lastPoint=next;gesture.current.panning=true;event.preventDefault();event.stopPropagation();setDragging(true)");
+    expect(source).not.toContain("onPointerDownOutside={event=>event.preventDefault()}");
+    expect(source).toContain("const keepChartSurfaceInside");
+    expect(source).toContain('onPointerDownOutside={protectGeneralChartSurface?keepChartSurfaceInside:undefined}');
+    expect(source).toContain('onFocusOutside={protectGeneralChartSurface?keepChartSurfaceInside:undefined}');
+    expect(source).toContain('onInteractOutside={protectGeneralChartSurface?keepChartSurfaceInside:undefined}');
+    expect(source).toContain('onPointerDown={protectGeneralChartSurface?stopChartPointerBubble:undefined}');
+    expect(source).not.toContain('onPointerDownCapture={protectGeneralChartSurface?stopChartPointerBubble:undefined}');
+    expect(source).toContain('const displayValue=item.missing?"Нет факта":mode==="number"?');
+    expect(source).toContain('formatQuantityWithUnit(item.value??0,item.quantityUnit)');
+    expect(source).not.toContain('aria-label="Закрыть подсказку"');
+    expect(source).toContain("buildAdjacentTooltipChanges(chartData,visibleLines)");
+    expect(source).toContain("tiny-tooltip-change");
+    expect(source).toContain('<em className={previous.className}>{previous.text}</em>');
+    expect(source).not.toContain('к пред. {previous.text}');
+    expect(source).not.toContain('след. {next.text}');
+    expect(source).toContain('const commonTooltipStyle={pointerEvents:"auto" as const');
+    expect(source).toContain('strokeDasharray={line.comparison?"5 4":undefined}');
+    expect(source).toContain('document.body.dataset.generalChartDialogOpen="true"');
+    expect(source).toContain('pointInsideRect(point,dialog.getBoundingClientRect())');
+    expect(source).toContain('document.body.dataset.generalChartDialogOpen="true"');
+    expect(source).toContain('className="chart-expand-dialog chart-expand-dialog-general"');
+    expect(source).toContain('document.body.dataset.chartDialogOpen="true"');
+    expect(source).toContain('const chartRenderKey=`${chartView}-${visibleLines.map(line=>line.key).join("-")}`');
+    expect(source).toContain('<ResponsiveContainer key={chartRenderKey} width="100%" height={chartHeight}>');
+    expect(source).toContain("isAnimationActive={false}");
+    expect(source).toContain('addEventListener("touchstart",touchStart,{passive:false,capture:true})');
+    expect(source).toContain('addEventListener("touchmove",touchMove,{passive:false,capture:true})');
+    expect(source).toContain("const touchEnd=()=>clearGesture()");
+    expect(source).toContain("function StableTinyTooltip");
+    expect(source).not.toContain("window.setTimeout(()=>setStable(props),72)");
+    expect(source).toContain("function StableTinyTooltip(props:TinyTooltipProps)");
+    expect(source).not.toContain("function useNarrowTooltipViewport()");
+    expect(source).toContain("const denseColumns=3");
+    expect(source).toContain("const displayName=truncateTooltipLabel(item.name)");
+    expect(source).toContain('singleTooltip?" tiny-tooltip-single":""');
+    expect(source).toContain("isAnimationActive={false} animationDuration={0}");
+    expect(source).toContain('const touchStart=(event:TouchEvent)=>{if(isControl(event.target)||!event.touches.length)return;');
+    expect(source).toContain('if(!allowTouchPan&&active.length===1)return');
+    expect(source).toContain('const ownsPointerTarget=(event:ReactPointerEvent<HTMLDivElement>)=>event.target instanceof Node&&event.currentTarget.contains(event.target);');
+    expect(source).toContain('if(!ownsPointerTarget(event)||event.pointerType==="touch"||!pointers.current.has(event.pointerId))return');
+    expect(source).toContain('if(!ownsPointerTarget(event)||event.pointerType==="touch"||(event.target as Element).closest');
+    expect(source).toContain('event.currentTarget.setPointerCapture(event.pointerId)');
+    expect(source).toContain('onPointerDownOutside={protectGeneralChartSurface?keepChartSurfaceInside:undefined}');
+    expect(source).toContain('const keepChartSurfaceInside');
+    expect(source).toContain('aria-label={compact?"Интерактивный график":"Интерактивный увеличенный график"}');
+    expect(readFileSync(new URL("../final-overrides.css", import.meta.url), "utf8")).toContain('body[data-chart-dialog-open="true"] .packet { pointer-events: none !important; user-select: none; }');
+    expect(source).toContain('compact?:boolean;axisLock?:boolean;mouseAxisLock?:boolean;mouseVerticalPanDirection?:1|-1;touchVerticalPanDirection?:1|-1;touchModeControl?:boolean;panSpeed?:number;zoomStep?:number;controlZoomStep?:number}');
+    expect(source).not.toContain("invertX");
+    expect(source).toContain('function useSmallChartViewport()');
+    expect(source).toContain('const tooltipInset=touchInput?58:34;');
+    expect(source).toContain('const timelineMargin=compactChart?{top:tooltipInset,right:8,left:0,bottom:tooltipInset}');
+    expect(source).toContain('allowEscapeViewBox={{x:false,y:false}}');
+    expect(source).not.toContain('translate3d(8px, -86px, 0)');
+    expect(source).toContain('const timelineAxisWidth=compactChart?55:78');
+    expect(source).toContain('compactChart?322:306');
+    expect(source).toContain('<ChartPanZoomSurface compact touchModeControl={data.length>1}>{compactViewport=><MetricLineChart');
+    expect(source).toContain('<ChartPanZoomSurface compact touchModeControl mouseVerticalPanDirection={-1} touchVerticalPanDirection={-1}>{compactViewport=><BenchmarkBars');
+	    expect(source).toContain('<ChartExpandButton title={chartTitle} initialView={chartView} showViewControls comparisonControl={comparisonControl} touchModeControl={data.length>1} protectGeneralChartSurface>');
+    expect(source).not.toContain('<ChartPanZoomSurface compact touchModeControl={true}>');
+    expect(source).toContain("Сброс");
+    expect(source).toContain('const medianColor=palette.median');
+    expect(source).toContain("stroke={medianColor}");
+  });
+  it("использует единый широкий слот наложения и один цвет для легенды, линии и маркера", () => {
+    expect(resolveOverlayBarGeometry(140, 18, 0, 3)).toEqual({ x: 140, width: 54 });
+    expect(resolveOverlayBarGeometry(158, 18, 1, 3)).toEqual({ x: 140, width: 54 });
+    expect(resolveOverlayBarGeometry(176, 18, 2, 3)).toEqual({ x: 140, width: 54 });
+    expect(normalizeOverlayBarRect(82, -24)).toEqual({ y: 58, height: 24 });
+    expect(normalizeOverlayBarRect(58, 24)).toEqual({ y: 58, height: 24 });
+    const source = require("node:fs").readFileSync(new URL("./AuditCharts.tsx", import.meta.url), "utf8");
+    expect(source).toContain("barGap={0}");
+    expect(source).toContain("resolveOverlayBarGeometry");
+    expect(source).toContain("normalizeOverlayBarRect");
+    expect(source).toContain("fill={color}");
+    expect(source).not.toContain("chart-overlay-note");
+    expect(source).toContain('stroke:"none",strokeWidth:0,fill:color');
+  });
+  it("сохраняет нулевую отметку в шкале положительных, отрицательных и смешанных значений", () => {
+    expect(zeroAwareTicks([12, 48])).toContain(0);
+    expect(zeroAwareTicks([-12, -48])).toContain(0);
+    expect(zeroAwareTicks([-12, 48])).toContain(0);
+  });
+});

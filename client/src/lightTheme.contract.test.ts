@@ -1,0 +1,101 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+
+const styles = readFileSync(new URL("./design-system.css", import.meta.url), "utf8");
+const overrides = readFileSync(new URL("./final-overrides.css", import.meta.url), "utf8");
+const portfolio = readFileSync(new URL("./pages/Portfolio.tsx", import.meta.url), "utf8");
+const lightScreens = ["Home.tsx", "ControlCenter.tsx", "OperationalCadence.tsx", "Portfolio.tsx", "ManageData.tsx", "AccessAdmin.tsx", "Notifications.tsx", "WeeklyReports.tsx"];
+
+describe("контрастная светлая тема", () => {
+  it("использует нейтральные поверхности и читаемые сигнальные цвета", () => {
+    expect(styles).toContain("--rose:#d70036");
+    expect(styles).toContain("--yellow:#875500");
+    expect(styles).toContain("background:#ffffff!important");
+    expect(styles).toContain(".packet .theme-button{background:#f4f7fb!important");
+  });
+
+  it("переопределяет темные плашки и подписи интерактивных графиков", () => {
+    expect(styles).toContain(".packet .tiny-tooltip{background:#ffffff!important");
+    expect(styles).toContain(".packet .series-toggle,html[data-audit-theme=\"light\"] .packet .chart-series-control .series-toggle{background:#ffffff!important");
+    expect(styles).toContain(".packet .card-title small,html[data-audit-theme=\"light\"] .packet .median-badge{background:#f3f7fd!important");
+  });
+
+  it("сохраняет контраст Sonner-уведомлений в обеих темах", () => {
+    expect(styles).toContain("[data-sonner-toaster] [data-sonner-toast]{background:#171018!important;color:#f8edf2!important");
+    expect(styles).toContain('html[data-audit-theme="light"] [data-sonner-toaster] [data-sonner-toast]{background:#ffffff!important;color:#152033!important');
+    expect(styles).toContain("[data-sonner-toast] [data-button]{background:#ff765f!important");
+  });
+
+  it("использует iOS-синий контур hover у обычной навигации светлой темы", () => {
+    expect(overrides).toContain('html[data-audit-theme="light"] .packet .packet-nav:not(.active):hover');
+    expect(overrides).toContain('box-shadow: inset 0 0 0 1px #0a84ff');
+    expect(overrides).toContain('.mobile-drawer .drawer-link:not(.active):hover');
+    expect(overrides).toContain('html[data-audit-theme="light"] .packet .packet-nav.active');
+    expect(overrides).toContain('background: #eaf4ff !important;');
+    expect(overrides).toContain('html[data-audit-theme="light"] .alert-link { border-color: #bdd9f6 !important; background: #ffffff !important; color: #075dbb !important; }');
+  });
+
+  it("оставляет название бренда на экране входа читаемым, а не коралловым", () => {
+    expect(overrides).toContain('html[data-audit-theme="light"] .login-mark { color: #1f3652 !important; }');
+    expect(overrides).toContain('html[data-audit-theme="light"] .login-passkey {');
+    expect(overrides).toContain('border-color: #0a63c8 !important;');
+    expect(overrides).toContain('html[data-audit-theme="light"] .login-passkey:hover {');
+  });
+
+  it("не оставляет у статуса безопасного доступа темное свечение или размытие", () => {
+    expect(overrides).toContain('html[data-audit-theme="light"] .ocean-loader.overlay > p { color: #075dbb !important; text-shadow: none !important; filter: none !important; box-shadow: none !important; }');
+  });
+
+  it("сохраняет у периода, риска, порогов, предупреждений и карточек навигации светлую iOS-палитру", () => {
+    expect(overrides).toContain('html[data-audit-theme="light"] .date-popover .date-popover-head > span { color: #0a63c8 !important; }');
+    expect(overrides).toContain('html[data-audit-theme="light"] .packet .control-kpis .packet-kpi.risk { border-color: #efbcc3 !important; background: #fff5f5 !important;');
+    expect(overrides).toContain('html[data-audit-theme="light"] .packet .threshold-control-group { border-color: #cbdcff !important; background: #f7fbff !important; }');
+	    expect(overrides).toContain('html[data-audit-theme="light"] .packet .portfolio-thresholds:hover { border-color: #bedcff !important; background: #edf6ff !important;');
+	    expect(overrides).toContain('html[data-audit-theme="light"] .packet .manage-editor .manage-editor-notice { border-color: #cbdcff !important; background: #f5f8ff !important; color: #425d7b !important; }');
+	    expect(overrides).toContain('html[data-audit-theme="light"] .packet .launch-card:hover { transform: none !important; border-color: #0a84ff !important;');
+	    expect(overrides).toContain('html[data-audit-theme="light"] .packet .mobile-drawer .drawer-search input { border-color: #c6d9ec !important; background: #f4f9ff !important; color: #26384d !important;');
+	    expect(overrides).toContain('html[data-audit-theme="light"] .packet .mobile-drawer .drawer-top button { border-color: #bdd9f6 !important; background: #ffffff !important; color: #075dbb !important;');
+	    expect(overrides).toContain('html[data-audit-theme="light"] .packet .alert-thresholds { border-color: #cbdcff !important; background: #f7fbff !important; box-shadow: none !important; }');
+    expect(overrides).toContain('html[data-audit-theme="light"] .packet .alert-thresholds .threshold-rule:hover,');
+    expect(overrides).toContain('html[data-audit-theme="light"] .packet .alert-thresholds .threshold-amount input:focus { border-color: #0a84ff !important;');
+  });
+
+  it("использует голубоватые поверхности рабочих карточек, а не сплошное белое полотно", () => {
+    expect(overrides).toContain('background: linear-gradient(145deg, #f7fbff 0%, #edf6ff 100%) !important;');
+    expect(overrides).toContain('background: #f5faff !important;');
+    expect(overrides).toContain('border-color: #c9def5 !important;');
+  });
+
+  it("передает в scatter-графики Портфеля светлую палитру, а не темные константы", () => {
+    expect(portfolio).toContain('grid: "#d8e0ea"');
+    expect(portfolio).toContain("stroke={palette.grid}");
+    expect(portfolio).toContain("fill={palette.label}");
+  });
+
+  it("применяет общую оболочку с нейтральными light-токенами на всех ключевых экранах", () => {
+    lightScreens.forEach(file => {
+      const page = readFileSync(new URL(`./pages/${file}`, import.meta.url), "utf8");
+      expect(page).toContain("AuditShell");
+    });
+    expect(styles).toContain('html[data-audit-theme="light"] .packet{--bg:#f3f5f9');
+    expect(styles).toContain(".packet .watch-card{background:#f8faff!important");
+  });
+
+  it("покрывает page-specific элементы восьми экранов светлым контрастным оформлением", () => {
+    const checks: Array<[string, string, "style" | "page"]> = [
+      ["Home.tsx", ".packet .theme-button{background:#f4f7fb!important", "style"],
+      ["ControlCenter.tsx", ".packet .comparison-periods { background:#fff", "style"],
+      ["OperationalCadence.tsx", ".packet .inline-table .inline-row{min-height:48px", "style"],
+      ["Portfolio.tsx", "grid: \"#d8e0ea\"", "page"],
+      ["ManageData.tsx", ".packet .store-rename-save{height:40px!important", "style"],
+      ["AccessAdmin.tsx", ".packet .account-choice.selected{background:#eaf3ff!important", "style"],
+      ["Notifications.tsx", ".packet .notification-actions{display:flex", "style"],
+      ["WeeklyReports.tsx", ".packet input[type=\"time\"] { background:#fff!important", "style"],
+    ];
+    checks.forEach(([file, selector, source]) => {
+      const page = readFileSync(new URL(`./pages/${file}`, import.meta.url), "utf8");
+      expect(page).toContain("AuditShell");
+      expect(source === "style" ? styles : page, `Контракт светлой темы: ${file}`).toContain(selector);
+    });
+  });
+});

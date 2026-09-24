@@ -1,0 +1,180 @@
+import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+const page=readFileSync(resolve(process.cwd(),"client/src/pages/WeeklyReports.tsx"),"utf8");
+const styles=readFileSync(resolve(process.cwd(),"client/src/final-overrides.css"),"utf8");
+
+describe("WeeklyReports interaction contract",()=>{
+  it("selects and opens the newly formed saved report with a Russian notification",()=>{
+    expect(page).toContain("selectReport(result.report.id)");
+    expect(page).toContain('toast.success(result.created?"Отчет сформирован и открыт":"Сводка уже существует и открыта"');
+    expect(page).toContain("reportSummaryRef.current?.scrollIntoView");
+    expect(page).toContain("window.history.replaceState");
+  });
+
+  it("keeps saved periods compact, stores six recent reports and allows safe manual removal",()=>{
+    expect(page).toContain('className={isActive?"report-history-item active":"report-history-item"}');
+    expect(page).toContain('isActive?"Открыта":"Показать"');
+    expect(page).toContain('trpc.audit.weeklyReports.useQuery({limit:REPORTS_PAGE_SIZE,offset:reportOffset}');
+    expect(page).toContain('trpc.audit.deleteWeeklyReport.useMutation');
+    expect(page).toContain('Удалить сформированную сводку?');
+    expect(page).toContain('const REPORTS_PAGE_SIZE=6;');
+    expect(page).toContain('Хранятся шесть последних сводок. При создании седьмой автоматически удаляется самая старая сводка');
+    expect(page).toContain('ДОЛЯ НАЛИЧНОЙ ВЫРУЧКИ');
+    expect(page).toContain('ДОЛЯ БЕЗНАЛИЧНОЙ ВЫРУЧКИ');
+    expect(styles).toContain('.packet .report-history-row');
+    expect(page).toContain('className={isEnabled?"schedule-toggle active":"schedule-toggle"}');
+  });
+
+  it("allows a calendar-selected custom period only for manual report generation",()=>{
+    expect(page).toContain('import { DateRangeControl } from "@/components/DateRangeControl"');
+    expect(page).toContain('const [reportPeriod,setReportPeriod]=useState<"week"|"month"|"custom">("week")');
+    expect(page).toContain('<option value="custom">Произвольный период</option>');
+    expect(page).toContain('value={customRange} onChange={setCustomRange} title="ПЕРИОД ОТЧЕТА"');
+    expect(page).toContain('<DateRangeControl value={customRange}');
+    expect(page).not.toContain('<DateRangeControl compact value={customRange}');
+    expect(styles).toContain('.packet .report-schedule-controls .report-custom-period .date-range-control {\n  width: 100%;\n  justify-content: space-between;\n}');
+    expect(page).toContain('generate.mutate(isCustomPeriod?{range:customRange}:undefined)');
+    expect(page).toContain('Он формируется вручную и не меняет сохраненное недельное или месячное расписание.');
+  });
+
+  it("переносит длинную команду формирования внутри промежуточной ширины",()=>{
+    expect(page).toContain('Сформировать за ${typeLabel}');
+    expect(styles).toContain('.packet .page-lede > .packet-link.compact');
+    expect(styles).toContain('white-space: normal !important;');
+    expect(styles).toContain('overflow-wrap: anywhere;');
+  });
+
+  it("вводит время отчета как понятное текстовое время МСК, без системного picker",()=>{
+    expect(page).toContain('export const isMoscowScheduleTime=');
+    expect(page).toContain('export const moscowScheduleTimeDraft=');
+    expect(page).toContain('inputMode="numeric"');
+    expect(page).toContain('24-часовой формат МСК: 09:00');
+    expect(page).toContain('disabled={updateSchedule.isPending||!isDirty||!reportTimeValid}');
+    expect(page).not.toContain('type="time"');
+    expect(styles).toContain('.packet .report-schedule-controls .report-time-control');
+  });
+
+  it("never displays legacy methodology from a stored report",()=>{
+    expect(page).toContain("reportMethodology(summary)");
+    expect(page).not.toContain("{summary.methodology}");
+  });
+
+  it("uses the immutable record dates when opening historical reports",()=>{
+    expect(page).toContain("periodStart:selected.periodStart");
+    expect(page).toContain("periodEnd:selected.periodEnd");
+    expect(page).toContain('selected.periodStart.slice(0,7)===selected.periodEnd.slice(0,7)?"month":"week"');
+    expect(page).toContain('key={`report-period-${selected.id}`}');
+  });
+
+  it("applies semantic colors only to signed financial outcomes",()=>{
+    expect(page).toContain('const moneyClass=(value:number)=>value>0?"positive":value<0?"negative":"neutral"');
+    expect(page).toContain("className={moneyClass(summary.netProfit)}");
+    expect(page).toContain("className={moneyClass(item.value)}");
+  });
+
+	it("выгружает выбранную сводку локально в PDF без изменения ее фактического состава",()=>{
+    expect(page).toContain('import("jspdf")');
+    expect(page).toContain('const exportPdf=async()=>');
+    expect(page).toContain('const preparePdfPreview=');
+    expect(page).toContain('navigator as Navigator');
+    expect(page).toContain('window.open(prepared.url,"_blank","noopener")');
+    expect(page).not.toContain('className="report-pdf-preview-dialog"');
+    expect(page).not.toContain('title="Предпросмотр готового PDF-отчета"');
+    expect(page).toContain('className="report-pdf-source"');
+    expect(page).toContain('aria-label="Выгрузить выбранный отчет в PDF"');
+    expect(page).toContain('toast.success("PDF-отчет подготовлен"');
+    expect(page).toContain('loadPdfBrand(pdfTheme).catch');
+    expect(styles).toContain('html[data-audit-theme="light"] .packet .report-export-button');
+    expect(styles).toContain('html[data-audit-theme="dark"] .packet .report-export-button');
+	  expect(styles).not.toContain('.report-pdf-preview-dialog');
+	});
+
+	it("добавляет отдельные read-only факты чеков Эвотор в отчет и PDF, не смешивая их с P&L Excel",()=>{
+	  expect(page).toContain('trpc.inventoryRegistry.evotorSalesAnalytics.useQuery');
+	  expect(page).toContain('granularity:"month",includeProducts:false');
+	  expect(page).toContain('aria-label="Факты чеков Эвотор выбранного отчета"');
+	  expect(page).toContain("Чеки и оплаты выбранного среза");
+	  expect(page).toContain("Этот read-only источник показан отдельно, не складывается с Excel");
+	  expect(page).toContain("const createReportEvotorCanvas=async");
+	  expect(page).toContain("Чеки и оплаты Эвотор");
+	  expect(page).toContain("Источник не заменяет P&L");
+	  expect(page).toContain("evotorSummary?createReportEvotorCanvas");
+		  expect(styles).toContain(".packet .report-evotor-grid");
+		});
+
+		it("показывает общую сумму продаж перед наличными и безналичными, а чеки — только в сверке",()=>{
+		  expect(page).toContain('className="report-evotor-sales"');
+		  expect(page).toContain("Продажи Эвотор");
+		  expect(page).toContain("Наличные");
+		  expect(page).toContain("Безналичные");
+		  expect(page).toContain("Оплаты сверены");
+		  expect(page).toContain("Количество чеков:");
+		  expect(styles).toContain(".report-evotor-sales > div");
+		});
+
+  it("добавляет в PDF фирменный знак и первую локально рисуемую страницу без DOM-снимка",()=>{
+    expect(page).toContain('const createReportWeeklySummaryCanvas=async');
+	  expect(page).toContain('const [weeklySummary,dailySummary,commerce,operationsPage,storeFocus,weeklyDynamics,dailyDynamics,insights,weeklyLedgers,dailyLedgers,evotorPage]=await Promise.all([');
+    expect(page).not.toContain('window.open("about:blank","_blank")');
+    expect(page).toContain('window.open(prepared.url,"_blank","noopener")');
+    expect(page).toContain('const reportPdfBrandIcon=');
+    expect(page).toContain('const loadPdfBrand=async');
+    expect(page).not.toContain('previewWindow.location.replace(url)');
+  });
+
+  it("добавляет отдельную PDF-страницу динамики из фактических записей, агрегированных по неделям",()=>{
+    expect(page).toContain('export const reportTimeline=');
+    expect(page).toContain('trpc.audit.dashboard.useQuery({ranges:');
+    expect(page).toContain('createReportDynamicsCanvas(pdfSummary,weeklyTimeline,pdfTheme,brandSource,"weeks")');
+    expect(page).toContain('createReportDynamicsCanvas(pdfSummary,timeline,pdfTheme,brandSource,"days")');
+    expect(page).toContain('"Динамика фактических показателей"');
+    expect(page).toContain('агрегированные по календарным ${detailLabel}.');
+    expect(page).toContain('disabled={isExporting||reportDashboard.isLoading}');
+    expect(page).not.toContain('import("html2canvas")');
+  });
+
+  it("добавляет полноценный тематический управленческий реестр на отдельную PDF-страницу",()=>{
+    expect(page).toContain('const createReportInsightsCanvas=async');
+    expect(page).toContain('"Управленческий реестр фактов"');
+    expect(page).toContain('"Точки-ориентиры по прибыли"');
+    expect(page).toContain('"Риск-сигналы выбранного среза"');
+    expect(page).toContain('"Состав и границы фактической базы"');
+    expect(page).toContain('createReportInsightsCanvas(pdfSummary,timeline,pdfTheme,brandSource)');
+  });
+
+  it("дополняет PDF фактическими платежами, товарным потоком, наценкой и фокусом по магазинам",()=>{
+    expect(page).toContain('const createReportCommerceCanvas=async');
+    expect(page).toContain('"Платежи, товарный поток и наценка"');
+    expect(page).toContain('"Магазины: ориентиры и риск-фокус"');
+    expect(page).toContain('createReportCommerceCanvas(pdfSummary,timeline,pdfTheme,brandSource)');
+    expect(page).toContain('createReportStoreFocusCanvas(pdfSummary,pdfTheme,brandSource)');
+  });
+
+  it("отдельно показывает подтвержденные операционные расходы и потери, не подменяя пропуски нулями",()=>{
+    expect(page).toContain('const createReportOperationsCanvas=async');
+    expect(page).toContain('"Операционные расходы и потери"');
+    expect(page).toContain('export const reportOperations=');
+    expect(page).toContain('item.hasFact?formatCompact(item.value):"Нет данных"');
+    expect(page).toContain('createReportOperationsCanvas(pdfSummary,operations,pdfTheme,brandSource)');
+	  expect(page).toContain('const pages=[weeklySummary,dailySummary,commerce,operationsPage,storeFocus');
+	  expect(page).toContain('...dailyLedgers,evotorPage].filter');
+  });
+
+  it("добавляет полный недельный реестр с фактической разбивкой наличных и безналичных платежей",()=>{
+    expect(page).toContain('const createReportWeeklyLedgerCanvases=async');
+    expect(page).toContain('"Недельный реестр фактических показателей"');
+    expect(page).toContain('cashRevenue+=finite(period.metrics.cash_revenue)');
+    expect(page).toContain('cashlessRevenue+=finite(period.metrics.cashless_revenue)');
+    expect(page).toContain('createReportWeeklyLedgerCanvases(pdfSummary,weeklyTimeline,pdfTheme,brandSource)');
+    expect(page).toContain('createReportLedgerCanvases(pdfSummary,timeline,pdfTheme,brandSource)');
+  });
+
+  it("создает первую страницу PDF без разрезания DOM-снимка на промежуточные листы",()=>{
+    expect(page).toContain('const createReportWeeklySummaryCanvas=async');
+    expect(page).toContain('const renderedPages=pages.map(page=>page.toDataURL("image/png"));');
+    expect(page).toContain('await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));');
+    expect(page).not.toContain('import("html2canvas")');
+  });
+});

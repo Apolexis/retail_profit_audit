@@ -1,0 +1,1 @@
+ALTER TABLE `operational_scheduled_sync_jobs` ADD `isOutboundPaused` boolean DEFAULT false NOT NULL;

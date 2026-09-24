@@ -1,0 +1,35 @@
+/* A compact local filter for tables beneath charts. It never receives autofocus. */
+.packet .chart-table-search {
+  position: relative;
+  display: block;
+  width: min(100%, 420px);
+  margin: 12px 0;
+  color: var(--muted);
+}
+.packet .chart-table-search > svg { position: absolute; z-index: 1; top: 50%; right: 12px; color: var(--muted); pointer-events: none; transform: translateY(-50%); }
+.packet .chart-table-search > input {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 36px 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  outline: 0;
+  background: var(--surface-2);
+  color: var(--text);
+  font: 700 12px Manrope, Arial, sans-serif;
+}
+.packet .chart-table-search > input::placeholder { color: var(--faint); opacity: 1; }
+.packet .chart-table-search:focus-within > input { border-color: var(--packet-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--packet-accent) 15%, transparent); }
+@media (hover: hover) and (pointer: fine) { .packet .chart-table-search:hover > input { border-color: var(--packet-accent); } }
+html[data-audit-theme="light"] .packet .chart-table-search { color: #42617d; }
+html[data-audit-theme="light"] .packet .chart-table-search > input { border-color: #c9def5; background: #f4f9ff; color: #17324d; }
+html[data-audit-theme="light"] .packet .chart-table-search > input::placeholder { color: #607a94; }
+html[data-audit-theme="light"] .packet .chart-table-search > svg { color: #607a94; }
+html[data-audit-theme="light"] .packet .chart-table-search:focus-within > input { border-color: #0a84ff; box-shadow: 0 0 0 3px rgba(10, 132, 255, .13); }
+html[data-audit-theme="dark"] .packet .chart-table-search { color: #c7aebb; }
+html[data-audit-theme="dark"] .packet .chart-table-search > input { border-color: #754456; background: #25141e; color: #ffe8ef; }
+html[data-audit-theme="dark"] .packet .chart-table-search > input::placeholder { color: #c7aebb; }
+html[data-audit-theme="dark"] .packet .chart-table-search > svg { color: #c7aebb; }
+html[data-audit-theme="dark"] .packet .chart-table-search:focus-within > input { border-color: #ff765f; box-shadow: 0 0 0 3px rgba(255, 118, 95, .12); }
+@media (max-width: 560px) { .packet .chart-table-search { width: 100%; margin-block: 10px; } }

@@ -1,0 +1,1 @@
+ALTER TABLE `operational_catalog_products` ADD `alcoholVolumeLiters` decimal(8,3);

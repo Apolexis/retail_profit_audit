@@ -1,0 +1,84 @@
+import { useEffect, useState } from "react";
+import { Fingerprint, LockKeyhole, Moon, Sun } from "lucide-react";
+import { browserSupportsWebAuthn, startAuthentication } from "@simplewebauthn/browser";
+import { toast } from "sonner";
+import { PhoneInput } from "@/components/PhoneInput";
+import { trpc } from "@/lib/trpc";
+import { normalizeRussianPhone } from "@/lib/phone";
+import { authErrorText } from "@/lib/authError";
+import { passkeyErrorText } from "@/lib/passkeyError";
+import { getPasskeyPlatform } from "@/lib/passkeyPlatform";
+import { useAudit } from "@/contexts/AuditContext";
+import { BrandMark } from "@/components/AuditShell";
+import { PasswordInput } from "@/components/PasswordInput";
+
+export default function Login({ accessError }: { accessError?: unknown }) {
+  const { theme, toggleTheme } = useAudit();
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [storeLoginMode, setStoreLoginMode] = useState(false);
+  const [passkeySupported, setPasskeySupported] = useState(false);
+  const passkeyPlatform = getPasskeyPlatform();
+  const utils = trpc.useUtils();
+  const login = trpc.localAuth.login.useMutation({
+    onSuccess: result => {
+      sessionStorage.removeItem(`audit-critical-signals-${result.id}`);
+      utils.localAuth.me.invalidate();
+    },
+  });
+  const beginPasskey = trpc.localAuth.beginPasskeyLogin.useMutation();
+  const finishPasskey = trpc.localAuth.finishPasskeyLogin.useMutation({
+    onSuccess: result => {
+      sessionStorage.removeItem(`audit-critical-signals-${result.id}`);
+      utils.localAuth.me.invalidate();
+    },
+  });
+
+  useEffect(() => setPasskeySupported(browserSupportsWebAuthn()), []);
+
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    login.mutate({ username: storeLoginMode ? identifier.trim() : normalizeRussianPhone(identifier), password });
+  };
+
+  const fastLogin = async () => {
+    const hasPhone = Boolean(identifier.replace(/\D/g, ""));
+    const normalized = hasPhone ? normalizeRussianPhone(identifier) : "";
+    if (normalized && normalized.length !== 11) {
+      toast.error("Введите полный номер телефона", { description: "Для быстрого входа нужен тот же номер, на который был зарегистрирован passkey." });
+      return;
+    }
+    const phonePayload = normalized.length === 11 ? { phone: normalized } : {};
+    try {
+      const { options } = await beginPasskey.mutateAsync(phonePayload);
+      const response = await startAuthentication({ optionsJSON: options });
+      await finishPasskey.mutateAsync({ ...phonePayload, response });
+      toast.success("Вход подтвержден", { description: "Быстрый вход выполнен успешно." });
+    } catch (error) {
+      toast.error(passkeyErrorText(error, passkeyPlatform));
+    }
+  };
+
+  const passkeyBusy = beginPasskey.isPending || finishPasskey.isPending;
+  return (
+    <main className="login-gate">
+      <section className="login-panel">
+        <button type="button" className="login-theme-toggle" onClick={toggleTheme} aria-label={theme === "dark" ? "Включить светлую тему" : "Включить темную тему"} title={theme === "dark" ? "Светлая тема" : "Темная тема"}>{theme === "dark" ? <Sun size={16}/> : <Moon size={16}/>}</button>
+        <div className="login-mark">
+          <BrandMark theme={theme} />
+          <span>Аналитика «Рыбный»</span>
+        </div>
+        <h1>{storeLoginMode ? "Вход магазина" : "Вход в управление"}</h1>
+        <form onSubmit={submit}>
+          <label className="login-store-mode"><input type="checkbox" checked={storeLoginMode} onChange={event => { setStoreLoginMode(event.target.checked); setIdentifier(""); }} /><span className="login-store-mode-switch" aria-hidden="true"/><span>Вход для магазинов</span></label>
+          {storeLoginMode ? <label>Логин магазина<input type="text" inputMode="text" autoComplete="username" value={identifier} onChange={event => setIdentifier(event.target.value)} placeholder="Логин магазина" maxLength={64} required /></label> : <label>Номер телефона<PhoneInput value={identifier} onValueChange={setIdentifier} required /></label>}
+          <label>Пароль<PasswordInput autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} required /></label>
+          {(accessError || login.error) && <div className="login-error">{authErrorText(accessError ?? login.error)}</div>}
+          <button className="login-submit" disabled={login.isPending}><LockKeyhole size={16} />{login.isPending ? "Проверяем доступ…" : "Войти"}</button>
+          {!storeLoginMode && passkeySupported && <button type="button" className="login-passkey" onClick={fastLogin} disabled={passkeyBusy}><Fingerprint size={17} />{passkeyBusy ? "Подтвердите на устройстве…" : "Войти с ключом доступа"}</button>}
+        </form>
+        <small>{storeLoginMode ? "Для магазина используйте выданные логин и пароль. Вход с ключом доступа для магазинов отключен." : passkeySupported ? "Можно ввести номер, чтобы выбрать ключ, или нажать кнопку без номера. Устройство предложит Face ID, Touch ID, ключ Google, Windows Hello или PIN — в зависимости от устройства." : "Можно начать ввод с 9, 7 или 8 — система приведет номер к виду +7 (900) 000-00-00. Скобки и дефисы не блокируют удаление цифр."}</small>
+      </section>
+    </main>
+  );
+}

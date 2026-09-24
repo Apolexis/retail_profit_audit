@@ -1,0 +1,2 @@
+ALTER TABLE `operational_evotor_product_links` ADD `evotorQuantitySnapshot` decimal(16,3);--> statement-breakpoint
+ALTER TABLE `operational_evotor_product_links` ADD `evotorQuantityUpdatedAt` timestamp;

@@ -1,0 +1,1 @@
+ALTER TABLE `audit_local_accounts` ADD `canViewImportControls` boolean DEFAULT false NOT NULL;
